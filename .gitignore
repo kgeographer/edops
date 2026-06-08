@@ -13,9 +13,8 @@ __pycache__/
 .DS_Store
 
 # Local/binary reference material (do not version)
-metadata/*.pdf
-articles/*.pdf
-articles/*.docx
+# metadata/*.pdf
+articles/
 
 # Regenerable analysis output
 output/
@@ -58,6 +57,7 @@ sysop/
 bibliography/
 biz/
 images/
+logs/
 logos/
 misc/
 pitches/

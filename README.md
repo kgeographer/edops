@@ -17,7 +17,6 @@ Live at [edops.kgeographer.org](https://edops.kgeographer.org)
 | C | Climate baselines (temperature, precipitation, aridity, PET) |
 | D | Terrain (slope, aspect, roughness) |
 | E | Land cover and soil properties |
-| F–S | Additional HydroATLAS variables (snow, geology, ecoregion membership…) |
 | T | Temporal: LMR v2.1 paleoclimate · HYDE 3.4 land-use · eVolv2k v4 volcanic forcing |
 
 ---
