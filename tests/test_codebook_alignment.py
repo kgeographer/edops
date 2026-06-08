@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-CODEBOOK = Path(__file__).parent.parent / "metadata" / "edops_codebook_v03.tsv"
+CODEBOOK = Path(__file__).parent.parent / "metadata" / "edops_variable_catalog_v03.tsv"
 
 
 # ---------------------------------------------------------------------------

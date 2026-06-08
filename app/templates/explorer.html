@@ -1620,7 +1620,7 @@
   // ── Load codebook ──
   async function loadCodebook() {
     try {
-      const resp = await fetch('/api/explorer/codebook');
+      const resp = await fetch('/api/explorer/variables');
       allVars = await resp.json();
       renderAccordion();
     } catch (e) {

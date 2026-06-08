@@ -1986,14 +1986,14 @@ _CODEBOOK_FIELDS = [
     "informative_or_degenerate",
 ]
 
-_codebook_cache: List[Dict] = []
+_variable_cache: List[Dict] = []
 
-def _load_codebook() -> List[Dict]:
-    global _codebook_cache
-    if _codebook_cache:
-        return _codebook_cache
+def _load_variables() -> List[Dict]:
+    global _variable_cache
+    if _variable_cache:
+        return _variable_cache
     import csv
-    cb_path = Path(__file__).resolve().parents[2] / "metadata" / "edops_codebook_v03.tsv"
+    cb_path = Path(__file__).resolve().parents[2] / "metadata" / "edops_variable_catalog_v03.tsv"
     if not cb_path.exists():
         return []
     rows = []
@@ -2034,7 +2034,7 @@ def _load_codebook() -> List[Dict]:
             rec["hide_in_explorer"] = (base + "_name" in all_keys) or (base + "_code" in all_keys)
         else:
             rec["hide_in_explorer"] = False
-    _codebook_cache = rows
+    _variable_cache = rows
     return rows
 
 
@@ -2052,9 +2052,9 @@ _CAT_LOOKUP: Dict[str, tuple] = {
     "land_cover_name":            ("lu_glc", "glc_id",   "glc_name"),
 }
 
-@router.get("/explorer/codebook", include_in_schema=False)
-def explorer_codebook():
-    return _load_codebook()
+@router.get("/explorer/variables", include_in_schema=False)
+def explorer_variables():
+    return _load_variables()
 
 
 _lisa_df_cache = None
@@ -2078,7 +2078,7 @@ def explorer_lisa(var: str, level: int = 8):
     Returns a flat dict {str(hybas_id): lisa_class} for O(1) JS lookup.
     No geometry — client reuses the already-loaded choropleth layer.
     """
-    cb = _load_codebook()
+    cb = _load_variables()
     row = next((r for r in cb if r["schema_key"] == var), None)
     if not row:
         raise HTTPException(status_code=404, detail=f"Variable '{var}' not found")
@@ -2119,7 +2119,7 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
     NoData (-9999) masked to null. Temperature cols (tmp_dc_*) divided by 10 (°C×10→°C).
     Response: {meta: {...}, values: {hybas_id: value|null, ...}}
     """
-    cb = _load_codebook()
+    cb = _load_variables()
     row = next((r for r in cb if r["schema_key"] == var), None)
     if not row:
         raise HTTPException(status_code=404, detail=f"Variable '{var}' not found")
@@ -2235,7 +2235,7 @@ def explorer_categorical(var: str, level: int = 6):
     classes exist, the tail is collapsed to an 'Other' entry (cat_id = -1).
     Response: {meta: {...}, categories: [...], values: {hybas_id: cat_id, ...}}
     """
-    cb = _load_codebook()
+    cb = _load_variables()
     row = next((r for r in cb if r["schema_key"] == var), None)
     if not row:
         raise HTTPException(status_code=404, detail=f"Variable '{var}' not found")
@@ -2440,7 +2440,7 @@ def explorer_scatter(x: str, y: str, level: int = 6):
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail="level must be 6 or 8")
 
-    cb = _load_codebook()
+    cb = _load_variables()
 
     def _resolve(var_key: str):
         row = next((r for r in cb if r["schema_key"] == var_key), None)

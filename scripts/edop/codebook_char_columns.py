@@ -1,5 +1,5 @@
 """
-Add CHAR columns to codebook v03, writing edops_codebook_v03_char.tsv.
+Add CHAR columns to edops_variable_catalog_v03, writing edops_variable_catalog_v03_char.tsv.
 
 New columns added:
   I_L6, I_L8, scale_dir  — from spatial/first_cut_typology.csv
@@ -14,8 +14,8 @@ Column placement:
 
 import pandas as pd
 
-CB_IN  = "metadata/edops_codebook_v03.tsv"
-CB_OUT = "metadata/edops_codebook_v03_char.tsv"
+CB_IN  = "metadata/edops_variable_catalog_v03.tsv"
+CB_OUT = "metadata/edops_variable_catalog_v03_char.tsv"
 TYP    = "spatial/first_cut_typology.csv"
 VC     = "spatial/variable_characterization.csv"
 

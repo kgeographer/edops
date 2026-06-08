@@ -4,7 +4,7 @@ test_explorer.py
 Tests for the /api/explorer/* endpoints added for the Explorer choropleth page.
 
 Four endpoints covered:
-  /api/explorer/codebook    — variable metadata for the accordion
+  /api/explorer/variables    — variable metadata for the accordion
   /api/explorer/values      — flat {hybas_id: value} dict + stats (s / u / delta modes)
   /api/explorer/categorical — flat {hybas_id: cat_id} dict + category legend
   /api/explorer/lisa        — LISA class assignments (no geometry)
@@ -30,13 +30,13 @@ def client(db_available):
 
 @pytest.fixture(scope="module")
 def codebook(client):
-    r = client.get("/api/explorer/codebook")
+    r = client.get("/api/explorer/variables")
     assert r.status_code == 200
     return r.json()
 
 
 # ---------------------------------------------------------------------------
-# /api/explorer/codebook
+# /api/explorer/variables
 # ---------------------------------------------------------------------------
 
 def test_codebook_returns_list(codebook):

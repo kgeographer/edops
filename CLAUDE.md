@@ -17,7 +17,7 @@ EDOPS is the active component of **Computing Place** (CEDOP), a spatial humaniti
 platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
 earlier exploratory scripts are archived in the `cedop` repo.
 
-Research framing: `docs/edop/prospectus_20260505.md` and `docs/edop/project_summary_20260606.md`.
+Research framing: `docs/edop/project_summary_20260606.md` and an older `docs/edop/prospectus_20260505.md` if needed
 
 ---
 
@@ -28,7 +28,7 @@ Research framing: `docs/edop/prospectus_20260505.md` and `docs/edop/project_summ
 
 **Products**:
 - EDOPS API (`/api/signature`) delivering Bands A–T for any lat/lon
-- Codebook `metadata/edops_codebook_v03.tsv`
+- Codebook `metadata/edops_variable_catalog_v03.tsv`
 - **Lookup page** (`sandbox.html`) — point lookup, neighborhood map, full signature
 
 ### Phase 2 — Characterization / CHAR (complete)
@@ -38,7 +38,7 @@ Comprised two strands: EDA (statistical) and ESDA (spatial).
 
 **Products**:
 - EDA findings `logs/exploration_log.md` (F1.1–F11.6); ESDA findings `logs/esda_findings.md`
-- Codebook `metadata/edops_codebook_v03.tsv` (7 CHAR columns added)
+- Codebook `metadata/edops_variable_catalog_v03.tsv` (7 CHAR columns added)
 - CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
 - **Explorer page** (`explorer.html`) — visual CHAR product
 
@@ -94,7 +94,7 @@ docs/                    # Working docs — gitignored
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 notebooks/edop/spatial/  # ESDA + CHAR notebooks
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
-metadata/                # edops_codebook_v03.tsv and prior versions
+metadata/                # edops_variable_catalog_v03.tsv and prior versions
 ```
 
 ---
@@ -217,7 +217,7 @@ python -m pytest tests/
 | `docs/edop/prospectus_20260505.md` | Research direction (superseded by project summary) |
 | `docs/design/scenarios.md` | User profiles + scenarios — read before Lookup UI work |
 | `docs/design/EDOPS_explorer_prompt_compare.md` | Compare tab agreed design |
-| `metadata/edops_codebook_v03.tsv` | Variable reference; loaded at startup by `signature.py` |
+| `metadata/edops_variable_catalog_v03.tsv` | Variable reference; loaded at startup by `signature.py` |
 | `docs/edop/edops_schema.json` | Signature schema with Timbuktu example values |
 | `logs/esda_findings.md` | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.) |
 | `logs/exploration_log.md` | EDA findings (F1.1–F11.6) |
