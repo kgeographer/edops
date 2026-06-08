@@ -1,4 +1,4 @@
-# CLAUDE.md — Computing Place / CEDOP
+# CLAUDE.md — EDOPS
 
 Read this at the start of every session. It describes current project state, not history.
 Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
@@ -7,20 +7,17 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
 ## What this project is
 
-**Computing Place (CEDOP — Cultural and Environmental Dimensions of Place)** is a spatial
-humanities research platform. It has two components: EDOP and CDOP.
+**EDOPS** (Environmental Dimensions of Place Service) is a FastAPI service that delivers
+structured environmental "signatures" for any point on Earth. Signatures characterize the
+drainage basin containing a given point using BasinATLAS variables covering hydrology,
+climate baselines, terrain, and ecoregion, plus temporal enrichment layers: LMR v2.1
+paleoclimate, HYDE 3.4 land-use history, and eVolv2k v4 volcanic forcing.
 
-**EDOP (Environmental Dimensions of Place)** is the active component. Its goal is
-developing and operating **EDOPS** (Environmental Dimensions of Place *Service*) — a
-FastAPI service that delivers structured environmental "signatures" for any point on earth.
-Signatures draw on BasinATLAS variables covering hydrology, climate baselines, terrain,
-and ecoregion, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.4 land-use
-history, and eVolv2k v4 volcanic forcing.
+EDOPS is the active component of **Computing Place** (CEDOP), a spatial humanities research
+platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
+earlier exploratory scripts are archived in the `cedop` repo.
 
-**CDOP (Cultural Dimensions of Place)** is in early development. Deferred.
-
-Research framing: `docs/edop/prospectus_20260505.md` (an updated Project Summary is
-planned to supersede the prospectus series as goals and framing have evolved).
+Research framing: `docs/edop/prospectus_20260505.md` and `docs/edop/project_summary_20260606.md`.
 
 ---
 
@@ -31,8 +28,8 @@ planned to supersede the prospectus series as goals and framing have evolved).
 
 **Products**:
 - EDOPS API (`/api/signature`) delivering Bands A–T for any lat/lon
-- Codebook `metadata/edops_codebook_v02.tsv` (superseded by v03_draft)
-- Sandbox **Lookup page** (`sandbox.html`) — point lookup, neighborhood map, full signature
+- Codebook `metadata/edops_codebook_v03.tsv`
+- **Lookup page** (`sandbox.html`) — point lookup, neighborhood map, full signature
 
 ### Phase 2 — Characterization / CHAR (complete)
 **Goal**: Systematic characterization of the EDOPS signature dataset — distributions,
@@ -41,9 +38,9 @@ Comprised two strands: EDA (statistical) and ESDA (spatial).
 
 **Products**:
 - EDA findings `logs/exploration_log.md` (F1.1–F11.6); ESDA findings `logs/esda_findings.md`
-- Codebook `metadata/edops_codebook_v03_draft.tsv` (7 new CHAR columns; stays `_draft` until Karl promotes it)
+- Codebook `metadata/edops_codebook_v03.tsv` (7 CHAR columns added)
 - CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
-- Sandbox **Explorer page** (`explorer.html`) — visual CHAR product, in progress
+- **Explorer page** (`explorer.html`) — visual CHAR product
 
 ### Phase 3 — Aggregation (not started)
 **Goal**: Enable EDOPS signature delivery for *areal* locations — user-defined study areas
@@ -76,7 +73,7 @@ Detail: `logs/session_log_20260604.md` §"Compare tab".
 
 ```
 app/
-├── main.py              # FastAPI app ("Computing Place")
+├── main.py              # FastAPI app
 ├── api/routes.py        # All REST endpoints
 ├── db/
 │   ├── connection.py    # db_connect()
@@ -84,29 +81,27 @@ app/
 ├── web/pages.py         # Jinja2 page routes
 ├── templates/
 │   ├── sandbox.html     # Lookup page — Phase 1 product
-│   ├── explorer.html    # Explorer page — Phase 2 product (in progress)
-│   ├── workbench.html   # Experimental demonstrators (legacy)
+│   ├── explorer.html    # Explorer page — Phase 2 product
+│   ├── cliopatria.html  # Cliopatria polity viewer — eyes-only for ISHI; Phase 4 precursor
 │   └── ...
 └── static/
     ├── css/site.css
     ├── explorer/        # PMTiles, GeoJSON, HYDE tiles (gitignored — rsync only)
     └── ...
 
+documentation/           # Public-facing docs (tracked)
+docs/                    # Working docs — gitignored
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 notebooks/edop/spatial/  # ESDA + CHAR notebooks
-docs/
-├── design/              # Design docs (scenarios.md, compare prompt, etc.)
-├── char/                # CHAR report drafts (gitignored)
-└── edop/                # Prospectus, schema docs
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
-metadata/                # edops_codebook_v03_draft.tsv and prior versions
+metadata/                # edops_codebook_v03.tsv and prior versions
 ```
 
 ---
 
 ## The two sandbox pages
 
-### `/sandbox` — Lookup
+### `/sandbox/lookup` — Lookup
 `app/templates/sandbox.html` — Phase 1 product; primary researcher tool.
 
 WHG place lookup → basin assignment → neighborhood map → Band A–T signature.
@@ -129,7 +124,7 @@ Band T (LMR 5-period / HYDE 4-var 3-view / eVolv2k timeline).
 Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supported
 (LMR with country overlay, HYDE raster). Controls strip persists across tabs.
 
-**Compare** — *in progress*. See Current work above.
+**Compare** — provisionally complete. See Current work above.
 
 ### Explorer architecture decisions (do not revisit)
 - **PMTiles + flat values API**: geometry served once from `basin06.pmtiles`;
@@ -168,6 +163,9 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 /api/explorer/scatter?x=VAR&y=VAR&level=6
     Paired values for bivariate scatter: {x_meta, y_meta, n_paired, values: [[id,x,y],…]}
+
+/api/polity/search, /api/polity/slices, /api/polity/period, /api/polity/geom
+    Cliopatria polity queries — used by cliopatria.html.
 ```
 
 ---
@@ -186,15 +184,16 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ## Deployment
 
-- **URLs**: `cedop.kgeographer.org` and `edops.kgeographer.org` — same Hetzner CPX32 server (Nuremberg, 46.225.125.25)
+- **URLs**: `edops.kgeographer.org` (and `cedop.kgeographer.org`) — same Hetzner CPX32 server (Nuremberg, 46.225.125.25)
 - **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `cedop.service` systemd unit
 - **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/cedop`
-- **Deploy sequence**:
+- **Note**: Server still pulls from `kgeographer/cedop`. Migration to `kgeographer/edops` is pending.
+- **Deploy sequence** (current — against cedop):
   ```
-  git push origin main                  # always push first
+  git push origin main                  # push edops repo
   rsync <gitignored assets> server:...  # PMTiles, parquet, tiles
   ssh kgeographer-1
-    cd /var/www/cedop && git pull
+    cd /var/www/cedop && git pull        # TODO: migrate to /var/www/edops
     sudo systemctl restart cedop        # requires password — manual step
   ```
 
@@ -205,7 +204,7 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 ```bash
 curl http://localhost:8000/api/health
 curl "http://localhost:8000/api/signature?lat=16.76618535&lon=-3.00777252"  # Timbuktu
-python -m pytest tests/                # 19/19 tests (as of 2026-05-03)
+python -m pytest tests/
 ```
 
 ---
@@ -214,10 +213,11 @@ python -m pytest tests/                # 19/19 tests (as of 2026-05-03)
 
 | Doc | Purpose |
 |-----|---------|
-| `docs/edop/prospectus_20260505.md` | Authoritative research direction |
+| `docs/edop/project_summary_20260606.md` | Current project summary |
+| `docs/edop/prospectus_20260505.md` | Research direction (superseded by project summary) |
 | `docs/design/scenarios.md` | User profiles + scenarios — read before Lookup UI work |
 | `docs/design/EDOPS_explorer_prompt_compare.md` | Compare tab agreed design |
-| `metadata/edops_codebook_v03_draft.tsv` | Variable reference; loaded at startup by `signature.py` |
+| `metadata/edops_codebook_v03.tsv` | Variable reference; loaded at startup by `signature.py` |
 | `docs/edop/edops_schema.json` | Signature schema with Timbuktu example values |
 | `logs/esda_findings.md` | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.) |
 | `logs/exploration_log.md` | EDA findings (F1.1–F11.6) |
@@ -230,8 +230,11 @@ python -m pytest tests/                # 19/19 tests (as of 2026-05-03)
 - **Explorer L8 choropleth** — deferred until after 8 June demo
 - **Lookup neighborhood types** — single basin / neighbors / buffer; polygon aggregation
   is methodologically thorny; deferred to Phase 3 (Aggregation)
-- **Cliopatria viewer** — separate page when Phase 3/4 begins; not part of sandbox
+- **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; social diff, basin06
+  overlay, and nav link are open threads; code is Phase 4 Correspondence precursor
+- **Server migration** — move working dir from `cedop` → `edops` repo; pending
+- **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
+  (workbench retired); remove in a cleanup pass
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
   for BCE queries; population density in signature; EarthStat/HYDE divergence; LMR proxy
   bias disclosure — held for October 2026 expert meeting
-- **Codebook `_draft` promotion** — Karl reviews, then remove `_draft` suffix
