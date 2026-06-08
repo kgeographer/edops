@@ -1,7 +1,7 @@
 """
 test_codebook_alignment.py
 --------------------------
-Validates that the live signature payload matches the v01 codebook.
+Validates that the live signature payload matches the codebook.
 
 Two tests:
   1. Every implemented field with an api_key is accessible somewhere in the
@@ -9,9 +9,7 @@ Two tests:
   2. Every implemented field that appears in profile_groups is in the band
      declared by the codebook.
 
-These tests are the automated form of the manual alignment work done to
-produce edops_codebook_v01.tsv. Any future drift between codebook and code
-will surface here first.
+Any future drift between codebook and code will surface here first.
 """
 
 import csv
@@ -19,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-CODEBOOK = Path(__file__).parent.parent / "metadata" / "edops_codebook_v01.tsv"
+CODEBOOK = Path(__file__).parent.parent / "metadata" / "edops_codebook_v03.tsv"
 
 
 # ---------------------------------------------------------------------------

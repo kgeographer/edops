@@ -26,7 +26,7 @@ load_dotenv()  # reads .env from project root
 
 def _load_field_lookup() -> Dict[str, Dict[str, str]]:
     lookup: Dict[str, Dict[str, str]] = {}
-    codebook = Path(__file__).parent.parent.parent / "metadata" / "edops_codebook_v02.tsv"
+    codebook = Path(__file__).parent.parent.parent / "metadata" / "edops_codebook_v03.tsv"
     if not codebook.exists():
         return lookup
     with codebook.open(newline="") as f:
