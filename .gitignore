@@ -1,5 +1,5 @@
-# Project docs (not yet ready for public tracking)
-CONTRIBUTING.md
+# Working docs (draft material — public docs go in documentation/)
+# CONTRIBUTING.md tracked
 
 # Environment / IDE
 .env
@@ -35,10 +35,6 @@ logos/*.afphoto~lock~
 logos/favicon.png
 misc/*.qgz
 docs/
-#docs/**/*.docx
-#docs/**/*.pdf
-#docs/cdop/
-#docs/blog/
 
 # Office temp/lock files
 ~$*

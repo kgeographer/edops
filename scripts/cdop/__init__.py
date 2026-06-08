@@ -1,1 +1,0 @@
-# CDOP scripts package (future)

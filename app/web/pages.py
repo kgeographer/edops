@@ -36,11 +36,7 @@ def about(request: Request):
 @router.get("/edop")
 def edop_redirect():
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/workbench", status_code=301)
-
-@router.get("/workbench")
-def workbench(request: Request):
-    return templates.TemplateResponse("workbench.html", {"request": request})
+    return RedirectResponse(url="/edops", status_code=301)
 
 @router.get("/sandbox")
 def sandbox_redirect():
@@ -54,10 +50,6 @@ def sandbox_lookup(request: Request):
 @router.get("/sandbox/explorer")
 def sandbox_explorer(request: Request):
     return templates.TemplateResponse("explorer.html", {"request": request})
-
-@router.get("/sandbox/explorer/regions-test")
-def sandbox_explorer_regions_test(request: Request):
-    return templates.TemplateResponse("explorer_regions_test.html", {"request": request})
 
 @router.get("/edops")
 def edops(request: Request):
