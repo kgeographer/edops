@@ -53,13 +53,16 @@ watson_log.txt
 # Sysop / hosting data
 sysop/
 
-# Misc
+# Misc private
 bibliography/
 biz/
+blog/
+documentation/drafts/
 images/
 logs/
 logos/
 misc/
+notes/
 pitches/
 prompts/
 sql/
