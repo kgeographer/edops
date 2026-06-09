@@ -186,17 +186,16 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ## Deployment
 
-- **URLs**: `edops.kgeographer.org` (and `cedop.kgeographer.org`) — same Hetzner CPX32 server (Nuremberg, 46.225.125.25)
-- **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `cedop.service` systemd unit
-- **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/cedop`
-- **Note**: Server still pulls from `kgeographer/cedop`. Migration to `kgeographer/edops` is pending.
-- **Deploy sequence** (current — against cedop):
+- **URLs**: `edops.kgeographer.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
+- **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `edops.service` systemd unit
+- **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/edops`
+- **Deploy sequence**:
   ```
   git push origin main                  # push edops repo
-  rsync <gitignored assets> server:...  # PMTiles, parquet, tiles
+  rsync <gitignored assets> server:...  # PMTiles, parquet, tiles, hyde_epoch_maxes.json
   ssh kgeographer-1
-    cd /var/www/cedop && git pull        # TODO: migrate to /var/www/edops
-    sudo systemctl restart cedop        # requires password — manual step
+    cd /var/www/edops && git pull
+    sudo systemctl restart edops        # requires password — manual step
   ```
 
 ---
@@ -234,7 +233,7 @@ python -m pytest tests/
   is methodologically thorny; deferred to Phase 3 (Aggregation)
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; social diff, basin06
   overlay, and nav link are open threads; code is Phase 4 Correspondence precursor
-- **Server migration** — move working dir from `cedop` → `edops` repo; pending
+- **Server migration** — complete as of 2026-06-07; working dir is `/var/www/edops`, service is `edops`
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
   (workbench retired); remove in a cleanup pass
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
