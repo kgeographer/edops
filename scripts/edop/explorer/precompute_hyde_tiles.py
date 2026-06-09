@@ -33,6 +33,7 @@ Usage:
 """
 
 import argparse
+import json
 import math
 import sys
 import time
@@ -175,16 +176,32 @@ def _sql_persistence(var: str) -> str:
 
 def _sql_epoch_value(var: str, pg0: int, pg1: int, n_steps: int) -> str:
     if pg0 == pg1:
-        expr = f"{var}[{pg0}]::float4"
+        expr = f"{var}[{pg0}]::float4 / NULLIF(area_km2, 0)"
     else:
         terms = " + ".join(f"COALESCE({var}[{i}], 0)" for i in range(pg0, pg1 + 1))
-        expr = f"({terms}) / {n_steps}.0"
+        expr = f"({terms}) / {n_steps}.0 / NULLIF(area_km2, 0)"
     return f"""
         SELECT
             ST_Y(ST_Centroid(geom)) AS lat,
             ST_X(ST_Centroid(geom)) AS lon,
             {expr} AS value
         FROM temporal.hyde_cells
+    """
+
+
+def _sql_epoch_p99(var: str, pg0: int, pg1: int, n_steps: int) -> str:
+    """p99 of per-cell mean fractions (> 0) for one epoch bin."""
+    if pg0 == pg1:
+        expr = f"{var}[{pg0}]::float4 / NULLIF(area_km2, 0)"
+    else:
+        terms = " + ".join(f"COALESCE({var}[{i}], 0)" for i in range(pg0, pg1 + 1))
+        expr = f"({terms}) / {n_steps}.0 / NULLIF(area_km2, 0)"
+    return f"""
+        WITH fracs AS (
+            SELECT {expr} AS frac FROM temporal.hyde_cells
+        )
+        SELECT percentile_cont(0.99) WITHIN GROUP (ORDER BY frac)
+        FROM fracs WHERE frac > 0
     """
 
 
@@ -319,6 +336,27 @@ def main():
 
     vars_to_run = [args.var] if args.var else VARIABLES
 
+    # Epoch views need a per-var/epoch p99 as vmax so tiles saturate at the real
+    # distribution top, not at 100%.  Skip this phase for non-epoch --view targets.
+    running_epoch_views = not args.view or args.view.startswith("epoch_")
+
+    epoch_maxes_new: dict = {}  # {var: global_vmax}  — single float, max p99 across all epochs
+    if running_epoch_views:
+        for var in vars_to_run:
+            print(f"\n=== Variable: {var} — computing epoch p99 ===")
+            all_p99s = []
+            for epoch, label, pg0, pg1, n_steps in EPOCH_BINS:
+                # Always scan ALL epochs so global max is correct even on partial --view runs
+                sql = _sql_epoch_p99(var, pg0, pg1, n_steps)
+                with db_connect() as conn:
+                    row = conn.execute(sql).fetchone()
+                p99 = float(row[0]) if row and row[0] is not None else 0.0
+                all_p99s.append(p99)
+                print(f"  epoch_{epoch} ({label}): {p99 * 100:.1f}%", flush=True)
+            global_vmax = round(max(all_p99s), 4)
+            print(f"  → global vmax: {global_vmax * 100:.1f}%", flush=True)
+            epoch_maxes_new[var] = global_vmax
+
     for var in vars_to_run:
         print(f"\n=== Variable: {var} ===")
 
@@ -344,22 +382,38 @@ def main():
                 "discrete": True,
             })
 
-        # epoch_1..epoch_7 (current value)
-        for epoch, label, pg0, pg1, n_steps in EPOCH_BINS:
-            vname = f"epoch_{epoch}"
-            if args.view and args.view != vname:
-                continue
-            views.append({
-                "name":     vname,
-                "sql":      _sql_epoch_value(var, pg0, pg1, n_steps),
-                "lut":      _make_value_cmap(var),
-                "vmin":     0.0, "vmax": 1.0,
-                "discrete": False,
-            })
+        # epoch_1..epoch_7 — same global vmax for all epochs of this variable
+        if running_epoch_views:
+            for epoch, label, pg0, pg1, n_steps in EPOCH_BINS:
+                vname = f"epoch_{epoch}"
+                if args.view and args.view != vname:
+                    continue
+                vmax = epoch_maxes_new[var]
+                views.append({
+                    "name":     vname,
+                    "sql":      _sql_epoch_value(var, pg0, pg1, n_steps),
+                    "lut":      _make_value_cmap(var),
+                    "vmin":     0.0,
+                    "vmax":     vmax,
+                    "discrete": False,
+                })
 
         for v in views:
             render_view(var, v["name"], v["sql"], v["lut"],
                         v["vmin"], v["vmax"], v["discrete"], args.zoom_max)
+
+    # Write / merge p99 sidecar JSON so the legend endpoint can read it without a DB query.
+    # Merges into any existing file so partial runs (--var or --view) don't wipe other entries.
+    if running_epoch_views and epoch_maxes_new:
+        json_path = OUT_BASE.parent / "hyde_epoch_maxes.json"
+        existing: dict = {}
+        if json_path.exists():
+            with open(json_path) as f:
+                existing = json.load(f)
+        existing.update(epoch_maxes_new)
+        with open(json_path, "w") as f:
+            json.dump(existing, f, indent=2)
+        print(f"\nWrote p99 sidecar → {json_path}")
 
     print("\nAll done.")
 

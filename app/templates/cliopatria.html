@@ -198,6 +198,7 @@
 
     /* Basin tab */
     .basin-var-label { font-size: 0.75rem; color: #6c757d; margin-bottom: 0.25rem; display: block; }
+    #cp-basin-var optgroup { color: #343a40; font-weight: 600; }
     #cp-basin-status { font-size: 0.75rem; color: #6c757d; margin-top: 0.4rem; min-height: 1.2em; }
     #cp-basin-legend { margin-top: 0.75rem; }
     #cp-basin-legend-bar { height: 12px; border-radius: 2px; margin-bottom: 0.25rem; }
@@ -374,7 +375,7 @@
     <div id="cp-tab-nav">
       <ul class="nav nav-tabs border-0">
         <li class="nav-item">
-          <button class="nav-link active" data-tab="wiki">Wikipedia</button>
+          <button class="nav-link" data-tab="wiki">Wikipedia</button>
         </li>
         <li class="nav-item">
           <button class="nav-link" data-tab="general">General</button>
@@ -383,7 +384,7 @@
           <button class="nav-link" data-tab="social">Social</button>
         </li>
         <li class="nav-item">
-          <button class="nav-link" data-tab="basins">Basins</button>
+          <button class="nav-link active" data-tab="basins">Basins</button>
         </li>
       </ul>
     </div>
@@ -392,7 +393,7 @@
     <div id="cp-tab-content">
 
       <!-- Wikipedia tab -->
-      <div id="cp-tab-wiki" class="cp-tab-pane">
+      <div id="cp-tab-wiki" class="cp-tab-pane" style="display:none;">
         <div id="cp-welcome-search">
           <h6>Navigating historical polities</h6>
           <p>Search for any polity by name above. Results include empires, kingdoms, city-states, and confederacies from 3400 BCE to 2024 CE, drawn from the <a href="https://seshat-db.com/" target="_blank">Seshat</a> Cliopatria dataset.</p>
@@ -436,20 +437,32 @@
       </div>
 
       <!-- Basins tab -->
-      <div id="cp-tab-basins" class="cp-tab-pane" style="display:none;">
+      <div id="cp-tab-basins" class="cp-tab-pane">
         <div class="mb-2">
-          <label class="basin-var-label">Basin variable</label>
+          <label class="basin-var-label">Variable</label>
           <select id="cp-basin-var" class="form-select form-select-sm">
             <option value="">— choose variable —</option>
-            <option value="aridity_index">Aridity index</option>
-            <option value="precipitation_annual">Annual precipitation</option>
-            <option value="temperature_annual">Mean annual temperature</option>
+            <optgroup label="Physiographic — static (modern normal)">
+              <option value="aridity_index">Aridity index</option>
+              <option value="precipitation_annual">Annual precipitation</option>
+              <option value="temperature_annual">Mean annual temperature</option>
+            </optgroup>
+            <optgroup label="Paleoclimate — LMR v2.1 (anomaly)">
+              <option value="lmr_temp_anomaly">Temperature anomaly</option>
+              <option value="lmr_precip_anomaly">Precipitation anomaly</option>
+            </optgroup>
+            <optgroup label="Land use — HYDE 3.4">
+              <option value="hyde_cropland">Cropland fraction</option>
+              <option value="hyde_grazing">Grazing fraction</option>
+            </optgroup>
           </select>
         </div>
+        <div id="cp-basin-provenance" style="font-size:0.7rem; color:#6c757d; min-height:1.2em; margin-bottom:0.35rem;"></div>
         <div id="cp-basin-legend" style="display:none;">
           <div id="cp-basin-legend-bar"></div>
           <div class="basin-legend-labels">
             <span id="cp-basin-leg-lo"></span>
+            <span id="cp-basin-leg-mid"></span>
             <span id="cp-basin-leg-hi"></span>
           </div>
         </div>
@@ -565,6 +578,14 @@ map.on('load', () => {
       'line-width': 1.5,
     }
   });
+
+  // Basins tab is the default — initialise layer immediately on map ready
+  loadBasinLayer();
+  showBasinLayer();
+  document.getElementById('cp-basin-var').value = 'aridity_index';
+  setProvenance('static · modern normal (BasinATLAS)');
+  applyBasinVar('aridity_index');
+  _basinVarLoaded = true;
 });
 
 // ── History hover tooltip ─────────────────────────────────────────────────────
@@ -1024,6 +1045,11 @@ async function loadSlice(idx) {
     _lastSeshatId = s.seshatid;
     fetchSeshat(s.seshatid);
   }
+
+  // Re-snap temporal layer to new slice date if one is active
+  const _activeKey = document.getElementById('cp-basin-var').value;
+  if (_activeKey && _activeKey.startsWith('lmr_'))  applyLMRChoropleth(_activeKey);
+  if (_activeKey && _activeKey.startsWith('hyde_')) applyHYDELayer(_activeKey);
 }
 let _lastSeshatId = null;
 
@@ -1151,19 +1177,318 @@ async function applyBasinVar(key) {
 function renderBasinLegend(meta, lo, hi) {
   const barEl = document.getElementById('cp-basin-legend-bar');
   const loEl  = document.getElementById('cp-basin-leg-lo');
+  const midEl = document.getElementById('cp-basin-leg-mid');
   const hiEl  = document.getElementById('cp-basin-leg-hi');
   const stops = meta.reverse
     ? [...RDBU_PAL].reverse().map((c, i) => `${c} ${(i / (RDBU_PAL.length - 1) * 100).toFixed(1)}%`).join(', ')
     : RDBU_PAL.map((c, i) => `${c} ${(i / (RDBU_PAL.length - 1) * 100).toFixed(1)}%`).join(', ');
   barEl.style.background = `linear-gradient(to right, ${stops})`;
-  loEl.textContent = `${meta.loLabel} (${lo.toFixed(1)})`;
-  hiEl.textContent = `${meta.hiLabel} (${hi.toFixed(1)})`;
+  loEl.textContent  = `${meta.loLabel} (${lo.toFixed(1)})`;
+  midEl.textContent = '';
+  hiEl.textContent  = `${meta.hiLabel} (${hi.toFixed(1)})`;
   document.getElementById('cp-basin-legend').style.display = 'block';
 }
 
+function setProvenance(text) {
+  document.getElementById('cp-basin-provenance').textContent = text;
+}
+
 document.getElementById('cp-basin-var').addEventListener('change', e => {
-  applyBasinVar(e.target.value);
+  const key = e.target.value;
+  if (!key) { setProvenance(''); return; }
+  if (key.startsWith('lmr_')) {
+    hideHYDELayer();
+    applyLMRChoropleth(key);
+    return;
+  }
+  if (key.startsWith('hyde_')) {
+    hideLMRLayer();
+    applyHYDELayer(key);
+    return;
+  }
+  hideLMRLayer();
+  hideHYDELayer();
+  setProvenance('static · modern normal (BasinATLAS)');
+  applyBasinVar(key);
 });
+
+// ── LMR overlay ───────────────────────────────────────────────────────────────
+const LMR_NOTCHES = [
+  { index: 0, label: 'Early (700–950 CE)',      y0: 700,  y1: 950  },
+  { index: 1, label: 'MCA (950–1250 CE)',        y0: 950,  y1: 1250 },
+  { index: 2, label: 'Trans. (1250–1450 CE)',    y0: 1250, y1: 1450 },
+  { index: 3, label: 'LIA (1450–1850 CE)',       y0: 1450, y1: 1850 },
+  { index: 4, label: 'Indust. (1850–1998 CE)',   y0: 1850, y1: 1999 },
+];
+
+let _lmrData   = null;   // cached GeoJSON (features carry numeric ids)
+let _lmrLoaded = false;  // source + layer added to map
+let _lmrAdjMap = null;   // Map<featureId, adjustedValue>
+let _lmrAbsMax = 1;
+
+function sliceMidYear() {
+  if (_current < 0 || !_slices[_current]) return null;
+  const s = _slices[_current];
+  return Math.round((s.fromyear + s.toyear) / 2);
+}
+
+function lmrNotchForYear(year) {
+  // No polity selected → default to MCA
+  if (year == null) return LMR_NOTCHES[1];
+  for (const n of LMR_NOTCHES) {
+    if (year >= n.y0 && year < n.y1) return n;
+  }
+  if (year >= 1998) return LMR_NOTCHES[4];
+  return null; // < 700 CE
+}
+
+function formatLMRVal(v) {
+  if (v === 0) return '0';
+  const mag = Math.floor(Math.log10(Math.abs(v)));
+  return mag >= -2 ? Math.abs(v).toFixed(3) : Math.abs(v).toExponential(2);
+}
+
+async function loadLMRData() {
+  if (_lmrData) return;
+  const resp = await fetch('/static/explorer/lmr_notches.geojson');
+  const raw  = await resp.json();
+  raw.features.forEach((f, i) => { f.id = i; });
+  _lmrData = raw;
+}
+
+function ensureLMRLayer() {
+  if (_lmrLoaded) return;
+  map.addSource('lmr', { type: 'geojson', data: _lmrData });
+  map.addLayer({
+    id: 'lmr-fill', type: 'fill', source: 'lmr',
+    paint: {
+      'fill-color':         ['coalesce', ['feature-state', 'fc'], 'transparent'],
+      'fill-opacity':       0.75,
+      'fill-outline-color': 'rgba(100,100,100,0.12)',
+    }
+  }, 'period-fill');
+  _lmrLoaded = true;
+}
+
+function showLMRLayer() {
+  if (map.getLayer('basin-fill'))    map.setLayoutProperty('basin-fill',    'visibility', 'none');
+  if (map.getLayer('basin-outline')) map.setLayoutProperty('basin-outline', 'visibility', 'none');
+  if (map.getLayer('lmr-fill'))      map.setLayoutProperty('lmr-fill',      'visibility', 'visible');
+}
+
+function hideLMRLayer() {
+  if (map.getLayer('lmr-fill'))      map.setLayoutProperty('lmr-fill',      'visibility', 'none');
+  if (map.getLayer('basin-fill'))    map.setLayoutProperty('basin-fill',    'visibility', 'visible');
+  if (map.getLayer('basin-outline')) map.setLayoutProperty('basin-outline', 'visibility', 'visible');
+}
+
+async function applyLMRChoropleth(varKey) {
+  const statusEl = document.getElementById('cp-basin-status');
+  statusEl.textContent = 'Loading…';
+  try {
+    await loadLMRData();
+    ensureLMRLayer();
+    await loadCountriesOverlay();
+  } catch (e) {
+    statusEl.textContent = 'Error loading LMR data';
+    console.error('applyLMRChoropleth:', e);
+    return;
+  }
+  showLMRLayer();
+
+  const isTemp  = varKey === 'lmr_temp_anomaly';
+  const prefix  = isTemp ? 'air' : 'prate';
+  const midYear = sliceMidYear();
+  const notch   = lmrNotchForYear(midYear);
+
+  if (!notch) {
+    setProvenance(`LMR v2.1 · unavailable · ${midYear} CE is before reliable range (700 CE)`);
+    statusEl.textContent = '';
+    document.getElementById('cp-basin-legend').style.display = 'none';
+    map.removeFeatureState({ source: 'lmr' });
+    return;
+  }
+
+  const propKey    = `${prefix}_${notch.index}`;
+  const preIndKeys = [0, 1, 2, 3].map(i => `${prefix}_${i}`);
+
+  // Adjust each cell relative to its own pre-industrial mean (notches 0–3)
+  _lmrAdjMap = new Map();
+  for (const f of _lmrData.features) {
+    const preVals = preIndKeys.map(k => f.properties[k]).filter(v => v != null);
+    if (!preVals.length) continue;
+    const cellMean = preVals.reduce((a, b) => a + b, 0) / preVals.length;
+    const raw = f.properties[propKey];
+    _lmrAdjMap.set(f.id, raw != null ? raw - cellMean : null);
+  }
+
+  const vals   = [..._lmrAdjMap.values()].filter(v => v != null);
+  const sorted = [...vals].sort((a, b) => a - b);
+  const n      = sorted.length;
+  const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
+  const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
+  _lmrAbsMax   = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
+
+  map.removeFeatureState({ source: 'lmr' });
+  for (const [id, v] of _lmrAdjMap) {
+    if (v == null) continue;
+    const t    = Math.max(0, Math.min(1, (v + _lmrAbsMax) / (2 * _lmrAbsMax)));
+    const lmrT = isTemp ? 1 - t : t;
+    map.setFeatureState({ source: 'lmr', id }, { fc: interpRdbu(lmrT) });
+  }
+
+  renderLMRLegend(isTemp);
+  const noPolityNote = midYear == null ? ' · no polity selected, showing default' : '';
+  setProvenance(`LMR v2.1 · 2°×2° native grid · ${notch.label}${noPolityNote}`);
+  statusEl.textContent = `${vals.length.toLocaleString()} cells · global range`;
+}
+
+function renderLMRLegend(isTemp) {
+  const barEl = document.getElementById('cp-basin-legend-bar');
+  const loEl  = document.getElementById('cp-basin-leg-lo');
+  const midEl = document.getElementById('cp-basin-leg-mid');
+  const hiEl  = document.getElementById('cp-basin-leg-hi');
+  // Temperature: blue(cold) left → red(warm) right → reversed RDBU palette
+  // Precip:      red(dry)  left → blue(wet)  right → normal RDBU palette
+  const gradPal   = isTemp ? [...RDBU_PAL].reverse() : RDBU_PAL;
+  const gradStops = gradPal.map((c, i) => `${c} ${(i / (gradPal.length - 1) * 100).toFixed(1)}%`).join(', ');
+  barEl.style.background = `linear-gradient(to right, ${gradStops})`;
+  const s = formatLMRVal(_lmrAbsMax);
+  loEl.textContent  = isTemp ? `cold (−${s} K)` : `dry (−${s})`;
+  midEl.textContent = '0';
+  hiEl.textContent  = isTemp ? `warm (+${s} K)` : `wet (+${s})`;
+  document.getElementById('cp-basin-legend').style.display = 'block';
+}
+
+// ── HYDE overlay ─────────────────────────────────────────────────────────────
+const HYDE_EPOCHS = [
+  { index: 1, label: '10000–4000 BCE', maxYear: -4000 },
+  { index: 2, label: '3000–1000 BCE',  maxYear: -1000 },
+  { index: 3, label: '0 CE',           maxYear: 50    },
+  { index: 4, label: '100–1000 CE',    maxYear: 1000  },
+  { index: 5, label: '1100–1700 CE',   maxYear: 1700  },
+  { index: 6, label: '1710–1900 CE',   maxYear: 1900  },
+  { index: 7, label: '1910–2025 CE',   maxYear: Infinity },
+];
+
+// Gradient endpoints matching the pre-baked tile colour scheme
+const HYDE_COLORS = {
+  cropland: { lo: '#e5f5e0', hi: '#006d2c' },
+  grazing:  { lo: '#fff7ec', hi: '#7f2704' },
+  pasture:  { lo: '#fff7ec', hi: '#7f2704' },
+  rangeland:{ lo: '#fff7ec', hi: '#7f2704' },
+};
+
+function hydeEpochForYear(year) {
+  if (year == null) return HYDE_EPOCHS[3]; // default: 100–1000 CE
+  return HYDE_EPOCHS.find(e => year <= e.maxYear) ?? HYDE_EPOCHS[6];
+}
+
+function hydeVarFromKey(key) {
+  return key.replace('hyde_', ''); // 'hyde_cropland' → 'cropland'
+}
+
+// Cache p99 results so each var/epoch pair is only fetched once
+const _hydeMaxCache = new Map();
+
+async function fetchHydeMax(varName, epochIndex) {
+  const cacheKey = `${varName}_${epochIndex}`;
+  if (_hydeMaxCache.has(cacheKey)) return _hydeMaxCache.get(cacheKey);
+  const resp = await fetch(`/api/explorer/hyde-epoch-max?var=${varName}&epoch=${epochIndex}`);
+  const body = await resp.json();
+  const p99  = body.p99_fraction ?? 1.0;
+  _hydeMaxCache.set(cacheKey, p99);
+  return p99;
+}
+
+async function applyHYDELayer(varKey) {
+  const statusEl = document.getElementById('cp-basin-status');
+  const varName  = hydeVarFromKey(varKey);
+  const midYear  = sliceMidYear();
+  const epoch    = hydeEpochForYear(midYear);
+  const tileUrl  = `/static/explorer/hyde_tiles/${varName}/epoch_${epoch.index}/{z}/{x}/{y}.png`;
+
+  // Remove previous HYDE source/layer (URL changes with var/epoch)
+  if (map.getLayer('hyde-layer'))   map.removeLayer('hyde-layer');
+  if (map.getSource('hyde-raster')) map.removeSource('hyde-raster');
+
+  // Hide basin polygons while HYDE raster is active
+  if (map.getLayer('basin-fill'))    map.setLayoutProperty('basin-fill',    'visibility', 'none');
+  if (map.getLayer('basin-outline')) map.setLayoutProperty('basin-outline', 'visibility', 'none');
+
+  map.addSource('hyde-raster', {
+    type: 'raster',
+    tiles: [tileUrl],
+    tileSize: 256,
+    maxzoom: 6,
+    attribution: 'HYDE 3.4 (Klein Goldewijk et al. 2017)',
+  });
+  map.addLayer({
+    id: 'hyde-layer', type: 'raster', source: 'hyde-raster',
+    paint: { 'raster-opacity': 0.85 },
+  }, 'period-fill');
+
+  const noPolityNote = midYear == null ? ' · no polity selected, showing default' : '';
+  setProvenance(`HYDE 3.4 · ~5 arcmin · ${epoch.label}${noPolityNote}`);
+  statusEl.textContent = 'loading scale…';
+
+  // Fetch actual p99 max for this var/epoch to anchor the legend
+  try {
+    const p99 = await fetchHydeMax(varName, epoch.index);
+    renderHYDELegend(varName, epoch, p99);
+    statusEl.textContent = 'global coverage';
+  } catch (e) {
+    renderHYDELegend(varName, epoch, null);
+    statusEl.textContent = 'global coverage';
+    console.warn('hyde-epoch-max fetch failed:', e);
+  }
+}
+
+function hideHYDELayer() {
+  if (map.getLayer('hyde-layer'))   map.removeLayer('hyde-layer');
+  if (map.getSource('hyde-raster')) map.removeSource('hyde-raster');
+  if (map.getLayer('basin-fill'))    map.setLayoutProperty('basin-fill',    'visibility', 'visible');
+  if (map.getLayer('basin-outline')) map.setLayoutProperty('basin-outline', 'visibility', 'visible');
+}
+
+function renderHYDELegend(varName, epoch, p99) {
+  const barEl = document.getElementById('cp-basin-legend-bar');
+  const loEl  = document.getElementById('cp-basin-leg-lo');
+  const midEl = document.getElementById('cp-basin-leg-mid');
+  const hiEl  = document.getElementById('cp-basin-leg-hi');
+  const { lo, hi } = HYDE_COLORS[varName] ?? HYDE_COLORS.grazing;
+  const N = 20;
+  const loR = parseInt(lo.slice(1,3),16), loG = parseInt(lo.slice(3,5),16), loB = parseInt(lo.slice(5,7),16);
+  const hiR = parseInt(hi.slice(1,3),16), hiG = parseInt(hi.slice(3,5),16), hiB = parseInt(hi.slice(5,7),16);
+  const stops = Array.from({length: N}, (_, i) => {
+    const t = i / (N - 1);
+    const r = Math.round(loR + (hiR - loR) * t);
+    const g = Math.round(loG + (hiG - loG) * t);
+    const b = Math.round(loB + (hiB - loB) * t);
+    return `rgb(${r},${g},${b}) ${(t * 100).toFixed(1)}%`;
+  }).join(', ');
+  barEl.style.background = `linear-gradient(to right, ${stops})`;
+  loEl.textContent  = '0%';
+  midEl.textContent = '';
+  hiEl.textContent  = p99 != null ? `${(p99 * 100).toFixed(1)}% of cell (p99)` : '…';
+  document.getElementById('cp-basin-legend').style.display = 'block';
+}
+
+// ── Countries overlay ─────────────────────────────────────────────────────────
+let _countriesLoaded = false;
+
+async function loadCountriesOverlay() {
+  if (_countriesLoaded) return;
+  const resp = await fetch('/static/explorer/countries_110m.geojson');
+  const data = await resp.json();
+  map.addSource('countries', { type: 'geojson', data });
+  // Insert above lmr-fill but below polity boundary layers
+  map.addLayer({
+    id: 'countries-line', type: 'line', source: 'countries',
+    paint: { 'line-color': '#444', 'line-width': 0.7, 'line-opacity': 0.65 }
+  }, 'period-fill');
+  _countriesLoaded = true;
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('#cp-tab-nav .nav-link').forEach(btn => {
@@ -1180,6 +1505,7 @@ document.querySelectorAll('#cp-tab-nav .nav-link').forEach(btn => {
       // Auto-load aridity on first open
       if (!_basinVarLoaded) {
         document.getElementById('cp-basin-var').value = 'aridity_index';
+        setProvenance('static · modern normal (BasinATLAS)');
         applyBasinVar('aridity_index');
       }
     } else if (leaving === 'basins') {

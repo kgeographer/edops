@@ -2505,6 +2505,92 @@ def explorer_scatter(x: str, y: str, level: int = 6):
 
 
 # -----------------------
+# Explorer — HYDE epoch max
+# -----------------------
+
+_HYDE_EPOCH_RANGES = {
+    1: (-10000, -4000),
+    2: (-3000,  -1000),
+    3: (0,          0),
+    4: (100,     1000),
+    5: (1100,    1700),
+    6: (1710,    1900),
+    7: (1910,    2025),
+}
+_HYDE_SAFE_VARS = {"cropland", "grazing", "pasture", "rangeland"}
+
+# Sidecar written by precompute_hyde_tiles.py; maps {var: {"epoch_N": p99_fraction}}.
+# Loaded once on first request; guarantees legend values match the baked tile vmax.
+_HYDE_EPOCH_MAXES_PATH = (
+    Path(__file__).resolve().parents[2] / "app" / "static" / "explorer" / "hyde_epoch_maxes.json"
+)
+_hyde_epoch_maxes_cache: dict | None = None
+
+
+def _load_hyde_epoch_maxes() -> dict:
+    global _hyde_epoch_maxes_cache
+    if _hyde_epoch_maxes_cache is None and _HYDE_EPOCH_MAXES_PATH.exists():
+        with open(_HYDE_EPOCH_MAXES_PATH) as f:
+            _hyde_epoch_maxes_cache = json.load(f)
+    return _hyde_epoch_maxes_cache or {}
+
+
+@router.get("/explorer/hyde-epoch-max", include_in_schema=False)
+def explorer_hyde_epoch_max(var: str, epoch: int):
+    """Return p99 cell-mean fraction for a HYDE variable across one epoch bin.
+
+    Reads from hyde_epoch_maxes.json (written by precompute_hyde_tiles.py) so the
+    returned value matches exactly the vmax used when the tiles were baked.
+    Falls back to a live DB query (with area_km2 normalisation) if the sidecar is absent.
+    """
+    if var not in _HYDE_SAFE_VARS:
+        raise HTTPException(status_code=400, detail=f"var must be one of {_HYDE_SAFE_VARS}")
+    if epoch not in _HYDE_EPOCH_RANGES:
+        raise HTTPException(status_code=400, detail="epoch must be 1–7")
+
+    cached = _load_hyde_epoch_maxes()
+    p99_cached = cached.get(var)  # one global max per variable, same scale across all epochs
+    if p99_cached is not None:
+        return {"var": var, "epoch": epoch, "p99_fraction": round(float(p99_cached), 4)}
+
+    # Sidecar not yet generated — fall back to live DB query with correct normalisation.
+    y0, y1 = _HYDE_EPOCH_RANGES[epoch]
+    sql = f"""
+        WITH epoch_steps AS (
+            SELECT MIN(step_idx) AS lo, MAX(step_idx) AS hi
+            FROM temporal.hyde_times
+            WHERE year_ce BETWEEN %(y0)s AND %(y1)s
+        ),
+        cell_means AS (
+            SELECT (
+                SELECT AVG(v)
+                FROM UNNEST(hc.{var}[
+                    (SELECT lo FROM epoch_steps) + 1 :
+                    (SELECT hi FROM epoch_steps) + 1
+                ]) AS v
+            ) / NULLIF(hc.area_km2, 0) AS mean_frac
+            FROM temporal.hyde_cells hc
+        )
+        SELECT percentile_cont(0.99) WITHIN GROUP (ORDER BY mean_frac)
+        FROM cell_means
+        WHERE mean_frac > 0
+    """
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(sql, {"y0": y0, "y1": y1})
+            row = cur.fetchone()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+    p99 = float(row[0]) if row and row[0] is not None else 1.0
+    return {"var": var, "epoch": epoch, "p99_fraction": round(p99, 4)}
+
+
+# -----------------------
 # Cliopatria polity endpoints
 # -----------------------
 
