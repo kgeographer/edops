@@ -76,19 +76,19 @@ Fields per entry:
 ### river_area
 *River and lake area within basin · km² · Atlas ref*
 
-### wetland_pct_g1
+### wetland\_pct\_g1
 *Wetland area group 1 · % · Atlas ref*
 
-### wetland_pct_g2
+### wetland\_pct\_g2
 *Wetland area group 2 · % · Atlas ref*
 
-### wetland_class_id
+### wetland\_class\_id
 *Dominant wetland class · categorical*
 
-### pct_clay / pct_silt / pct_sand
+### pct\_clay / pct\_silt / pct\_sand
 *Soil texture fractions · % · Atlas ref: S01–S03*
 
-### pnv_majority_name
+### pnv\_majority\_name
 *Potential natural vegetation majority class · categorical · Atlas ref (lu_pnv lookup)*
 
 ### pnv_shares
@@ -120,13 +120,13 @@ Higher = wetter; arid/humid boundary at 100; global median ~68.
 ### biome_name
 *Dominant biome · categorical · Atlas ref (lu_tbi lookup)*
 
-### ecoregion_terrestrial_name
+### ecoregion\_terrestrial\_name
 *Terrestrial ecoregion · categorical · Atlas ref (lu_tec lookup)*
 
-### freshwater_habitat_name
+### freshwater\_habitat\_name
 *Freshwater habitat type · categorical · Atlas ref (lu_fmh lookup)*
 
-### freshwater_ecoregion_name
+### freshwater\_ecoregion\_name
 *Freshwater ecoregion · categorical · Atlas ref (lu_fec lookup)*
 
 ---
@@ -145,7 +145,7 @@ Higher = wetter; arid/humid boundary at 100; global median ~68.
 ### pop_density
 *Population density · persons/km² · Atlas ref*
 
-### human_footprint_2009
+### human\_footprint\_2009
 *Human footprint index (2009) · 0–50 · Atlas ref*
 
 ### gdp_mean
@@ -158,7 +158,7 @@ Higher = wetter; arid/humid boundary at 100; global median ~68.
 
 ## Band E — Coastality
 
-### dist_sink_km
+### dist\_sink\_km
 *Distance from basin outlet to ocean sink · km · Atlas ref*
 
 ### outlet_type
@@ -171,7 +171,15 @@ Higher = wetter; arid/humid boundary at 100; global median ~68.
 
 ## Band T — Temporal enrichment
 
-Band T variables are query-window dependent (from_year / to_year, 0–1998 CE).
+Band T variables are query-window dependent (from\_year / to\_year). Each source has a
+different temporal extent; the API and sandbox must handle requests accordingly:
+
+| Source | Temporal extent | Notes |
+|---|---|---|
+| LMR v2.1 | 1–2000 CE | Paleoclimate reconstruction |
+| HYDE 3.4 | 10,000 BCE–2023 CE | Land-use history |
+| eVolv2k v4 | 500 BCE–1900 CE | Volcanic stratospheric forcing |
+
 Each returns a time series and/or period aggregate. Full documentation pending.
 
 ### LMR v2.1 — paleoclimate reconstruction

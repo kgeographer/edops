@@ -143,7 +143,9 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ```
 /api/signature?lat=X&lon=Y[&bands=ABCDET&from_year=N&to_year=N&level=6|8]
-    Returns profile_groups A–T. Band T requires from_year+to_year (0–1998 CE).
+    Returns profile_groups A–T. Band T requires from_year+to_year.
+    Source ranges: LMR 1–2000 CE · HYDE 10,000 BCE–2023 CE · eVolv2k 500 BCE–1900 CE.
+    API currently accepts 0–1998 CE; BCE queries and full HYDE range are not yet handled.
     Temperature fields (tmp_dc_*) stored ×10 in DB — signature.py divides by 10.
 
 /api/basin-preview?lat=X&lon=Y[&level=6|8]
