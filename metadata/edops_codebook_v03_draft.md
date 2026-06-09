@@ -183,9 +183,12 @@ different temporal extent; the API and sandbox must handle requests accordingly:
 Each returns a time series and/or period aggregate. Full documentation pending.
 
 ### LMR v2.1 — paleoclimate reconstruction
-- `lmr_pdsi` — Palmer Drought Severity Index
-- `lmr_temperature` — temperature anomaly (°C relative to 1951–1980 mean)
-- `lmr_precipitation` — precipitation anomaly
+
+All three variables are anomalies relative to the 850–1850 CE temporal mean (Tardif et al. 2019).
+
+- `lmr_pdsi` — Palmer Drought Severity Index anomaly
+- `lmr_temperature` — 2m air temperature anomaly (K)
+- `lmr_precipitation` — precipitation rate anomaly (kg/m²/s)
 
 ### HYDE 3.4 — land-use history
 - `hyde_cropland` — cropland area (km²)
