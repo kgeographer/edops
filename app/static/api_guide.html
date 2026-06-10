@@ -32,8 +32,8 @@
 
 <p>EDOPS — the Environmental Dimensions of Place Service — generates structured environmental signatures for geographic coordinates worldwide. Signatures are derived from global datasets aggregated at the hydrological sub-basin level in <a href="https://www.hydrosheds.org/products/hydroatlas" target="_blank">BasinATLAS</a>, with optional historical climate enrichment from LMR v2.1 (paleoclimate) and eVolv2k v4 (volcanic events).</p>
 
-<p>Base URL: <code>https://cedop.kgeographer.org/api</code><br>
-Interactive schema: <a href="https://cedop.kgeographer.org/docs" target="_blank">cedop.kgeographer.org/docs</a></p>
+<p>Base URL: <code>https://edops.computingplace.org/api</code><br>
+Interactive schema: <a href="https://edops.computingplace.org/docs" target="_blank">edops.computingplace.org/docs</a></p>
 
 <div class="note">Research prototype — April 2026. The API is publicly accessible but not under a stability guarantee. Parameters and response fields may change between versions. Fields marked <span class="pill plan">planned</span> are in design but not yet in the response.</div>
 
@@ -42,11 +42,11 @@ Interactive schema: <a href="https://cedop.kgeographer.org/docs" target="_blank"
 <h2>Endpoints</h2>
 
 <h3>GET /api/health</h3>
-<div class="endpoint">GET https://cedop.kgeographer.org/api/health</div>
+<div class="endpoint">GET https://edops.computingplace.org/api/health</div>
 <p>Returns <code>{"status": "ok"}</code>. Use to confirm the service is running.</p>
 
 <h3>GET /api/signature</h3>
-<div class="endpoint">GET https://cedop.kgeographer.org/api/signature?lat={lat}&amp;lon={lon}[&amp;bands={bands}&amp;level={level}&amp;from_year={from_year}&amp;to_year={to_year}]</div>
+<div class="endpoint">GET https://edops.computingplace.org/api/signature?lat={lat}&amp;lon={lon}[&amp;bands={bands}&amp;level={level}&amp;from_year={from_year}&amp;to_year={to_year}]</div>
 
 <p>Returns the environmental signature for the HydroATLAS sub-basin containing the given coordinate.</p>
 
@@ -81,7 +81,7 @@ Interactive schema: <a href="https://cedop.kgeographer.org/docs" target="_blank"
 
 <h3>Accessing field values</h3>
 <p>The canonical location for all environmental variables is <code>profile_groups</code>. To read a specific field, walk the items list for the relevant band:</p>
-<pre><code>sig = requests.get("https://cedop.kgeographer.org/api/signature?lat=16.77&lon=-3.01&bands=C").json()
+<pre><code>sig = requests.get("https://edops.computingplace.org/api/signature?lat=16.77&lon=-3.01&bands=C").json()
 items = sig["profile_groups"]["C"]["items"]
 aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pre>
 
@@ -181,22 +181,22 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 <h2>Example Requests</h2>
 
 <h3>Bands A and B only — Athens</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=37.97&lon=23.73&bands=AB"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=37.97&lon=23.73&bands=AB"</code></pre>
 
 <h3>Full baseline signature — Samarkand</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=39.65&lon=66.98&bands=ABCDE"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=39.65&lon=66.98&bands=ABCDE"</code></pre>
 
 <h3>With historical climate — Rome, early imperial period</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"</code></pre>
 
 <h3>With historical climate — Kaifeng (Song dynasty capital)</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=34.8&lon=114.3&bands=ABCT&from_year=960&to_year=1127"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=34.8&lon=114.3&bands=ABCT&from_year=960&to_year=1127"</code></pre>
 
 <h3>Bands A, B, T — Timbuktu, medieval period</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=16.77&lon=-3.01&bands=ABT&from_year=1200&to_year=1600"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=16.77&lon=-3.01&bands=ABT&from_year=1200&to_year=1600"</code></pre>
 
 <h3>Regional scale — Level 6</h3>
-<pre><code>curl "https://cedop.kgeographer.org/api/signature?lat=34.8&lon=114.3&bands=ABC&level=6"</code></pre>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=34.8&lon=114.3&bands=ABC&level=6"</code></pre>
 
 <hr>
 
@@ -212,7 +212,7 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 </ul>
 
 <hr>
-<p style="font-size:0.85rem; color:#888;">EDOPS is part of the <em>Computing Place</em> research initiative. Contact: <a href="#" id="contact-link">email</a>. Full interactive schema: <a href="https://cedop.kgeographer.org/docs" target="_blank">cedop.kgeographer.org/docs</a>.</p>
+<p style="font-size:0.85rem; color:#888;">EDOPS is part of the <em>Computing Place</em> research initiative. Contact: <a href="#" id="contact-link">email</a>. Full interactive schema: <a href="https://edops.computingplace.org/docs" target="_blank">edops.computingplace.org/docs</a>.</p>
 
 <script>
   const a = document.getElementById('contact-link');

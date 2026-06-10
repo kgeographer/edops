@@ -58,3 +58,7 @@ def edops(request: Request):
 @router.get("/polities")
 def polities(request: Request):
     return templates.TemplateResponse("cliopatria.html", {"request": request})
+
+@router.get("/workbench")
+def workbench(request: Request):
+    return templates.TemplateResponse("workbench.html", {"request": request})

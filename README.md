@@ -4,7 +4,7 @@
 
 The service is designed for spatial humanities research: signature-based comparisons across historical places, environmental context for gazetteers, and exploratory analysis of environment–culture relationships.
 
-Live at [edops.kgeographer.org](https://edops.kgeographer.org)
+Live at [edops.computingplace.org](https://edops.computingplace.org)
 
 ---
 

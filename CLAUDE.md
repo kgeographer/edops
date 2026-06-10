@@ -186,7 +186,7 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ## Deployment
 
-- **URLs**: `edops.kgeographer.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
+- **URLs**: `edops.computingplace.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
 - **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `edops.service` systemd unit
 - **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/edops`
 - **Deploy sequence**:
