@@ -27,6 +27,8 @@ def index(request: Request):
     host = request.headers.get("host", "")
     if "edops" in host:
         return templates.TemplateResponse("edops.html", {"request": request})
+    if "workbench" in host:
+        return templates.TemplateResponse("workbench.html", {"request": request})
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.get("/about")
