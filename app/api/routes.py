@@ -1993,7 +1993,7 @@ def _load_variables() -> List[Dict]:
     if _variable_cache:
         return _variable_cache
     import csv
-    cb_path = Path(__file__).resolve().parents[2] / "metadata" / "edops_variable_catalog_v03.tsv"
+    cb_path = Path(__file__).resolve().parents[2] / "documentation" / "EDOPS_variable_catalog_v0.3.tsv"
     if not cb_path.exists():
         return []
     rows = []

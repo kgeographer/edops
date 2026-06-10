@@ -218,7 +218,7 @@ python -m pytest tests/
 | `docs/edop/prospectus_20260505.md` | Research direction (superseded by project summary) |
 | `docs/design/scenarios.md` | User profiles + scenarios — read before Lookup UI work |
 | `docs/design/EDOPS_explorer_prompt_compare.md` | Compare tab agreed design |
-| `metadata/edops_variable_catalog_v03.tsv` | Variable reference; loaded at startup by `signature.py` |
+| `documentation/EDOPS_variable_catalog_v0.3.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth |
 | `docs/edop/edops_schema.json` | Signature schema with Timbuktu example values |
 | `logs/esda_findings.md` | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.) |
 | `logs/exploration_log.md` | EDA findings (F1.1–F11.6) |
