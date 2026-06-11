@@ -3,6 +3,8 @@
 | File | Description |
 |------|-------------|
 | `EDOPS_variable_catalog_v0.3.tsv` | Complete variable catalog for EDOPS signature v0.3 — all bands A–T, units, API keys, and characterization metadata; loaded at runtime by the API. |
+| `API_guide.md` | EDOPS API Guide v0.3 — endpoint reference, parameter tables, band descriptions, and example requests. Rendered on GitHub; HTML version served at `/static/api_guide.html`. |
+| `edops_schema.json` | EDOPS signature schema v0.3 — documents the `/api/signature` response structure for both default and `&flat` modes, with Timbuktu example values. |
 | `BasinATLAS_Catalog_v10.pdf` | Original HydroSHEDS BasinATLAS variable catalog (external reference); source definitions for all BasinATLAS-derived signature fields. |
 | `EDOP_summary_20260608.pdf` | Project summary as of June 2026 — scope, research phases, current status, and next steps. |
 | `EDOPS_data_characterization_report.pdf` | Phase 2 characterization report — statistical and spatial analysis of the EDOPS signature dataset across all bands. |

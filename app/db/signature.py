@@ -399,8 +399,13 @@ def get_signature(
     lat: float,
     lon: float,
     level: int = 8,
+    flat: bool = False,
 ) -> Dict[str, Any] | None:
     """Return a single basin signature dict for (lat, lon), or None if no basin covers point.
+
+    When flat=False (default): response includes profile_groups (nested band structure)
+    but not raw flat field values. When flat=True: response includes flat field values
+    but omits profile_groups; Band T temporal data appears at key "temporal" instead.
 
     Connection parameters are read from environment variables (typically via a .env file):
       DB_NAME, DB_USER, DB_HOST, DB_PORT, and optionally DB_PASSWORD.
@@ -506,41 +511,28 @@ def get_signature(
                     "items": items,
                 }
 
-            # Return an explicit dict rather than the full DB row.
-            # Raw basin columns are intentionally excluded from the default response —
-            # they are duplicated in profile_groups and would clutter the payload for
-            # API consumers. A ?flat=true mode can expose them when a concrete use
-            # case requires direct field access (e.g. vector similarity pipelines).
             out: Dict[str, Any] = {
-                # Basin / ecoregion identifiers
                 "id":           sig.get("id"),
                 "eco_id":       sig.get("eco_id"),
-                # Scale context — not in any profile group, used by analysis UI
                 "up_area":      sig.get("up_area"),
-                # Basin geometry (GeoJSON string, Leaflet-friendly)
                 "geom_geojson": sig.get("geom_geojson"),
-                # Point elevation (external provider; not in BasinATLAS)
                 "elev_point":        sig.get("elev_point"),
                 "elev_source":       sig.get("elev_source"),
                 "elev_dataset":      sig.get("elev_dataset"),
                 "elev_resolution_m": sig.get("elev_resolution_m"),
-                # Derived relief metrics
                 "relief_range_m":  sig.get("relief_range_m"),
                 "relief_position": sig.get("relief_position"),
-                # Structured presentation layers
                 "profile_summary": summary_items,
-                "profile_groups":  grouped,
             }
-            # Carry elevation error when both providers failed
             if "elev_error" in sig:
                 out["elev_error"] = sig["elev_error"]
 
-            # Flat field mirror — all profile_groups values also returned as top-level
-            # keys for backwards compatibility with external consumers (e.g. graph DB
-            # ingestion pipelines) that read primitive fields directly from the response.
-            for _gcode, gdata in grouped.items():
-                for item in gdata.get("items", []):
-                    out[item["key"]] = item["value"]
+            if flat:
+                for _gcode, gdata in grouped.items():
+                    for item in gdata.get("items", []):
+                        out[item["key"]] = item["value"]
+            else:
+                out["profile_groups"] = grouped
 
             return out
 

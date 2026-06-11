@@ -28,14 +28,14 @@
 </head>
 <body>
 
-<h1>EDOPS API Guide <span style="font-size:0.7rem;font-weight:normal;color:#888;font-family:monospace">v0.2 alpha · April 2026</span></h1>
+<h1>EDOPS API Guide <span style="font-size:0.7rem;font-weight:normal;color:#888;font-family:monospace">v0.3 · June 2026</span></h1>
 
 <p>EDOPS — the Environmental Dimensions of Place Service — generates structured environmental signatures for geographic coordinates worldwide. Signatures are derived from global datasets aggregated at the hydrological sub-basin level in <a href="https://www.hydrosheds.org/products/hydroatlas" target="_blank">BasinATLAS</a>, with optional historical climate enrichment from LMR v2.1 (paleoclimate) and eVolv2k v4 (volcanic events).</p>
 
 <p>Base URL: <code>https://edops.computingplace.org/api</code><br>
 Interactive schema: <a href="https://edops.computingplace.org/docs" target="_blank">edops.computingplace.org/docs</a></p>
 
-<div class="note">Research prototype — April 2026. The API is publicly accessible but not under a stability guarantee. Parameters and response fields may change between versions. Fields marked <span class="pill plan">planned</span> are in design but not yet in the response.</div>
+<div class="note">Research prototype — June 2026. The API is publicly accessible but not under a stability guarantee. Parameters and response fields may change between versions. Fields marked <span class="pill plan">planned</span> are in design but not yet in the response.</div>
 
 <hr>
 
@@ -46,7 +46,7 @@ Interactive schema: <a href="https://edops.computingplace.org/docs" target="_bla
 <p>Returns <code>{"status": "ok"}</code>. Use to confirm the service is running.</p>
 
 <h3>GET /api/signature</h3>
-<div class="endpoint">GET https://edops.computingplace.org/api/signature?lat={lat}&amp;lon={lon}[&amp;bands={bands}&amp;level={level}&amp;from_year={from_year}&amp;to_year={to_year}]</div>
+<div class="endpoint">GET https://edops.computingplace.org/api/signature?lat={lat}&amp;lon={lon}[&amp;bands={bands}&amp;level={level}&amp;from_year={from_year}&amp;to_year={to_year}&amp;flat={flat}]</div>
 
 <p>Returns the environmental signature for the HydroATLAS sub-basin containing the given coordinate.</p>
 
@@ -58,14 +58,16 @@ Interactive schema: <a href="https://edops.computingplace.org/docs" target="_bla
   <tr><td><code>level</code></td><td>integer</td><td><code>8</code></td><td>Basin hierarchy level. <code>8</code> = sub-basin (median ~200 km²). Level 6 is regional (~tens of thousands km²).</td></tr>
   <tr><td><code>from_year</code></td><td>integer</td><td>—</td><td>Start year CE for Band T temporal enrichment. Range: 0–1998.</td></tr>
   <tr><td><code>to_year</code></td><td>integer</td><td>—</td><td>End year CE for Band T temporal enrichment. Range: 0–1998.</td></tr>
+  <tr><td><code>flat</code></td><td>boolean</td><td><code>false</code></td><td>When <code>true</code>, returns all band field values as flat top-level keys instead of the nested <code>profile_groups</code> structure. Band T temporal data appears at key <code>temporal</code> rather than inside <code>profile_groups</code>. See <em>Response modes</em> below.</td></tr>
 </table>
 
 <hr>
 
 <h2>Response Structure</h2>
 
-<p>The response is a structured JSON object. Environmental variables (Bands A–E) are accessed under <code>profile_groups</code>. Band T temporal data is in <code>profile_groups["T"]</code> when requested.</p>
+<p>The response is a structured JSON object. By default, environmental variables (Bands A–T) are grouped under <code>profile_groups</code>. Pass <code>&amp;flat=true</code> to receive all variable values as flat top-level keys instead — useful for ingestion pipelines and vector operations.</p>
 
+<h3>Fields present in both modes</h3>
 <table>
   <tr><th>Key</th><th>Description</th></tr>
   <tr><td><code>meta</code></td><td>Request context: <code>signature_version</code>, <code>generated</code> (ISO timestamp), <code>query</code> (lat, lon, bands, level, from_year, to_year), <code>neighborhood</code> (type, basin_level), <code>data_sources</code></td></tr>
@@ -73,19 +75,34 @@ Interactive schema: <a href="https://edops.computingplace.org/docs" target="_bla
   <tr><td><code>eco_id</code></td><td>OneEarth ecoregion identifier</td></tr>
   <tr><td><code>up_area</code></td><td>Total upstream contributing area (km²)</td></tr>
   <tr><td><code>geom_geojson</code></td><td>Basin polygon as GeoJSON MultiPolygon string</td></tr>
-  <tr><td><code>elev_point</code>, <code>elev_source</code>, <code>elev_dataset</code>, <code>elev_resolution_m</code></td><td>Point elevation at query coordinate (external provider: OpenTopoData / Open-Meteo fallback)</td></tr>
+  <tr><td><code>elev_point</code>, <code>elev_source</code>, <code>elev_dataset</code>, <code>elev_resolution_m</code></td><td>Point elevation at query coordinate (OpenTopoData / Open-Meteo fallback)</td></tr>
   <tr><td><code>relief_range_m</code>, <code>relief_position</code></td><td>Derived terrain metrics: elev_max − elev_min; (elev_point − elev_min) / relief_range</td></tr>
   <tr><td><code>profile_summary</code></td><td>Ordered array of highlight fields: <code>[{key, label, value}, …]</code></td></tr>
-  <tr><td><code>profile_groups</code></td><td>Dict keyed A–F (filtered to requested bands). Each entry: <code>{label, items: [{key, label, value}, …]}</code>. This is where all environmental variables live — see band tables below.</td></tr>
+</table>
+
+<h3>Default mode (no <code>&amp;flat</code>)</h3>
+<table>
+  <tr><th>Key</th><th>Description</th></tr>
+  <tr><td><code>profile_groups</code></td><td>Dict keyed A–T (filtered to requested bands). Each entry: <code>{label, items: [{key, label, value}, …]}</code>. All environmental variables live here — see band tables below.</td></tr>
+</table>
+
+<h3>Flat mode (<code>&amp;flat=true</code>)</h3>
+<table>
+  <tr><th>Key</th><th>Description</th></tr>
+  <tr><td><em>band field keys</em></td><td>All band field values returned as top-level keys, e.g. <code>elev_min</code>, <code>aridity</code>, <code>pop_density</code>. <code>profile_groups</code> is omitted.</td></tr>
+  <tr><td><code>temporal</code></td><td>Band T temporal data (when requested). Same structure as <code>profile_groups["T"]</code> in default mode.</td></tr>
 </table>
 
 <h3>Accessing field values</h3>
-<p>The canonical location for all environmental variables is <code>profile_groups</code>. To read a specific field, walk the items list for the relevant band:</p>
+
+<p>Default mode — walk the items list for the relevant band:</p>
 <pre><code>sig = requests.get("https://edops.computingplace.org/api/signature?lat=16.77&lon=-3.01&bands=C").json()
 items = sig["profile_groups"]["C"]["items"]
 aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pre>
 
-<p>Band A–E variables are also mirrored as flat top-level keys (e.g. <code>sig["aridity"]</code>), appended after <code>profile_groups</code>, for backwards compatibility with ingestion pipelines that read primitive fields directly from the response. Band T temporal fields are only in <code>profile_groups["T"]</code>. If <code>profile_groups</code> and a flat key ever differ, trust <code>profile_groups</code>.</p>
+<p>Flat mode — field values are directly at the top level:</p>
+<pre><code>sig = requests.get("https://edops.computingplace.org/api/signature?lat=16.77&lon=-3.01&bands=C&flat=true").json()
+aridity = sig["aridity"]</code></pre>
 
 <hr>
 
@@ -122,7 +139,7 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 </table>
 
 <h3>Band C — Bioclimatic <code>(profile_groups["C"])</code> <span class="pill impl">implemented</span> </h3>
-<p>Contemporary climate baseline from BasinATLAS. These are long-run averages — for historical temperature and precipitation, Band T provides LMR anomalies relative to a 20th-century reference.</p>
+<p>Contemporary climate baseline from BasinATLAS (WorldClim ~1970–2000 CE). These are long-run averages — for historical temperature and precipitation, Band T provides LMR anomalies relative to a 20th-century reference. When <code>from_year</code> is a BCE year, a disclosure note is appended to Band C indicating that these values reflect present-day conditions, not conditions at the requested epoch.</p>
 <table>
   <tr><th>Field</th><th>Description</th><th>Units</th></tr>
   <tr><td><code>temp_yr</code>, <code>temp_min</code>, <code>temp_max</code></td><td>Annual mean, min month, max month temperature (local)</td><td>°C</td></tr>
@@ -136,13 +153,15 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 </table>
 
 <h3>Band D — Anthropocene <code>(profile_groups["D"])</code> <span class="pill impl">implemented</span> </h3>
-<p>Present-day only. Exclude or qualify for pre-modern analyses; useful as a contrast baseline.</p>
+<p>Present-day only. Exclude or qualify for pre-modern analyses; useful as a contrast baseline. When <code>from_year</code> is a BCE year, a disclosure note is appended indicating these values are contemporary and do not represent conditions at the requested epoch.</p>
 <table>
   <tr><th>Field</th><th>Description</th><th>Units</th></tr>
   <tr><td><code>pop_density</code></td><td>Contemporary population density</td><td>persons/km²</td></tr>
-  <tr><td><code>human_footprint_09</code>, <code>human_footprint_09_upstream</code></td><td>Human footprint index local / upstream</td><td>0–100</td></tr>
-  <tr><td><code>cropland_extent</code>, <code>cropland_extent_upstream</code></td><td>Cropland extent local / upstream</td><td>%</td></tr>
-  <tr><td><code>gdp_avg</code></td><td>GDP per capita (PPP, 2015)</td><td>2011 int'l USD</td></tr>
+  <tr><td><code>human_footprint_09</code>, <code>human_footprint_09_upstream</code></td><td>Human footprint index local / upstream (2009)</td><td>0–100</td></tr>
+  <tr><td><code>cropland_extent</code>, <code>cropland_extent_upstream</code></td><td>Cropland extent local / upstream (EarthStat ~2000 CE)</td><td>%</td></tr>
+  <tr><td><code>pasture_extent</code>, <code>pasture_extent_upstream</code></td><td>Pasture extent local / upstream (EarthStat ~2000 CE)</td><td>%</td></tr>
+  <tr><td><code>reservoir_vol</code></td><td>Reservoir storage volume</td><td>10⁶ m³</td></tr>
+  <tr><td><code>gdp_avg</code></td><td>GDP per km² (PPP, ~2015)</td><td>USD/km²</td></tr>
   <tr><td><code>human_dev_idx</code></td><td>Human Development Index</td><td>0–1</td></tr>
 </table>
 
@@ -153,12 +172,12 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
   <tr><td><code>dist_sink</code></td><td>Flow distance to marine outlet via basin network. <strong>Note:</strong> BasinATLAS records 0 for endorheic (landlocked) basins — this means <em>no outlet</em>, not zero distance. Check <code>endorheic</code> flag before interpreting.</td><td>km</td></tr>
   <tr><td><code>endorheic</code></td><td>0 = exorheic (ocean-connected); non-zero = landlocked with no marine outlet</td><td>flag</td></tr>
   <tr><td><code>coast_flag</code></td><td>1 = basin directly touches the coast</td><td>binary</td></tr>
-  <tr><td class="planned"><code>outlet_type</code>, <code>topo_depth_from_coast</code>, marine ecological variables</td><td class="planned">Planned additions (Phase 2)</td><td class="planned">—</td></tr>
+  <tr><td class="planned"><code>outlet_type</code>, <code>topo_depth_from_coast</code></td><td class="planned">Planned additions</td><td class="planned">—</td></tr>
 </table>
 
 <h3>Band T — Temporal <code>(profile_groups["T"])</code> <span class="pill impl">implemented</span> </h3>
-<p>Period-specific climate enrichment from LMR v2.1 (Tardif et al. 2019) and volcanic event annotation from eVolv2k v4 (Sigl & Toohey 2024). Requires <code>from_year</code> and <code>to_year</code>. Coverage: 0–1998 CE.</p>
-<p>If an entered period is outside the LMR range, <code>profile_groups["T"]</code> will contain a <code>_status: "out_of_range"</code> message; bands A–E are unaffected.</p>
+<p>Period-specific climate enrichment from LMR v2.1 (Tardif et al. 2019), volcanic event annotation from eVolv2k v4 (Sigl &amp; Toohey 2024), and land-use history from HYDE 3.4 (Klein Goldewijk et al. 2017). Requires <code>from_year</code> and <code>to_year</code>. LMR coverage: 0–1998 CE; HYDE coverage: 10000 BCE–2023 CE.</p>
+<p>If the period is outside the LMR range, <code>profile_groups["T"]</code> (or <code>temporal</code> in flat mode) will contain a <code>_status: "out_of_range"</code> message; Bands A–E are unaffected. In flat mode (<code>&amp;flat=true</code>), Band T data appears at the top-level key <code>temporal</code> rather than inside <code>profile_groups</code>.</p>
 
 <table>
   <tr><th>Field</th><th>Description</th><th>Units</th></tr>
@@ -171,6 +190,8 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
   <tr><td><code>prate_series</code></td><td>Annual precipitation rate anomaly: <code>[{year, prate_anom_mm_day}, …]</code>. Anomaly relative to 1951–1980 reference period.</td><td>mm/day (anomaly)</td></tr>
   <tr><td><code>prate_mean_anom_mm_day</code></td><td>Period mean precipitation anomaly</td><td>mm/day (anomaly)</td></tr>
   <tr><td><code>volcanic_events</code></td><td>Eruptions within the period from eVolv2k v4: <code>[{year_ad, month, vssi_tg, vssi_1sig, asymmetry, location, tephra}, …]</code></td><td>—</td></tr>
+  <tr><td><code>volcanic_event_count</code>, <code>volcanic_vssi_sum_tg</code>, <code>years_since_last_major</code></td><td>Period summary statistics for volcanic forcing</td><td>—; Tg; years</td></tr>
+  <tr><td><code>hyde_land_use</code></td><td>HYDE 3.4 land-use series: <code>[{year_ce, cropland_km2, cropland_pct, grazing_km2, grazing_pct, pasture_km2, pasture_pct, rangeland_km2, rangeland_pct, basin_area_km2, n_cells}, …]</code>. One object per epoch within the requested period.</td><td>km²; %</td></tr>
   <tr><td><code>_status</code></td><td><code>"ok"</code> when data returned; <code>"out_of_range"</code> or <code>"not_requested"</code> otherwise</td><td>—</td></tr>
 </table>
 
@@ -198,6 +219,9 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 <h3>Regional scale — Level 6</h3>
 <pre><code>curl "https://edops.computingplace.org/api/signature?lat=34.8&lon=114.3&bands=ABC&level=6"</code></pre>
 
+<h3>Flat mode — all fields as top-level keys</h3>
+<pre><code>curl "https://edops.computingplace.org/api/signature?lat=16.77&lon=-3.01&bands=ABCDE&flat=true"</code></pre>
+
 <hr>
 
 <h2>Notes for Application Developers</h2>
@@ -205,14 +229,14 @@ aridity = next(it["value"] for it in items if it["key"] == "aridity")</code></pr
 <ul>
   <li><strong>CORS:</strong> Cross-origin requests are allowed. You can call the API directly from browser JavaScript.</li>
   <li><strong>No basin found:</strong> If the coordinate falls outside all known sub-basins (open ocean, ice sheet), the API returns HTTP 404.</li>
-  <li><strong>Data is in <code>profile_groups</code>:</strong> Environmental variables are not returned as flat top-level keys. Use <code>profile_groups["A"].items</code> etc. to access field values. The <code>bands</code> parameter controls which groups are included.</li>
-  <li><strong>Band T anomalies:</strong> LMR temperature and precipitation values are anomalies relative to a 20th-century reference period (1951–1980), not absolute values. PDSI is a drought severity index — not an anomaly relative to a baseline. See the Band T note below the field table.</li>
+  <li><strong>Default mode uses <code>profile_groups</code>:</strong> Environmental variables are in <code>profile_groups["A"]</code> through <code>profile_groups["T"]</code>. The <code>bands</code> parameter controls which groups are included. Use <code>&amp;flat=true</code> to receive all variable values as flat top-level keys instead.</li>
+  <li><strong>Band T anomalies:</strong> LMR temperature and precipitation values are anomalies relative to a 20th-century reference period (1951–1980), not absolute values. PDSI is a drought severity index — not an anomaly relative to a baseline.</li>
   <li><strong>Endorheic basins:</strong> <code>dist_sink = 0</code> in BasinATLAS means <em>no marine outlet</em>, not zero distance. Always check the <code>endorheic</code> flag.</li>
   <li><strong>Rate limits:</strong> None enforced currently. Contact us for bulk request needs.</li>
 </ul>
 
 <hr>
-<p style="font-size:0.85rem; color:#888;">EDOPS is part of the <em>Computing Place</em> research initiative. Contact: <a href="#" id="contact-link">email</a>. Full interactive schema: <a href="https://edops.computingplace.org/docs" target="_blank">edops.computingplace.org/docs</a>.</p>
+<p style="font-size:0.85rem; color:#888;">EDOPS is part of the <em>Computing Place</em> research initiative. Contact: <a href="#" id="contact-link">email</a>. Full interactive schema: <a href="https://edops.computingplace.org/docs" target="_blank">edops.computingplace.org/docs</a>. Machine-readable schema: <a href="https://edops.computingplace.org/documentation/edops_schema.json" target="_blank">edops_schema.json</a>.</p>
 
 <script>
   const a = document.getElementById('contact-link');
