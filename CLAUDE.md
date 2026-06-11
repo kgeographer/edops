@@ -182,6 +182,10 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 - `public.basin06`: 16,397 L6 sub-basins; `hybas_id`, `geom`, signature fields
 - `public.basin08`: 190,675 L8 sub-basins; same schema
 - `gaz.clio_polities`: Cliopatria polities — columns lowercase (`fromyear`, `toyear`, `name`, `geom`)
+- `temporal.hyde_cells`: 2,215,829 HYDE 3.4 grid cells (~5 arc-min); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
+- `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
+- `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
+- `temporal.evolv2k_v4`: eVolv2k v4 volcanic forcing rows by `year_ad`; columns `vssi_tg`, `so4_grl`, `so4_ant`, `lat`, `location`
 - Temperature fields (`tmp_dc_*`): stored as °C × 10 — always divide by 10 for display
 - PostGIS geometries: pass as WKT via `ST_GeomFromText()`, not EWKB hex (psycopg3 endian issue)
 - BasinATLAS NoData sentinel: `−9999` — mask before any analysis
@@ -201,6 +205,20 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
     cd /var/www/edops && git pull
     sudo systemctl restart edops        # requires password — manual step
   ```
+
+---
+
+## Notebook conventions
+
+- **First line of every notebook**: `%matplotlib inline` — this sets the inline backend and bypasses PyCharm's mpld3 renderer, which otherwise overrides text colors. Without it, figures render with white text on dark background regardless of rcParams.
+- **DB connection**: `from scripts.shared.db_utils import db_connect` then `conn = db_connect()`. Default database is `cedop`.
+- **Spatial queries**: `gpd.read_postgis(sql, conn, geom_col='geom').rename_geometry('geometry')` — always rename so column is `geometry` not `geom`.
+- **Non-spatial queries**: `pd.read_sql(sql, conn)` — f-string SQL with values interpolated directly (no SQLAlchemy, no named params).
+- **Output path**: derive from module location, not relative path — `ROOT = Path(db_utils.__file__).parent.parent.parent; OUT = ROOT / 'output' / 'edop'`
+- **No `plt.show()`** — inline backend renders automatically; `plt.show()` hands off to mpld3 and breaks rendering.
+- **No `plt.style.use()` or global rcParams** — default style is correct with `%matplotlib inline`.
+- **Figure background**: set explicitly per figure if needed: `fig.patch.set_facecolor('white'); ax.set_facecolor('white')`.
+- **Cell numbering**: every code cell must have `# Cell N` as its first line.
 
 ---
 
