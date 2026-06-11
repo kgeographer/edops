@@ -24,12 +24,13 @@ Research framing: `docs/edop/project_summary_20260606.md` and an older `docs/edo
 ## Research phases
 
 ### Phase 1 — Signature development (complete)
-**Goal**: Design and implement EDOPS signature v0.1 → v0.2.
+**Goal**: Design and implement EDOPS signature v0.1 → v0.3.
 
 **Products**:
-- EDOPS API (`/api/signature`) delivering Bands A–T for any lat/lon
-- Codebook `metadata/edops_variable_catalog_v03.tsv`
+- EDOPS API (`/api/signature`) delivering Bands A–T for any lat/lon; v0.3 deployed 2026-06-10
+- Codebook `documentation/EDOPS_variable_catalog_v0.3.tsv` (canonical; loaded at startup)
 - **Lookup page** (`sandbox.html`) — point lookup, neighborhood map, full signature
+- API docs: `documentation/API_guide.md`, `documentation/edops_schema.json`, `app/static/api_guide.html`
 
 ### Phase 2 — Characterization / CHAR (complete)
 **Goal**: Systematic characterization of the EDOPS signature dataset — distributions,
@@ -38,11 +39,11 @@ Comprised two strands: EDA (statistical) and ESDA (spatial).
 
 **Products**:
 - EDA findings `logs/exploration_log.md` (F1.1–F11.6); ESDA findings `logs/esda_findings.md`
-- Codebook `metadata/edops_variable_catalog_v03.tsv` (7 CHAR columns added)
+- Codebook `documentation/EDOPS_variable_catalog_v0.3.tsv` (7 CHAR columns added)
 - CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
 - **Explorer page** (`explorer.html`) — visual CHAR product
 
-### Phase 3 — Aggregation (not started)
+### Phase 3 — Aggregation (next)
 **Goal**: Enable EDOPS signature delivery for *areal* locations — user-defined study areas
 and existing polygon datasets (historical polities, ecoregions, etc.). Requires spatial
 aggregation methods (area-weighted vs. flow-weighted for hydrological variables).
@@ -55,8 +56,11 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 ## Current work
 
-Explorer Compare tab — **provisionally complete** as of 2026-06-04.
+**v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
+Phase 3 — Aggregation is the next major work block. No design decisions made yet.
+
+### Explorer Compare tab — complete (2026-06-04)
 - Canvas scatter, region-highlight-on-pill-click, callout annotation, regional Spearman strip
 - `/api/explorer/scatter` endpoint; `basin_regions.json` static lookup (gitignored — rsync)
 - OLS regression fit on displayed subset only (p99 x-clip, p97 y-clip) — avoids leverage distortion
