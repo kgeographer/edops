@@ -34,25 +34,19 @@
       display: none;
     }
 
-    #cp-search-bar {
+    #cp-search-wrap {
       position: relative;
-      z-index: 10;
-      background: #f8f9fa;
-      border-bottom: 1px solid #dee2e6;
-      padding: 0.5rem 2rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
     }
     #cp-search-input {
-      flex: 1;
-      max-width: 480px;
+      width: 300px;
     }
     #cp-search-dropdown {
       position: absolute;
       top: 100%;
-      left: 2rem;
-      width: 480px;
+      left: 0;
+      width: 360px;
       max-height: 320px;
       overflow-y: auto;
       background: #fff;
@@ -60,7 +54,7 @@
       border-top: none;
       border-radius: 0 0 4px 4px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-      z-index: 100;
+      z-index: 1100;
       display: none;
     }
     .cp-search-item {
@@ -79,7 +73,7 @@
 
     #cp-main {
       display: flex;
-      height: calc(100vh - 56px - 48px); /* navbar + search bar */
+      height: calc(100vh - 56px - 48px); /* navbar + mode bar */
       padding: 0 2rem;
     }
 
@@ -98,15 +92,16 @@
     #cp-controls {
       flex: 0 0 auto;
       background: #f8f9fa;
-      border-top: 1px solid #dee2e6;
+      border-bottom: 1px solid #dee2e6;
       padding: 0.4rem 0.75rem;
       display: flex;
       align-items: center;
       gap: 0.6rem;
     }
     #cp-controls .slice-label {
-      font-size: 0.8rem;
-      color: #495057;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a3d6b;
       white-space: nowrap;
       min-width: 200px;
     }
@@ -313,6 +308,12 @@
       <button id="cp-reset-btn" class="btn btn-sm btn-outline-secondary ms-1" title="Reset view">
         <i class="bi bi-arrow-counterclockwise"></i>
       </button>
+      <div id="cp-search-wrap" class="ms-2">
+        <i class="bi bi-search text-secondary me-1" style="font-size:0.85rem;"></i>
+        <input id="cp-search-input" type="text" class="form-control form-control-sm"
+               placeholder="Search polities…" autocomplete="off">
+        <div id="cp-search-dropdown"></div>
+      </div>
     </div>
     <div class="ms-auto d-flex align-items-center gap-3">
       <a href="/sandbox/lookup" class="text-decoration-none small">Lookup</a>
@@ -322,24 +323,11 @@
   </div>
 </nav>
 
-<!-- Search bar -->
-<div id="cp-search-bar">
-  <i class="bi bi-search text-secondary"></i>
-  <input id="cp-search-input" type="text" class="form-control form-control-sm"
-         placeholder="Search polities — e.g. 'empire', 'tang', 'rome'…" autocomplete="off">
-  <span id="cp-search-hint" class="text-muted small">1,522 polities · 3400 BCE – 2024 CE</span>
-  <div id="cp-search-dropdown"></div>
-</div>
-
 <!-- Main two-column layout -->
 <div id="cp-main">
 
-  <!-- Left: map + temporal controls -->
+  <!-- Left: temporal controls + map -->
   <div id="cp-left">
-    <div id="cp-map">
-      <div id="cp-map-tooltip"></div>
-      <div id="cp-period-year-overlay"></div>
-    </div>
     <div id="cp-controls">
       <button id="cp-btn-start" class="btn btn-sm btn-outline-secondary" disabled title="Jump to start (3400 BCE)">
         <i class="bi bi-skip-backward-fill"></i>
@@ -357,6 +345,10 @@
       <input id="cp-year-input" type="number" class="form-control form-control-sm"
              min="-3000" max="2024" placeholder="year" title="Enter a year">
       <span id="cp-slice-label" class="slice-label text-muted">— select a polity —</span>
+    </div>
+    <div id="cp-map">
+      <div id="cp-map-tooltip"></div>
+      <div id="cp-period-year-overlay"></div>
     </div>
   </div>
 
@@ -644,7 +636,7 @@ let _periodYears = [];        // sorted distinct fromyear values for smart stepp
 const PERIOD_MIN = -3000, PERIOD_MAX = 2024, PERIOD_STEP = 10;
 
 // ── Mode switching ────────────────────────────────────────────────────────────
-const searchBar   = document.getElementById('cp-search-bar');
+const searchBar   = document.getElementById('cp-search-wrap');
 const yearInput   = document.getElementById('cp-year-input');
 
 function clearMapState() {
@@ -716,8 +708,10 @@ function switchMode(mode) {
 function resetView() {
   clearMapState();
   resetPanel();
+  map.flyTo({ center: [20, 30], zoom: 1 });
   if (_mode === 'search') {
     document.getElementById('cp-search-input').value = '';
+    searchDropdown.style.display = 'none';
     slider.disabled = true;
     btnPrev.disabled = btnNext.disabled = btnPlay.disabled = true;
     btnPlay.classList.remove('play-ready');
@@ -770,7 +764,7 @@ searchInput.addEventListener('keydown', e => {
 });
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#cp-search-bar')) searchDropdown.style.display = 'none';
+  if (!e.target.closest('#cp-search-wrap')) searchDropdown.style.display = 'none';
 });
 
 async function fetchSearch(q) {
