@@ -1,0 +1,3374 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row g-3">
+
+    <!-- LEFT: tabs + forms + outputs -->
+    <div class="col-12 col-lg-6">
+      <ul class="nav nav-tabs" id="edopTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-main" data-bs-toggle="tab" data-bs-target="#panel-main" type="button" role="tab" aria-controls="panel-main" aria-selected="true">Main</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-basins" data-bs-toggle="tab" data-bs-target="#panel-basins" type="button" role="tab" aria-controls="panel-basins" aria-selected="false">Basins</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="false">Societies</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-wh" data-bs-toggle="tab" data-bs-target="#panel-wh" type="button" role="tab" aria-controls="panel-wh" aria-selected="false">WH Sites</button>
+        </li>
+      </ul>
+
+      <div class="tab-content pt-3" id="edopTabContent">
+
+        <!-- MAIN TAB -->
+        <div class="tab-pane fade show active" id="panel-main" role="tabpanel" aria-labelledby="tab-main">
+          <h5 class="mb-2 d-flex justify-content-between align-items-center">
+            Resolve place
+            <span id="whg-zoom-alert" class="small text-warning fw-normal" style="display:none;">&#9651; Zoom in first (zoom &ge; 4)</span>
+          </h5>
+
+          <!-- Input method pills -->
+          <ul class="nav nav-pills nav-pills-sm nav-fill mb-3" id="main-input-pills" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link show active" id="pill-whg" data-bs-toggle="pill" data-bs-target="#input-whg" type="button" role="tab" aria-controls="input-whg" aria-selected="false">WHG API</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="pill-edop" data-bs-toggle="pill" data-bs-target="#input-edop" type="button" role="tab" aria-controls="input-edop" aria-selected="false">EDOP Gazetteer</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="pill-coords" data-bs-toggle="pill" data-bs-target="#input-coords" type="button" role="tab" aria-controls="input-coords" aria-selected="true">Coordinates</button>
+            </li>
+          </ul>
+
+          <!-- Input forms (swappable based on pill selection) -->
+          <div class="tab-content" id="main-input-content">
+
+            <!-- WHG API -->
+            <div class="tab-pane fade show active" id="input-whg" role="tabpanel" aria-labelledby="pill-whg">
+              <div class="mb-3">
+
+                <div class="d-flex align-items-center gap-2">
+                  <div class="flex-grow-1 position-relative">
+                    <input
+                      class="form-control"
+                      id="whg-search"
+                      type="text"
+                      placeholder="search World Historical Gazetteer..."
+                      autocomplete="off"
+                    />
+                    <div id="whg-searching" class="text-muted small mt-1" style="display:none;">
+                      <span class="spinner-border spinner-border-sm me-1" role="status"></span>Searching WHG...
+                    </div>
+                    <div
+                      id="whg-dropdown"
+                      class="dropdown-menu w-100"
+                      style="display:none; max-height:300px; overflow-y:auto;">
+                    </div>
+                  </div>
+
+                </div>
+
+                <div class="mt-3" id="whg-similar-cities-wrap" style="display:none;">
+                  <button class="btn btn-outline-primary" id="whg-similar-cities-btn" type="button">Similar World Heritage Cities</button>
+                </div>
+
+
+              </div>
+            </div>
+            <!-- Local EDOP gazetteer  -->
+            <div class="tab-pane fade" id="input-edop" role="tabpanel" aria-labelledby="pill-gaz">
+              <div class="mb-3">
+                <div class="mb-2">
+                  <div class="position-relative">
+                    <input class="form-control" id="gaz-search" type="text" placeholder="Type to search..." autocomplete="off" />
+                    <div id="gaz-dropdown" class="dropdown-menu w-100" style="display:none; max-height:300px; overflow-y:auto;"></div>
+                  </div>
+                  <div class="form-text text-muted">~97k places from multiple sources. Type 3+ chars to search. <a href="#" id="gaz-clear-link">Clear</a></div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                  <button class="btn btn-outline-primary" id="gaz-similar-env" type="button" disabled>Similar (env)</button>
+                </div>
+
+                <div id="explainer-edop" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
+                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+                </div>
+              </div>
+            </div>
+            <!-- Coordinates input -->
+            <div class="tab-pane fade" id="input-coords" role="tabpanel" aria-labelledby="pill-coords">
+              <form id="coords-form" class="mb-3">
+                <div class="row g-2 mb-2">
+                  <div class="col">
+                    <label class="form-label" for="main-lon">Longitude</label>
+                    <input class="form-control" id="main-lon" name="lon" type="number" step="any" placeholder="e.g. -2.99944" />
+                  </div>
+                  <div class="col">
+                    <label class="form-label" for="main-lat">Latitude</label>
+                    <input class="form-control" id="main-lat" name="lat" type="number" step="any" placeholder="e.g. 16.77333" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Get Signature</button>
+                  <button class="btn btn-outline-secondary" id="test-btn" type="button">Use Timbuktu</button>
+                </div>
+              </form>
+
+              <div id="explainer-coords" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+              </div>
+            </div>
+            <!-- deprecated; inactive -->
+            <div class="tab-pane fade" id="input-foo" role="tabpanel" aria-labelledby="pill-foo">
+              <form id="whg-form" class="mb-3">
+                <div class="mb-2">
+                  <label class="form-label" for="main-name">Place name</label>
+                  <input class="form-control" id="main-name" name="name" type="text" placeholder="e.g. Timbux1x`ktu" />
+                  <div class="form-text">Name resolution via WHG API (top-ranked hit only)</div>
+                </div>
+                <button class="btn btn-primary" type="submit">Resolve</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Explainer (hidden when results appear) -->
+          <div id="main-explainer" class="mt-3 text-muted" style="font-size: 0.9rem;">
+            <p><b>EDOP (Environmental Dimensions of Place)</b> is an experimental exploration of how physical environments can be described, compared, and related across the world. At its core, the system assigns an environmental signature to any geographic location, based on the characteristics of the hydrological sub-basin in which it lies. These sub-basins—drawn from the <a href="https://www.hydrosheds.org/products/hydrobasins" target="_blank">HydroBasins and HydroAtlas datasets</a> at level 8—partition the Earth's land surface into roughly 190,000 regions, providing a consistent, global unit for environmental comparison.</p>
+            <a>Using this framework, EDOP lets you look up places by name or coordinates and examine how their environmental profiles relate to one another. In some cases, those comparisons are purely environmental; in others, they are paired with text-based similarity measures derived from descriptive sources such as Wikipedia, currently demonstrated for selected <a href="https://www.ovpm.org/" target="_blank">World Heritage cities</a> and <a href="https://whc.unesco.org/en/list/" target="_blank">sites</a>. The system has begun incoporating <a href="" https://www.oneearth.org/ecoregion-list/target="_blank">OneEarth ecoregions</a> as navigable environmental hierarchies. This early release is best understood as a foundation: a way to expose environmental data as reusable, comparable signatures, and a first step toward more integrated views of place, environment, and cultural description.</p>
+          </div>
+
+          <!-- Main tab status message -->
+          <div class="alert alert-light" id="main-status" style="display:none;"></div>
+        </div>
+
+        <!-- BASINS TAB (cluster explorer) -->
+        <div class="tab-pane fade" id="panel-basins" role="tabpanel" aria-labelledby="tab-basins">
+          <h4 class="mb-1">Basin Environmental Types</h4>
+          <p class="text-muted small">20 clusters of 190k sub-basins based on environmental bands A-D. Select to see WH cities in basins of that type.</p>
+
+          <div id="basin-cluster-list" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+            <span class="text-muted p-2">Loading clusters...</span>
+          </div>
+
+          <div class="mt-3">
+            <div class="alert alert-light" id="basin-status" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- WORLD HERITAGE TAB (pilot 20 sites) -->
+        <div class="tab-pane fade" id="panel-wh" role="tabpanel" aria-labelledby="tab-wh">
+          <h4 class="mb-3">20 World Heritage sites</h4>
+
+          <div class="mb-2">
+            <select class="form-select" id="wh-select" disabled>
+              <option value="">Loading…</option>
+            </select>
+          </div>
+
+          <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-outline-secondary" id="wh-show-desc" type="button" disabled>Show description</button>
+            <button class="btn btn-outline-primary" id="wh-similar-env" type="button" disabled>Similar (env)</button>
+            <button class="btn btn-outline-info" id="wh-similar-text" type="button" disabled>Similar (semantic)</button>
+          </div>
+
+          <div class="mt-3">
+            <div class="alert alert-light" id="wh-desc" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- WH CITIES TAB (258 cities) -->
+        <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
+          <h4 class="mb-1">258 World Heritage Cities</h4>
+          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a></p>
+
+          <div class="mb-2">
+            <select class="form-select" id="whc-select" disabled>
+              <option value="">Loading…</option>
+            </select>
+            <div class="form-text">Grouped by UNESCO region. Select to view environmental profile and similarity.</div>
+          </div>
+
+          <div class="mt-3 d-flex gap-2 flex-wrap">
+            <!-- Environmental similarity dropdown -->
+            <div class="dropdown">
+              <button class="btn btn-outline-primary dropdown-toggle" type="button" id="whc-similar-env-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                Similar (env)
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
+                <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item disabled text-muted" href="#" data-band="A">A – Physiographic bedrock</a></li>
+                <li><a class="dropdown-item disabled text-muted" href="#" data-band="B">B – Hydro-climatic baselines</a></li>
+                <li><a class="dropdown-item disabled text-muted" href="#" data-band="C">C – Bioclimatic proxies</a></li>
+                <li><a class="dropdown-item disabled text-muted" href="#" data-band="D">D – Anthropocene markers</a></li>
+              </ul>
+            </div>
+
+            <!-- Semantic similarity dropdown -->
+            <div class="dropdown">
+              <button class="btn btn-outline-info dropdown-toggle" type="button" id="whc-similar-text-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                Similar (semantic)
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="whc-similar-text-btn">
+                <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-band="environment">Environment</a></li>
+                <li><a class="dropdown-item" href="#" data-band="history">History</a></li>
+                <li><a class="dropdown-item" href="#" data-band="culture">Culture</a></li>
+                <li><a class="dropdown-item" href="#" data-band="modern">Modern</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="alert alert-light" id="whc-status" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- ECOREGIONS TAB (OneEarth hierarchy) -->
+        <div class="tab-pane fade" id="panel-eco" role="tabpanel" aria-labelledby="tab-eco">
+          <h4 class="mb-1">Ecoregions Hierarchy</h4>
+          <p class="subhead5">Data from <a href="https://www.oneearth.org/bioregions/" target="_blank">OneEarth Bioregions</a> (847 ecoregions in 185 bioregions, 53 subrealms, 14 realms)</p>
+
+          <!-- Breadcrumb navigation -->
+          <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" id="eco-breadcrumb">
+              <li class="breadcrumb-item active">Realms</li>
+            </ol>
+          </nav>
+
+          <!-- Drill-down list -->
+          <div id="eco-list" class="list-group mb-3" style="max-height: 350px; overflow-y: auto;">
+            <div class="text-muted">Loading realms...</div>
+          </div>
+
+          <div class="mt-3">
+            <div class="alert alert-light" id="eco-status" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- SOCIETIES TAB (D-PLACE) -->
+        <div class="tab-pane fade" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
+          <h4 class="mb-1">D-PLACE Societies</h4>
+          <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
+          <p class="text-muted" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <!-- Loading spinner -->
+          <div id="soc-loading" class="text-center py-3" style="display:none;">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-2 text-muted">Loading societies data...</span>
+          </div>
+          <div id="soc-queries" class="list-group list-group-flush mb-3">
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="soc-query-subsistence">
+              <span>Dominant subsistence (EA042) <i class="bi bi-question-circle text-muted small" id="soc-info-subsistence" style="cursor:help;"></i></span>
+              <i class="bi bi-chevron-down small"></i>
+            </a>
+            <div id="soc-subsistence-panel" class="p-2 border-start border-end border-bottom" style="display:none;">
+              <div id="soc-subsistence-radios" class="d-flex flex-wrap gap-2">
+                <!-- Radio buttons populated by JS -->
+              </div>
+              <hr class="my-2">
+              <div class="d-flex align-items-center small">
+                <span class="text-muted me-2">Show:</span>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
+                  <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-basin" value="basins">
+                  <label class="form-check-label" for="soc-mode-basin">Basin clusters</label>
+                </div>
+              </div>
+            </div>
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="soc-query-religion">
+              <span>High gods (EA034) <i class="bi bi-question-circle text-muted small" id="soc-info-religion" style="cursor:help;"></i></span>
+              <i class="bi bi-chevron-down small"></i>
+            </a>
+            <div id="soc-religion-panel" class="p-2 border-start border-end border-bottom" style="display:none;">
+              <div id="soc-religion-radios" class="d-flex flex-wrap gap-2">
+                <!-- Radio buttons populated by JS -->
+              </div>
+              <hr class="my-2">
+              <div class="d-flex align-items-center small">
+                <span class="text-muted me-2">Show:</span>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
+                  <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-basin" value="basins">
+                  <label class="form-check-label" for="soc-rel-mode-basin">Basin clusters</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="soc-content"></div>
+        </div>
+
+      </div>
+
+      <!-- Outputs (shared across tabs) -->
+      <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 id="profile-heading" class="mb-0" style="display:none;">Environmental profile</h5>
+          <a href="#" id="whg-place-link" class="small" style="display:none;" data-bs-toggle="popover" data-bs-trigger="click" data-bs-html="true" data-bs-title="WHG place record">WHG place record</a>
+        </div>
+        <!-- Cluster label (shown for WH sites) -->
+        <div id="cluster-label" class="mb-2" style="display:none;">
+          <span class="badge bg-secondary fs-6" id="cluster-label-text"></span>
+        </div>
+
+        <!-- Summary + grouped accordions (preferred) -->
+        <div id="profile-summary" class="small"></div>
+        <div id="profile-accordions" class="mt-2"></div>
+
+        <!-- Fallback (raw JSON) -->
+        <pre id="output" class="bg-light p-2" style="min-height: 12rem; display:none;"></pre>
+      </div>
+
+      <div id="resolved-place-section" class="mb-3 mt-3" style="display:none;">
+        <h5 class="mb-2">Resolved place</h5>
+        <pre id="main-resolved" class="bg-light p-2" style="min-height: 7rem;"></pre>
+      </div>
+    </div>
+
+    <!-- RIGHT: map (always visible) -->
+    <div class="col-12 col-lg-6">
+      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>
+      <div id="map" style="height: 420px; border: 1px solid #ddd;"></div>
+      <style>
+        /* Hillshade blend: keeps relief legible when reference tiles (streets/labels) are toggled on.
+           Note: mix-blend-mode behavior can vary slightly across browsers. */
+        .edop-hillshade {
+          mix-blend-mode: multiply;
+        }
+      </style>
+<!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
+
+      <!-- Similar sites results (shown below map) -->
+      <div id="similar-results" class="mt-3" style="display:none;">
+        <h5 class="mb-0" id="similar-heading">Most Similar Sites</h5>
+        <p class="fst-italic small" id="similar-description"></p>
+        <div id="similar-list"></div>
+      </div>
+
+      <!-- Ecoregion selected info (shown below map when viewing ecoregion) -->
+      <div id="eco-selected-info" class="card mt-3" style="display:none;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="card-title mb-0 fs-6" id="eco-selected-name"></h6>
+            <div class="d-flex gap-2">
+              <a href="#" id="eco-oneearth-link" class="btn btn-sm btn-outline-secondary" target="_blank" style="display:none;">
+                OneEarth <i class="bi bi-box-arrow-up-right small"></i>
+              </a>
+              <a href="#" id="eco-wiki-link" class="btn btn-sm btn-outline-secondary" target="_blank" style="display:none;">
+                Wikipedia <i class="bi bi-box-arrow-up-right small"></i>
+              </a>
+            </div>
+          </div>
+          <p class="card-text" id="eco-selected-summary" style="display:none;"></p>
+          <p class="card-text small text-muted" id="eco-selected-meta" style="display:none;"></p>
+        </div>
+      </div>
+
+      <!-- D-PLACE query results (shown below map) -->
+      <div id="dplace-results" class="mt-3" style="display:none;">
+        <h6 class="mb-1" id="dplace-results-heading"></h6>
+        <div id="dplace-results-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- City Summaries Modal -->
+<div class="modal fade" id="summariesModal" tabindex="-1" aria-labelledby="summariesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="summariesModalLabel">City Summaries</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="summariesModalBody">
+        <div class="text-center text-muted">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ResolvedPlace shape (client-side):
+  // {
+  //   label: string,
+  //   source: 'lonlat' | 'whg_suggest',
+  //   location?: { type: 'Point', coordinates: [lon, lat] },
+  //   meta?: object
+  // }
+
+  let map = null;
+  let marker = null;
+  let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
+  let similarMarkers = []; // Markers for similar sites
+  // World Heritage seed list state (pilot 20 sites)
+  let whSites = [];
+  let whSelected = null;
+
+  // WH Cities state (258 cities)
+  let whcCities = [];
+  let whcSelected = null;
+  function setMarkerWithPopup(lon, lat, popupHtml) {
+    setMarkerFromLonLat(lon, lat);
+    if (!marker) return;
+    marker.unbindPopup();
+    if (popupHtml) {
+      marker.bindPopup(popupHtml);
+    }
+  }
+
+  function whSetStatus(msg) {
+    // Lightweight status: show in description alert area if present, else console.
+    const el = document.getElementById('wh-desc');
+    if (!el) {
+      console.log(msg);
+      return;
+    }
+    if (!msg) {
+      el.style.display = 'none';
+      el.textContent = '';
+      return;
+    }
+    el.style.display = '';
+    el.textContent = msg;
+  }
+
+  async function whLoadSites() {
+    const sel = document.getElementById('wh-select');
+    const btnDesc = document.getElementById('wh-show-desc');
+    const descBox = document.getElementById('wh-desc');
+
+    if (!sel) return;
+
+    sel.disabled = true;
+    if (btnDesc) btnDesc.disabled = true;
+    if (descBox) {
+      descBox.style.display = 'none';
+      descBox.textContent = '';
+    }
+
+    sel.innerHTML = '<option value="">Loading…</option>';
+
+    try {
+      const resp = await fetch('/api/wh-sites');
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`WH sites request failed (${resp.status}): ${txt}`);
+      }
+      const data = await resp.json();
+      whSites = (data && data.sites) ? data.sites : [];
+
+      // Populate dropdown
+      sel.innerHTML = '<option value="">Select a site…</option>';
+      whSites.forEach((s) => {
+        const opt = document.createElement('option');
+        opt.value = String(s.id_no);
+        opt.textContent = s.name_en;
+        sel.appendChild(opt);
+      });
+
+      sel.disabled = false;
+    } catch (e) {
+      sel.innerHTML = '<option value="">(Seed list unavailable)</option>';
+      sel.disabled = true;
+      whSetStatus(String(e));
+    }
+  }
+
+  function showClusterLabel(label) {
+    // Suppressed pending PCA recomputation from rev1 signature.
+    const container = document.getElementById('cluster-label');
+    if (container) container.style.display = 'none';
+    return; /* re-enable once basin08_pca is rebuilt */
+    const text = document.getElementById('cluster-label-text'); // eslint-disable-line
+    if (!container || !text) return;
+
+    if (label) {
+      text.textContent = label;
+      container.style.display = '';
+    } else {
+      text.textContent = '';
+      container.style.display = 'none';
+    }
+  }
+
+  function clearSimilarMarkers() {
+    similarMarkers.forEach(m => {
+      if (map) map.removeLayer(m);
+    });
+    similarMarkers = [];
+  }
+
+  function clearSimilarResults() {
+    const container = document.getElementById('similar-results');
+    const list = document.getElementById('similar-list');
+    if (container) container.style.display = 'none';
+    if (list) list.innerHTML = '';
+    clearSimilarMarkers();
+  }
+
+  async function fetchSimilarSites(idNo, limit = 5) {
+    const url = `/api/similar?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Similar sites request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  async function fetchSimilarTextSites(idNo, limit = 5) {
+    const url = `/api/similar-text?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Similar text sites request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  // Color palette for similar sites (distinct, colorblind-friendly)
+  const SIMILAR_COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'];
+
+  function renderSimilarSites(data, sourceSite, similarityType = 'env') {
+    const container = document.getElementById('similar-results');
+    const list = document.getElementById('similar-list');
+    const heading = document.getElementById('similar-heading');
+    const description = document.getElementById('similar-description');
+    if (!container || !list) return;
+
+    // Set heading and description based on similarity type
+    if (heading && description) {
+      if (similarityType === 'text') {
+        heading.textContent = 'Similar Sites (Semantic)';
+        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
+      } else {
+        heading.textContent = 'Similar Sites (Environmental)';
+        description.textContent = 'computed from the multivariate environmental profile using dimensionality reduction and clustering';
+      }
+    }
+
+    const similar = data.similar || [];
+    if (!similar.length) {
+      list.innerHTML = '<div class="text-muted">No similar sites found.</div>';
+      container.style.display = '';
+      return;
+    }
+
+    // Build list HTML with color swatches
+    const isText = similarityType === 'text';
+    const rows = similar.map((site, idx) => {
+      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+      const sameCluster = site.cluster_label === sourceSite.cluster_label;
+      const clusterNote = sameCluster
+        ? `<span class="text-success small">same cluster</span>`
+        : `<span class="text-muted small">${site.cluster_label || ''}</span>`;
+      // Text similarity returns 'similarity', env returns 'distance'
+      const metricLabel = isText ? 'sim' : 'dist';
+      const metricValue = isText ? site.similarity : site.distance;
+      return `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <strong>${idx + 1}.</strong> ${escapeHtml(site.name_en)}
+            <div class="small">${clusterNote}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">${metricLabel}: ${metricValue}</span>
+            <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.innerHTML = rows;
+    container.style.display = '';
+
+    // Add markers for similar sites
+    clearSimilarMarkers();
+    ensureMap();
+
+    const bounds = [];
+
+    // Include source site in bounds
+    if (sourceSite.location && sourceSite.location.coordinates) {
+      bounds.push([sourceSite.location.coordinates[1], sourceSite.location.coordinates[0]]);
+    }
+
+    similar.forEach((site, idx) => {
+      const lat = site.lat;
+      const lon = site.lon;
+      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+      bounds.push([lat, lon]);
+
+      // Colored marker matching list swatch
+      const simMarker = L.circleMarker([lat, lon], {
+        radius: 10,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      simMarker.bindPopup(`
+        <div style="max-width: 200px;">
+          <strong>${idx + 1}. ${site.name_en}</strong><br/>
+          <span class="text-muted">Distance: ${site.distance}</span><br/>
+          <span class="small">${site.cluster_label || ''}</span>
+        </div>
+      `);
+
+      similarMarkers.push(simMarker);
+    });
+
+    // Zoom to fit all markers
+    if (bounds.length > 1 && map) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }
+
+  async function whShowSimilarEnv() {
+    if (!whSelected) return;
+
+    const btnSimilar = document.getElementById('wh-similar-env');
+    if (btnSimilar) btnSimilar.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whSetStatus('Finding environmentally similar sites…');
+      const data = await fetchSimilarSites(whSelected.id_no, 5);
+      renderSimilarSites(data, whSelected, 'env');
+      whSetStatus('');
+    } catch (e) {
+      whSetStatus(String(e));
+    } finally {
+      if (btnSimilar) btnSimilar.disabled = false;
+    }
+  }
+
+  async function whShowSimilarText() {
+    if (!whSelected) return;
+
+    const btnSimilar = document.getElementById('wh-similar-text');
+    if (btnSimilar) btnSimilar.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whSetStatus('Finding semantically similar sites…');
+      const data = await fetchSimilarTextSites(whSelected.id_no, 5);
+      renderSimilarSites(data, whSelected, 'text');
+      whSetStatus('');
+    } catch (e) {
+      whSetStatus(String(e));
+    } finally {
+      if (btnSimilar) btnSimilar.disabled = false;
+    }
+  }
+
+  async function whSelectById(idNo) {
+    const btnDesc = document.getElementById('wh-show-desc');
+    const btnSimilarEnv = document.getElementById('wh-similar-env');
+    const btnSimilarText = document.getElementById('wh-similar-text');
+    const descBox = document.getElementById('wh-desc');
+
+    whSelected = whSites.find((s) => String(s.id_no) === String(idNo)) || null;
+
+    // Clear previous results
+    if (descBox) {
+      descBox.style.display = 'none';
+      descBox.textContent = '';
+    }
+    if (btnDesc) btnDesc.textContent = 'Show description';
+    clearSimilarResults();
+
+    if (!whSelected) {
+      if (btnDesc) btnDesc.disabled = true;
+      if (btnSimilarEnv) btnSimilarEnv.disabled = true;
+      if (btnSimilarText) btnSimilarText.disabled = true;
+      showClusterLabel(null);
+      return;
+    }
+
+    // Show cluster label if available
+    showClusterLabel(whSelected.cluster_label);
+
+    // Enable Similar buttons
+    if (btnSimilarEnv) btnSimilarEnv.disabled = false;
+    if (btnSimilarText) btnSimilarText.disabled = false;
+
+    // This path is not WHG resolution; clear Resolved place
+    renderResolvedPlace(null);
+    showWhgPlaceLink(null);
+
+    const loc = whSelected.location;
+    if (!loc || loc.type !== 'Point' || !loc.coordinates || loc.coordinates.length < 2) {
+      whSetStatus('Selected site has no usable Point geometry.');
+      if (btnDesc) btnDesc.disabled = true;
+      return;
+    }
+
+    const lon = Number(loc.coordinates[0]);
+    const lat = Number(loc.coordinates[1]);
+
+    const popupHtml = `
+      <div style="max-width: 260px;">
+        <strong>${whSelected.name_en}</strong><br/>
+        <span class="text-muted">${whSelected.states_name_en || ''}</span>
+      </div>
+    `;
+    setMarkerWithPopup(lon, lat, popupHtml);
+
+    // Enable description button if text exists
+    if (btnDesc) btnDesc.disabled = !(whSelected.short_description_en && whSelected.short_description_en.length);
+
+    try {
+      whSetStatus('Computing environmental profile…');
+      const sig = await fetchSignature(lon, lat);
+      renderSignature(sig);
+      setBasinFromSignature(sig);
+      whSetStatus('');
+      if (marker && marker.getPopup()) marker.openPopup();
+    } catch (e) {
+      whSetStatus(String(e));
+      renderSignature({ error: String(e) });
+    }
+  }
+
+  // -----------------------
+  // WH Cities (258) functions
+  // -----------------------
+
+  function whcSetStatus(msg) {
+    const el = document.getElementById('whc-status');
+    if (!el) {
+      console.log(msg);
+      return;
+    }
+    if (!msg) {
+      el.style.display = 'none';
+      el.textContent = '';
+      return;
+    }
+    el.style.display = '';
+    el.textContent = msg;
+  }
+
+  async function whcLoadCities() {
+    const sel = document.getElementById('whc-select');
+    if (!sel) return;
+
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">Loading…</option>';
+
+    try {
+      const resp = await fetch('/api/whc-cities');
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`WH cities request failed (${resp.status}): ${txt}`);
+      }
+      const data = await resp.json();
+      whcCities = (data && data.cities) ? data.cities : [];
+
+      // Group by region
+      const byRegion = {};
+      whcCities.forEach((c) => {
+        const region = c.region || 'Other';
+        if (!byRegion[region]) byRegion[region] = [];
+        byRegion[region].push(c);
+      });
+
+      // Build grouped dropdown
+      sel.innerHTML = '<option value="">Select a city…</option>';
+      Object.keys(byRegion).sort().forEach((region) => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = region;
+        byRegion[region].forEach((c) => {
+          const opt = document.createElement('option');
+          opt.value = String(c.id);
+          opt.textContent = `${c.city}, ${c.country}`;
+          optgroup.appendChild(opt);
+        });
+        sel.appendChild(optgroup);
+      });
+
+      sel.disabled = false;
+    } catch (e) {
+      sel.innerHTML = '<option value="">(Cities unavailable)</option>';
+      sel.disabled = true;
+      whcSetStatus(String(e));
+    }
+  }
+
+  async function whcSelectById(cityId) {
+    const btnSimilarEnv = document.getElementById('whc-similar-env-btn');
+    const btnSimilarText = document.getElementById('whc-similar-text-btn');
+
+    whcSelected = whcCities.find((c) => String(c.id) === String(cityId)) || null;
+
+    // Clear previous state
+    clearSimilarResults();
+    whcSetStatus('');
+
+    if (!whcSelected) {
+      if (btnSimilarEnv) btnSimilarEnv.disabled = true;
+      if (btnSimilarText) btnSimilarText.disabled = true;
+      showClusterLabel(null);
+      return;
+    }
+
+    // Show environmental cluster label
+    showClusterLabel(whcSelected.env_cluster_label || null);
+
+    // Enable Similar dropdown buttons
+    if (btnSimilarEnv) btnSimilarEnv.disabled = false;
+    if (btnSimilarText) btnSimilarText.disabled = false;
+
+    // Clear Resolved place (this is not WHG resolution)
+    renderResolvedPlace(null);
+    showWhgPlaceLink(null);
+
+    const loc = whcSelected.location;
+    if (!loc || loc.type !== 'Point' || !loc.coordinates || loc.coordinates.length < 2) {
+      whcSetStatus('Selected city has no usable Point geometry.');
+      return;
+    }
+
+    const lon = Number(loc.coordinates[0]);
+    const lat = Number(loc.coordinates[1]);
+
+    const popupHtml = `
+      <div style="max-width: 260px;">
+        <strong>${whcSelected.city}</strong><br/>
+        <span class="text-muted">${whcSelected.country} (${whcSelected.region})</span>
+      </div>
+    `;
+    setMarkerWithPopup(lon, lat, popupHtml);
+
+    try {
+      whcSetStatus('Computing environmental profile…');
+      const sig = await fetchSignature(lon, lat);
+      renderSignature(sig);
+      setBasinFromSignature(sig);
+      whcSetStatus('');
+      if (marker && marker.getPopup()) marker.openPopup();
+    } catch (e) {
+      whcSetStatus(String(e));
+      renderSignature({ error: String(e) });
+    }
+  }
+
+  async function fetchWhcSimilarEnv(cityId, limit = 5) {
+    const url = `/api/whc-similar?city_id=${encodeURIComponent(cityId)}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`WH similar request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  async function fetchWhcSimilarText(cityId, band = 'composite', limit = 5) {
+    const url = `/api/whc-similar-text?city_id=${encodeURIComponent(cityId)}&band=${encodeURIComponent(band)}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`WH similar-text request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  function renderWhcSimilarSites(data, sourceSite, similarityType = 'env', band = 'composite') {
+    const container = document.getElementById('similar-results');
+    const list = document.getElementById('similar-list');
+    const heading = document.getElementById('similar-heading');
+    const description = document.getElementById('similar-description');
+    if (!container || !list) return;
+
+    // Set heading and description based on similarity type and band
+    if (heading && description) {
+      if (similarityType === 'text') {
+        const bandLabel = SEMANTIC_BAND_LABELS[band] || band;
+        heading.textContent = `Similar Cities (${bandLabel})`;
+        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
+      } else {
+        heading.textContent = 'Similar Cities (Environmental: Composite)';
+        description.textContent = 'computed from basin environmental signatures using PCA distance';
+      }
+    }
+
+    const similar = data.similar || [];
+    if (!similar.length) {
+      list.innerHTML = '<div class="text-muted">No similar cities found.</div>';
+      container.style.display = '';
+      return;
+    }
+
+    // Build list HTML with color swatches
+    const isText = similarityType === 'text';
+    const rows = similar.map((site, idx) => {
+      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+      const sameCluster = site.env_cluster === sourceSite.env_cluster;
+      let clusterNote = '';
+      if (!isText) {
+        // For env similarity, show cluster label
+        clusterNote = sameCluster
+          ? `<span class="text-success small">same cluster</span>`
+          : `<span class="text-muted small">${site.env_cluster_label || ''}</span>`;
+      }
+      const metricLabel = isText ? 'sim' : 'dist';
+      const metricValue = isText ? site.similarity : site.distance;
+      // For semantic similarity, make city name clickable to show summaries
+      const cityDisplay = isText
+        ? `<a href="#" class="text-decoration-none" onclick="showCitySummaries(${site.id}, '${escapeHtml(site.city).replace(/'/g, "\\'")}', '${escapeHtml(site.country).replace(/'/g, "\\'")}'); return false;">${escapeHtml(site.city)}, ${escapeHtml(site.country)}</a>`
+        : `${escapeHtml(site.city)}, ${escapeHtml(site.country)}`;
+      return `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <strong>${idx + 1}.</strong> ${cityDisplay}
+            <div class="small">${clusterNote}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">${metricLabel}: ${metricValue}</span>
+            <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.innerHTML = rows;
+    container.style.display = '';
+
+    // Add markers for similar sites
+    clearSimilarMarkers();
+    ensureMap();
+
+    const bounds = [];
+
+    // Include source site in bounds
+    if (sourceSite.location && sourceSite.location.coordinates) {
+      bounds.push([sourceSite.location.coordinates[1], sourceSite.location.coordinates[0]]);
+    }
+
+    similar.forEach((site, idx) => {
+      const lat = site.lat;
+      const lon = site.lon;
+      if (!lat || !lon) return;
+      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+      bounds.push([lat, lon]);
+
+      const simMarker = L.circleMarker([lat, lon], {
+        radius: 10,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      const metricLabel = isText ? 'Similarity' : 'Distance';
+      const metricValue = isText ? site.similarity : site.distance;
+      simMarker.bindPopup(`
+        <div style="max-width: 200px;">
+          <strong>${idx + 1}. ${site.city}</strong><br/>
+          <span class="text-muted">${site.country}</span><br/>
+          <span class="small">${metricLabel}: ${metricValue}</span>
+        </div>
+      `);
+
+      similarMarkers.push(simMarker);
+    });
+
+    // Zoom to fit all markers
+    if (bounds.length > 1 && map) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }
+
+  async function whcShowSimilarEnv(band = 'composite') {
+    if (!whcSelected) return;
+
+    const btn = document.getElementById('whc-similar-env-btn');
+    if (btn) btn.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whcSetStatus('Finding environmentally similar cities…');
+      const data = await fetchWhcSimilarEnv(whcSelected.id, 5);
+      renderWhcSimilarSites(data, whcSelected, 'env');
+      whcSetStatus('');
+    } catch (e) {
+      whcSetStatus(String(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  // Band labels for semantic similarity
+  const SEMANTIC_BAND_LABELS = {
+    'composite': 'Composite',
+    'environment': 'Environment',
+    'history': 'History',
+    'culture': 'Culture',
+    'modern': 'Modern'
+  };
+
+  async function whcShowSimilarText(band = 'composite') {
+    if (!whcSelected) return;
+
+    const btn = document.getElementById('whc-similar-text-btn');
+    if (btn) btn.disabled = true;
+
+    clearSimilarResults();
+
+    const bandLabel = SEMANTIC_BAND_LABELS[band] || band;
+    try {
+      whcSetStatus(`Finding semantically similar cities (${bandLabel})…`);
+      const data = await fetchWhcSimilarText(whcSelected.id, band, 5);
+      renderWhcSimilarSites(data, whcSelected, 'text', band);
+      whcSetStatus('');
+    } catch (e) {
+      whcSetStatus(String(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function showCitySummaries(cityId, cityName, country) {
+    const modal = new bootstrap.Modal(document.getElementById('summariesModal'));
+    const titleEl = document.getElementById('summariesModalLabel');
+    const bodyEl = document.getElementById('summariesModalBody');
+
+    // Set title and show loading state
+    titleEl.textContent = `${cityName}, ${country}`;
+    bodyEl.innerHTML = '<div class="text-center text-muted py-4">Loading summaries...</div>';
+    modal.show();
+
+    try {
+      const resp = await fetch(`/api/whc-summaries?city_id=${encodeURIComponent(cityId)}`);
+      if (!resp.ok) {
+        throw new Error(`Failed to load summaries (${resp.status})`);
+      }
+      const data = await resp.json();
+
+      if (!data.summaries || data.summaries.length === 0) {
+        bodyEl.innerHTML = '<div class="text-muted">No summaries available for this city.</div>';
+        return;
+      }
+
+      // Band display names
+      const bandLabels = {
+        'environment': 'Environment',
+        'history': 'History',
+        'culture': 'Culture',
+        'modern': 'Modern'
+      };
+
+      // Build HTML for summaries
+      const html = data.summaries.map(s => `
+        <div class="mb-4">
+          <h5 class="text-secondary border-bottom pb-1">${bandLabels[s.band] || s.band}</h5>
+          <p class="mb-0">${escapeHtml(s.summary)}</p>
+        </div>
+      `).join('');
+
+      bodyEl.innerHTML = html;
+    } catch (e) {
+      bodyEl.innerHTML = `<div class="text-danger">Error: ${escapeHtml(String(e))}</div>`;
+    }
+  }
+
+  // -----------------------
+  // Basin Cluster functions
+  // -----------------------
+
+  let basinClusters = [];
+  let selectedClusterId = null;
+
+  // Fallback cluster labels (Jan 2026 k=20 run, from basin08_cluster_labels_manual.json).
+  // Preferred source is the label returned by /api/basin-clusters from the DB table.
+  const CLUSTER_LABELS = {
+    0: 'Warm Desert',
+    1: 'Boreal Continental',
+    2: 'Tropical Dry',
+    3: 'Arctic Tundra',
+    4: 'Tropical Moist Lowland',
+    5: 'Hot Hyper-arid Desert',
+    6: 'Tropical Moist Highland',
+    7: 'Mediterranean / Warm Temperate',
+    8: 'Subtropical Desert',
+    9: 'Tropical Coastal',
+    10: 'Temperate Steppe / Grassland',
+    11: 'Temperate / Mediterranean',
+    12: 'High-altitude Permafrost',
+    13: 'Tropical Savanna',
+    14: 'Hot Desert (Middle East / N. Africa)',
+    15: 'Saharan / Arabian Hyper-arid',
+    16: 'Tropical Semi-arid (Sahel / Andes)',
+    17: 'Boreal / Cool Temperate',
+    18: 'Extreme Desert (Empty Quarter)',
+    19: 'Northern Boreal / Subarctic'
+  };
+
+  function basinSetStatus(msg) {
+    const el = document.getElementById('basin-status');
+    if (!el) return;
+    if (msg) {
+      el.textContent = msg;
+      el.style.display = '';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  }
+
+  async function loadBasinClusters() {
+    try {
+      const resp = await fetch('/api/basin-clusters');
+      if (!resp.ok) throw new Error(`Failed to load clusters (${resp.status})`);
+      const data = await resp.json();
+      basinClusters = data.clusters || [];
+      renderBasinClusterList();
+    } catch (e) {
+      const container = document.getElementById('basin-cluster-list');
+      if (container) container.innerHTML = `<span class="text-danger p-2">${escapeHtml(String(e))}</span>`;
+    }
+  }
+
+  function renderBasinClusterList() {
+    const container = document.getElementById('basin-cluster-list');
+    if (!container) return;
+
+    if (!basinClusters.length) {
+      container.innerHTML = '<span class="text-muted p-2">No clusters found.</span>';
+      return;
+    }
+
+    // Sort by city count descending
+    const sorted = [...basinClusters].sort((a, b) => b.city_count - a.city_count);
+
+    // Render as list items
+    const html = sorted.map(c => {
+      const label = c.label || CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
+      const cityBadge = c.city_count > 0
+        ? `<span class="badge bg-primary">${c.city_count}</span>`
+        : `<span class="badge bg-secondary">0</span>`;
+      return `
+        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center basin-cluster-item"
+           data-cluster-id="${c.cluster_id}">
+          <span>${escapeHtml(label)}</span>
+          ${cityBadge}
+        </a>
+      `;
+    }).join('');
+
+    container.innerHTML = html;
+
+    // Add click handlers
+    container.querySelectorAll('.basin-cluster-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const clusterId = parseInt(item.getAttribute('data-cluster-id'), 10);
+        selectBasinCluster(clusterId);
+      });
+    });
+  }
+
+  async function selectBasinCluster(clusterId) {
+    selectedClusterId = clusterId;
+
+    // Update list item states
+    document.querySelectorAll('.basin-cluster-item').forEach(item => {
+      const id = parseInt(item.getAttribute('data-cluster-id'), 10);
+      if (id === clusterId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+
+    const clusterData = basinClusters.find(c => c.cluster_id === clusterId);
+    const label = (clusterData && clusterData.label) || CLUSTER_LABELS[clusterId] || `Cluster ${clusterId}`;
+    basinSetStatus('Loading cities...');
+
+    try {
+      const resp = await fetch(`/api/basin-clusters/${clusterId}/cities`);
+      if (!resp.ok) throw new Error(`Failed to load cities (${resp.status})`);
+      const data = await resp.json();
+
+      basinSetStatus('');
+
+      const cities = data.cities || [];
+
+      // Show results in similar-results div below the map
+      const container = document.getElementById('similar-results');
+      const heading = document.getElementById('similar-heading');
+      const description = document.getElementById('similar-description');
+      const list = document.getElementById('similar-list');
+
+      if (heading) heading.textContent = `${label}`;
+      if (description) description.textContent = `${cities.length} World Heritage cities in basins of this environmental type`;
+
+      if (cities.length === 0) {
+        list.innerHTML = '<div class="text-muted">No WH cities in basins of this type.</div>';
+      } else {
+        list.innerHTML = cities.map((c, idx) => {
+          const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+          return `
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+              <span>${escapeHtml(c.city)}, ${escapeHtml(c.country)}</span>
+              <span style="display:inline-block; width:12px; height:12px; background:${color}; border-radius:2px;"></span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      container.style.display = '';
+
+      // Show cities on map
+      clearSimilarMarkers();
+      clearMarker();
+      ensureMap();
+
+      const bounds = [];
+      cities.forEach((city, idx) => {
+        if (!city.lon || !city.lat) return;
+        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+        const marker = L.circleMarker([city.lat, city.lon], {
+          radius: 7,
+          fillColor: color,
+          color: '#333',
+          weight: 1,
+          fillOpacity: 0.8
+        }).addTo(map);
+        marker.bindTooltip(`${city.city}, ${city.country}`);
+        similarMarkers.push(marker);
+        bounds.push([city.lat, city.lon]);
+      });
+
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+
+    } catch (e) {
+      basinSetStatus(String(e));
+    }
+  }
+
+  function ensureMap() {
+    if (map) return;
+    if (!window.L) {
+      console.warn('Leaflet (window.L) not found. Map will remain inert until Leaflet is included.');
+      return;
+    }
+
+    map = L.map('map').setView([9.13784, 13.92340], 1);
+
+    // Overlay (toggle): standard OSM streets/labels
+    // NOTE: kept as an overlay because the hillshade tiles are JPEG (no alpha) and must sit underneath.
+    const osmOverlay = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      opacity: 0.50,
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    // Overlay (ALWAYS ON): hillshade (terrain context).
+    // Source: OpenStreetMap US tileservice (TileJSON: https://tiles.openstreetmap.us/raster/hillshade.json)
+    const hillshadeLayer = L.tileLayer('https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg', {
+      maxZoom: 12,
+      opacity: 1.0,
+      className: 'edop-hillshade',
+      attribution: 'Hillshade: &copy; OpenStreetMap US'
+    });
+
+    // Add defaults
+    // Hillshade is the always-on environmental context (base).
+    hillshadeLayer.addTo(map);
+    osmOverlay.addTo(map);
+    // Streets/labels are ON by default.
+    // (User can toggle them on via the layer control.)
+
+    // Layer switcher: hillshade is always on; streets are toggleable.
+    L.control.layers(
+      null,
+      {
+        'Streets / labels': osmOverlay
+      },
+      { collapsed: true }
+    ).addTo(map);
+  }
+
+  function setMarkerFromLonLat(lon, lat) {
+    ensureMap();
+    if (!map) return;
+    const ll = [lat, lon];
+    if (!marker) {
+      marker = L.marker(ll).addTo(map);
+    } else {
+      marker.setLatLng(ll);
+    }
+    map.setView(ll, 9);
+  }
+
+  function clearMarker() {
+    if (marker && map) {
+      try {
+        map.removeLayer(marker);
+      } catch (e) {
+        // ignore
+      }
+    }
+    marker = null;
+  }
+
+  function clearBasinLayer() {
+    if (basinLayer && map) {
+      map.removeLayer(basinLayer);
+    }
+    basinLayer = null;
+  }
+
+  function showActiveExplainer() {
+    // Hide all explainers first
+    ['main-explainer', 'explainer-edop', 'explainer-coords'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    // Show explainer for active pill
+    const activePill = document.querySelector('#main-input-pills .nav-link.active');
+    if (!activePill) return;
+    const target = activePill.getAttribute('data-bs-target');
+    if (target === '#input-whg') {
+      const el = document.getElementById('main-explainer');
+      if (el) el.style.display = '';
+    } else if (target === '#input-edop') {
+      const el = document.getElementById('explainer-edop');
+      if (el) el.style.display = '';
+    } else if (target === '#input-coords') {
+      const el = document.getElementById('explainer-coords');
+      if (el) el.style.display = '';
+    }
+  }
+
+  function tryParseGeojson(value) {
+    // Signature may return geojson as an object or as a JSON-encoded string.
+    if (!value) return null;
+    if (typeof value === 'object') return value;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function setBasinFromSignature(sig) {
+    ensureMap();
+    if (!map) return;
+
+    // Field currently named `geom_geojson` in your signature payload.
+    const gj = tryParseGeojson(sig && sig.geom_geojson);
+    if (!gj) {
+      clearBasinLayer();
+      return;
+    }
+
+    // Replace prior overlay
+    clearBasinLayer();
+
+    // Add GeoJSON overlay (supports Polygon/MultiPolygon)
+    basinLayer = L.geoJSON(gj, {
+      // keep styling minimal; Leaflet defaults are fine for now
+    }).addTo(map);
+
+    // Optional: fit to polygon bounds if they are reasonable
+    try {
+      const b = basinLayer.getBounds();
+      if (b && b.isValid()) {
+        map.fitBounds(b.pad(0.05));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function renderResolvedPlace(obj) {
+    const pre = document.getElementById('main-resolved');
+    pre.textContent = obj ? JSON.stringify(obj, null, 2) : '';
+  }
+
+  function showWhgPlaceLink(data) {
+    const link = document.getElementById('whg-place-link');
+    if (!link) return;
+    if (data) {
+      const json = JSON.stringify(data, null, 2);
+      const content = `
+        <div class="d-flex justify-content-end mb-1">
+          <button type="button" class="btn-close" aria-label="Close" onclick="window.whgPlacePopover.hide()" style="font-size:0.6rem;"></button>
+        </div>
+        <pre class="mb-0 small" style="max-height:300px;overflow:auto;font-size:0.75rem;">${escapeHtml(json)}</pre>`;
+      if (window.whgPlacePopover) {
+        window.whgPlacePopover.setContent({ '.popover-body': content });
+      }
+      link.style.display = '';
+    } else {
+      if (window.whgPlacePopover) window.whgPlacePopover.hide();
+      link.style.display = 'none';
+    }
+  }
+
+  function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function formatValue(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'number') {
+      // Keep pilot formatting simple: round long floats lightly
+      const abs = Math.abs(v);
+      if (abs !== 0 && abs < 1) return v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+      if (!Number.isInteger(v) && abs >= 1 && abs < 1000) return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      return String(v);
+    }
+    if (typeof v === 'object') {
+      // Render small objects (e.g., pnv_shares) compactly
+      try {
+        return JSON.stringify(v);
+      } catch (e) {
+        return String(v);
+      }
+    }
+    return String(v);
+  }
+
+  function humanizeKey(k) {
+    // Minimal pilot prettifier
+    return String(k)
+      .replaceAll('_', ' ')
+      .replace(/\bavg\b/gi, 'avg')
+      .replace(/\bmin\b/gi, 'min')
+      .replace(/\bmax\b/gi, 'max');
+  }
+
+  function renderSignature(sig) {
+    const pre = document.getElementById('output');
+    const summaryEl = document.getElementById('profile-summary');
+    const accEl = document.getElementById('profile-accordions');
+    const headingEl = document.getElementById('profile-heading');
+    const explainerIds = ['main-explainer', 'explainer-edop', 'explainer-coords'];
+
+    // Clear
+    if (summaryEl) summaryEl.innerHTML = '';
+    if (accEl) accEl.innerHTML = '';
+
+    if (!sig) {
+      if (pre) {
+        pre.style.display = 'none';
+        pre.textContent = '';
+      }
+      if (headingEl) headingEl.style.display = 'none';
+      // Show explainer for active pill
+      showActiveExplainer();
+      return;
+    }
+
+    const hasGrouped = sig.profile_summary && sig.profile_groups;
+
+    // Show heading when we have data, hide explainers
+    if (headingEl) headingEl.style.display = hasGrouped ? '' : 'none';
+    explainerIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    if (!hasGrouped) {
+      // Fallback to raw JSON
+      if (pre) {
+        pre.style.display = '';
+        pre.textContent = JSON.stringify(sig, null, 2);
+      }
+      return;
+    }
+
+    // Hide raw JSON in normal path
+    if (pre) {
+      pre.style.display = 'none';
+      pre.textContent = '';
+    }
+
+    // ---------- Summary ----------
+    if (summaryEl) {
+      const items = Array.isArray(sig.profile_summary) ? sig.profile_summary : [];
+      if (items.length) {
+        const rows = items
+          .filter(it => it && it.value !== undefined)
+          .map(it => {
+            const label = escapeHtml(it.label || humanizeKey(it.key || ''));
+            const value = escapeHtml(formatValue(it.value));
+            return `<div class="d-flex justify-content-between gap-2 py-1 border-bottom"><div class="text-muted">${label}</div><div class="text-end">${value}</div></div>`;
+          })
+          .join('');
+        summaryEl.innerHTML = `
+          <div class="card">
+            <div class="card-body p-2">
+              <div class="fw-semibold mb-1">Summary</div>
+              ${rows}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // ---------- Accordions ----------
+    if (accEl) {
+      const groups = sig.profile_groups || {};
+      const order = ['A', 'B', 'C', 'D', 'E'];
+      const accId = 'profileAccordion';
+
+      const panels = order
+        .filter(code => groups[code])
+        .map((code, idx) => {
+          const g = groups[code];
+          const label = escapeHtml(g.label || code);
+          const items = Array.isArray(g.items) ? g.items : [];
+
+          const body = items.map(it => {
+            const k = it.key || '';
+            const l = escapeHtml(it.label || humanizeKey(k));
+            const v = escapeHtml(formatValue(it.value));
+            return `<div class="d-flex justify-content-between gap-2 py-1 border-bottom"><div class="text-muted">${l}</div><div class="text-end">${v}</div></div>`;
+          }).join('');
+          const headingId = `heading-${code}`;
+          const collapseId = `collapse-${code}`;
+
+          return `
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="${headingId}">
+                <button class="accordion-button ${idx === 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="${idx === 0 ? 'true' : 'false'}" aria-controls="${collapseId}">
+                  ${escapeHtml(code)} — ${label}
+                </button>
+              </h2>
+              <div id="${collapseId}" class="accordion-collapse collapse ${idx === 0 ? 'show' : ''}" aria-labelledby="${headingId}" data-bs-parent="#${accId}">
+                <div class="accordion-body p-2">
+                  ${body || '<div class="text-muted">(no fields)</div>'}
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      accEl.innerHTML = `
+        <div class="accordion" id="${accId}">
+          ${panels}
+        </div>
+      `;
+    }
+  }
+
+  async function fetchSignature(lon, lat) {
+    const url = `/api/signature?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Signature request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  async function resolveByLonLat(lon, lat) {
+    // Clear cluster label (only shown for WH sites)
+    showClusterLabel(null);
+    showWhgPlaceLink(null);
+
+    const resolved = {
+      label: 'lon/lat input',
+      source: 'lonlat',
+      location: { type: 'Point', coordinates: [Number(lon), Number(lat)] }
+    };
+    renderResolvedPlace(resolved);
+    setMarkerFromLonLat(Number(lon), Number(lat));
+
+    const sig = await fetchSignature(lon, lat);
+    renderSignature(sig);
+    setBasinFromSignature(sig);
+  }
+
+  async function resolveByName(name) {
+    // Clear cluster label (only shown for WH sites)
+    showClusterLabel(null);
+    showWhgPlaceLink(null);
+
+    // Call EDOP backend resolver (server-side WHG token usage)
+    const url = `/api/resolve?name=${encodeURIComponent(name)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Resolve request failed (${resp.status}): ${txt}`);
+    }
+
+    const resolved = await resp.json();
+    renderResolvedPlace(resolved);
+
+    // If we got coordinates back, proceed to signature
+    if (resolved && resolved.location && resolved.location.type === 'Point' && resolved.location.coordinates) {
+      const lon = resolved.location.coordinates[0];
+      const lat = resolved.location.coordinates[1];
+      setMarkerFromLonLat(Number(lon), Number(lat));
+      const sig = await fetchSignature(lon, lat);
+      renderSignature(sig);
+      setBasinFromSignature(sig);
+      return;
+    }
+
+    // Otherwise show why we couldn't proceed
+    renderSignature({
+      detail: 'Resolved via WHG, but no coordinates were returned; cannot compute environmental profile.',
+      resolved
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    function setMapTitle(text) {
+      const el = document.getElementById('map-title');
+      if (el) el.textContent = text;
+    }
+
+    // Main tab status helper
+    function mainSetStatus(msg) {
+      const el = document.getElementById('main-status');
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.style.display = '';
+      } else {
+        el.textContent = '';
+        el.style.display = 'none';
+      }
+    }
+
+    // WHG place link popover initialization
+    const whgPlaceLinkEl = document.getElementById('whg-place-link');
+    if (whgPlaceLinkEl) {
+      window.whgPlacePopover = new bootstrap.Popover(whgPlaceLinkEl, {
+        content: '',
+        html: true,
+        placement: 'left',
+        customClass: 'whg-place-popover',
+        sanitize: false  // Allow close button with onclick
+      });
+      whgPlaceLinkEl.addEventListener('click', (e) => e.preventDefault());
+    }
+
+    // Site title click -> return to Main tab
+    const siteTitle = document.getElementById('site-title');
+    if (siteTitle) {
+      siteTitle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const mainTab = document.querySelector('[data-bs-target="#panel-main"]');
+        if (mainTab) {
+          bootstrap.Tab.getOrCreateInstance(mainTab).show();
+        }
+      });
+    }
+
+    // Wire Timbuktu test button (existing behavior)
+    const testBtn = document.getElementById('test-btn');
+    testBtn.addEventListener('click', async () => {
+      // Timbuktu WH site (approx): lon=-2.999444444, lat=16.77333333
+      const lon = -2.999444444;
+      const lat = 16.77333333;
+      document.getElementById('main-lon').value = lon;
+      document.getElementById('main-lat').value = lat;
+      renderResolvedPlace(null);
+      renderSignature(null);
+      clearBasinLayer();
+      mainSetStatus('');
+      try {
+        await resolveByLonLat(lon, lat);
+      } catch (e) {
+        renderSignature({ error: String(e) });
+      }
+    });
+
+    // Coordinates form submit
+    const coordsForm = document.getElementById('coords-form');
+    coordsForm.addEventListener('submit', async (evt) => {
+      evt.preventDefault();
+      renderResolvedPlace(null);
+      renderSignature(null);
+      clearBasinLayer();
+      mainSetStatus('');
+
+      const lon = document.getElementById('main-lon').value.trim();
+      const lat = document.getElementById('main-lat').value.trim();
+
+      if (lon === '' || lat === '') {
+        mainSetStatus('Please enter both longitude and latitude.');
+        return;
+      }
+
+      try {
+        await resolveByLonLat(lon, lat);
+      } catch (e) {
+        renderSignature({ error: String(e) });
+      }
+    });
+
+    // WHG Lookup form submit
+    const whgForm = document.getElementById('whg-form');
+    whgForm.addEventListener('submit', async (evt) => {
+      evt.preventDefault();
+      renderResolvedPlace(null);
+      renderSignature(null);
+      clearBasinLayer();
+      mainSetStatus('');
+
+      const name = document.getElementById('main-name').value.trim();
+
+      if (name === '') {
+        mainSetStatus('Please enter a place name.');
+        return;
+      }
+
+      try {
+        mainSetStatus('Resolving via WHG...');
+        await resolveByName(name);
+        mainSetStatus('');
+      } catch (e) {
+        mainSetStatus('');
+        renderSignature({ error: String(e) });
+      }
+    });
+
+    // Clear state when switching input method pills within Main tab
+    document.querySelectorAll('#main-input-pills button[data-bs-toggle="pill"]').forEach((pill) => {
+      pill.addEventListener('shown.bs.tab', () => {
+        renderResolvedPlace(null);
+        renderSignature(null);
+        clearBasinLayer();
+        clearMarker();
+        clearSimilarResults();
+        mainSetStatus('');
+        clearGazState();
+        setMapTitle('Zoom to study area');
+        if (map) map.setView([0, 0], 2);
+      });
+    });
+
+    // Initialize map if Leaflet is present
+    ensureMap();
+
+    // World Heritage: load seed list now (simple pilot behavior)
+    whLoadSites();
+
+    // World Heritage: selection handler
+    const whSel = document.getElementById('wh-select');
+    if (whSel) {
+      whSel.addEventListener('change', async () => {
+        const v = whSel.value;
+        if (!v) return;
+        await whSelectById(v);
+      });
+    }
+
+    // World Heritage: toggle description
+    const whBtn = document.getElementById('wh-show-desc');
+    if (whBtn) {
+      whBtn.addEventListener('click', () => {
+        const descBox = document.getElementById('wh-desc');
+        if (!whSelected || !whSelected.short_description_en || !descBox) return;
+
+        // Toggle visibility (use 'block' not '' to avoid falsy empty string issue)
+        if (descBox.style.display === 'none') {
+          descBox.textContent = whSelected.short_description_en;
+          descBox.style.display = 'block';
+          whBtn.textContent = 'Hide description';
+        } else {
+          descBox.style.display = 'none';
+          descBox.textContent = '';
+          whBtn.textContent = 'Show description';
+        }
+      });
+    }
+
+    // World Heritage: similar buttons
+    const btnSimilarEnv = document.getElementById('wh-similar-env');
+    if (btnSimilarEnv) {
+      btnSimilarEnv.addEventListener('click', whShowSimilarEnv);
+    }
+    const btnSimilarText = document.getElementById('wh-similar-text');
+    if (btnSimilarText) {
+      btnSimilarText.addEventListener('click', whShowSimilarText);
+    }
+
+    // WH Cities: load cities now
+    whcLoadCities();
+
+    // Basin clusters: load clusters now
+    loadBasinClusters();
+
+    // WH Cities: selection handler
+    const whcSel = document.getElementById('whc-select');
+    if (whcSel) {
+      whcSel.addEventListener('change', async () => {
+        const v = whcSel.value;
+        if (!v) return;
+        await whcSelectById(v);
+      });
+    }
+
+    // WH Cities: environmental similarity dropdown
+    document.querySelectorAll('#whc-similar-env-btn + .dropdown-menu .dropdown-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (item.classList.contains('disabled')) return;
+        const band = item.getAttribute('data-band');
+        whcShowSimilarEnv(band);
+      });
+    });
+
+    // WH Cities: semantic similarity dropdown
+    document.querySelectorAll('#whc-similar-text-btn + .dropdown-menu .dropdown-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (item.classList.contains('disabled')) return;
+        const band = item.getAttribute('data-band');
+        whcShowSimilarText(band);
+      });
+    });
+
+    // Leaflet often needs an explicit size recalculation when switching tabs.
+    // Pilot behavior: treat each tab as its own workflow; clear shared UI + map state on ANY tab change.
+    let ecoTabInitialized = false;
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach((btn) => {
+      btn.addEventListener('shown.bs.tab', (evt) => {
+        if (map) map.invalidateSize();
+
+        // Always clear shared panels
+        renderResolvedPlace(null);
+        renderSignature(null);
+        showClusterLabel(null);
+        clearSimilarResults();
+        clearGazState();
+        // Hide eco selected info and dplace results
+        const ecoInfo = document.getElementById('eco-selected-info');
+        if (ecoInfo) ecoInfo.style.display = 'none';
+        const dplaceResults = document.getElementById('dplace-results');
+        if (dplaceResults) dplaceResults.style.display = 'none';
+
+        // Always clear map overlays and reset view
+        clearBasinLayer();
+        clearMarker();
+        clearEcoLayer();
+        clearSocLayer();
+        if (map) {
+          map.setView([0, 0], 2);
+        }
+
+        // Tab-specific UI visibility
+        const targetSel = (evt && evt.target && evt.target.getAttribute)
+          ? evt.target.getAttribute('data-bs-target')
+          : null;
+
+        // WH-specific UI reset when entering WH tab
+        if (targetSel === '#panel-wh') {
+          whSetStatus('');
+          const descBox = document.getElementById('wh-desc');
+          if (descBox) {
+            descBox.style.display = 'none';
+            descBox.textContent = '';
+          }
+        }
+
+        // WHC-specific UI reset when entering WHC tab
+        if (targetSel === '#panel-whc') {
+          whcSetStatus('');
+        }
+
+        // Basins-specific UI reset when entering Basins tab
+        if (targetSel === '#panel-basins') {
+          basinSetStatus('');
+        }
+
+        // Main-specific UI reset when entering Main tab
+        if (targetSel === '#panel-main') {
+          mainSetStatus('');
+        }
+
+        // Eco-specific: load realms on first view
+        if (targetSel === '#panel-eco') {
+          ecoSetStatus('');
+          if (!ecoTabInitialized) {
+            ecoTabInitialized = true;
+            loadEcoLevel(ecoBreadcrumbState[0]);
+          }
+        }
+
+        // Societies-specific: load societies
+        if (targetSel === '#panel-soc') {
+          loadSocieties();
+        }
+      });
+    });
+
+    // -----------------------
+    // WHG Autocomplete (Reconcile API)
+    // -----------------------
+
+    const whgSearch = document.getElementById('whg-search');
+    const whgDropdown = document.getElementById('whg-dropdown');
+    let whgDebounceTimer = null;
+    let whgResults = [];  // Store results for selection
+    let whgCandidateMarkers = [];  // Markers for all candidates
+    let whgSelectedCoords = null;  // {lon, lat} of selected WHG place
+    const whgSimilarCitiesBtn = document.getElementById('whg-similar-cities-btn');
+
+    // Colors for candidate markers (match existing SIMILAR_COLORS pattern)
+    const WHG_CANDIDATE_COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999', '#66c2a5'];
+
+    function clearWhgCandidateMarkers() {
+      whgCandidateMarkers.forEach(m => {
+        if (map) map.removeLayer(m);
+      });
+      whgCandidateMarkers = [];
+    }
+
+    function showWhgCandidateMarkers(results) {
+      clearWhgCandidateMarkers();
+      ensureMap();
+      if (!map) return;
+
+      const bounds = [];
+
+      results.forEach((r, idx) => {
+        if (!r.lon || !r.lat) return;
+
+        const color = WHG_CANDIDATE_COLORS[idx % WHG_CANDIDATE_COLORS.length];
+        bounds.push([r.lat, r.lon]);
+
+        // Create numbered circle marker
+        const candidateMarker = L.circleMarker([r.lat, r.lon], {
+          radius: 12,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).addTo(map);
+
+        // Add number label
+        const numberIcon = L.divIcon({
+          className: 'whg-candidate-number',
+          html: `<div style="
+            width: 24px; height: 24px;
+            background: ${color};
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          ">${idx + 1}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const numberMarker = L.marker([r.lat, r.lon], { icon: numberIcon }).addTo(map);
+
+        // Build popup content
+        const ccodes = r.country || '';
+        const matchText = r.match ? '<span class="text-success">exact match</span>' : '';
+        const altNames = (r.alt_names || []).slice(0, 3).join(', ');
+
+        candidateMarker.bindPopup(`
+          <div style="min-width: 150px;">
+            <strong>${idx + 1}. ${escapeHtml(r.name)}</strong>
+            ${ccodes ? ` <span class="text-muted">[${ccodes}]</span>` : ''}<br/>
+            ${matchText}
+            ${altNames ? `<div class="small text-muted">aka: ${escapeHtml(altNames)}</div>` : ''}
+            <div class="small">Score: ${r.score}</div>
+          </div>
+        `);
+
+        // Store both markers for cleanup
+        whgCandidateMarkers.push(candidateMarker);
+        whgCandidateMarkers.push(numberMarker);
+      });
+
+      // Fit map to show all candidates
+      if (bounds.length > 0) {
+        if (bounds.length === 1) {
+          map.setView(bounds[0], 8);
+        } else {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+        }
+      }
+    }
+
+    function hideWhgDropdown(clearMarkers = false) {
+      if (whgDropdown) {
+        whgDropdown.style.display = 'none';
+        whgDropdown.innerHTML = '';
+      }
+      if (clearMarkers) {
+        clearWhgCandidateMarkers();
+      }
+    }
+
+    function showWhgDropdown(results) {
+      if (!whgDropdown || !results.length) {
+        hideWhgDropdown();
+        clearWhgCandidateMarkers();
+        return;
+      }
+
+      // Store results for later selection
+      whgResults = results;
+
+      // Show markers for all candidates on the map
+      showWhgCandidateMarkers(results);
+
+      const html = results.map((r, idx) => {
+        const name = escapeHtml(r.name);
+        const color = WHG_CANDIDATE_COLORS[idx % WHG_CANDIDATE_COLORS.length];
+        const ccodes = r.country || '';
+        // Check if this is an exact match
+        const matchBadge = r.match
+          ? '<span class="badge bg-success ms-1">exact</span>'
+          : '';
+        // Show alt_names if this is not an exact match (name matched via alt_name)
+        const altNames = (r.alt_names || []).slice(0, 3).map(n => escapeHtml(n)).join(', ');
+        const altDisplay = (!r.match && altNames)
+          ? `<div class="small text-muted">aka: ${altNames}</div>`
+          : '';
+        // Numbered color marker to match map
+        const colorMarker = `<span style="
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          background: ${color};
+          color: white;
+          font-weight: bold;
+          font-size: 11px;
+          border-radius: 50%;
+          margin-right: 6px;
+        ">${idx + 1}</span>`;
+
+        return `
+          <a href="#" class="dropdown-item whg-result-item py-2" data-idx="${idx}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="d-flex align-items-start">
+                ${colorMarker}
+                <div>
+                  <strong>${name}</strong>${matchBadge}
+                  ${ccodes ? ` <span class="text-muted">[${ccodes}]</span>` : ''}
+                  ${altDisplay}
+                </div>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      whgDropdown.innerHTML = html;
+      whgDropdown.style.display = 'block';
+
+      // Add click handlers
+      whgDropdown.querySelectorAll('.whg-result-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const idx = parseInt(item.getAttribute('data-idx'), 10);
+          const place = whgResults[idx];
+          hideWhgDropdown();
+          whgSearch.value = place.name;
+          await selectWhgReconcilePlace(place);
+        });
+      });
+    }
+
+    async function searchWhgReconcile(input) {
+      if (!input || input.length < 2) {
+        hideWhgDropdown();
+        return;
+      }
+
+      const zoomAlert = document.getElementById('whg-zoom-alert');
+      if (!map || map.getZoom() < 4) {
+        if (zoomAlert) zoomAlert.style.display = '';
+        return;
+      }
+      if (zoomAlert) zoomAlert.style.display = 'none';
+
+      const whgSearching = document.getElementById('whg-searching');
+      if (whgSearching) whgSearching.style.display = 'block';
+
+      try {
+        const b = map.getBounds();
+        const sw = b.getSouthWest(), ne = b.getNorthEast();
+        const bounds = JSON.stringify({type:'Polygon', coordinates:[[[sw.lng,sw.lat],[ne.lng,sw.lat],[ne.lng,ne.lat],[sw.lng,ne.lat],[sw.lng,sw.lat]]]});
+        const url = `/api/whg-reconcile?q=${encodeURIComponent(input)}&size=10&bounds=${encodeURIComponent(bounds)}`;
+
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          console.error('WHG reconcile failed:', resp.status);
+          hideWhgDropdown();
+          return;
+        }
+        const data = await resp.json();
+        const results = data.results || [];
+
+        showWhgDropdown(results);
+      } catch (e) {
+        console.error('WHG reconcile error:', e);
+        hideWhgDropdown();
+      } finally {
+        if (whgSearching) whgSearching.style.display = 'none';
+      }
+    }
+
+    async function selectWhgReconcilePlace(place) {
+      mainSetStatus('');
+      renderResolvedPlace(null);
+      renderSignature(null);
+      clearBasinLayer();
+      clearMarker();
+      clearWhgCandidateMarkers();
+      clearSimilarResults();
+      showClusterLabel(null);
+      whgSelectedCoords = null;
+      const wrap = document.getElementById('whg-similar-cities-wrap');
+      if (wrap) wrap.style.display = 'none';
+
+      if (!place.lon || !place.lat) {
+        mainSetStatus('Place has no coordinates');
+        renderResolvedPlace({
+          id: place.id,
+          label: place.name,
+          source: 'whg',
+          meta: { status: 'no_geometry' }
+        });
+        return;
+      }
+
+      const lon = place.lon;
+      const lat = place.lat;
+      whgSelectedCoords = { lon, lat };
+      const whgSimilarWrap = document.getElementById('whg-similar-cities-wrap');
+      if (whgSimilarWrap) whgSimilarWrap.style.display = '';
+
+      // Build resolved place object
+      const resolved = {
+        id: place.id,
+        label: place.name,
+        source: 'whg',
+        location: { type: 'Point', coordinates: [lon, lat] },
+        meta: {
+          status: 'ok',
+          score: place.score,
+          match: place.match,
+          alt_names: place.alt_names,
+          country: place.country
+        }
+      };
+
+      renderResolvedPlace(resolved);
+      showWhgPlaceLink(resolved);
+      setMarkerFromLonLat(lon, lat);
+
+      try {
+        mainSetStatus('Computing environmental profile...');
+        const sig = await fetchSignature(lon, lat);
+        console.log('sig', sig)
+        renderSignature(sig);
+        setBasinFromSignature(sig);
+        setMapTitle(place.name + ' \u2014 Level 08 basin');
+        mainSetStatus('');
+      } catch (e) {
+        mainSetStatus(String(e));
+        renderSignature({ error: String(e) });
+      }
+    }
+
+    if (whgSearch) {
+      // Lookahead disabled: N+1 WHG calls per keystroke are too slow
+      // whgSearch.addEventListener('input', () => {
+      //   clearTimeout(whgDebounceTimer);
+      //   const q = whgSearch.value.trim();
+      //   whgDebounceTimer = setTimeout(() => searchWhgReconcile(q), 300);
+      // });
+
+      // Search on Enter
+      whgSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const q = whgSearch.value.trim();
+          if (q) searchWhgReconcile(q);
+        }
+        if (e.key === 'Escape') {
+          hideWhgDropdown(true);  // clear markers too
+        }
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!whgSearch.contains(e.target) && !whgDropdown.contains(e.target)) {
+          hideWhgDropdown(true);  // clear markers too
+        }
+      });
+
+    }
+
+    // WHG Similar WH Cities handler
+    async function whgShowSimilarCities() {
+      if (!whgSelectedCoords) return;
+
+      if (whgSimilarCitiesBtn) whgSimilarCitiesBtn.disabled = true;
+      clearSimilarResults();
+      mainSetStatus('Finding similar WH Cities...');
+
+      try {
+        const url = `/api/whc-similar-env-by-coord?lon=${encodeURIComponent(whgSelectedCoords.lon)}&lat=${encodeURIComponent(whgSelectedCoords.lat)}&limit=5`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          const txt = await resp.text();
+          throw new Error(`Similar cities request failed (${resp.status}): ${txt}`);
+        }
+        const data = await resp.json();
+
+        if (data.error) {
+          mainSetStatus(data.error);
+          return;
+        }
+
+        renderWhgSimilarCities(data);
+        mainSetStatus('');
+      } catch (e) {
+        mainSetStatus(String(e));
+      } finally {
+        if (whgSimilarCitiesBtn) whgSimilarCitiesBtn.disabled = false;
+      }
+    }
+
+    function renderWhgSimilarCities(data) {
+      const container = document.getElementById('similar-results');
+      const list = document.getElementById('similar-list');
+      const heading = document.getElementById('similar-heading');
+      const description = document.getElementById('similar-description');
+      if (!container || !list) return;
+
+      if (heading) heading.textContent = 'Similar WH Cities (Environmental)';
+
+      // Show distribution context
+      const stats = data.dist_stats;
+      if (description && stats) {
+        description.innerHTML = `Distance range among ${stats.count} WH cities: ${stats.min} – ${stats.max} (median: ${stats.median})`;
+      }
+
+      const similar = data.similar || [];
+      if (!similar.length) {
+        list.innerHTML = '<div class="text-muted">No similar cities found.</div>';
+        container.style.display = '';
+        return;
+      }
+
+      // Build list HTML with color swatches and percentile
+      const rows = similar.map((city, idx) => {
+        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+        const clusterLabel = city.env_cluster_label || '';
+        const pctLabel = city.percentile !== null ? `top ${city.percentile.toFixed(0)}%` : '';
+        return `
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+              <strong>${idx + 1}.</strong> ${escapeHtml(city.city)}
+              <span class="text-muted small">[${escapeHtml(city.country)}]</span>
+              ${clusterLabel ? `<div class="small text-muted">${clusterLabel}</div>` : ''}
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">${city.distance} ${pctLabel ? `(${pctLabel})` : ''}</span>
+              <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      list.innerHTML = rows;
+      container.style.display = '';
+
+      // Show markers on map
+      clearSimilarMarkers();
+      similar.forEach((city, idx) => {
+        if (city.location && city.location.coordinates) {
+          const [lon, lat] = city.location.coordinates;
+          const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+          const marker = L.circleMarker([lat, lon], {
+            radius: 8,
+            fillColor: color,
+            color: '#333',
+            weight: 1,
+            fillOpacity: 0.8
+          }).addTo(map);
+          marker.bindPopup(`<strong>${city.city}</strong><br>${city.country}<br>dist: ${city.distance}${city.percentile !== null ? ` (top ${city.percentile.toFixed(0)}%)` : ''}`);
+          similarMarkers.push(marker);
+        }
+      });
+    }
+
+    if (whgSimilarCitiesBtn) {
+      whgSimilarCitiesBtn.addEventListener('click', whgShowSimilarCities);
+    }
+
+    // -----------------------
+    // Gazetteer Autocomplete
+    // -----------------------
+
+    const gazSearch = document.getElementById('gaz-search');
+    const gazDropdown = document.getElementById('gaz-dropdown');
+    const gazSimilarBtn = document.getElementById('gaz-similar-env');
+    let gazDebounceTimer = null;
+    let gazSelected = null;  // Currently selected gazetteer place
+
+    function clearGazState() {
+      gazSelected = null;
+      if (gazSearch) gazSearch.value = '';
+      hideGazDropdown();
+      if (gazSimilarBtn) gazSimilarBtn.disabled = true;
+    }
+
+    function hideGazDropdown() {
+      if (gazDropdown) {
+        gazDropdown.style.display = 'none';
+        gazDropdown.innerHTML = '';
+      }
+    }
+
+    function showGazDropdown(results) {
+      if (!gazDropdown || !results.length) {
+        hideGazDropdown();
+        return;
+      }
+
+      const html = results.map((r, idx) => {
+        const title = escapeHtml(r.title);
+        const ccodes = (r.ccodes || []).join(', ');
+        const source = escapeHtml(r.source || '');
+        return `
+          <a href="#" class="dropdown-item gaz-result-item" data-idx="${idx}">
+            <strong>${title}</strong>${ccodes ? ` <span class="text-muted">[${ccodes}]</span>` : ''}
+            <span class="text-muted small float-end">${source}</span>
+          </a>
+        `;
+      }).join('');
+
+      gazDropdown.innerHTML = html;
+      gazDropdown.style.display = 'block';
+
+      // Store results for click handler
+      gazDropdown._results = results;
+
+      // Add click handlers
+      gazDropdown.querySelectorAll('.gaz-result-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const idx = parseInt(item.getAttribute('data-idx'), 10);
+          const place = gazDropdown._results[idx];
+          hideGazDropdown();
+          gazSearch.value = place.title;
+          await selectGazPlace(place);
+        });
+      });
+    }
+
+    async function searchGaz(input) {
+      if (!input || input.length < 3) {
+        hideGazDropdown();
+        return;
+      }
+
+      try {
+        const url = `/api/gaz-suggest?q=${encodeURIComponent(input)}&limit=15`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          console.error('Gaz suggest failed:', resp.status);
+          hideGazDropdown();
+          return;
+        }
+        const data = await resp.json();
+        showGazDropdown(data.results || []);
+      } catch (e) {
+        console.error('Gaz suggest error:', e);
+        hideGazDropdown();
+      }
+    }
+
+    async function selectGazPlace(place) {
+      gazSelected = place;
+      mainSetStatus('Computing environmental profile...');
+      renderResolvedPlace(null);
+      showWhgPlaceLink(null);
+      renderSignature(null);
+      clearBasinLayer();
+      clearMarker();
+      clearSimilarResults();
+      showClusterLabel(null);
+
+      // Enable Similar button
+      if (gazSimilarBtn) gazSimilarBtn.disabled = false;
+
+      if (!place.lon || !place.lat) {
+        mainSetStatus('Place has no coordinates');
+        return;
+      }
+
+      const lon = place.lon;
+      const lat = place.lat;
+
+      // Show resolved place info
+      renderResolvedPlace({
+        label: place.title,
+        source: 'gaz',
+        location: { type: 'Point', coordinates: [lon, lat] },
+        meta: {
+          id: place.id,
+          source: place.source,
+          ccodes: place.ccodes
+        }
+      });
+
+      setMarkerFromLonLat(lon, lat);
+
+      try {
+        const sig = await fetchSignature(lon, lat);
+        renderSignature(sig);
+        setBasinFromSignature(sig);
+        mainSetStatus('');
+      } catch (e) {
+        mainSetStatus(String(e));
+        renderSignature({ error: String(e) });
+      }
+    }
+
+    async function gazShowSimilarEnv() {
+      if (!gazSelected || !gazSelected.id) return;
+
+      if (gazSimilarBtn) gazSimilarBtn.disabled = true;
+      clearSimilarResults();
+      mainSetStatus('Finding environmentally similar places...');
+
+      try {
+        const url = `/api/gaz-similar?gaz_id=${encodeURIComponent(gazSelected.id)}&limit=10`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          const txt = await resp.text();
+          throw new Error(`Similar places request failed (${resp.status}): ${txt}`);
+        }
+        const data = await resp.json();
+
+        if (data.error) {
+          mainSetStatus(data.error);
+          return;
+        }
+
+        renderGazSimilarSites(data, gazSelected);
+        mainSetStatus('');
+      } catch (e) {
+        mainSetStatus(String(e));
+      } finally {
+        if (gazSimilarBtn) gazSimilarBtn.disabled = false;
+      }
+    }
+
+    function renderGazSimilarSites(data, sourceSite) {
+      const container = document.getElementById('similar-results');
+      const list = document.getElementById('similar-list');
+      const heading = document.getElementById('similar-heading');
+      const description = document.getElementById('similar-description');
+      if (!container || !list) return;
+
+      if (heading) heading.textContent = 'Similar Places (Environmental)';
+      if (description) description.textContent = 'ranked by environmental signature distance (PCA)';
+
+      const similar = data.similar || [];
+      if (!similar.length) {
+        list.innerHTML = '<div class="text-muted">No similar places found.</div>';
+        container.style.display = '';
+        return;
+      }
+
+      // Build list HTML with color swatches and distance
+      const rows = similar.map((site, idx) => {
+        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+        const ccodes = (site.ccodes || []).join(', ');
+        const clusterLabel = CLUSTER_LABELS[site.cluster_id] || '';
+        return `
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+              <strong>${idx + 1}.</strong> ${escapeHtml(site.title)}
+              ${ccodes ? `<span class="text-muted small">[${ccodes}]</span>` : ''}
+              <div class="small text-muted">${escapeHtml(site.source || '')}${clusterLabel ? ` · ${clusterLabel}` : ''}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">dist: ${site.distance}</span>
+              <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      list.innerHTML = rows;
+      container.style.display = '';
+
+      // Add markers for similar sites
+      clearSimilarMarkers();
+      ensureMap();
+
+      const bounds = [];
+
+      // Include source site in bounds
+      if (sourceSite.lon && sourceSite.lat) {
+        bounds.push([sourceSite.lat, sourceSite.lon]);
+      }
+
+      similar.forEach((site, idx) => {
+        const lat = site.lat;
+        const lon = site.lon;
+        if (!lat || !lon) return;
+        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
+        bounds.push([lat, lon]);
+
+        const simMarker = L.circleMarker([lat, lon], {
+          radius: 10,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(map);
+
+        const ccodes = (site.ccodes || []).join(', ');
+        const clusterLabel = CLUSTER_LABELS[site.cluster_id] || '';
+        simMarker.bindPopup(`
+          <div style="max-width: 200px;">
+            <strong>${idx + 1}. ${escapeHtml(site.title)}</strong><br/>
+            ${ccodes ? `<span class="text-muted">[${ccodes}]</span><br/>` : ''}
+            <span class="small">Distance: ${site.distance}</span><br/>
+            ${clusterLabel ? `<span class="small text-muted">${clusterLabel}</span>` : ''}
+          </div>
+        `);
+
+        similarMarkers.push(simMarker);
+      });
+
+      // Zoom to fit all markers
+      if (bounds.length > 1 && map) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+
+    if (gazSearch) {
+      gazSearch.addEventListener('input', () => {
+        clearTimeout(gazDebounceTimer);
+        const q = gazSearch.value.trim();
+        gazDebounceTimer = setTimeout(() => searchGaz(q), 300);
+      });
+
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!gazSearch.contains(e.target) && !gazDropdown.contains(e.target)) {
+          hideGazDropdown();
+        }
+      });
+
+      // Keyboard navigation
+      gazSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          hideGazDropdown();
+        }
+      });
+    }
+
+    // Wire up Similar (env) button for gazetteer
+    if (gazSimilarBtn) {
+      gazSimilarBtn.addEventListener('click', gazShowSimilarEnv);
+    }
+
+    // Wire up clear link for gazetteer
+    const gazClearLink = document.getElementById('gaz-clear-link');
+    if (gazClearLink) {
+      gazClearLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        clearGazState();
+        renderResolvedPlace(null);
+        renderSignature(null);
+        clearBasinLayer();
+        clearMarker();
+        clearSimilarResults();
+        showClusterLabel(null);
+        mainSetStatus('');
+        if (map) map.setView([0, 0], 2);
+        gazSearch.focus();
+      });
+    }
+
+    // -----------------------
+    // Ecoregions Hierarchy
+    // -----------------------
+
+    const ecoBreadcrumb = document.getElementById('eco-breadcrumb');
+    const ecoList = document.getElementById('eco-list');
+    const ecoSelectedInfo = document.getElementById('eco-selected-info');
+    const ecoSelectedName = document.getElementById('eco-selected-name');
+    const ecoSelectedMeta = document.getElementById('eco-selected-meta');
+    const ecoSelectedSummary = document.getElementById('eco-selected-summary');
+    const ecoOneEarthLink = document.getElementById('eco-oneearth-link');
+    const ecoWikiLink = document.getElementById('eco-wiki-link');
+    const ecoStatus = document.getElementById('eco-status');
+
+    let ecoLayer = null;  // Current polygon layer on map
+    let socLayer = null;  // D-PLACE societies markers layer group
+    let socData = null;   // Cached societies data
+
+    function ecoSetStatus(msg) {
+      if (!ecoStatus) return;
+      if (msg) {
+        ecoStatus.textContent = msg;
+        ecoStatus.style.display = '';
+      } else {
+        ecoStatus.textContent = '';
+        ecoStatus.style.display = 'none';
+      }
+    }
+
+    function clearEcoLayer() {
+      if (ecoLayer && map) {
+        map.removeLayer(ecoLayer);
+        ecoLayer = null;
+      }
+    }
+
+    function clearSocLayer() {
+      if (socLayer && map) {
+        map.removeLayer(socLayer);
+        socLayer = null;
+      }
+    }
+
+    // 7-color palette for subsistence categories
+    const SUBSISTENCE_COLORS = {
+      'Gathering': '#4daf4a',
+      'Hunting': '#a65628',
+      'Fishing': '#377eb8',
+      'Pastoralism': '#ff7f00',
+      'Extensive agriculture': '#ffff33',
+      'Intensive agriculture': '#e41a1c',
+      'Agriculture, type unknown': '#984ea3'
+    };
+
+    // 4-color palette for religion categories (gradient from absent to active)
+    const RELIGION_COLORS = {
+      'Absent': '#fee5d9',
+      'Otiose': '#fcae91',
+      'Active, but not supporting morality': '#fb6a4a',
+      'Active, supporting morality': '#cb181d'
+    };
+
+    const NO_DATA_COLOR = '#999';
+
+    let socSubsistenceFilter = 'all';  // Current filter: 'all' or a subsistence name
+    let socReligionFilter = 'all';     // Current filter: 'all' or a religion category
+    let socActiveQuery = 'subsistence'; // Which query is active: 'subsistence' or 'religion'
+    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'basins'
+
+    async function loadSocieties() {
+      const loadingEl = document.getElementById('soc-loading');
+      const queriesEl = document.getElementById('soc-queries');
+
+      if (socData) {
+        // Already loaded, just display
+        displaySocieties(socData);
+        return;
+      }
+
+      // Show spinner, hide queries until loaded
+      if (loadingEl) loadingEl.style.display = '';
+      if (queriesEl) queriesEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/societies');
+        socData = await resp.json();
+        renderSubsistenceRadios(socData);
+        wireSubsistenceAccordion();
+        renderReligionRadios(socData);
+        wireReligionAccordion();
+        initVariableTooltips(socData);
+        displaySocieties(socData);
+      } catch (err) {
+        console.error('Failed to load societies:', err);
+      } finally {
+        // Hide spinner, show queries
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (queriesEl) queriesEl.style.display = '';
+      }
+    }
+
+    function initVariableTooltips(data) {
+      const varInfo = data.variable_info || {};
+
+      // Subsistence (EA042)
+      const subIcon = document.getElementById('soc-info-subsistence');
+      if (subIcon && varInfo['EA042']) {
+        new bootstrap.Tooltip(subIcon, {
+          title: varInfo['EA042'].description,
+          placement: 'right',
+          trigger: 'hover'
+        });
+        // Prevent click from toggling accordion
+        subIcon.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      // Religion (EA034)
+      const relIcon = document.getElementById('soc-info-religion');
+      if (relIcon && varInfo['EA034']) {
+        new bootstrap.Tooltip(relIcon, {
+          title: varInfo['EA034'].description,
+          placement: 'right',
+          trigger: 'hover'
+        });
+        relIcon.addEventListener('click', (e) => e.stopPropagation());
+      }
+    }
+
+    function wireSubsistenceAccordion() {
+      const toggle = document.getElementById('soc-query-subsistence');
+      const panel = document.getElementById('soc-subsistence-panel');
+      const chevron = toggle?.querySelector('i');
+      if (!toggle || !panel) return;
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        if (chevron) {
+          chevron.classList.toggle('bi-chevron-down', isOpen);
+          chevron.classList.toggle('bi-chevron-up', !isOpen);
+        }
+      });
+
+      // Wire display mode radios
+      document.querySelectorAll('input[name="soc-display-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          socDisplayMode = e.target.value;
+          if (socData && socSubsistenceFilter !== 'all') {
+            renderDplaceResults(socData);
+          }
+        });
+      });
+    }
+
+    function renderSubsistenceRadios(data) {
+      const container = document.getElementById('soc-subsistence-radios');
+      if (!container) return;
+
+      // Build radio buttons: "All" first, then categories sorted by count
+      const categories = ['all', ...data.subsistence_categories.map(c => c.name)];
+      const counts = { all: data.societies.filter(s => s.subsistence).length };
+      data.subsistence_categories.forEach(c => { counts[c.name] = c.count; });
+
+      container.innerHTML = categories.map((cat, idx) => {
+        const id = `soc-sub-${idx}`;
+        const label = cat === 'all' ? 'All' : cat;
+        const count = counts[cat];
+        const checked = cat === 'all' ? 'checked' : '';
+        const color = cat === 'all' ? '#666' : (SUBSISTENCE_COLORS[cat] || NO_DATA_COLOR);
+        return `
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="soc-subsistence"
+                   id="${id}" value="${escapeHtml(cat)}" ${checked}>
+            <label class="form-check-label small" for="${id}">
+              <span style="display:inline-block;width:12px;height:12px;background:${color};border:1px solid #333;margin-right:4px;vertical-align:middle;"></span>
+              ${escapeHtml(label)} (${count})
+            </label>
+          </div>
+        `;
+      }).join('');
+
+      // Wire up change handlers
+      container.querySelectorAll('input[name="soc-subsistence"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          socSubsistenceFilter = e.target.value;
+          socActiveQuery = 'subsistence';
+          // Reset religion filter when switching to subsistence
+          socReligionFilter = 'all';
+          document.querySelectorAll('input[name="soc-religion"]').forEach(r => {
+            r.checked = (r.value === 'all');
+          });
+          displaySocieties(socData);
+        });
+      });
+    }
+
+    function wireReligionAccordion() {
+      const toggle = document.getElementById('soc-query-religion');
+      const panel = document.getElementById('soc-religion-panel');
+      const chevron = toggle?.querySelector('i');
+      if (!toggle || !panel) return;
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        if (chevron) {
+          chevron.classList.toggle('bi-chevron-down', isOpen);
+          chevron.classList.toggle('bi-chevron-up', !isOpen);
+        }
+      });
+
+      // Wire display mode radios for religion
+      document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          socDisplayMode = e.target.value;
+          if (socData && socReligionFilter !== 'all') {
+            renderDplaceResults(socData);
+          }
+        });
+      });
+    }
+
+    function renderReligionRadios(data) {
+      const container = document.getElementById('soc-religion-radios');
+      if (!container) return;
+
+      // Build radio buttons: "All" first, then categories in conceptual order
+      const categories = ['all', ...data.religion_categories.map(c => c.name)];
+      const counts = { all: data.societies.filter(s => s.religion).length };
+      data.religion_categories.forEach(c => { counts[c.name] = c.count; });
+
+      container.innerHTML = categories.map((cat, idx) => {
+        const id = `soc-rel-${idx}`;
+        const label = cat === 'all' ? 'All' : cat;
+        const count = counts[cat];
+        const checked = cat === 'all' ? 'checked' : '';
+        const color = cat === 'all' ? '#666' : (RELIGION_COLORS[cat] || NO_DATA_COLOR);
+        return `
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="soc-religion"
+                   id="${id}" value="${escapeHtml(cat)}" ${checked}>
+            <label class="form-check-label small" for="${id}">
+              <span style="display:inline-block;width:12px;height:12px;background:${color};border:1px solid #333;margin-right:4px;vertical-align:middle;"></span>
+              ${escapeHtml(label)} (${count})
+            </label>
+          </div>
+        `;
+      }).join('');
+
+      // Wire up change handlers
+      container.querySelectorAll('input[name="soc-religion"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          socReligionFilter = e.target.value;
+          socActiveQuery = 'religion';
+          // Reset subsistence filter when switching to religion
+          socSubsistenceFilter = 'all';
+          document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => {
+            r.checked = (r.value === 'all');
+          });
+          displaySocieties(socData);
+        });
+      });
+    }
+
+    function displaySocieties(data) {
+      clearSocLayer();
+      ensureMap();
+
+      // Create layer group with circle markers
+      socLayer = L.featureGroup();
+
+      data.societies.forEach(soc => {
+        if (soc.lat == null || soc.lon == null) return;
+
+        let color, isMatch;
+
+        if (socActiveQuery === 'religion') {
+          // Religion filtering
+          const rel = soc.religion;
+          if (socReligionFilter === 'all') {
+            color = rel ? (RELIGION_COLORS[rel] || NO_DATA_COLOR) : NO_DATA_COLOR;
+            isMatch = true;
+          } else {
+            isMatch = (rel === socReligionFilter);
+            color = isMatch ? (RELIGION_COLORS[rel] || NO_DATA_COLOR) : NO_DATA_COLOR;
+          }
+        } else {
+          // Subsistence filtering (default)
+          const sub = soc.subsistence;
+          if (socSubsistenceFilter === 'all') {
+            color = sub ? (SUBSISTENCE_COLORS[sub] || NO_DATA_COLOR) : NO_DATA_COLOR;
+            isMatch = true;
+          } else {
+            isMatch = (sub === socSubsistenceFilter);
+            color = isMatch ? (SUBSISTENCE_COLORS[sub] || NO_DATA_COLOR) : NO_DATA_COLOR;
+          }
+        }
+
+        const marker = L.circleMarker([soc.lat, soc.lon], {
+          radius: 4,
+          fillColor: color,
+          color: '#333',
+          weight: 1,
+          opacity: isMatch ? 0.8 : 0.3,
+          fillOpacity: isMatch ? 0.8 : 0.1
+        });
+
+        marker.bindTooltip(`<strong>${escapeHtml(soc.name)}</strong> (${escapeHtml(soc.id)})`);
+        socLayer.addLayer(marker);
+      });
+
+      socLayer.addTo(map);
+
+      // Set global view on initial load
+      const isAllFilter = (socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter) === 'all';
+      if (isAllFilter && data.societies.length > 0) {
+        map.setView([20, 0], 1);
+      }
+
+      // Update results display (ecoregions or basin clusters)
+      renderDplaceResults(data);
+    }
+
+    function renderDplaceResults(data) {
+      if (socDisplayMode === 'basins') {
+        renderBasinClusters(data);
+      } else {
+        renderTopEcoregions(data);
+      }
+    }
+
+    function renderTopEcoregions(data) {
+      const container = document.getElementById('dplace-results');
+      const heading = document.getElementById('dplace-results-heading');
+      const content = document.getElementById('dplace-results-content');
+      if (!container || !heading || !content) return;
+
+      // Determine active filter
+      const activeFilter = socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter;
+      const filterField = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
+
+      if (activeFilter === 'all') {
+        container.style.display = 'none';
+        return;
+      }
+
+      // Count societies per ecoregion for selected filter, tracking realm
+      const ecoData = {};  // eco_name → {count, realm}
+      data.societies.forEach(soc => {
+        if (soc[filterField] === activeFilter && soc.eco_name && soc.realm) {
+          const key = soc.eco_name;
+          if (!ecoData[key]) {
+            ecoData[key] = { count: 0, realm: soc.realm };
+          }
+          ecoData[key].count++;
+        }
+      });
+
+      if (Object.keys(ecoData).length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      // Group by realm, sort each group by count, take top 3 per realm
+      const byRealm = {};
+      Object.entries(ecoData).forEach(([name, info]) => {
+        const realm = info.realm;
+        if (!byRealm[realm]) byRealm[realm] = [];
+        byRealm[realm].push({ name, count: info.count });
+      });
+
+      // Sort realms by total count (most societies first), take top 3 ecos per realm
+      const realmTotals = Object.entries(byRealm).map(([realm, ecos]) => ({
+        realm,
+        total: ecos.reduce((sum, e) => sum + e.count, 0),
+        ecos: ecos.sort((a, b) => b.count - a.count).slice(0, 3)
+      })).sort((a, b) => b.total - a.total);
+
+      // Render heading
+      heading.textContent = `Top ecoregions for ${activeFilter}`;
+
+      // Render 2-column layout with realm subheadings
+      const html = '<div class="row small">' +
+        realmTotals.map(r => {
+          const items = r.ecos.map(e => `<li>${escapeHtml(e.name)} (${e.count})</li>`).join('');
+          return `<div class="col-6 mb-2"><strong>${escapeHtml(r.realm)}</strong><ol class="mb-0 ps-3">${items}</ol></div>`;
+        }).join('') +
+        '</div>';
+
+      content.innerHTML = html;
+      container.style.display = 'block';
+    }
+
+    function renderBasinClusters(data) {
+      const container = document.getElementById('dplace-results');
+      const heading = document.getElementById('dplace-results-heading');
+      const content = document.getElementById('dplace-results-content');
+      if (!container || !heading || !content) return;
+
+      // Determine active filter
+      const activeFilter = socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter;
+      const filterField = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
+
+      if (activeFilter === 'all') {
+        container.style.display = 'none';
+        return;
+      }
+
+      // Count societies per cluster for selected filter
+      const clusterCounts = {};  // cluster_id → count
+      data.societies.forEach(soc => {
+        if (soc[filterField] === activeFilter && soc.cluster_id != null) {
+          const cid = soc.cluster_id;
+          clusterCounts[cid] = (clusterCounts[cid] || 0) + 1;
+        }
+      });
+
+      if (Object.keys(clusterCounts).length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      // Sort by count descending
+      const sorted = Object.entries(clusterCounts)
+        .map(([cid, count]) => ({ cluster_id: parseInt(cid), count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Render heading
+      heading.textContent = `Basin clusters for ${activeFilter}`;
+
+      // Render as list with badges (similar to Basins tab)
+      const html = '<div class="list-group list-group-flush small">' +
+        sorted.map(c => {
+          const label = CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
+          return `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
+              <span>${escapeHtml(label)}</span>
+              <span class="badge bg-primary">${c.count}</span>
+            </div>
+          `;
+        }).join('') +
+        '</div>';
+
+      content.innerHTML = html;
+      container.style.display = 'block';
+    }
+
+    // Breadcrumb state
+    let ecoBreadcrumbState = [{ level: 'realms', label: 'Realms', id: null }];
+
+    function renderEcoBreadcrumb() {
+      if (!ecoBreadcrumb) return;
+      ecoBreadcrumb.innerHTML = ecoBreadcrumbState.map((item, idx) => {
+        const isLast = idx === ecoBreadcrumbState.length - 1;
+        if (isLast) {
+          return `<li class="breadcrumb-item active">${escapeHtml(item.label)}</li>`;
+        }
+        return `<li class="breadcrumb-item"><a href="#" data-eco-nav="${idx}">${escapeHtml(item.label)}</a></li>`;
+      }).join('');
+
+      // Add click handlers for breadcrumb links
+      ecoBreadcrumb.querySelectorAll('[data-eco-nav]').forEach(link => {
+        link.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const idx = parseInt(link.getAttribute('data-eco-nav'), 10);
+          ecoBreadcrumbState = ecoBreadcrumbState.slice(0, idx + 1);
+          renderEcoBreadcrumb();
+          await loadEcoLevel(ecoBreadcrumbState[idx]);
+        });
+      });
+    }
+
+    async function loadEcoLevel(state) {
+      if (!ecoList) return;
+      ecoList.innerHTML = '<div class="text-muted">Loading...</div>';
+      // Don't clear ecoLayer here - let showEcoGeom handle it
+      // Only hide selected info when going back to realms
+      if (state.level === 'realms') {
+        clearEcoLayer();
+        if (ecoSelectedInfo) ecoSelectedInfo.style.display = 'none';
+      }
+
+      try {
+        let url, data, items, level;
+
+        if (state.level === 'realms') {
+          url = '/api/eco/realms';
+          const resp = await fetch(url);
+          data = await resp.json();
+          items = data.realms || [];
+          level = 'realm';
+          // Sort realms with best bioregion coverage to top
+          const priorityRealms = ['Nearctic-Upper', 'Nearctic', 'Palearctic-East'];
+          items.sort((a, b) => {
+            const aIdx = priorityRealms.indexOf(a.id);
+            const bIdx = priorityRealms.indexOf(b.id);
+            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+            if (aIdx !== -1) return -1;
+            if (bIdx !== -1) return 1;
+            return a.name.localeCompare(b.name);
+          });
+          const realmNote = '<div class="small text-muted mb-2">(first 3 have most complete bioregion data)</div>';
+          ecoList.innerHTML = realmNote + items.map(r => `
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-eco-level="realm" data-eco-id="${escapeHtml(r.id)}">
+              ${escapeHtml(r.name)}
+              <span class="badge bg-secondary rounded-pill">${r.subrealm_count} subrealms</span>
+            </a>
+          `).join('');
+          // Load all realm geometries
+          const geomResp = await fetch('/api/eco/realms/geom');
+          const geomData = await geomResp.json();
+          if (geomData.features && geomData.features.length > 0) {
+            clearEcoLayer();
+            ecoLayer = L.geoJSON(geomData, {
+              style: { color: '#228B22', weight: 1, fillOpacity: 0.2 }
+            }).addTo(map);
+            map.setView([9.13784, 13.92340], 1);
+          }
+        } else if (state.level === 'subrealms') {
+          url = `/api/eco/subrealms?realm=${encodeURIComponent(state.id)}`;
+          const resp = await fetch(url);
+          data = await resp.json();
+          items = data.subrealms || [];
+          level = 'subrealm';
+          ecoList.innerHTML = items.map(s => `
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-eco-level="subrealm" data-eco-id="${s.id}">
+              ${escapeHtml(s.name)}
+              <span class="badge bg-secondary rounded-pill">${s.bioregion_count} bioregions</span>
+            </a>
+          `).join('');
+          // Load subrealm geometries for map
+          const geomResp = await fetch(`/api/eco/subrealms/geom?realm=${encodeURIComponent(state.id)}`);
+          const geomData = await geomResp.json();
+          displayEcoFeatures(geomData, items);
+        } else if (state.level === 'bioregions') {
+          url = `/api/eco/bioregions?subrealm_id=${encodeURIComponent(state.id)}`;
+          const resp = await fetch(url);
+          data = await resp.json();
+          items = data.bioregions || [];
+          level = 'bioregion';
+          // Add OneEarth subtitle + list
+          const hasAnyOneEarth = items.some(b => b.oneearth_url);
+          const subtitle = hasAnyOneEarth
+            ? `<h5 class="text-muted mb-1">Bioregions <a href="https://www.oneearth.org/bioregions/" target="_blank" class="text-decoration-none fs-6">OneEarth framework</a> <i class="bi bi-box-arrow-up-right small"></i></h5>`
+            : '';
+          ecoList.innerHTML = subtitle + items.map(b => `
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-eco-level="bioregion" data-eco-id="${escapeHtml(b.id)}">
+              <span>${escapeHtml(b.name)}${b.oneearth_url ? `<span class="ms-1 text-muted" style="cursor:pointer;" title="View on OneEarth" onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(b.oneearth_url)}', '_blank');"><i class="bi bi-box-arrow-up-right small"></i></span>` : ''}</span>
+              <span class="badge bg-secondary rounded-pill">${b.ecoregion_count} ecoregions</span>
+            </a>
+          `).join('');
+          // Load bioregion geometries for map
+          const geomResp = await fetch(`/api/eco/bioregions/geom?subrealm_id=${encodeURIComponent(state.id)}`);
+          const geomData = await geomResp.json();
+          displayEcoFeatures(geomData, items);
+        } else if (state.level === 'ecoregions') {
+          url = `/api/eco/ecoregions?bioregion=${encodeURIComponent(state.id)}`;
+          const resp = await fetch(url);
+          data = await resp.json();
+          items = data.ecoregions || [];
+          level = 'ecoregion';
+          ecoList.innerHTML = items.map(e => `
+            <a href="#" class="list-group-item list-group-item-action" data-eco-level="ecoregion" data-eco-id="${e.id}">
+              ${escapeHtml(e.name)}
+              <br><span class="small text-muted">${escapeHtml(e.biome || '')}</span>
+            </a>
+          `).join('');
+          // Load ecoregion geometries for map
+          const geomResp = await fetch(`/api/eco/ecoregions/geom?bioregion=${encodeURIComponent(state.id)}`);
+          const geomData = await geomResp.json();
+          displayEcoFeatures(geomData, items);
+        }
+
+        if (!items.length) {
+          ecoList.innerHTML = '<div class="text-muted">No items found.</div>';
+        }
+
+        // Add click handlers
+        ecoList.querySelectorAll('[data-eco-level]').forEach(item => {
+          item.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const itemLevel = item.getAttribute('data-eco-level');
+            const itemId = item.getAttribute('data-eco-id');
+            const itemName = item.textContent.trim().split('\n')[0];
+
+            // Drill down to next level (loadEcoLevel handles showing child geometries)
+            if (itemLevel === 'realm') {
+              ecoBreadcrumbState.push({ level: 'subrealms', label: itemName, id: itemId });
+              renderEcoBreadcrumb();
+              await loadEcoLevel({ level: 'subrealms', id: itemId });
+            } else if (itemLevel === 'subrealm') {
+              ecoBreadcrumbState.push({ level: 'bioregions', label: itemName, id: itemId });
+              renderEcoBreadcrumb();
+              await loadEcoLevel({ level: 'bioregions', id: itemId });
+            } else if (itemLevel === 'bioregion') {
+              ecoBreadcrumbState.push({ level: 'ecoregions', label: itemName, id: itemId });
+              renderEcoBreadcrumb();
+              await loadEcoLevel({ level: 'ecoregions', id: itemId });
+            } else if (itemLevel === 'ecoregion') {
+              // Ecoregion is leaf - show single geometry with details
+              await showEcoGeom(itemLevel, itemId, itemName);
+            }
+          });
+        });
+
+      } catch (e) {
+        ecoSetStatus(String(e));
+        ecoList.innerHTML = '<div class="text-danger">Error loading data.</div>';
+      }
+    }
+
+    // Color palette for distinguishing multiple features
+    const ecoColors = [
+      '#2e7d32', '#1565c0', '#c62828', '#6a1b9a', '#ef6c00',
+      '#00838f', '#558b2f', '#ad1457', '#4527a0', '#d84315'
+    ];
+
+    function displayEcoFeatures(geomData, items) {
+      clearEcoLayer();
+      if (ecoSelectedInfo) ecoSelectedInfo.style.display = 'none';
+
+      if (!geomData.features || geomData.features.length === 0) return;
+
+      ecoLayer = L.geoJSON(geomData, {
+        style: (feature) => {
+          // Assign color based on feature index
+          const idx = geomData.features.indexOf(feature);
+          const color = ecoColors[idx % ecoColors.length];
+          return {
+            color: color,
+            weight: 2,
+            fillColor: color,
+            fillOpacity: 0.25
+          };
+        },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties.name || feature.properties.id;
+          layer.bindTooltip(name, { sticky: true });
+
+          // Highlight on hover
+          layer.on('mouseover', () => {
+            layer.setStyle({ weight: 3, fillOpacity: 0.4 });
+            // Highlight corresponding list item
+            const listItem = ecoList.querySelector(`[data-eco-id="${feature.properties.id}"]`);
+            if (listItem) listItem.classList.add('active');
+          });
+          layer.on('mouseout', () => {
+            ecoLayer.resetStyle(layer);
+            const listItem = ecoList.querySelector(`[data-eco-id="${feature.properties.id}"]`);
+            if (listItem) listItem.classList.remove('active');
+          });
+          // Click to drill down (same as clicking list item)
+          layer.on('click', () => {
+            const listItem = ecoList.querySelector(`[data-eco-id="${feature.properties.id}"]`);
+            if (listItem) listItem.click();
+          });
+        }
+      }).addTo(map);
+
+      map.fitBounds(ecoLayer.getBounds().pad(0.1));
+    }
+
+    async function showEcoGeom(level, id, name) {
+      clearEcoLayer();
+      try {
+        const url = `/api/eco/geom?level=${encodeURIComponent(level)}&id=${encodeURIComponent(id)}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (data.geometry) {
+          ecoLayer = L.geoJSON(data.geometry, {
+            style: {
+              color: '#2e7d32',
+              weight: 2,
+              fillColor: '#81c784',
+              fillOpacity: 0.3
+            }
+          }).addTo(map);
+          map.fitBounds(ecoLayer.getBounds().pad(0.1));
+        }
+
+        // Show selected info
+        if (ecoSelectedInfo) {
+          ecoSelectedName.textContent = data.name || name;
+          ecoSelectedInfo.style.display = '';
+
+          // Reset summary and links
+          ecoSelectedSummary.style.display = 'none';
+          ecoSelectedSummary.textContent = '';
+          ecoWikiLink.style.display = 'none';
+          ecoSelectedMeta.style.display = 'none';
+
+          // OneEarth link for ecoregions with slug
+          if (level === 'ecoregion' && data.oneearth_slug) {
+            ecoOneEarthLink.href = `https://www.oneearth.org/ecoregions/${data.oneearth_slug}/`;
+            ecoOneEarthLink.style.display = '';
+          } else {
+            ecoOneEarthLink.style.display = 'none';
+          }
+
+          // Fetch and display Wikipedia summary for ecoregions
+          if (level === 'ecoregion') {
+            try {
+              const wikiResp = await fetch(`/api/eco/wikitext?eco_id=${encodeURIComponent(id)}`);
+              const wikiData = await wikiResp.json();
+              if (wikiData.summary) {
+                ecoSelectedSummary.textContent = wikiData.summary;
+                ecoSelectedSummary.style.display = '';
+              }
+              if (wikiData.wiki_url) {
+                ecoWikiLink.href = wikiData.wiki_url;
+                ecoWikiLink.style.display = '';
+              }
+            } catch (wikiErr) {
+              console.error('Error loading wiki summary:', wikiErr);
+            }
+          }
+        }
+
+      } catch (e) {
+        console.error('Error loading geometry:', e);
+      }
+    }
+
+
+  });
+</script>
+{% endblock %}

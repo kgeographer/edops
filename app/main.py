@@ -6,9 +6,9 @@ from app.api.routes import router as api_router
 from app.web.pages import router as page_router
 
 app = FastAPI(
-    title="Computing Place",
-    description="Environmental and Cultural Dimensions of Place",
-    version="0.1"
+    title="Environmental Dimensions of Place Service (EDOPS)",
+    description="A component of [Computing Place](https://computingplace.org).\n\n[API Guide](https://edops.computingplace.org/static/api_guide.html) · [Variable catalog](https://edops.computingplace.org/documentation/EDOPS_variable_catalog_v0.3.tsv) · [Schema](https://edops.computingplace.org/documentation/edops_schema.json)",
+    version="0.3"
 )
 
 app.add_middleware(
@@ -25,4 +25,10 @@ app.mount(
     "/static",
     StaticFiles(directory="app/static"),
     name="static"
+)
+
+app.mount(
+    "/documentation",
+    StaticFiles(directory="documentation"),
+    name="documentation"
 )

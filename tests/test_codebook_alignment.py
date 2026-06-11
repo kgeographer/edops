@@ -5,7 +5,7 @@ Validates that the live signature payload matches the codebook.
 
 Two tests:
   1. Every implemented field with an api_key is accessible somewhere in the
-     response (flat top-level, profile_groups mirror, or profile_summary).
+     response (profile_groups items or profile_summary).
   2. Every implemented field that appears in profile_groups is in the band
      declared by the codebook.
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-CODEBOOK = Path(__file__).parent.parent / "metadata" / "edops_variable_catalog_v03.tsv"
+CODEBOOK = Path(__file__).parent.parent / "documentation" / "EDOPS_variable_catalog_v0.3.tsv"
 
 
 # ---------------------------------------------------------------------------
@@ -36,14 +36,27 @@ def _codebook_implemented(exclude_bands=None):
 
 def _all_accessible_keys(sig):
     """
-    Collect every key that a consumer can reach in the response:
-      - flat top-level keys (includes profile_groups mirrors)
-      - keys surfaced in profile_summary items
+    Collect every key reachable in the response:
+      - top-level scalar keys
+      - keys in profile_groups items
+      - keys in profile_summary items
     """
     keys = set(sig.keys())
+    for bdata in sig.get("profile_groups", {}).values():
+        for item in bdata.get("items", []):
+            keys.add(item["key"])
     for item in sig.get("profile_summary", []):
         keys.add(item["key"])
     return keys
+
+
+def _profile_groups_values(sig):
+    """Return a flat {key: value} dict built from all profile_groups items."""
+    values = {}
+    for bdata in sig.get("profile_groups", {}).values():
+        for item in bdata.get("items", []):
+            values[item["key"]] = item["value"]
+    return values
 
 
 def _profile_groups_index(sig):
@@ -136,5 +149,6 @@ def test_no_unexpected_none_values(timbuktu_sig):
         "pop_density", "gdp_avg",
         "dist_sink",
     ]
-    nulls = [k for k in must_have_value if timbuktu_sig.get(k) is None]
+    flat = _profile_groups_values(timbuktu_sig)
+    nulls = [k for k in must_have_value if flat.get(k) is None]
     assert not nulls, f"Unexpected None values for Timbuktu: {nulls}"

@@ -16,7 +16,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-router = APIRouter()
+router = APIRouter(include_in_schema=False)
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -27,6 +27,8 @@ def index(request: Request):
     host = request.headers.get("host", "")
     if "edops" in host:
         return templates.TemplateResponse("edops.html", {"request": request})
+    if "workbench" in host:
+        return templates.TemplateResponse("workbench.html", {"request": request})
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.get("/about")
@@ -58,3 +60,7 @@ def edops(request: Request):
 @router.get("/polities")
 def polities(request: Request):
     return templates.TemplateResponse("cliopatria.html", {"request": request})
+
+@router.get("/workbench")
+def workbench(request: Request):
+    return templates.TemplateResponse("workbench.html", {"request": request})

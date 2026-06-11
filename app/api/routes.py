@@ -400,6 +400,7 @@ def signature(
     level: int = 8,
     from_year: Optional[int] = None,
     to_year: Optional[int] = None,
+    flat: bool = False,
 ):
     """Return environmental signature for a coordinate.
 
@@ -410,10 +411,12 @@ def signature(
     level      : basin hierarchy level — only 8 and 6 are currently supported
     from_year  : start year CE for Band T temporal enrichment (0–1998)
     to_year    : end year CE for Band T temporal enrichment (0–1998)
+    flat       : if true, return flat field values instead of nested profile_groups;
+                 Band T temporal data appears at key "temporal" rather than in profile_groups
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Basin level {level} not available; supported levels: 6, 8")
-    sig = get_signature(lat=lat, lon=lon, level=level)
+    sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
@@ -440,7 +443,10 @@ def signature(
             hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
             band_t["hyde_land_use"] = hyde
 
-        sig.setdefault("profile_groups", {})["T"] = band_t
+        if flat:
+            sig["temporal"] = band_t
+        else:
+            sig.setdefault("profile_groups", {})["T"] = band_t
 
     # F8.5: Qualifying notes for BCE queries on epoch-sensitive bands.
     # Bands C and D are sourced from contemporary datasets and do not represent
@@ -472,7 +478,7 @@ def signature(
         query["to_year"] = to_year
 
     sig["meta"] = {
-        "signature_version": "0.2",
+        "signature_version": "0.3",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "query": query,
         "neighborhood": {
@@ -1993,7 +1999,7 @@ def _load_variables() -> List[Dict]:
     if _variable_cache:
         return _variable_cache
     import csv
-    cb_path = Path(__file__).resolve().parents[2] / "metadata" / "edops_variable_catalog_v03.tsv"
+    cb_path = Path(__file__).resolve().parents[2] / "documentation" / "EDOPS_variable_catalog_v0.3.tsv"
     if not cb_path.exists():
         return []
     rows = []
@@ -2594,7 +2600,7 @@ def explorer_hyde_epoch_max(var: str, epoch: int):
 # Cliopatria polity endpoints
 # -----------------------
 
-@router.get("/polity/search")
+@router.get("/polity/search", include_in_schema=False)
 def polity_search(q: str = "", year: Optional[int] = None):
     """Autocomplete search over leaf polity names. Returns name + slice count."""
     if len(q) < 2:
@@ -2625,7 +2631,7 @@ def polity_search(q: str = "", year: Optional[int] = None):
     ]
 
 
-@router.get("/polity/slices")
+@router.get("/polity/slices", include_in_schema=False)
 def polity_slices(name: str):
     """All time slices for a named leaf polity (no geometry).
     Includes geom_hash and geom_group for client-side history tracking."""
@@ -2681,7 +2687,7 @@ def polity_slices(name: str):
     ]
 
 
-@router.get("/polity/period")
+@router.get("/polity/period", include_in_schema=False)
 def polity_period(year: int):
     """GeoJSON FeatureCollection of all active leaf polities at a given year."""
     try:
@@ -2712,7 +2718,7 @@ def polity_period(year: int):
         conn.close()
 
 
-@router.get("/polity/period/years")
+@router.get("/polity/period/years", include_in_schema=False)
 def polity_period_years():
     """Sorted list of distinct fromyear values for non-component polities (for smart stepping)."""
     try:
@@ -2732,7 +2738,7 @@ def polity_period_years():
         conn.close()
 
 
-@router.get("/polity/seshat")
+@router.get("/polity/seshat", include_in_schema=False)
 def polity_seshat(seshatid: str):
     """Seshat general + social variables for a polity."""
     GENERAL_FIELDS = [
@@ -2827,7 +2833,7 @@ def polity_seshat(seshatid: str):
     return {"seshatid": seshatid, "general": general, "social": social}
 
 
-@router.get("/polity/geom")
+@router.get("/polity/geom", include_in_schema=False)
 def polity_geom(id: int):
     """GeoJSON Feature for a single polity slice by row id."""
     sql = """

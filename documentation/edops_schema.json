@@ -1,0 +1,225 @@
+{
+  "_doc": "EDOPS Signature Schema v0.3 — updated June 2026. Documents the actual /api/signature response for both default and flat modes. Example values are real API output for Timbuktu (16.766°N, −3.008°E), BasinATLAS Level 08, bands ABCDE, no temporal period. Fields marked _status:planned are not yet returned but are documented here for coordination.",
+
+  "_modes": {
+    "default": "Response includes meta, profile_summary, and profile_groups (nested band structure). Raw flat field values are not returned at the top level.",
+    "flat": "Add &flat=true to the request. Response includes meta, profile_summary, and all band field values as top-level keys. profile_groups is omitted. Band T temporal data appears at key 'temporal' rather than inside profile_groups."
+  },
+
+  "meta": {
+    "_note": "Always present. Injected by the route; not part of the DB query.",
+    "signature_version": "0.3",
+    "generated": "2026-06-10T12:00:00Z",
+    "query": {
+      "lat": 16.76618535,
+      "lon": -3.00777252,
+      "bands": "ABCDE",
+      "level": 8,
+      "from_year": null,
+      "to_year": null
+    },
+    "neighborhood": {
+      "type": "containing_basin",
+      "basin_level": 8,
+      "_type_options_planned": ["buffer", "upstream_catchment", "three_tier", "polity_mean"]
+    },
+    "data_sources": {
+      "basin": "HydroATLAS v1.0 / BasinATLAS Level 08",
+      "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
+      "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2×2° grid, annual",
+      "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
+      "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km"
+    }
+  },
+
+  "always_present": {
+    "_note": "These keys appear in both default and flat responses.",
+    "id": 17334,
+    "eco_id": 53,
+    "up_area": 41200.5,
+    "geom_geojson": "{GeoJSON Polygon string}",
+    "elev_point": 269.0,
+    "elev_source": "opentopodata",
+    "elev_dataset": "mapzen",
+    "elev_resolution_m": 30,
+    "elev_error": "_omitted when elevation lookup succeeds; present with message when both providers fail_",
+    "relief_range_m": 14.0,
+    "relief_position": 0.5,
+    "profile_summary": [
+      {"key": "ecoregion",      "label": "Ecoregion",              "value": "Sahelian Acacia savanna"},
+      {"key": "zone_name",      "label": "Bioclimate zone",        "value": "Extremely hot and xeric"},
+      {"key": "strata_code",    "label": "Bioclimate stratum",     "value": "Q5"},
+      {"key": "land_cover_name","label": "Land cover",             "value": "Sparse herbaceous or sparse shrub cover"},
+      {"key": "elev_point",     "label": "Elevation (point, m)",   "value": 269.0},
+      {"key": "elev_min",       "label": "Elevation min (basin, m)","value": 262},
+      {"key": "elev_max",       "label": "Elevation max (basin, m)","value": 276},
+      {"key": "relief_position","label": "Relief position (0–1)",  "value": 0.5},
+      {"key": "runoff",         "label": "Runoff (mm/yr)",         "value": 18},
+      {"key": "discharge_yr",   "label": "Discharge (m³/s, yr)",   "value": 0.711},
+      {"key": "pop_density",    "label": "Population density",     "value": 86.87}
+    ]
+  },
+
+  "default_response": {
+    "_note": "The profile_groups key is present only in the default (non-flat) response.",
+    "profile_groups": {
+      "A": {
+        "label": "Physiographic bedrock",
+        "items": [
+          {"key": "elev_min",        "label": "elevation_min (ele_mt_smn)",   "value": 262},
+          {"key": "elev_max",        "label": "elevation_max (ele_mt_smx)",   "value": 276},
+          {"key": "slope_avg",       "label": "slope_deg (slp_dg_sav)",       "value": 1},
+          {"key": "slope_upstream",  "label": "slope_deg (slp_dg_uav)",       "value": 1},
+          {"key": "stream_gradient", "label": "stream_gradient (sgr_dk_sav)", "value": 3},
+          {"key": "lith_class",      "label": "lithology_name (lit_cl_smj)",  "value": "Unconsolidated Sediments (SU)"},
+          {"key": "karst",           "label": "karst_pct (kar_pc_sse)",       "value": 0},
+          {"key": "karst_upstream",  "label": "karst_pct (kar_pc_use)",       "value": 0}
+        ]
+      },
+      "B": {
+        "label": "Hydro-climatic baselines",
+        "items": [
+          {"key": "runoff",                  "value": 18},
+          {"key": "discharge_yr",            "value": 0.711},
+          {"key": "discharge_min",           "value": 0.05},
+          {"key": "discharge_max",           "value": 2.906},
+          {"key": "river_area",              "value": 23.14},
+          {"key": "river_area_upstream",     "value": 23.14},
+          {"key": "gw_table_depth",          "value": 16},
+          {"key": "pnv_majority",            "value": "Open shrubland"},
+          {"key": "pnv_shares",              "value": {"Open shrubland": 100}},
+          {"key": "pct_clay",                "value": 17},
+          {"key": "pct_silt",                "value": 29},
+          {"key": "pct_sand",                "value": 54},
+          {"key": "pct_clay_upstream",       "value": 16},
+          {"key": "pct_silt_upstream",       "value": 28},
+          {"key": "pct_sand_upstream",       "value": 53},
+          {"key": "wet_pct_grp1",            "value": 10},
+          {"key": "wet_pct_grp2",            "value": 10},
+          {"key": "wet_pct_grp1_upstream",   "value": 10},
+          {"key": "wet_pct_grp2_upstream",   "value": 10},
+          {"key": "wetland_class",           "value": "Freshwater marsh, floodplain"}
+        ]
+      },
+      "C": {
+        "label": "Bioclimatic proxies",
+        "_note_bce": "When from_year < 0, a _note array is appended disclosing that Band C reflects contemporary WorldClim (~1970–2000 CE), not conditions at the requested epoch.",
+        "items": [
+          {"key": "temp_yr",                   "value": 28.2},
+          {"key": "temp_min",                  "value": 20.7},
+          {"key": "temp_max",                  "value": 33.9},
+          {"key": "temp_yr_upstream",          "value": 28.2},
+          {"key": "precip_yr",                 "value": 172},
+          {"key": "precip_yr_upstream",        "value": 172},
+          {"key": "aridity",                   "value": 8},
+          {"key": "aridity_upstream",          "value": 8},
+          {"key": "permafrost_extent",         "value": 0},
+          {"key": "biome",                     "value": "Tropical & Subtropical Grasslands, Savannas & Shrublands"},
+          {"key": "ecoregion",                 "value": "Sahelian Acacia savanna"},
+          {"key": "freshwater_ecoregion_class","value": "Tropical and subtropical floodplain rivers and wetlands"},
+          {"key": "freshwater_ecoregion_name", "value": "Inner Niger Delta"}
+        ]
+      },
+      "D": {
+        "label": "Anthropocene markers",
+        "_note_bce": "When from_year < 0, a _note array is appended disclosing that Band D reflects contemporary datasets (EarthStat ~2000 CE, footprint 2009, GDP contemporary).",
+        "items": [
+          {"key": "pop_density",                "value": 86.87},
+          {"key": "human_footprint_09",         "value": 33},
+          {"key": "human_footprint_09_upstream","value": 33},
+          {"key": "cropland_extent",            "value": 0},
+          {"key": "cropland_extent_upstream",   "value": 0},
+          {"key": "pasture_extent",             "value": 0},
+          {"key": "pasture_extent_upstream",    "value": 0},
+          {"key": "reservoir_vol",              "value": 0},
+          {"key": "gdp_avg",                    "value": 2285},
+          {"key": "human_dev_idx",              "value": 0.442}
+        ]
+      },
+      "E": {
+        "label": "Coastality",
+        "items": [
+          {"key": "dist_sink",  "value": 2504.6, "_note": "flow distance km to marine outlet; raw basin08 value in m divided by 1000"},
+          {"key": "endorheic",  "value": 0,      "_note": "0=exorheic; 1 or 2=endorheic"},
+          {"key": "coast_flag", "value": 0,      "_note": "true if basin directly touches coast"}
+        ]
+      },
+      "T": {
+        "_note": "Present only when bands includes T and from_year/to_year are provided.",
+        "_not_requested": {
+          "_status": "not_requested",
+          "_note": "Include from_year and to_year (CE integers) to retrieve Band T temporal data."
+        },
+        "_out_of_range": {
+          "_status": "out_of_range",
+          "_note": "LMR v2.1 coverage is 0–1998 CE. Requested period is outside this range.",
+          "coverage_ce": [0, 1998],
+          "requested_ce": [-2100, -1800]
+        },
+        "_ok_example": {
+          "_status": "ok",
+          "grid_cell": {"lat": 16.0, "lon": -4.0},
+          "year_start": 1350,
+          "year_end": 1600,
+          "pdsi_mean": -0.132,
+          "pdsi_min": -0.511,
+          "pdsi_max": 0.196,
+          "pdsi_series": "[251 annual {year, pdsi} objects]",
+          "air_mean_anom_k": -0.08,
+          "air_series": "[251 annual {year, air_anom_k} objects]",
+          "prate_mean_anom_mm_day": -0.01,
+          "prate_series": "[251 annual {year, prate_anom_mm_day} objects]",
+          "volcanic_events": [
+            {"year_ad": 1458, "vssi_tg": 32.98, "asymmetry": 0.5, "location": "Kuwae (Vanuatu)", "tephra": false}
+          ],
+          "volcanic_event_count": 4,
+          "volcanic_vssi_sum_tg": 67.3,
+          "years_since_last_major": 142,
+          "hyde_land_use": [
+            {
+              "year_ce": 1400,
+              "cropland_km2": 0.0,
+              "cropland_pct": 0.0,
+              "grazing_km2": 12.4,
+              "grazing_pct": 0.3,
+              "pasture_km2": 0.0,
+              "pasture_pct": 0.0,
+              "rangeland_km2": 12.4,
+              "rangeland_pct": 0.3,
+              "basin_area_km2": 4230.0,
+              "n_cells": 42
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "flat_response": {
+    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups.",
+    "_example_top_level_keys": [
+      "meta", "id", "eco_id", "up_area", "geom_geojson",
+      "elev_point", "elev_source", "elev_dataset", "elev_resolution_m",
+      "relief_range_m", "relief_position", "profile_summary",
+      "elev_min", "elev_max", "slope_avg", "slope_upstream", "stream_gradient",
+      "lith_class", "karst", "karst_upstream",
+      "runoff", "discharge_yr", "discharge_min", "discharge_max",
+      "river_area", "river_area_upstream", "gw_table_depth",
+      "pnv_majority", "pnv_shares",
+      "pct_clay", "pct_silt", "pct_sand",
+      "pct_clay_upstream", "pct_silt_upstream", "pct_sand_upstream",
+      "wet_pct_grp1", "wet_pct_grp2", "wet_pct_grp1_upstream", "wet_pct_grp2_upstream",
+      "wetland_class",
+      "temp_yr", "temp_min", "temp_max", "temp_yr_upstream",
+      "precip_yr", "precip_yr_upstream", "aridity", "aridity_upstream",
+      "permafrost_extent", "biome", "ecoregion",
+      "freshwater_ecoregion_class", "freshwater_ecoregion_name",
+      "pop_density", "human_footprint_09", "human_footprint_09_upstream",
+      "cropland_extent", "cropland_extent_upstream",
+      "pasture_extent", "pasture_extent_upstream",
+      "reservoir_vol", "gdp_avg", "human_dev_idx",
+      "dist_sink", "endorheic", "coast_flag",
+      "temporal"
+    ]
+  }
+}

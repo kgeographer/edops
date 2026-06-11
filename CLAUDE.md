@@ -90,11 +90,11 @@ app/
     └── ...
 
 documentation/           # Public-facing docs (tracked)
-docs/                    # Working docs — gitignored
+docs/                    # Working docs (partial; remainder in cedop repo)— gitignored
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 notebooks/edop/spatial/  # ESDA + CHAR notebooks
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
-metadata/                # edops_variable_catalog_v03.tsv and prior versions
+metadata/                # gitignored
 ```
 
 ---
@@ -186,7 +186,7 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ## Deployment
 
-- **URLs**: `edops.kgeographer.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
+- **URLs**: `edops.computingplace.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
 - **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `edops.service` systemd unit
 - **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/edops`
 - **Deploy sequence**:
@@ -208,20 +208,26 @@ curl "http://localhost:8000/api/signature?lat=16.76618535&lon=-3.00777252"  # Ti
 python -m pytest tests/
 ```
 
+`tests/test_live_server.py` runs smoke tests against the production server — skipped unless
+`EDOPS_LIVE_URL` is set. Run after each deployment:
+
+```bash
+EDOPS_LIVE_URL=https://edops.computingplace.org python -m pytest tests/test_live_server.py -v
+```
+
 ---
 
 ## Key design documents
 
-| Doc | Purpose |
-|-----|---------|
-| `docs/edop/project_summary_20260606.md` | Current project summary |
-| `docs/edop/prospectus_20260505.md` | Research direction (superseded by project summary) |
-| `docs/design/scenarios.md` | User profiles + scenarios — read before Lookup UI work |
-| `docs/design/EDOPS_explorer_prompt_compare.md` | Compare tab agreed design |
-| `metadata/edops_variable_catalog_v03.tsv` | Variable reference; loaded at startup by `signature.py` |
-| `docs/edop/edops_schema.json` | Signature schema with Timbuktu example values |
-| `logs/esda_findings.md` | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.) |
-| `logs/exploration_log.md` | EDA findings (F1.1–F11.6) |
+| Doc                                             | Purpose                                                                                                          |
+|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `docs/edop/project_summary_20260606.md`         | Current project summary                                                                                          |
+| `docs/edop/prospectus_20260505.md`              | Initial research direction doc (superseded by project summary)                                                   |
+| `docs/design/scenarios.md`                      | User profiles + scenarios — read before Lookup UI work                                                           |
+| `documentation/EDOPS_variable_catalog_v0.3.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth |
+| `docs/edop/edops_schema.json`                   | Signature schema with Timbuktu example values                                                                    |
+| `documentation/EDOPS_esda_findings.md`          | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.)                                                              |
+| `documentation/EDOPS_eda_findings.md`                    | EDA findings (F1.1–F11.6)                                                                                        |
 
 ---
 
@@ -235,7 +241,6 @@ python -m pytest tests/
   overlay, and nav link are open threads; code is Phase 4 Correspondence precursor
 - **Server migration** — complete as of 2026-06-07; working dir is `/var/www/edops`, service is `edops`
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
-  (workbench retired); remove in a cleanup pass
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
   for BCE queries; population density in signature; EarthStat/HYDE divergence; LMR proxy
   bias disclosure — held for October 2026 expert meeting
