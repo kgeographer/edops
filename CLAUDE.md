@@ -15,9 +15,9 @@ paleoclimate, HYDE 3.4 land-use history, and eVolv2k v4 volcanic forcing.
 
 EDOPS is the active component of **Computing Place** (CEDOP), a spatial humanities research
 platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
-earlier exploratory scripts are archived in the `cedop` repo.
+earlier exploratory scripts are archived in the `cedop`.
 
-Research framing: `docs/edop/project_summary_20260606.md` and an older `docs/edop/prospectus_20260505.md` if needed
+Research framing: `docs/edop/project_summary_20260606.md`
 
 ---
 
@@ -60,17 +60,6 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 Phase 3 — Aggregation is the next major work block. No design decisions made yet.
 
-### Explorer Compare tab — complete (2026-06-04)
-- Canvas scatter, region-highlight-on-pill-click, callout annotation, regional Spearman strip
-- `/api/explorer/scatter` endpoint; `basin_regions.json` static lookup (gitignored — rsync)
-- OLS regression fit on displayed subset only (p99 x-clip, p97 y-clip) — avoids leverage distortion
-- Default pair: `temperature_annual × precipitation_annual` (Mediterranean sign reversal)
-- Quick-buttons: T×P (sign reversal) | Ele×Slope (plateau) | Ele×Precip (orographic) | Temp×Snow (cold-arid)
-- To swap default pair: `explorer.html` lines 399 (active button), 1964–1965 (`_compareX`/`_compareY`)
-
-Design: `docs/design/EDOPS_explorer_prompt_compare.md`.
-Detail: `logs/session_log_20260604.md` §"Compare tab".
-
 ---
 
 ## Architecture
@@ -94,9 +83,10 @@ app/
     └── ...
 
 documentation/           # Public-facing docs (tracked)
-docs/                    # Working docs (partial; remainder in cedop repo)— gitignored
+docs/                    # Older draft docs and WIP (partial; remainder in cedop repo)— gitignored
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
-notebooks/edop/spatial/  # ESDA + CHAR notebooks
+notebooks/edop/explore/  # CHAR phase EDA notebooks
+notebooks/edop/spatial/  # CHAR phase ESDA notebooks
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
 metadata/                # gitignored
 ```
@@ -146,6 +136,8 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 ## Key endpoints
 
 ```
+NOTE: see documentation/API_guide.md (master, public)
+
 /api/signature?lat=X&lon=Y[&bands=ABCDET&from_year=N&to_year=N&level=6|8]
     Returns profile_groups A–T. Band T requires from_year+to_year.
     Source ranges: LMR 1–2000 CE · HYDE 10,000 BCE–2023 CE · eVolv2k 500 BCE–1900 CE.
@@ -179,6 +171,7 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 ## Database
 
 - **Host**: local dev on `.env` (PGPORT 5432); production PostgreSQL 17/PostGIS on server
+- Three active schemas: public, gaz, and temporal
 - `public.basin06`: 16,397 L6 sub-basins; `hybas_id`, `geom`, signature fields
 - `public.basin08`: 190,675 L8 sub-basins; same schema
 - `gaz.clio_polities`: Cliopatria polities — columns lowercase (`fromyear`, `toyear`, `name`, `geom`)
@@ -210,15 +203,12 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 
 ## Notebook conventions
 
-- **First line of every notebook**: `%matplotlib inline` — this sets the inline backend and bypasses PyCharm's mpld3 renderer, which otherwise overrides text colors. Without it, figures render with white text on dark background regardless of rcParams.
+- **Cell numbering**: every code cell must have `# Cell N` as its first line.
 - **DB connection**: `from scripts.shared.db_utils import db_connect` then `conn = db_connect()`. Default database is `cedop`.
 - **Spatial queries**: `gpd.read_postgis(sql, conn, geom_col='geom').rename_geometry('geometry')` — always rename so column is `geometry` not `geom`.
 - **Non-spatial queries**: `pd.read_sql(sql, conn)` — f-string SQL with values interpolated directly (no SQLAlchemy, no named params).
 - **Output path**: derive from module location, not relative path — `ROOT = Path(db_utils.__file__).parent.parent.parent; OUT = ROOT / 'output' / 'edop'`
-- **No `plt.show()`** — inline backend renders automatically; `plt.show()` hands off to mpld3 and breaks rendering.
-- **No `plt.style.use()` or global rcParams** — default style is correct with `%matplotlib inline`.
-- **Figure background**: set explicitly per figure if needed: `fig.patch.set_facecolor('white'); ax.set_facecolor('white')`.
-- **Cell numbering**: every code cell must have `# Cell N` as its first line.
+- **Map figure rendering**: to get black text on white backgrounds, do NOT rely on `%matplotlib inline`, `plt.style.use('default')`, rcParams, or object-level helpers — PyCharm overrides all of these. Instead: `fig.patch.set_facecolor('white')`, `ax.set_facecolor('white')`, `color='black'` on all text, `fig.savefig(..., facecolor='white')`, `plt.close(fig)`, then `display(IPImage(str(outpath)))`. This displays the saved PNG, bypassing the inline renderer entirely. See `scripts/edop/edops_polity_maps.py` as the reference implementation.
 
 ---
 
@@ -233,29 +223,30 @@ python -m pytest tests/
 `tests/test_live_server.py` runs smoke tests against the production server — skipped unless
 `EDOPS_LIVE_URL` is set. Run after each deployment:
 
-```bash
+```bash (run as ./smoke_test.sh)
 EDOPS_LIVE_URL=https://edops.computingplace.org python -m pytest tests/test_live_server.py -v
 ```
 
 ---
 
 ## Key design documents
+documentation/ folder holds current master versions of project docs (public on repo)
+docs/ hold old drafts and works-in-progress (gitignored)
 
 | Doc                                             | Purpose                                                                                                          |
 |-------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `docs/edop/project_summary_20260606.md`         | Current project summary                                                                                          |
+| `documentation/EDOP_summary_20260608.pdf`       | Current project summary                                                                                          |
+| `documentation/EDOPS_variable_catalog_v0.3.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth |
+| `documentation/EDOPS_esda_findings.md`          | ESDA findings (BV.1–BVR.7, CAT.1–8, etc.)                                                                        |
+| `documentation/EDOPS_eda_findings.md`           | EDA findings (F1.1–F11.6)                                                                                        |
 | `docs/edop/prospectus_20260505.md`              | Initial research direction doc (superseded by project summary)                                                   |
 | `docs/design/scenarios.md`                      | User profiles + scenarios — read before Lookup UI work                                                           |
-| `documentation/EDOPS_variable_catalog_v0.3.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth |
 | `docs/edop/edops_schema.json`                   | Signature schema with Timbuktu example values                                                                    |
-| `documentation/EDOPS_esda_findings.md`          | Accreting ESDA findings (BV.1–BVR.7, CAT.1–8, etc.)                                                              |
-| `documentation/EDOPS_eda_findings.md`                    | EDA findings (F1.1–F11.6)                                                                                        |
 
 ---
 
 ## Open / deferred items
 
-- **Explorer Compare tab** — provisionally complete; open exploration welcome, no known blockers
 - **Explorer L8 choropleth** — deferred until after 8 June demo
 - **Lookup neighborhood types** — single basin / neighbors / buffer; polygon aggregation
   is methodologically thorny; deferred to Phase 3 (Aggregation)
