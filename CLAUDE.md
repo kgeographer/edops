@@ -43,10 +43,17 @@ Comprised two strands: EDA (statistical) and ESDA (spatial).
 - CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
 - **Explorer page** (`explorer.html`) — visual CHAR product
 
-### Phase 3 — Aggregation (next)
-**Goal**: Enable EDOPS signature delivery for *areal* locations — user-defined study areas
-and existing polygon datasets (historical polities, ecoregions, etc.). Requires spatial
-aggregation methods (area-weighted vs. flow-weighted for hydrological variables).
+### Phase 3 — Areas (active)
+**Also called**: Aggregation, Neighborhoods (earlier working names; "Areas" is canonical).
+**Goal**: Expand EDOPS API to deliver signatures for *areal* locations — new endpoint(s)
+accepting polygon features of various kinds: Cliopatria polity geometries, user-defined
+study areas (bboxes to start), and neighborhood types TBD (buffer, adjacent basins, etc.).
+Core GISci question: area-weighted vs. flow-weighted aggregation for hydrological variables.
+
+**Work folders**: `notebooks/edop/areas/`, `scripts/edop/areas/`, `output/edop/areas/`
+
+**Products so far**:
+- `notebooks/edop/areas/aggregation_figures.ipynb` — Phase 3 orientation figures (Kingdom of Egypt / discharge heterogeneity, resolution mismatch, aggregation pathways)
 
 ### Phase 4 — Correspondence testing (not started)
 **Goal**: Test the degree to which environmental signatures predict or correlate with
@@ -58,7 +65,7 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Aggregation is the next major work block. No design decisions made yet.
+Phase 3 — Areas is the active work block. Orientation figures complete; endpoint design underway with Opus 4.7.
 
 ---
 
@@ -85,9 +92,13 @@ app/
 documentation/           # Public-facing docs (tracked)
 docs/                    # Older draft docs and WIP (partial; remainder in cedop repo)— gitignored
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
+scripts/edop/areas/      # Phase 3 — Areas scripts
 notebooks/edop/explore/  # CHAR phase EDA notebooks
 notebooks/edop/spatial/  # CHAR phase ESDA notebooks
+notebooks/edop/areas/    # Phase 3 — Areas notebooks
+output/edop/areas/       # Phase 3 — Areas figures and output (gitignored)
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
+logs/2026_jan-may/       # Archived earlier session logs
 metadata/                # gitignored
 ```
 
