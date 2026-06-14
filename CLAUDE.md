@@ -54,6 +54,14 @@ Core GISci question: area-weighted vs. flow-weighted aggregation for hydrologica
 
 **Products so far**:
 - `notebooks/edop/areas/aggregation_figures.ipynb` — Phase 3 orientation figures (Kingdom of Egypt / discharge heterogeneity, resolution mismatch, aggregation pathways)
+- `notebooks/edop/areas/step1_buffer_resolver.ipynb` — buffer resolver: (lat, lon, radius_km, level) → weighted basin set `{hybas_id, weight}`; uses `geog` column directly; tested Timbuktu 100 km → 9 basins, weight sum = 1.0
+- `notebooks/edop/areas/step2_value_attachment.ipynb` — value attachment: basin set → raw values (from view) + position scores (PERCENT_RANK on full basin table, one SQL pass) + categorical rarity ranks (global class frequency from raw TABLE using integer db_col); outputs `step2_raw.tsv`, `step2_scores.tsv`, `step2_meta.tsv`
+
+**Step 2 design notes** (do not revisit):
+- Continuous scores: PERCENT_RANK over full basin table with outer CASE guard for -9999/NULL → NULL score (without the outer guard, NoData basins rank highest due to NULLS LAST)
+- Categorical rarity: must fetch integer class IDs from raw TABLE using `db_col` for both basin values and global frequency; view returns text labels that don't match integer codes
+- `v_basin06_persist_rev1` and `v_basin08_persist_rev1` now include `hybas_id` as second column (was missing; fixed this session; non-breaking additive change)
+- TSV files saved in different row orders — always join on hybas_id, never use positional `.values`
 
 ### Phase 4 — Correspondence testing (not started)
 **Goal**: Test the degree to which environmental signatures predict or correlate with
@@ -65,7 +73,7 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. Orientation figures complete; endpoint design underway with Opus 4.7.
+Phase 3 — Areas is the active work block. Steps 1 (buffer resolver) and 2 (value attachment) are complete and validated. Next: Step 3 — aggregation (collapse the basin×variable matrix per variable, dispatching on `typology_cluster`).
 
 ---
 
