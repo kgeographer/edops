@@ -220,6 +220,7 @@ NOTE: see documentation/API_guide.md (master, public)
 
 ## Deployment
 
+- **Local dev server**: `uvicorn app.main:app --reload` (runs on http://localhost:8000)
 - **URLs**: `edops.computingplace.org` — Hetzner CPX32 server (Nuremberg, 46.225.125.25)
 - **Stack**: Nginx → Gunicorn (port 8001) → FastAPI; `edops.service` systemd unit
 - **Virtualenv**: `/home/karlg/envs/cedop/`; **Working dir**: `/var/www/edops`
