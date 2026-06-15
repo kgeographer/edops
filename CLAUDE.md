@@ -52,16 +52,28 @@ Core GISci question: area-weighted vs. flow-weighted aggregation for hydrologica
 
 **Work folders**: `notebooks/edop/areas/`, `scripts/edop/areas/`, `output/edop/areas/`
 
+**Deferred items register**: `docs/design/areas/deferred_items_register.md` — consult at every step resumption; add rows there, not as loose flags in notebooks or reports.
+
 **Products so far**:
 - `notebooks/edop/areas/aggregation_figures.ipynb` — Phase 3 orientation figures (Kingdom of Egypt / discharge heterogeneity, resolution mismatch, aggregation pathways)
 - `notebooks/edop/areas/step1_buffer_resolver.ipynb` — buffer resolver: (lat, lon, radius_km, level) → weighted basin set `{hybas_id, weight}`; uses `geog` column directly; tested Timbuktu 100 km → 9 basins, weight sum = 1.0
-- `notebooks/edop/areas/step2_value_attachment.ipynb` — value attachment: basin set → raw values (from view) + position scores (PERCENT_RANK on full basin table, one SQL pass) + categorical rarity ranks (global class frequency from raw TABLE using integer db_col); outputs `step2_raw.tsv`, `step2_scores.tsv`, `step2_meta.tsv`
+- `notebooks/edop/areas/step2_value_attachment.ipynb` — value attachment: basin set → raw values (from view) + position scores + categorical class IDs + flags; outputs `step2_raw.tsv`, `step2_matrix.tsv`, `step2_class_ids.tsv`, `step2_meta.tsv`
+- `notebooks/edop/areas/step3_aggregation.ipynb` — block 1 aggregation: continental-gradient continuous variables → weighted p10/p90/mean + spread verdict; outputs `step3_block1_results.tsv`
 
 **Step 2 design notes** (do not revisit):
 - Continuous scores: PERCENT_RANK over full basin table with outer CASE guard for -9999/NULL → NULL score (without the outer guard, NoData basins rank highest due to NULLS LAST)
+- Zero-aware variant: if catalog `zero_fraction` ≥ 0.20, zeros score 0.0 explicitly and non-zeros rank within the positive subpopulation via PARTITION BY — prevents zero pile compressing non-zero range; scores are within-active-domain ranks, not global percentiles
 - Categorical rarity: must fetch integer class IDs from raw TABLE using `db_col` for both basin values and global frequency; view returns text labels that don't match integer codes
-- `v_basin06_persist_rev1` and `v_basin08_persist_rev1` now include `hybas_id` as second column (was missing; fixed this session; non-breaking additive change)
+- Flags (coast_flag, endorheic): emitted as raw integers, not scored
+- `v_basin06_persist_rev1` and `v_basin08_persist_rev1` include `hybas_id` as second column (non-breaking additive fix)
 - TSV files saved in different row orders — always join on hybas_id, never use positional `.values`
+
+**Step 3 design notes** (do not revisit):
+- Block 1 handles continental-gradient continuous variables only; other typology clusters are later blocks
+- Weighted quantiles via sorted cumulative weights + linear interpolation; spread = p90 − p10 (percentile points)
+- `SPREAD_THRESHOLD = 20`; `ZERO_FRACTION_THRESHOLD = 0.20`; `ZERO_COVERAGE_THRESHOLD = 0.90` (all provisional)
+- Degenerate-at-floor guard: if a variable's catalog `zero_fraction` ≥ 0.20 AND the buffer's `weight_at_zero` ≥ 0.90 → verdict = `outside_active_domain` (variable does not apply at this location)
+- Block 1 verdicts are L6-only; they may flip at L8 due to MAUP (see deferred items register)
 
 ### Phase 4 — Correspondence testing (not started)
 **Goal**: Test the degree to which environmental signatures predict or correlate with
@@ -73,7 +85,9 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. Steps 1 (buffer resolver) and 2 (value attachment) are complete and validated. Next: Step 3 — aggregation (collapse the basin×variable matrix per variable, dispatching on `typology_cluster`).
+Phase 3 — Areas is the active work block. Steps 1–3 (block 1) are complete and validated on the Timbuktu 100 km / L06 test case. Next: Step 3 block 2 — remaining typology clusters (scale-dependent, network-topology, local-anomaly), categoricals, and flags; design with Opus before building.
+
+Open deferred items tracked in `docs/design/areas/deferred_items_register.md` — consult at each step resumption.
 
 ---
 
