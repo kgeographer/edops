@@ -85,9 +85,24 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. Steps 1–3 (block 1) are complete and validated on the Timbuktu 100 km / L06 test case. Next: Step 3 block 2 — remaining typology clusters (scale-dependent, network-topology, local-anomaly), categoricals, and flags; design with Opus before building.
+Phase 3 — Areas is the active work block. **Branch: `areas_step3`.**
+Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto for current
+state, block status, locked decisions, and what's next. Consult
+`docs/design/areas/deferred_items_register.md` at each step resumption.
 
-Open deferred items tracked in `docs/design/areas/deferred_items_register.md` — consult at each step resumption.
+**Step 3 aggregator status (as of 2026-06-15):**
+- Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
+- Block 2 — dominant basin (network-topology: discharge_annual, discharge_min, discharge_max): **done**
+- Block 3 — categorical path (% of class): **next**
+- Blocks 4–6 + engine assembly: todo
+
+Output so far: `output/edop/areas/step3_results.tsv` — 37 rows, validated on Timbuktu 100 km / L06.
+
+**Shared output envelope** (all blocks): `variable, method, status, representative_score,
+representative_raw, n_basins, coverage_weight` + method-specific detail columns.
+
+**`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
+`pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
 ---
 
