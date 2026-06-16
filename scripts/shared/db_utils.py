@@ -112,6 +112,34 @@ def get_signature(
             return dict(row) if row else None
 
 
+# ---------------------
+# Areas TSV reader
+# ---------------------
+
+# Columns that must always be integer — never let pandas coerce to float via NaN.
+_AREAS_INT_COLS: Dict[str, str] = {
+    'hybas_id':          'Int64',
+    'dominant_hybas_id': 'Int64',
+}
+
+
+def read_areas_tsv(path, **kwargs) -> Any:
+    """Read an Areas-phase TSV, forcing known ID columns to nullable integer.
+
+    Pandas silently promotes integer columns to float64 when NaN is present.
+    This wrapper prevents that for hybas_id and dominant_hybas_id by applying
+    Int64 (pandas nullable integer) on every read.
+
+    Extra kwargs are passed through to pd.read_csv (e.g. index_col, usecols).
+    Additional dtype overrides can be passed via dtype= and will merge with
+    the built-in integer overrides (caller wins on conflict).
+    """
+    import pandas as pd
+    caller_dtype = kwargs.pop('dtype', {})
+    dtype = {**_AREAS_INT_COLS, **caller_dtype}
+    return pd.read_csv(path, sep='\t', dtype=dtype, **kwargs)
+
+
 def main() -> None:
     # Your test coordinates (note: lon, lat order matches your SQL)
     lat = 16.76618535
