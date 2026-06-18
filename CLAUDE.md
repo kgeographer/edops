@@ -69,7 +69,8 @@ Core GISci question: area-weighted vs. flow-weighted aggregation for hydrologica
 - TSV files saved in different row orders — always join on hybas_id, never use positional `.values`
 
 **Step 3 design notes** (do not revisit):
-- Block 1 handles continental-gradient continuous variables only; other typology clusters are later blocks
+- Block 1 handles continental-gradient + scale-dependent continuous variables (34 vars); network-topology → Block 2; categoricals → Block 3
+- Block 3: categorical class mixture; `strata_code` excluded (opaque sub-zone codes, undocumented intra-zone differences; see deferred register)
 - Weighted quantiles via sorted cumulative weights + linear interpolation; spread = p90 − p10 (percentile points)
 - `SPREAD_THRESHOLD = 20`; `ZERO_FRACTION_THRESHOLD = 0.20`; `ZERO_COVERAGE_THRESHOLD = 0.90` (all provisional)
 - Degenerate-at-floor guard: if a variable's catalog `zero_fraction` ≥ 0.20 AND the buffer's `weight_at_zero` ≥ 0.90 → verdict = `outside_active_domain` (variable does not apply at this location)
@@ -90,13 +91,15 @@ Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto f
 state, block status, locked decisions, and what's next. Consult
 `docs/design/areas/deferred_items_register.md` at each step resumption.
 
-**Step 3 aggregator status (as of 2026-06-15):**
+**Step 3 aggregator status (as of 2026-06-17):**
 - Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
 - Block 2 — dominant basin (network-topology: discharge_annual, discharge_min, discharge_max): **done**
-- Block 3 — categorical path (% of class): **next**
-- Blocks 4–6 + engine assembly: todo
+- Block 3 — categorical class mixture (9 vars): **done**
+- Block 4 — flags (coast_flag fraction, endorheic 3-class): **next**
+- Blocks 5–6 + engine assembly: todo
 
-Output so far: `output/edop/areas/step3_results.tsv` — 37 rows, validated on Timbuktu 100 km / L06.
+Output so far: `output/edop/areas/step3_results.tsv` — 46 rows, validated on Timbuktu 100 km / L06.
+Companion: `output/edop/areas/step3_block3_mixture.tsv` — full class mixture (one row per variable × class).
 
 **Shared output envelope** (all blocks): `variable, method, status, representative_score,
 representative_raw, n_basins, coverage_weight` + method-specific detail columns.
