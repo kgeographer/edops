@@ -91,18 +91,21 @@ Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto f
 state, block status, locked decisions, and what's next. Consult
 `docs/design/areas/deferred_items_register.md` at each step resumption.
 
-**Step 3 aggregator status (as of 2026-06-18):**
+**Step 3 aggregator status (as of 2026-06-19):**
 - Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
 - Block 2 — dominant basin (network-topology: discharge_annual, discharge_min, discharge_max): **done**
 - Block 3 — categorical class mixture (9 vars): **done**
 - Block 4 — flag/structural path (outlet_type 4-class mixture + coast_fraction flag_fraction): **done**
-- Block 5 — untyped fallback (distribution-only): **next**
-- Blocks 6 + engine assembly: todo
+- Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
+- Block 6 — modality refinement: todo
+- Block 7 — Band T gridded path: todo (design open)
+- Engine assembly: todo
 
 **Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
 
-Output: `output/edop/areas/step3_results.tsv` — 48 rows, validated on Timbuktu 100 km / L06.
+Output: `output/edop/areas/step3_results.tsv` — 51 rows, validated on Timbuktu 100 km / L06.
 Companion: `output/edop/areas/step3_block3_mixture.tsv` — 22 rows (B3 + B4 outlet_type classes).
+Companion: `output/edop/areas/step3_block5_distribution.tsv` — 18 rows (full per-basin distribution for untyped vars).
 
 **Shared output envelope** (all blocks): `variable, method, status, representative_score,
 representative_raw, n_basins, coverage_weight` + method-specific detail columns.
