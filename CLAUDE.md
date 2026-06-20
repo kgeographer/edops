@@ -97,15 +97,16 @@ state, block status, locked decisions, and what's next. Consult
 - Block 3 — categorical class mixture (9 vars): **done**
 - Block 4 — flag/structural path (outlet_type 4-class mixture + coast_fraction flag_fraction): **done**
 - Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
-- Block 6 — modality refinement: todo
+- Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
 - Block 7 — Band T gridded path: todo (design open)
 - Engine assembly: todo
 
 **Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
 
-Output: `output/edop/areas/step3_results.tsv` — 51 rows, validated on Timbuktu 100 km / L06.
+Output: `output/edop/areas/step3_results.tsv` — 51 rows + modality column; 12 two_regime scores suppressed; validated on Timbuktu 100 km / L06.
 Companion: `output/edop/areas/step3_block3_mixture.tsv` — 22 rows (B3 + B4 outlet_type classes).
 Companion: `output/edop/areas/step3_block5_distribution.tsv` — 18 rows (full per-basin distribution for untyped vars).
+Companion: `output/edop/areas/step3_block6_regimes.tsv` — 24 rows (12 two_regime vars × 2 regimes).
 
 **Shared output envelope** (all blocks): `variable, method, status, representative_score,
 representative_raw, n_basins, coverage_weight` + method-specific detail columns.
