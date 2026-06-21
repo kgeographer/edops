@@ -3,6 +3,12 @@
 Read this at the start of every session. It describes current project state, not history.
 Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
+**Three-file planning system** — project status and planning context lives in three files
+that must be kept consistent. Always read all three at the start of an active phase session:
+- `CLAUDE.md` (this file) — high-level phase status, architecture, conventions
+- `docs/edop/areas/AREAS_tracker.md` — authoritative current state, block table, locked decisions
+- `docs/design/areas/deferred_items_register.md` — parked items and their triggers
+
 ---
 
 ## What this project is
@@ -69,7 +75,8 @@ Core GISci question: area-weighted vs. flow-weighted aggregation for hydrologica
 - TSV files saved in different row orders — always join on hybas_id, never use positional `.values`
 
 **Step 3 design notes** (do not revisit):
-- Block 1 handles continental-gradient continuous variables only; other typology clusters are later blocks
+- Block 1 handles continental-gradient + scale-dependent continuous variables (34 vars); network-topology → Block 2; categoricals → Block 3
+- Block 3: categorical class mixture; `strata_code` excluded (opaque sub-zone codes, undocumented intra-zone differences; see deferred register)
 - Weighted quantiles via sorted cumulative weights + linear interpolation; spread = p90 − p10 (percentile points)
 - `SPREAD_THRESHOLD = 20`; `ZERO_FRACTION_THRESHOLD = 0.20`; `ZERO_COVERAGE_THRESHOLD = 0.90` (all provisional)
 - Degenerate-at-floor guard: if a variable's catalog `zero_fraction` ≥ 0.20 AND the buffer's `weight_at_zero` ≥ 0.90 → verdict = `outside_active_domain` (variable does not apply at this location)
@@ -85,9 +92,37 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. Steps 1–3 (block 1) are complete and validated on the Timbuktu 100 km / L06 test case. Next: Step 3 block 2 — remaining typology clusters (scale-dependent, network-topology, local-anomaly), categoricals, and flags; design with Opus before building.
+Phase 3 — Areas is the active work block. **Branch: `areas_step3`.**
+Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto for current
+state, block status, locked decisions, and what's next. Consult
+`docs/design/areas/deferred_items_register.md` at each step resumption.
 
-Open deferred items tracked in `docs/design/areas/deferred_items_register.md` — consult at each step resumption.
+**Step 3 aggregator status (as of 2026-06-21):**
+- Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
+- Block 2 — dominant basin (network-topology: discharge_annual, discharge_min, discharge_max): **done**
+- Block 3 — categorical class mixture (9 vars): **done**
+- Block 4 — flag/structural path (outlet_type 4-class mixture + coast_fraction flag_fraction): **done**
+- Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
+- Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
+- Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
+- Engine assembly: todo
+
+**Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
+
+Output: `output/edop/areas/step3_results.tsv` — 51 rows + modality column; 12 two_regime scores suppressed; validated on Timbuktu 100 km / L06.
+Companion: `output/edop/areas/step3_block3_mixture.tsv` — 22 rows (B3 + B4 outlet_type classes).
+Companion: `output/edop/areas/step3_block5_distribution.tsv` — 18 rows (full per-basin distribution for untyped vars).
+Companion: `output/edop/areas/step3_block6_regimes.tsv` — 24 rows (12 two_regime vars × 2 regimes).
+Band T (separate notebook `step3b_band_t.ipynb`): `step3b_block7_primary.tsv` (321 rows, 1100–1200 CE), `step3b_block7_wide.tsv` (3427 rows, 1000–2000 CE), `step3b_block7_hyde_distributions.tsv` (332 rows, HYDE distribution companion with `spread_native` in km²/cell).
+
+**Shared output envelope** (all blocks): `variable, method, status, representative_score,
+representative_raw, n_basins, coverage_weight` + method-specific detail columns.
+Block 7 extensions: `n_units`, `unit_type` (replace `n_basins`), `year`, `epoch_year`, `lmr_caveat`, `hyde_caveat`. Note: Block 7 `p10`/`p90`/`sd` are in native units (km²/cell); Blocks 1–6 use percentile points — engine assembly must reconcile (see deferred register).
+
+**Findings**: `docs/edop/areas/areas_findings.md` — coded observations AF.1–AF.5 (method behavior, signal content, data quality). Add new AF.n entries as the phase proceeds.
+
+**`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
+`pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
 ---
 
