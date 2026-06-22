@@ -5,7 +5,7 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-21
+- **Last updated:** 2026-06-22
 - **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
   decision is locked; read at the start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -18,7 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: **all blocks 1–7 done; engine assembly is next.**
+(aggregator) is underway: all blocks 1–7 done. **Engine assembly in progress: WO1 (resolver +
+quantile + harness) done; WO2 (attach_values) done. WO3 (dispatch) is next.**
 
 ---
 
@@ -62,7 +63,10 @@ resolver.
 | 5 | Untyped fallback (distribution-only) + extreme (river_area) | **done** — 2 untyped continuous vars (temp_min, temp_max; band C); river_area extreme (dominant basin 1060582960, 4273 km², ≠ Block 2 discharge dominant — Inner Niger Delta split, informative). step3_results.tsv: 51 rows. step3_block5_distribution.tsv written (18 companion rows). |
 | 6 | Modality refinement (broad vs two-regime) | **done** — 12 two_regime vars detected across 36 distribution-bearing rows; 11/12 seam-aligned with Block 4 endorheic partition (Block 6 independently rediscovers the Niger/Sahara boundary). 2 scores suppressed (cropland_extent 5.29→null, temp_yr_upstream 96.45→null; both were `concentrated` but two-regime). Regimes companion written (24 rows, 12 vars × 2). Weak calls (temp_yr_upstream, pct_sand) flagged for multi-fixture calibration. |
 | 7 | Gridded temporal path (Band T) — areal aggregation of HYDE + LMR over the buffer; temporally scoped; distribution vs. collapsed mean governed by ECC diagnostic. eVolv2k global forcing, no areal step. | **done** — ECC_THRESHOLD=10 separates HYDE (393, distribution) from LMR (3.75, collapse). `aggregate_band_t(from_year, to_year)` handles snapshot and wide-span with no mode flag. Primary (1100–1200): 321 rows. Wide (1000–2000): 3427 rows. Three outputs: `step3b_block7_primary.tsv`, `step3b_block7_wide.tsv`, `step3b_block7_hyde_distributions.tsv`. Two engine-assembly consequences in register: `n_units`/`unit_type` generalization; second coverage notion. |
-| — | Engine assembly + response shape (aggregate + distribution + coverage + neighborhood echo) | todo |
+| WO1 | Bottom-of-stack extraction — `resolve_buffer`, `weighted_quantile`, `diff_output` harness → `scripts/edop/areas/engine.py` | **done** — regression passes vs step2_raw.tsv |
+| WO2 | Attachment pass — `attach_values` + SQL builders (`_val_expr`, `rank_expr`, `two_pass_sql`) → engine.py | **done** — regression passes vs step2_matrix.tsv, step2_raw.tsv, step2_class_ids.tsv |
+| WO3 | Dispatch — route each `meta_df` row to its branch call; produce full results table | todo |
+| — | Response shape (envelope, coverage, neighborhood echo) | todo |
 
 ### Later in the phase
 
@@ -164,6 +168,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-22** — Engine WO1 and WO2 complete. `scripts/edop/areas/engine.py` now has `resolve_buffer`, `weighted_quantile`, `diff_output` (WO1) and `_val_expr`, `rank_expr`, `two_pass_sql`, `attach_values` (WO2). Implicit-input hazard surfaced: `rank_expr` had a closure over notebook-scope `ZERO_FRACTION_THRESHOLD` — fixed as explicit parameter; `_val` (catalog coercion helper) not promoted (only needed for catalog loading, not attachment); `diff_output` null-normalization fix (None vs NaN treated as equivalent). `test_engine_wo2.py` regressions PASS on all three step2 TSVs. WO3 (dispatch) is next.
 - **2026-06-21** — Block 7 complete (Band T gridded path). New notebook `step3b_band_t.ipynb`. ECC diagnostic routes HYDE (393 cells) to distribution and LMR (3.75 effective cells) to area-weighted collapse. `aggregate_band_t()` handles any span with no mode flag. Three output TSVs: primary (321 rows), wide (3427 rows), HYDE distributions companion (332 rows). HYDE 1950 cadence-transition artifact tagged with `hyde_caveat`. Two engine-assembly register items added: `n_units`/`unit_type` generalization and second coverage notion. Findings file `docs/edop/areas/areas_findings.md` created. All blocks 1–7 done; engine assembly is next.
 - **2026-06-19** — Block 6 complete (modality refinement). 12 two_regime vars from 36 distribution-bearing rows; seam cross-check confirms Block 6 independently recovers the Niger/Sahara endorheic boundary. 2 concentrated vars (cropland_extent, temp_yr_upstream) found to be two_regime; scores suppressed. step3_results.tsv: 51 rows + modality column. step3_block6_regimes.tsv: 24 rows. Multi-fixture calibration item added to tracker "Later in the phase"; 5 related deferred items consolidated to point at it. Block 5 also complete (distribution_only: temp_min, temp_max; extreme: river_area). Catalog audit: actual untyped-continuous backlog not yet in step2: 4 vars (elev_point, relief_range_m, relief_position, reservoir_vol). Deferred register corrected.
 - **2026-06-18** — Block 4 complete (outlet_type class_mixture + coast_fraction flag_fraction). PERCENT_RANK population hygiene fix applied to step2 Cell 6 (two-pass SQL, 9 affected vars); step3 re-run with corrected scores; pct_clay spread 27.89 → 29.24 pp, no verdict flips. step3_results.tsv: 48 rows. step3_block3_mixture.tsv: 22 rows (B3+B4 outlet_type mixtures). Block 5 (untyped fallback) is next.

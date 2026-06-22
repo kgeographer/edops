@@ -1,10 +1,16 @@
 """
-EDOPS Areas Engine — promoted primitives (WO1).
+EDOPS Areas Engine — promoted primitives (WO1 + WO2).
 
-Bottom-of-stack pieces that are contract-independent:
+Bottom-of-stack pieces (WO1):
   resolve_buffer    — point + radius → weighted basin set (was inline in step1/step2)
   weighted_quantile — weighted quantile primitive (was duplicated in step3/step3b)
   diff_output       — regression harness: compare engine output to a reference
+
+Attachment pass (WO2):
+  attach_values     — basin set + meta_df → (matrix_df, class_id_df, raw_df)
+
+  Private SQL builders (call via attach_values):
+  _parse_zf, _val_expr, rank_expr, two_pass_sql
 """
 
 import numpy as np
@@ -159,7 +165,13 @@ def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
                 print(f'{tag}FAIL {col}: max_diff={max_diff:.6f} (tol={float_tol})')
                 ok = False
         except (ValueError, TypeError):
-            mismatches = (a[col].astype(str) != r[col].astype(str)).sum()
+            # Treat None and NaN as equivalent nulls before string comparison
+            a_null  = pd.isna(a[col])
+            r_null  = pd.isna(r[col])
+            n_null  = int((a_null != r_null).sum())
+            mask    = ~a_null & ~r_null
+            n_val   = int((a[col][mask].astype(str) != r[col][mask].astype(str)).sum())
+            mismatches = n_null + n_val
             if mismatches:
                 print(f'{tag}FAIL {col}: {mismatches} string mismatch(es)')
                 ok = False
@@ -167,3 +179,239 @@ def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
     if ok:
         print(f'{tag}PASS')
     return ok
+
+
+# ── WO2: attachment pass ──────────────────────────────────────────────────────
+
+
+def _parse_zf(v):
+    """Return float zero_fraction or None if missing/NaN/non-numeric."""
+    try:
+        f = float(v)
+        return f if not np.isnan(f) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _val_expr(db_col, method):
+    """ORDER BY expression inside PERCENT_RANK for a given position_method."""
+    if method == 'log_percentile':
+        return f"LN(1.0 + GREATEST(0.0, {db_col}::float))"
+    return f"{db_col}::float"
+
+
+def rank_expr(db_col, method, zero_fraction=None, zero_fraction_threshold=0.20):
+    """
+    Monolithic PERCENT_RANK SQL expression — used only when n_nodata == 0.
+
+    The notebook version read ZERO_FRACTION_THRESHOLD from notebook scope (implicit
+    closure). Here it is an explicit parameter so the function is self-contained.
+    """
+    nodata = f"({db_col} = -9999 OR {db_col} IS NULL)"
+    val    = _val_expr(db_col, method)
+
+    if zero_fraction is not None and zero_fraction >= zero_fraction_threshold:
+        pos_val = (f"CASE WHEN {nodata} OR {db_col} <= 0 THEN NULL "
+                   f"ELSE {val} END")
+        return (
+            f"CASE WHEN {nodata} THEN NULL "
+            f"WHEN {db_col} = 0 THEN 0.0 "
+            f"ELSE PERCENT_RANK() OVER ("
+            f"PARTITION BY CASE WHEN {db_col} > 0 THEN 1 ELSE 0 END "
+            f"ORDER BY {pos_val} NULLS LAST) * 100 END"
+        )
+    else:
+        order_expr = f"CASE WHEN {nodata} THEN NULL ELSE {val} END"
+        return (
+            f"CASE WHEN {nodata} THEN NULL "
+            f"ELSE PERCENT_RANK() OVER (ORDER BY {order_expr} NULLS LAST) * 100 END"
+        )
+
+
+def two_pass_sql(db_col, alias, method, table, ids_clause):
+    """
+    Filtered-CTE PERCENT_RANK for vars with nodata rows in the basin table.
+
+    Nodata rows (-9999/NULL) are excluded from the ranking population so they
+    do not compress valid percentiles. The LEFT JOIN restores the target basin
+    rows; nodata values receive NULL score (same as the monolithic form).
+    """
+    val = _val_expr(db_col, method)
+    return f"""
+        WITH valid_pop AS (
+            SELECT hybas_id, {db_col}
+            FROM {table}
+            WHERE {db_col} IS NOT NULL AND {db_col} <> -9999
+        ),
+        ranked AS (
+            SELECT hybas_id,
+                   PERCENT_RANK() OVER (ORDER BY {val}) * 100 AS score
+            FROM valid_pop
+        )
+        SELECT b.hybas_id,
+               CASE WHEN b.{db_col} IS NULL OR b.{db_col} = -9999 THEN NULL
+                    ELSE r.score END AS {alias}
+        FROM {table} b
+        LEFT JOIN ranked r USING (hybas_id)
+        WHERE b.hybas_id IN ({ids_clause})
+    """
+
+
+def attach_values(basin_set, meta_df, conn, table, view,
+                  zero_fraction_threshold=0.20):
+    """
+    Attachment pass: basin set + variable metadata → values matrix.
+
+    Produces the three DataFrames Step 3 branches consume:
+      matrix_df   — continuous position scores (0–100), categorical text labels,
+                    flag raw integers; index hybas_id
+      class_id_df — integer class IDs for categorical variables; index hybas_id
+      raw_df      — weight + raw values from the view; index hybas_id
+
+    Parameters
+    ----------
+    basin_set : DataFrame — hybas_id (int64) as index OR as column; weight column
+    meta_df   : DataFrame — index api_key; columns kind, db_col, position_method,
+                zero_fraction, etc. (built from the catalog by load_catalog — not
+                part of this function's scope)
+    conn      : psycopg3 connection
+    table     : str — raw basin table, e.g. 'public.basin06'
+    view      : str — persist view with text labels, e.g. 'public.v_basin06_persist_rev1'
+    zero_fraction_threshold : float — threshold for zero-aware PARTITION scoring (0.20)
+
+    Returns
+    -------
+    (matrix_df, class_id_df, raw_df) — all indexed by hybas_id (int64)
+
+    Locked behaviors preserved
+    --------------------------
+    - PERCENT_RANK population hygiene: two-pass SQL excludes -9999/NULL rows
+    - Zero-aware PARTITION BY for zero_fraction >= threshold (zeros → 0.0 explicitly)
+    - Flags emitted as raw integers (coast_flag bool, endorheic 0/1/2)
+    - Categoricals as text labels (matrix_df) + integer IDs (class_id_df)
+    - gdp_avg / human_dev_idx excluded (must be absent from meta_df at call time)
+    - hybas_id always int64
+
+    Implicit-input hazards surfaced (see WO2 report)
+    -------------------------------------------------
+    - ZERO_FRACTION_THRESHOLD was a notebook-scope closure in rank_expr → explicit param
+    - ids_clause derived internally from basin_set.index
+    - Catalog loading (_val, _zf helpers, meta_df construction) is NOT part of this
+      function; meta_df is caller-supplied (startup-time product in production)
+    - level is NOT a parameter: table and view encode the level; meta_df bakes in the
+      level-specific zero_fraction column selection
+    """
+    # Normalize basin_set so hybas_id is the index
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+
+    ids_clause = ', '.join(str(h) for h in basin_set.index)
+
+    cont_vars = meta_df[meta_df['kind'] == 'continuous']
+    cat_vars  = meta_df[meta_df['kind'] == 'categorical']
+    flag_vars = meta_df[meta_df['kind'] == 'flag']
+
+    # ── Step 1: raw values from view ─────────────────────────────────────────
+    raw_all = pd.read_sql(
+        f"SELECT * FROM {view} WHERE hybas_id IN ({ids_clause})", conn
+    ).set_index('hybas_id')
+    raw_all.index = raw_all.index.astype('int64')
+    raw_all = raw_all.drop(columns=['geom'], errors='ignore')
+
+    num_cols = raw_all.select_dtypes(include='number').columns
+    raw_all[num_cols] = raw_all[num_cols].replace(-9999, np.nan)
+
+    raw_all = basin_set[['weight']].join(raw_all)
+    keep_cols = ['weight'] + [k for k in meta_df.index if k in raw_all.columns]
+    raw_df = raw_all[keep_cols].copy()
+
+    # ── Step 2: position scores for continuous variables ──────────────────────
+    n_nodata_map = {}
+    for api_key, row in cont_vars.iterrows():
+        zf = _parse_zf(row.get('zero_fraction'))
+        is_zero_aware = zf is not None and zf >= zero_fraction_threshold
+        if is_zero_aware:
+            n_nodata_map[api_key] = 0
+        else:
+            n = conn.execute(
+                f"SELECT count(*) FROM {table} "
+                f"WHERE {row['db_col']} = -9999 OR {row['db_col']} IS NULL"
+            ).fetchone()[0]
+            n_nodata_map[api_key] = int(n)
+
+    clean_set    = {k for k, n in n_nodata_map.items() if n == 0}
+    affected_set = set(n_nodata_map) - clean_set
+
+    # Monolithic query for clean vars (no nodata in basin table)
+    select_parts = ['hybas_id']
+    alias_map    = {}
+    for api_key, row in cont_vars.iterrows():
+        if api_key not in clean_set:
+            continue
+        alias = f'pos_{api_key}'
+        zf    = _parse_zf(row.get('zero_fraction'))
+        select_parts.append(
+            f"{rank_expr(row['db_col'], row['position_method'], zf, zero_fraction_threshold)} AS {alias}"
+        )
+        alias_map[alias] = api_key
+
+    clean_sql = (
+        f"WITH ranked AS (SELECT {', '.join(select_parts)} FROM {table}) "
+        f"SELECT * FROM ranked WHERE hybas_id IN ({ids_clause})"
+    )
+    pos_clean = (pd.read_sql(clean_sql, conn)
+                   .set_index('hybas_id')
+                   .rename(columns=alias_map))
+    pos_clean.index = pos_clean.index.astype('int64')
+
+    # Two-pass queries for vars with nodata in the basin table
+    nodata_frames = []
+    for api_key in sorted(affected_set):
+        row   = cont_vars.loc[api_key]
+        alias = f'pos_{api_key}'
+        sql   = two_pass_sql(row['db_col'], alias, row['position_method'],
+                             table, ids_clause)
+        df = (pd.read_sql(sql, conn)
+                .set_index('hybas_id')
+                .rename(columns={alias: api_key}))
+        df.index = df.index.astype('int64')
+        nodata_frames.append(df)
+
+    if nodata_frames:
+        pos_nodata = pd.concat(nodata_frames, axis=1)
+    else:
+        pos_nodata = pd.DataFrame(index=pos_clean.index)
+
+    pos_df = (pd.concat([pos_clean, pos_nodata], axis=1)
+                .reindex(columns=cont_vars.index))
+
+    # ── Step 3: categorical class labels (from view) and IDs (from raw table) ─
+    class_label_rows = {}
+    class_id_rows    = {}
+
+    for api_key, row in cat_vars.iterrows():
+        db_col   = row['db_col']
+        id_sql   = (f"SELECT hybas_id, {db_col} AS class_id "
+                    f"FROM {table} WHERE hybas_id IN ({ids_clause})")
+        id_series = (pd.read_sql(id_sql, conn)
+                       .set_index('hybas_id')['class_id'])
+        id_series.index = id_series.index.astype('int64')
+        class_id_rows[api_key] = id_series
+
+        if api_key in raw_df.columns:
+            class_label_rows[api_key] = raw_df[api_key]
+
+    class_label_df = pd.DataFrame(class_label_rows, index=raw_df.index)
+    class_id_df    = pd.DataFrame(class_id_rows,    index=raw_df.index)
+
+    # ── Step 4: flags (raw integer from view) ────────────────────────────────
+    flag_cols = [k for k in flag_vars.index if k in raw_df.columns]
+    flag_df   = raw_df[flag_cols].copy()
+
+    # ── Step 5: assemble output matrix ───────────────────────────────────────
+    var_cols  = [c for c in raw_df.columns if c != 'weight']
+    matrix_df = (pd.concat([pos_df, class_label_df, flag_df], axis=1)
+                   .reindex(columns=var_cols))
+
+    return matrix_df, class_id_df, raw_df
