@@ -36,7 +36,13 @@ logos/*.afphoto
 logos/*.afphoto~lock~
 logos/favicon.png
 misc/*.qgz
-docs/
+docs/*
+!docs/edop/
+docs/edop/*
+!docs/edop/areas/
+!docs/edop/areas/**
+!docs/edop/engine/
+!docs/edop/engine/**
 
 # Office temp/lock files
 ~$*
