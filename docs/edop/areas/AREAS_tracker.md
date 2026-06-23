@@ -18,8 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: all blocks 1–7 done. **Engine assembly in progress: WO1 (resolver +
-quantile + harness) done; WO2 (attach_values) done. WO3 (dispatch) is next.**
+(aggregator) is underway: all blocks 1–7 done. **WO1, WO2, WO3 done — pre-contract extractions
+complete. Response shape / envelope is next.**
 
 ---
 
@@ -65,7 +65,7 @@ resolver.
 | 7 | Gridded temporal path (Band T) — areal aggregation of HYDE + LMR over the buffer; temporally scoped; distribution vs. collapsed mean governed by ECC diagnostic. eVolv2k global forcing, no areal step. | **done** — ECC_THRESHOLD=10 separates HYDE (393, distribution) from LMR (3.75, collapse). `aggregate_band_t(from_year, to_year)` handles snapshot and wide-span with no mode flag. Primary (1100–1200): 321 rows. Wide (1000–2000): 3427 rows. Three outputs: `step3b_block7_primary.tsv`, `step3b_block7_wide.tsv`, `step3b_block7_hyde_distributions.tsv`. Two engine-assembly consequences in register: `n_units`/`unit_type` generalization; second coverage notion. |
 | WO1 | Bottom-of-stack extraction — `resolve_buffer`, `weighted_quantile`, `diff_output` harness → `scripts/edop/areas/engine.py` | **done** — regression passes vs step2_raw.tsv |
 | WO2 | Attachment pass — `attach_values` + SQL builders (`_val_expr`, `rank_expr`, `two_pass_sql`) → engine.py | **done** — regression passes vs step2_matrix.tsv, step2_raw.tsv, step2_class_ids.tsv |
-| WO3 | Dispatch — route each `meta_df` row to its branch call; produce full results table | todo |
+| WO3 | Dispatch — `dispatch_variable(typology_cluster, kind)` → block label | **done** — 49/54 meta_df vars verified; 5 surfaced (see below) |
 | — | Response shape (envelope, coverage, neighborhood echo) | todo |
 
 ### Later in the phase
@@ -168,6 +168,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-22** — Engine WO3 complete. `dispatch_variable(typology_cluster, kind)` added to engine.py. `zero_fraction` dropped from proposed signature (confirmed not a routing input). Coverage: 49/54 meta_df vars verified against step3_results.tsv methods; 5 surfaced — `river_area_upstream` (B5, deferred within B5; `EXTREME_VARS` hardcoded to `['river_area']`), `strata_code` (B3, excluded within B3; opaque codes), `ecoregion` (B3, deduped within B3; same col as eco_id), `endorheic` + `coast_flag` (B4, produce synthetic outputs `outlet_type`/`coast_fraction` — not standalone in results). Band T confirmed separate path (not in meta_df). Pre-contract extractions now complete. `test_engine_wo3.py` PASS.
 - **2026-06-22** — Engine WO1 and WO2 complete. `scripts/edop/areas/engine.py` now has `resolve_buffer`, `weighted_quantile`, `diff_output` (WO1) and `_val_expr`, `rank_expr`, `two_pass_sql`, `attach_values` (WO2). Implicit-input hazard surfaced: `rank_expr` had a closure over notebook-scope `ZERO_FRACTION_THRESHOLD` — fixed as explicit parameter; `_val` (catalog coercion helper) not promoted (only needed for catalog loading, not attachment); `diff_output` null-normalization fix (None vs NaN treated as equivalent). `test_engine_wo2.py` regressions PASS on all three step2 TSVs. WO3 (dispatch) is next.
 - **2026-06-21** — Block 7 complete (Band T gridded path). New notebook `step3b_band_t.ipynb`. ECC diagnostic routes HYDE (393 cells) to distribution and LMR (3.75 effective cells) to area-weighted collapse. `aggregate_band_t()` handles any span with no mode flag. Three output TSVs: primary (321 rows), wide (3427 rows), HYDE distributions companion (332 rows). HYDE 1950 cadence-transition artifact tagged with `hyde_caveat`. Two engine-assembly register items added: `n_units`/`unit_type` generalization and second coverage notion. Findings file `docs/edop/areas/areas_findings.md` created. All blocks 1–7 done; engine assembly is next.
 - **2026-06-19** — Block 6 complete (modality refinement). 12 two_regime vars from 36 distribution-bearing rows; seam cross-check confirms Block 6 independently recovers the Niger/Sahara endorheic boundary. 2 concentrated vars (cropland_extent, temp_yr_upstream) found to be two_regime; scores suppressed. step3_results.tsv: 51 rows + modality column. step3_block6_regimes.tsv: 24 rows. Multi-fixture calibration item added to tracker "Later in the phase"; 5 related deferred items consolidated to point at it. Block 5 also complete (distribution_only: temp_min, temp_max; extreme: river_area). Catalog audit: actual untyped-continuous backlog not yet in step2: 4 vars (elev_point, relief_range_m, relief_position, reservoir_vol). Deferred register corrected.

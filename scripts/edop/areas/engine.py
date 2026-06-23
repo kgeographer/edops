@@ -1,5 +1,5 @@
 """
-EDOPS Areas Engine — promoted primitives (WO1 + WO2).
+EDOPS Areas Engine — promoted primitives (WO1 + WO2 + WO3).
 
 Bottom-of-stack pieces (WO1):
   resolve_buffer    — point + radius → weighted basin set (was inline in step1/step2)
@@ -11,6 +11,9 @@ Attachment pass (WO2):
 
   Private SQL builders (call via attach_values):
   _parse_zf, _val_expr, rank_expr, two_pass_sql
+
+Dispatch (WO3):
+  dispatch_variable — (typology_cluster, kind) → block label
 """
 
 import numpy as np
@@ -415,3 +418,65 @@ def attach_values(basin_set, meta_df, conn, table, view,
                    .reindex(columns=var_cols))
 
     return matrix_df, class_id_df, raw_df
+
+
+# ── WO3: dispatch ─────────────────────────────────────────────────────────────
+
+
+def dispatch_variable(typology_cluster, kind):
+    """
+    Route a variable to its primary aggregation block.
+
+    Parameters
+    ----------
+    typology_cluster : str or None/NaN — from meta_df['typology_cluster']
+    kind             : str             — 'continuous', 'categorical', or 'flag'
+
+    Returns
+    -------
+    str: one of 'B1', 'B2', 'B3', 'B4', 'B5', or 'unknown'
+
+    Routing rules (typology_cluster is the governing axis; kind breaks ties
+    for NaN-cluster variables):
+
+        categorical  (any cluster)                        → B3  class_mixture
+        flag         (any cluster)                        → B4  flag / structural
+        continuous + {continental-gradient, scale-dependent} → B1  area_weighted
+        continuous + network-topology                     → B2  dominant_basin
+        continuous + NaN cluster                          → B5  distribution_only
+        continuous + local-anomaly                        → B5  extreme
+
+    Dropped from WO3 proposed signature:
+        zero_fraction — confirmed NOT a routing input; only affects scoring within
+        B1 (zero-aware PARTITION variant vs standard PERCENT_RANK). Twelve zero-
+        inflated B1 vars all route to area_weighted, confirming the drop.
+
+    Block-internal exclusions NOT handled here (by design — locked principle):
+        strata_code          dispatched → B3 but excluded within B3 (opaque codes)
+        ecoregion            dispatched → B3 but deduped within B3 (same col as eco_id)
+        river_area_upstream  dispatched → B5 but deferred within B5 (EXTREME_VARS
+                             hardcoded to ['river_area'] only in step3 Cell 21)
+        endorheic/coast_flag dispatched → B4 but produce synthetic outputs (outlet_type
+                             via class_mixture, coast_fraction via flag_fraction);
+                             neither appears standalone in step3_results.tsv
+
+    Band T (HYDE / LMR / eVolv2k) is a separate notebook path (step3b); none of those
+    variables appear in step2_meta.tsv, so dispatch_variable never sees them.
+
+    B6 (modality) is not a dispatch target — it is a post-B1/B5 refinement.
+    """
+    if kind == 'categorical':
+        return 'B3'
+    if kind == 'flag':
+        return 'B4'
+    # kind == 'continuous' from here
+    tc = typology_cluster
+    if pd.isna(tc) if isinstance(tc, float) else tc is None:
+        return 'B5'
+    if tc in ('continental-gradient', 'scale-dependent'):
+        return 'B1'
+    if tc == 'network-topology':
+        return 'B2'
+    if tc == 'local-anomaly':
+        return 'B5'
+    return 'unknown'
