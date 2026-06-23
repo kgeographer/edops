@@ -420,6 +420,334 @@ def attach_values(basin_set, meta_df, conn, table, view,
     return matrix_df, class_id_df, raw_df
 
 
+# ── WO4: make_row, projector, assembler, Band T promotion ────────────────────
+
+# Caveat texts live once here; rows carry only keys (Pin 2).
+CAVEAT_TEXTS = {
+    'lmr_caveat': (
+        "Anomaly vs. 850–1850 CE CCSM4 reference frame; "
+        "spatial structure reflects reanalysis prior. "
+        "At buffer scale the collapsed value is essentially the prior at this location."
+    ),
+    'hyde_caveat': (
+        "HYDE 3.4 cadence-transition artifact: 1950 is the last centennial/decadal "
+        "epoch before annual data begins; value may not reflect real land-use change."
+    ),
+}
+
+
+def make_row(
+    variable, band, method, unit_type, n_units,
+    representative_score, representative_raw, coverage, status,
+    # quality flags (Pin 1, 4)
+    coherence=None, modality=None, score_suppressed=False,
+    distribution=None, weight_at_zero=None,
+    caveat=None,          # Pin 2: list of caveat keys; empty list = no caveats
+    # temporal fields (B7 only; None on basin-path rows)
+    year=None, epoch_year=None,
+    units=None,           # native unit label, for display
+    detail=None,          # dict: method-specific distribution fields (unit-tagged)
+) -> dict:
+    """
+    Build one complete row dict for any aggregation branch.
+
+    Pin 1: status ∈ ok | outside_active_domain | no_data  (never old verdicts)
+    Pin 2: caveat is always a list (empty, never null); text lives in CAVEAT_TEXTS
+    Pin 4: score_suppressed=True when score is null because two_regime verdict makes
+           a single number dishonest; score_suppressed=False + score=None means score
+           is not applicable (Band T has no global-percentile ranking)
+
+    Lean-vs-detail is a projection at serialization (project_row), not a branch here.
+    make_row always returns the complete object.
+    """
+    return {
+        # identity
+        'variable':            variable,
+        'band':                band,
+        'method':              method,
+        'unit_type':           unit_type,
+        'n_units':             n_units,
+        # headline
+        'representative_score': representative_score,
+        'representative_raw':   representative_raw,
+        'score_suppressed':     score_suppressed,
+        # coverage + status
+        'coverage':            coverage,
+        'status':              status,
+        # quality flags
+        'coherence':           coherence,
+        'modality':            modality,
+        'distribution':        distribution,
+        'weight_at_zero':      weight_at_zero,
+        'caveat':              caveat if caveat is not None else [],
+        # temporal (None on non-B7 rows; serializer omits None fields as needed)
+        'year':                year,
+        'epoch_year':          epoch_year,
+        'units':               units,
+        # method-specific detail sub-block
+        'detail':              detail if detail is not None else {},
+    }
+
+
+def project_row(row, include_detail=False) -> dict:
+    """
+    Project a complete make_row dict to lean or full form.
+
+    Lean (default, &detail absent): every field except 'detail'.
+    Full (&detail): same + the 'detail' sub-block.
+    """
+    out = {k: v for k, v in row.items() if k != 'detail'}
+    if include_detail:
+        out['detail'] = row.get('detail', {})
+    return out
+
+
+def assemble_payload(rows, neighborhood, shortfall, bands,
+                     temporal=None, include_detail=False) -> dict:
+    """
+    Assemble the top-level Areas payload from a list of make_row dicts.
+
+    Collects all caveat keys referenced by any row and emits the caveat text
+    once at top level (Pin 2). Projects each row to lean or full form.
+
+    Parameters
+    ----------
+    rows         : list of make_row dicts
+    neighborhood : dict — resolved-query echo (type, params, n_units, unit_type)
+    shortfall    : float — geographic absence fraction (open water / no basin)
+    bands        : list of str — bands requested
+    temporal     : dict or None — {from_year, to_year} if Band T was requested
+    include_detail : bool — &detail projection flag
+    """
+    used_keys = set()
+    for row in rows:
+        used_keys.update(row.get('caveat', []))
+    caveats = {k: CAVEAT_TEXTS[k] for k in sorted(used_keys) if k in CAVEAT_TEXTS}
+
+    return {
+        'neighborhood': neighborhood,
+        'shortfall':    shortfall,
+        'bands':        bands,
+        'temporal':     temporal,
+        'caveats':      caveats,
+        'rows':         [project_row(r, include_detail) for r in rows],
+    }
+
+
+# ── Band T: promoted from step3b_band_t.ipynb, wired to make_row ─────────────
+
+_LMR_RANGE            = (0,    1998)
+_EVOLV_RANGE          = (-491, 1890)
+_HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
+
+
+def _agg_hyde_b7(df, var_col, buf_area_m2):
+    """Area-weighted mean + distribution detail for one HYDE variable."""
+    valid = df[df[var_col].notna()].copy()
+    if len(valid) == 0:
+        return {'representative_raw': None, 'p10': None, 'p90': None,
+                'sd': None, 'n_units': 0, 'coverage': 0.0, 'status': 'no_data'}
+    tot_w  = float(valid['overlap_m2'].sum())
+    w      = (valid['overlap_m2'] / tot_w).values
+    v      = valid[var_col].values.astype(float)
+    mean_  = float(np.dot(v, w))
+    return {
+        'representative_raw': mean_,
+        'p10':     weighted_quantile(v, w, 0.1),
+        'p90':     weighted_quantile(v, w, 0.9),
+        'sd':      float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
+        'n_units': len(valid),
+        'coverage': tot_w / buf_area_m2,
+        'status':  'ok',
+    }
+
+
+def _agg_lmr_b7(overlap_m2, values, buf_area_m2):
+    """Area-weighted mean for one LMR variable (collapse path; scalar input)."""
+    tot_w = float(overlap_m2.sum())
+    w     = overlap_m2 / tot_w
+    return {
+        'representative_raw': float(np.dot(values, w)),
+        'coverage':           tot_w / buf_area_m2,
+        'status':             'ok',
+    }
+
+
+def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
+    """
+    Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
+    eVolv2k (global_forcing) for a lat/lon buffer over a year span.
+
+    Promoted from step3b_band_t.ipynb Cell 13; wired to make_row instead of _row.
+    No behavior change to the numeric outputs — same SQL, same aggregation math.
+
+    New behaviors vs. notebook aggregate_band_t:
+    - lmr_caveat applied to every LMR row (missing from notebook's aggregate path)
+    - hyde_caveat applied to HYDE rows where epoch_year == 1950
+    - status uses Pin 1 vocabulary (no_data instead of no_events when eVolv2k absent)
+    - coverage_weight renamed to coverage; p10/p90/sd moved to detail sub-block
+
+    Parameters
+    ----------
+    lat, lon    : float — WGS-84 coordinates of the buffer centre
+    radius_km   : float — buffer radius in km
+    from_year   : int   — start of span (CE)
+    to_year     : int   — end of span (CE)
+    conn        : psycopg3 connection
+
+    Returns
+    -------
+    list of make_row dicts — pass to assemble_payload for the top-level payload
+    """
+    radius_m     = radius_km * 1000.0
+    pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
+    buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
+    buf_geom_sql = f"({buf_geog_sql})::geometry"
+
+    buf_area_m2 = float(
+        conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
+    )
+
+    rows = []
+
+    # ── HYDE ──────────────────────────────────────────────────────────────────
+    # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
+    # extracts the correct array element without re-scanning hyde_cells.
+    hyde_sql = f"""
+    WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
+    epochs AS (
+        SELECT step_idx, year_ce
+        FROM temporal.hyde_times
+        WHERE year_ce BETWEEN {from_year} AND {to_year}
+    ),
+    cell_overlaps AS (
+        SELECT area_km2,
+               ST_Area(ST_Intersection(hc.geom, buf.buf_geom)::geography) AS overlap_m2,
+               cropland, grazing, pasture, rangeland
+        FROM temporal.hyde_cells hc, buf
+        WHERE ST_Intersects(hc.geom, buf.buf_geom)
+    )
+    SELECT
+        e.year_ce, e.step_idx,
+        co.area_km2, co.overlap_m2,
+        co.cropland [e.step_idx + 1] AS cropland,
+        co.grazing  [e.step_idx + 1] AS grazing,
+        co.pasture  [e.step_idx + 1] AS pasture,
+        co.rangeland[e.step_idx + 1] AS rangeland
+    FROM cell_overlaps co CROSS JOIN epochs e
+    WHERE co.overlap_m2 > 0
+    ORDER BY e.year_ce
+    """
+    hyde_ts = pd.read_sql(hyde_sql, conn)
+
+    for year_ce, grp in hyde_ts.groupby('year_ce', sort=True):
+        yr     = int(year_ce)
+        caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
+        for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
+                           ('pasture',  'km²'), ('rangeland', 'km²')]:
+            agg = _agg_hyde_b7(grp, var, buf_area_m2)
+            rows.append(make_row(
+                variable=f'hyde_{var}', band='T',
+                method='grid_areal_distribution',
+                unit_type='hyde_cell', n_units=agg['n_units'],
+                representative_score=None,
+                representative_raw=agg['representative_raw'],
+                coverage=agg['coverage'], status=agg['status'],
+                distribution='reported',
+                caveat=caveat,
+                year=yr, epoch_year=yr, units=units,
+                detail={
+                    'p10':  agg['p10'],
+                    'p90':  agg['p90'],
+                    'sd':   agg['sd'],
+                    'unit': 'km2_per_cell',
+                },
+            ))
+
+    # ── LMR ───────────────────────────────────────────────────────────────────
+    # Array slices fetched once per footprint; expanded to annual rows in Python.
+    lmr_from = max(_LMR_RANGE[0], from_year)
+    lmr_to   = min(_LMR_RANGE[1], to_year)
+
+    if lmr_from <= lmr_to:
+        pg_from, pg_to = lmr_from + 1, lmr_to + 1
+        lmr_sql = f"""
+        WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
+        footprints AS (
+            SELECT
+                lc.lat,
+                CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END AS lon_disp,
+                lc.pdsi [{pg_from}:{pg_to}]  AS pdsi_slice,
+                lc.air  [{pg_from}:{pg_to}]  AS air_slice,
+                lc.prate[{pg_from}:{pg_to}]  AS prate_slice,
+                ST_MakeEnvelope(
+                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END - 1,
+                    lc.lat - 1,
+                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END + 1,
+                    lc.lat + 1, 4326) AS fp
+            FROM temporal.lmr_climate lc
+        )
+        SELECT f.pdsi_slice, f.air_slice, f.prate_slice,
+               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2
+        FROM footprints f, buf
+        WHERE ST_Intersects(f.fp, buf.buf_geom)
+        ORDER BY overlap_m2 DESC
+        """
+        lmr_ts = pd.read_sql(lmr_sql, conn)
+
+        ov      = lmr_ts['overlap_m2'].values.astype(float)
+        w_lmr   = ov / ov.sum()
+        cov_lmr = float(ov.sum() / buf_area_m2)
+        n_fp    = len(lmr_ts)
+        years_l = list(range(lmr_from, lmr_to + 1))
+
+        pdsi_mat  = np.array(lmr_ts['pdsi_slice'].tolist(),  dtype=float)
+        air_mat   = np.array(lmr_ts['air_slice'].tolist(),   dtype=float)
+        prate_mat = np.array(lmr_ts['prate_slice'].tolist(), dtype=float) * 86400
+
+        for i, year in enumerate(years_l):
+            for api_name, mat, units in [
+                ('pdsi',  pdsi_mat,  'dimensionless anomaly'),
+                ('air',   air_mat,   'K anomaly'),
+                ('prate', prate_mat, 'mm/day anomaly'),
+            ]:
+                rows.append(make_row(
+                    variable=f'lmr_{api_name}', band='T',
+                    method='grid_areal_collapsed',
+                    unit_type='lmr_cell', n_units=n_fp,
+                    representative_score=None,
+                    representative_raw=float(np.dot(mat[:, i], w_lmr)),
+                    coverage=cov_lmr, status='ok',
+                    distribution='collapsed_subresolution',
+                    caveat=['lmr_caveat'],
+                    year=year, epoch_year=None, units=units,
+                ))
+
+    # ── eVolv2k ───────────────────────────────────────────────────────────────
+    ev_from = max(_EVOLV_RANGE[0], from_year)
+    ev_to   = min(_EVOLV_RANGE[1], to_year)
+
+    if ev_from <= ev_to:
+        events = pd.read_sql(f"""
+            SELECT year_ad, vssi_tg
+            FROM temporal.evolv2k_v4
+            WHERE year_ad BETWEEN {ev_from} AND {ev_to}
+            ORDER BY year_ad
+        """, conn)
+        for _, ev in events.iterrows():
+            rows.append(make_row(
+                variable='evolv2k_vssi', band='T',
+                method='global_forcing',
+                unit_type='global', n_units=1,
+                representative_score=None,
+                representative_raw=float(ev['vssi_tg']),
+                coverage=None, status='ok',
+                year=int(ev['year_ad']), epoch_year=None, units='Tg S',
+            ))
+
+    return rows
+
+
 # ── WO3: dispatch ─────────────────────────────────────────────────────────────
 
 
