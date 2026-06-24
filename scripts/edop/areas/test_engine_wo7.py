@@ -42,11 +42,7 @@ from scripts.edop.areas.engine import aggregate_b3, project_row, diff_output
 ROOT = Path(_dbu.__file__).resolve().parents[2]
 OUT  = ROOT / 'output' / 'edop' / 'areas'
 
-# Frozen TSV status → expected Pin 1 (coherence, status)
-_PIN1 = {
-    'dominant': ('concentrated', 'ok'),
-    'mixed':    ('mixed',        'ok'),
-}
+_PLURALITY_THRESHOLD = 0.85   # concentrated iff modal_share >= this
 
 
 def _load_inputs():
@@ -193,9 +189,9 @@ def test_coherence():
     ok = True
     fails = []
     for _, row in ref.iterrows():
-        var        = row['variable']
-        tsv_status = row['status']   # 'dominant' or 'mixed' in old vocabulary
-        exp_coherence = _PIN1.get(tsv_status, (None, None))[0]
+        var           = row['variable']
+        modal_share   = float(row['modal_share'])
+        exp_coherence = 'concentrated' if modal_share >= _PLURALITY_THRESHOLD else 'mixed'
         act_coherence = act_map.get(var)
         if act_coherence != exp_coherence:
             fails.append((var, exp_coherence, act_coherence))

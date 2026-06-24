@@ -1,7 +1,7 @@
 # Engine response contract — Areas signature payload
 
-**Date:** 2026-06-22
-**Status:** draft for Karl's approval. This is the design gate; branch extraction (WO4+) builds the shaper to it. Nothing here is code — it's the contract the shaper and every branch must satisfy.
+**Date:** 2026-06-24 (amended — folds in WO1–WO9 as built; supersedes the 2026-06-22 draft)
+**Status:** Reflects the engine as built through WO9. Branches B1–B5 + B7 emit through `make_row`; B6 (WO10) and final assembly remain. Every draft decision in §7 is resolved except **one open item** (§7). Amendment record: `contract_amendments.md`.
 **Scope:** governs the engine's return object and its projections. Route-agnostic (the same object serves the buffer path on `/signature` and the polygon path on `/area`); consumer-agnostic (serves both the human reading one area and the machine comparing many). Does **not** govern route mechanics or branch internals.
 
 ---
@@ -21,7 +21,8 @@ This is the resolution of the preserve-everything instinct and the less-is-more 
 | `neighborhood` | Echo of the resolved query: type (`buffer` \| `basin` \| `upstream` \| `polygon`), its parameters (point, radius, level, or polygon id/geometry), and the resolved-set summary (`n_units` total, `unit_type`). |
 | `shortfall` | **Geographic** absence — fraction of the query area with no data-bearing spatial unit beneath it (open water / no basin). Reported, never renormalized. A query-level property, not per-variable. (Locked 2026-06-13.) |
 | `bands` | Which bands were requested. |
-| `temporal` | Present only if Band T was requested: the `from_year`/`to_year` span. Its absence is the Band T gate (see §6). |
+| `temporal` | Present only if Band T was requested: the `from_year`/`to_year` span. Its absence is the Band T gate (§6). |
+| `caveats` | Maps each caveat key referenced by any row to its text, emitted once. Contains only keys some row used (empty when none). The row-level `caveat` list points into this. (Pin 2.) |
 | `rows` | The list of per-output rows (§3–4). |
 
 The `neighborhood` echo is what keeps the object route-agnostic: the engine returns the same shape whether a buffer or a polygon produced the unit set; only the echo's `type` and parameters differ.
@@ -30,13 +31,14 @@ The `neighborhood` echo is what keeps the object route-agnostic: the engine retu
 
 ## 3. Rows are keyed on emitted-output identity
 
-WO3 established this and it's a structural requirement, not a detail. The set of rows is **not** the set of catalog variables. Three departures, all explained by locked decisions or register deferrals:
+The set of rows is **not** one-to-one with the catalog, but every emitted row keys to a catalog entry — some of them derived. The asymmetry runs in one direction only: catalog variables that emit nothing for a given query.
 
-- **Catalog variables that emit nothing** — `strata_code` (excluded), `ecoregion` (deduped into `eco_id`), `river_area_upstream` (deferred), `endorheic` and `coast_flag` (consumed as *inputs* to synthetics). These have no row.
-- **Synthetic outputs with no catalog row** — `outlet_type` and `coast_fraction` are produced inside B4 from the flag inputs. These have rows but no single catalog provenance.
-- The result: 54 catalog vars → 49 direct emitters + 2 synthetics = the 51 rows `step3_results` holds.
+- **Catalog variables that emit nothing** — `strata_code` (excluded), `ecoregion` (deduped into `eco_id`), `river_area_upstream` (deferred), and `endorheic` / `coast_flag` (consumed as *inputs* to the B4 synthetics). No row.
+- **The two synthesized outputs** — `outlet_type` and `coast_fraction` — are **catalog-resident derived variables** (added WO7b), their provenance carried in the catalog `notes` column following the existing derived-variable pattern. So they key to a catalog entry like any other row.
 
-So the row's `variable` field names an **emitted output identity**, which may be synthetic. A row carries `derived_from` (the catalog inputs) when it's synthetic, and is self-identifying otherwise. The contract must be comfortable with both a `variable` that has no catalog row and catalog rows that produce nothing. This is the B4 two-consumers choice — the legible named output over the machine-tidy flags — showing up as a keying requirement.
+Count: 54 catalog vars + 2 derived (`outlet_type`, `coast_fraction`) = 56 catalog rows; minus the 5 non-emitters = the 51 rows `step3_results` holds.
+
+So a row's `variable` field names an **emitted-output identity** that maps to a catalog entry (possibly a derived one). *(The draft's "synthetic with no catalog row / `derived_from` on the row" framing is retired: synthetics live in the catalog, provenance in `notes`, not in the payload.)* This is the B4 two-consumers choice — the legible named output over the machine-tidy flags — as a keying requirement.
 
 ---
 
@@ -46,78 +48,77 @@ Every row carries this much with no switches. It extends the locked 2026-06-15 e
 
 | Field | Meaning | Notes |
 |---|---|---|
-| `variable` | Emitted-output identity (§3). | May be synthetic. |
+| `variable` | Emitted-output identity (§3). | Keys to a catalog entry, possibly derived. |
 | `band` | A–E or T. | |
-| `method` | The branch/method that produced it (`area_weighted`, `dominant_basin`, `class_mixture`, `flag_fraction`, `extreme`, `distribution_only`, `grid_areal_distribution`, `grid_areal_collapsed`, `global_forcing`). | |
-| `unit_type` | `basin` \| `hyde_cell` \| `lmr_cell` \| `global`. | Collision 1 resolution, §5. |
-| `n_units` | Count of contributing units. | Replaces `n_basins`. |
-| `representative_score` | Headline in global-percentile space (0–100), or **null**. | Null for Band T (no temporal scoring), and null when a verdict says no single number is honest (two-regime). |
-| `representative_raw` | Headline in native units, or null. | Carries the Band T headline. |
-| `coverage` | Per-variable: fraction of in-area weight that contributed a usable value for *this* variable, after the path's absence handling. | Collision 2 resolution, §5. |
-| `status` | `ok` \| `outside_active_domain` \| … | Confirm full value set against code (§8). |
-| **quality flags** | The verdicts that qualify the headline — always present in lean: | See flag inventory below. |
+| `method` | `area_weighted` \| `dominant_basin` \| `class_mixture` \| `flag_fraction` \| `extreme` \| `distribution_only` \| `grid_areal_distribution` \| `grid_areal_collapsed` \| `global_forcing`. | |
+| `unit_type` | `basin` \| `hyde_cell` \| `lmr_cell` \| `global`. | Collision 1, §5. |
+| `n_units` | The resolved unit-set size. | Aggregating methods: every unit contributes. Selection methods (`dominant_basin`, `extreme`): the value rests on one unit, named in `detail`; `n_units` still reports the pool. Nothing downstream branches on the distinction. |
+| `representative_score` | Headline in global-percentile space (0–100), or **null**. | Null arises four ways, each distinguished by another field: `spread` (B1 — `coherence='spread'`); two-regime suppression (B6 — `score_suppressed=true`); Band T (`band='T'`); categorical/flag methods not percentile-scored (`method`). Read the explaining field to know which null it is. |
+| `representative_raw` | Headline in native units, or null. | Carries: the Band T value; the discharge value (`dominant_basin`); the **modal class label** (`class_mixture`, WO7b); the extreme value (`extreme`); the fraction (`flag_fraction`). Null where no native headline applies (e.g. `area_weighted` — native-unit means deferred). |
+| `score_suppressed` | bool | `true` when `representative_score` is null *because* B6 found `two_regime` and a single number would lie — distinguishes a withheld score from a not-applicable one. (Pin 4.) |
+| `coverage` | Per-variable: fraction of in-area weight that contributed a usable value for *this* variable, after the path's absence handling. | Collision 2, §5. |
+| `status` | `ok` \| `outside_active_domain` \| `no_data`. | Final value set (confirmed WO4–WO9). Execution outcome only; verdicts live in the flags. |
+| **quality flags** | The verdicts that qualify the headline — always present in lean. | Inventory below. |
+
+Band T rows additionally carry `year`, `epoch_year`, and `units` (the native-value unit).
 
 **Quality flag inventory (the lean payload's trust layer):**
 
 | Flag | Values | Tells the consumer |
 |---|---|---|
-| `coherence` | `concentrated` \| `spread` | Whether the representative score is a fair summary or papers over a wide spread. (B1) |
-| `modality` | `unimodal` \| `two_regime` \| `suppressed` | Whether the area holds one regime or two; when `two_regime`, `representative_score` is nulled and the consumer should open `&detail`. (B6) |
-| `distribution` | `reported` \| `collapsed_subresolution` | For Band T: whether cross-cell spread is real signal (HYDE, high ECC) or a sub-resolution artifact collapsed away (LMR). (B7 / ECC diagnostic) |
-| `weight_at_zero` | float | Zero-inflation exposure; pairs with `outside_active_domain` status. (B1 hurdle) |
-| `caveat` | refs: `lmr_caveat`, `hyde_caveat` | Mandatory provenance riders — LMR-is-the-prior (every LMR row), HYDE 1950 cadence artifact. Carried as references; the caveat text lives once at top level. |
+| `coherence` | `concentrated` \| `spread` \| `mixed` \| `null` | Whether the headline is a fair summary: `concentrated` (one value/class dominates), `spread` (continuous, wide), `mixed` (categorical, no dominant class), `null` (no verdict — `flag_fraction`, `extreme`, Band T; **and `distribution_only` pending §7**). |
+| `modality` | `unimodal` \| `two_regime` \| `null` | One regime or two (B6, continuous only; `null` elsewhere). When `two_regime`, `representative_score` is nulled and `score_suppressed=true`. (Pin 4 — `suppressed` dropped as a modality value.) |
+| `distribution` | `reported` \| `collapsed_subresolution` | Band T: whether cross-cell spread is real signal (HYDE, high ECC) or a sub-resolution artifact collapsed away (LMR). (B7 / ECC.) |
+| `weight_at_zero` | float | Zero-inflation exposure; pairs with `outside_active_domain`. (B1 hurdle.) |
+| `caveat` | list of keys (empty list, never null) | The caveat-text keys this row references — `lmr_caveat` (every LMR row), `hyde_caveat` (HYDE 1950 epoch). Text lives once in the top-level `caveats` dict (§2). (Pin 2.) |
 
-The flags are tiny and they are the thing that makes bulk navigable: a distribution preserved without its verdict is preserved-but-buried. Keeping the verdicts in the lean default is what lets a consumer decide *whether* to pay for the detail.
+The flags are tiny and they make bulk navigable: a distribution preserved without its verdict is preserved-but-buried. Keeping the verdicts in the lean default is what lets a consumer decide *whether* to pay for the detail.
 
 ---
 
-## 5. The three collisions, resolved
+## 5. The three collisions, resolved (built WO4–WO9)
 
-| Collision | Resolution | Rationale |
-|---|---|---|
-| **`n_basins` vs `n_units`/`unit_type`** | Unify globally: every row carries `n_units` + `unit_type`. The basin path sets `unit_type="basin"`; Band T sets `hyde_cell`/`lmr_cell`/`global`. `n_basins` retired. | One field the machine-comparing consumer reads uniformly; the unit kind travels as data, not as a column-name difference. |
-| **Two `coverage_weight` meanings** | One semantic: `coverage` = the fraction of in-area weight that contributed a usable value for this variable. Basin path computes it as renormalized surviving weight after dropping nodata basins; grid path as data-bearing-cell fraction. Same *meaning*, path-specific computation. Geographic absence stays separate as top-level `shortfall`. | The basin path already splits attribute-absence (`coverage`, renormalized) from geographic-absence (`shortfall`). Unifying the *meaning* of coverage and keeping shortfall at top level removes the same-name-different-thing trap without forcing rework. |
-| **Spread units (percentile-points vs km²/cell)** | No bare `spread` field at row level. All distribution detail lives in the `&detail` block (§6), and every distribution field is **space/unit-tagged** (`space: "percentile"` for basin paths, `unit: "km2_per_cell"` etc. for Band T). | The same conceptual slot means different things by path; the tag makes the space explicit at the point of use rather than implicit in the column name. |
+| Collision | Resolution |
+|---|---|
+| **`n_basins` vs `n_units`/`unit_type`** | Unified globally: every row carries `n_units` + `unit_type` (`basin` for the basin path; `hyde_cell`/`lmr_cell`/`global` for Band T). `n_basins` retired. One field the machine consumer reads uniformly. |
+| **Two `coverage_weight` meanings** | One semantic: `coverage` = fraction of in-area weight that contributed a usable value for this variable. Basin path = renormalized surviving weight; grid path = data-bearing-cell fraction. Same meaning, path-specific computation. Geographic absence stays separate as top-level `shortfall`. |
+| **Spread units** | No bare `spread` at row level. Distribution detail lives in `&detail` (§6), every distribution field **space/unit-tagged** (`unit:'percentile'` for basin paths, `unit:'km2_per_cell'` for Band T HYDE). |
 
-**Deferred, with a trigger:** the grid path's `coverage` currently *fuses* geographic and attribute absence into one cell-fraction (at inland Timbuktu both are ~0, so coverage = 1.0 and the fusion is invisible). Splitting Band T coverage into geographic `shortfall` + attribute `coverage`, to match the basin path, is an engine-assembly refinement triggered by **the first coastal Band T query** — the same coastal fixture that would first exercise the open-water shortfall path at all. Register item.
+**Deferred, with a trigger:** the grid path's `coverage` currently *fuses* geographic and attribute absence into one cell-fraction (at inland Timbuktu both ~0, so coverage = 1.0 and the fusion is invisible). Splitting it to match the basin path is triggered by the first **coastal Band T query** — the same coastal fixture pending for the open-water shortfall path and the endorheic-fraction / `weight_at_zero` consistency check. Register items.
 
 ---
 
 ## 6. Projections (opt-in bulk)
 
-| Projection | Adds | Status |
-|---|---|---|
-| *(default)* | The lean row envelope (§4) only. | Defined. |
-| `&detail` | The bounded spatial detail behind each verdict: distribution summaries (spread, p10/p90 — unit-tagged), full class mixtures (B3/B4 per-class %), two-regime breakdowns (B6 regime weights), the dominant-basin envelope (B2 min/max + `dominant_hybas_id`), and per-epoch spatial spread for Band T HYDE. | Defined. |
-| `&dists` | Reserved for finer-grain full-resolution control (e.g. full sorted distributions, or a temporal-decimation opt-out). | **Named, not defined** — semantics to settle against a real payload, per your preference to let specifics emerge. |
+| Projection | Adds |
+|---|---|
+| *(default)* | The lean row envelope (§4) only. |
+| `&detail` | The bounded spatial detail behind each verdict: distribution summaries (spread, p10/p90 — unit-tagged), full class mixtures (B3/B4 per-class %), two-regime breakdowns (B6 regime weights), the dominant-basin envelope (B2 min/max + `dominant_hybas_id`), the extreme carrier basin, and per-epoch spatial spread for Band T HYDE. |
 
-The two axes behave differently and that's why the switches matter. Spatial detail is **bounded** — a fixed stat set per variable. The temporal trajectory is the axis that **explodes**: because the no-within-span-collapse rule (locked) preserves native temporal resolution, a wide LMR span returns its full annual series in the *lean* default already (the 3,427-row case). 
+*(`&dists` is dropped — a single `&detail` switch covers distributions, regimes, and temporal detail.)*
 
-Year-to-interval mapping is permitted only as resolution — snapping a query year to a dataset's genuine native step (HYDE's irregular epochs are real, so this is lossless) — and never as decimation: the LMR five-notch buckets used in the cliopatria display layer are 200–400-year pre-averages, and collapsing LMR's native annual series into them would be the within-span temporal averaging this contract forbids. The notch and epoch labels may ride alongside native values as human-readable interval tags (the role lmr_caveat/hyde_caveat already play), never as substitutes for them.
+Spatial detail is **bounded** — a fixed stat set per variable. The temporal trajectory is the axis that **explodes**: because the no-within-span-collapse rule (locked) preserves native temporal resolution, a wide LMR span returns its full annual series in the *lean* default already (the 3,427-row case).
 
-So `&detail` governs the bounded spatial expansion; the temporal volume is governed by the span itself, not a switch. If payload size from wide LMR spans becomes a problem, the lever is the parked LMR-decimation question — which would land under `&dists` or as presentation-layer binning (the Explorer already bins LMR to five periods), not as an engine default.
+Year-to-interval mapping is permitted only as **resolution** — snapping a query year to a dataset's genuine native step (HYDE's irregular epochs are real, so this is lossless) — and never as **decimation**: the LMR five-notch buckets used in the cliopatria display layer are 200–400-year pre-averages, and collapsing LMR's native annual series into them would be the within-span temporal averaging this contract forbids. The notch and epoch labels may ride alongside native values as human-readable interval tags (the role `lmr_caveat`/`hyde_caveat` already play), never as substitutes for them.
 
-**Band T gate:** Band T is opt-in by construction — it can't be requested without a `from_year`/`to_year` span, and the default `bands` omits T. No separate mechanism needed.
+So `&detail` governs the bounded spatial expansion; the temporal volume is governed by the span itself, not a switch. If wide-LMR payload size becomes a problem, the lever is the parked LMR-decimation question — presentation-layer binning (the Explorer bins LMR to five periods) or a future temporal-step parameter, not an engine default.
 
-The ECC diagnostic governs spatial collapse (whether a query resolves a grid's cells or treats them as sub-resolution); the no-within-span rule governs temporal aggregation (never averaging across the requested span). They are orthogonal: an LMR query can collapse spatially at each step while preserving every step.
+**Band T gate:** Band T is opt-in by construction — it can't be requested without a `from_year`/`to_year` span, and the default `bands` omits T.
 
+**ECC vs no-collapse — orthogonal:** the ECC diagnostic governs **spatial** collapse (whether a query resolves a grid's cells or treats them as sub-resolution); the no-within-span rule governs **temporal** aggregation (never averaging across the span). An LMR query can collapse spatially at each step while preserving every step. (Pin 3.)
 
 ---
 
-## 7. What needs your decision
+## 7. Decisions
 
-1. **Collision 1** — confirm the global `n_units`/`unit_type` unification (retire `n_basins`), versus keeping `n_basins` on the basin path and `n_units` only on Band T.
-2. **Collision 2** — confirm `coverage` as one meaning with `shortfall` separate at top level, and the coastal-trigger deferral of the Band T split.
-3. **`&detail` contents** — confirm the bounded-summary boundary above, and whether `&dists` should be defined now or left reserved.
-4. **Lean flag set** — confirm the five quality flags (§4) are the right lean trust layer: enough to know when a headline lies, without leaking into bulk.
-5. **Synthetic provenance** — confirm `derived_from` on synthetic rows (`outlet_type`, `coast_fraction`) is wanted, versus leaving them unprovenanced.
+**Resolved (draft §7, now built):** ① `n_units`/`unit_type` unified, `n_basins` retired. ② `coverage` one meaning, `shortfall` separate top-level, Band T split deferred to the coastal fixture. ③ single `&detail`, `&dists` dropped. ④ lean trust layer confirmed — `coherence`, `modality`, `distribution`, `weight_at_zero`, `caveat`, plus `score_suppressed`. ⑤ synthetic provenance lives in the catalog `notes` column, not a payload field.
 
-## 8. What CC must confirm against the code (flagged reconstructions)
+**Open — one decision:** **distribution_only coherence.** `distribution_only` populates `representative_score` but emits `coherence=null`, leaving a headline with no trust flag — the one place the self-trusting-lean-row principle isn't met. `coherence` is a pure spread test (weighted p90−p10 < T) that B5 already computes, so it's free to emit. **Recommendation: emit it.** Settle at the post-WO10 consistency pass.
 
-- The exact field names and value sets in the inline B1–B6 dicts (`spread`, `p10`, `p90`, `weight_at_zero`, `dominant_hybas_id`, the status values) — these were assembled ad hoc per block and the contract proposes unifying them; the real names need verifying before the shaper standardizes them.
-- Whether `status` carries values beyond `ok` / `outside_active_domain`.
-- The B7 `_row` fields already named (`n_units`, `unit_type`, `year`, `epoch_year`, `lmr_caveat`) map onto this envelope as the template the basin paths conform *to* — confirm no B7 field is dropped in the unification.
+## 8. Reconstructions — confirmed (closed)
+
+Confirmed during extraction WO4–WO9: the inline B1–B6 field names; the `status` value set (`{ok, outside_active_domain, no_data}`); that no B7 `_row` field is dropped in the unification (`n_units`, `unit_type`, `year`, `epoch_year`, the caveat keys all carried). This section is closed.
 
 ## 9. Regression note
 
-The first assembled payload — the full-monte form, every projection on — must reproduce the 13 TSVs exactly, since those are the frozen ground truth. The lean projection is then a filter *on top of* a payload already proven complete. So the shaper is built and regressed at full bulk first; the projections are validated as subsets second.
+The assembled payload — full-monte, every projection on — reproduces the 13 TSVs as the frozen ground truth; the lean projection is a filter on top of a payload proven complete. **Blessed deviations:** three rows deliberately depart from the frozen TSVs where the engine corrects a notebook omission, each re-frozen with sign-off — the LMR caveat on every LMR row (WO4), the perennial flag (WO5), and the modal class label in `representative_raw` (WO7/7b). These are corrections, not regressions.
