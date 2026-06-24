@@ -105,7 +105,7 @@ state, block status, locked decisions, and what's next. Consult
 - Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
 - Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
 - Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
-- Engine assembly: **in progress** (WO9 done; WO10 next)
+- Engine assembly: **in progress** (WO10b done; WO11 final assembly next)
 
 **Engine assembly status (as of 2026-06-24):**
 - WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
@@ -115,12 +115,15 @@ state, block status, locked decisions, and what's next. Consult
 - WO7 — B3 class_mixture extraction: **done** (6/6 strict PASS)
 - WO8 — B4 flag/structural extraction: **done** (7/7 strict PASS)
 - WO9 — B5 distribution_only + extreme extraction: **done** (6/6 strict PASS)
-- WO10 — B6 modality post-pass: **done** (6/6 strict PASS; pct_sand lineage artifact noted)
+- WO10 — B6 modality post-pass: **done** (6/6 strict PASS)
+- WO10b — distribution_only coherence flag: **done** (6/6 strict PASS; contract fully closed)
 
-**Deferred items note (2026-06-24):** Two new items added to deferred register from the
-WO4b "doh moment" — (1) edge-sensitivity diagnostic (boundary leverage, candidate trust-layer
-flag); (2) representative-point uncertainty / WHG attestation cloud (Phase 4 input design).
-See `docs/design/areas/deferred_items_register.md`.
+**Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
+diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /
+WHG attestation cloud (Phase 4 input design). See `docs/design/areas/deferred_items_register.md`.
+
+**Engine contract fully closed (2026-06-24):** `contract_amendments.md` Pending is empty.
+Last item settled: distribution_only coherence (WO10b). Branch: `engine02`.
 
 **Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
 
