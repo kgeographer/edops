@@ -105,7 +105,18 @@ state, block status, locked decisions, and what's next. Consult
 - Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
 - Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
 - Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
-- Engine assembly: todo
+- Engine assembly: **in progress** (WO4/WO4b done; WO5 next)
+
+**Engine assembly status (as of 2026-06-24):**
+- WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
+- WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
+- WO5 — B2 dominant_basin extraction: **next**
+- WO6–WO10 — B1, B3, B4, B5, B6 extraction: todo
+
+**Deferred items note (2026-06-24):** Two new items added to deferred register from the
+WO4b "doh moment" — (1) edge-sensitivity diagnostic (boundary leverage, candidate trust-layer
+flag); (2) representative-point uncertainty / WHG attestation cloud (Phase 4 input design).
+See `docs/design/areas/deferred_items_register.md`.
 
 **Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
 
