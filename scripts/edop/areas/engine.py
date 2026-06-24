@@ -1020,6 +1020,113 @@ def aggregate_b3(basin_set, matrix_df, class_id_df, meta_df,
     return rows
 
 
+# ── WO8: B4 flag / structural ─────────────────────────────────────────────────
+
+_OUTLET_TYPE_LABELS = {
+     0: 'Exorheic, non-coastal',
+     1: 'Exorheic, coastal',
+    10: 'Endorheic (drains to inland sink)',
+    20: 'Terminal sink basin',
+}
+
+
+def aggregate_b4(basin_set, raw_df,
+                 plurality_threshold=0.85,
+                 min_share_epsilon=1e-6) -> list:
+    """
+    Block 4: flag/structural aggregation.
+
+    Synthesizes two outputs from the raw endorheic (0/1/2) and coast_flag (0/1)
+    fields; neither input is emitted as a standalone row.
+
+    outlet_type  — method='class_mixture'; per-basin class = endo*10 + coast:
+                   0=Exorheic non-coastal, 1=Exorheic coastal,
+                   10=Endorheic (inland sink), 20=Terminal sink.
+                   Exclusivity invariant asserted: coast=1 never co-occurs with endo>0.
+                   representative_raw = modal class label (WO7b convention).
+                   coherence: concentrated|mixed by plurality_threshold.
+
+    coast_fraction — method='flag_fraction'; area-weighted fraction of basins with
+                     coast_flag=1. representative_raw = the fraction (0.0–1.0).
+                     coherence=None (scalar; no concentrated/mixed concept applies).
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    raw_df     : DataFrame — hybas_id as index; must contain endorheic, coast_flag,
+                             and weight columns
+
+    Returns
+    -------
+    list of two make_row dicts: [outlet_type_row, coast_fraction_row]
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    raw_df = raw_df.copy()
+    raw_df.index = raw_df.index.astype('int64')
+
+    w     = basin_set['weight']
+    endo  = raw_df.loc[w.index, 'endorheic'].astype(int)
+    coast = raw_df.loc[w.index, 'coast_flag'].astype(int)
+
+    bad = ((coast == 1) & (endo >= 1)).sum()
+    assert bad == 0, f'Exclusivity violated: {bad} basin(s) with coast=1 & endo>=1'
+
+    ot_id = endo * 10 + coast
+
+    # ── outlet_type class_mixture ──
+    props = (pd.DataFrame({'class_id': ot_id.values, 'w': w.values})
+             .groupby('class_id')['w'].sum()
+             .reset_index()
+             .rename(columns={'w': 'proportion'}))
+    props = props[props['proportion'] >= min_share_epsilon].copy()
+    props['label'] = props['class_id'].map(_OUTLET_TYPE_LABELS)
+    props = props.sort_values('proportion', ascending=False).reset_index(drop=True)
+
+    modal       = props.iloc[0]
+    modal_share = round(float(modal['proportion']), 4)
+    n_classes   = len(props)
+    hhi         = round(float((props['proportion'] ** 2).sum()), 4)
+    coherence   = 'concentrated' if modal_share >= plurality_threshold else 'mixed'
+    cov_weight  = round(float(w.sum()), 4)
+
+    mixture = [
+        {'class_id':    int(r['class_id']),
+         'class_label': str(r['label']),
+         'weight':      round(float(r['proportion']), 6)}
+        for _, r in props.iterrows()
+    ]
+
+    ot_row = make_row(
+        variable='outlet_type', band='E',
+        method='class_mixture', unit_type='basin', n_units=len(w),
+        representative_score=None,
+        representative_raw=str(modal['label']),
+        coverage=cov_weight, status='ok', coherence=coherence,
+        detail={
+            'modal_class_id': int(modal['class_id']),
+            'modal_share':    modal_share,
+            'n_classes':      n_classes,
+            'concentration':  hhi,
+            'mixture':        mixture,
+        },
+    )
+
+    # ── coast_fraction flag_fraction ──
+    coast_frac = round(float((coast * w).sum()), 6)
+
+    cf_row = make_row(
+        variable='coast_fraction', band='E',
+        method='flag_fraction', unit_type='basin', n_units=len(w),
+        representative_score=None,
+        representative_raw=coast_frac,
+        coverage=cov_weight, status='ok', coherence=None,
+    )
+
+    return [ot_row, cf_row]
+
+
 # ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
 
 
