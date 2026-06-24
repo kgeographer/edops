@@ -1,0 +1,110 @@
+"The research notebooks figured out, for any circular area on Earth, how to find the overlapping river basins, weight them by area, 
+  pull all the environmental variables for those basins, score each one as a global percentile, and then collapse the whole set into a 
+  summary per variable — with different collapse logic depending on whether the variable is a continuous gradient, a categorical type, 
+  a flag, or a temporal layer. That logic now needs to become a callable piece of software rather than a sequence of notebook cells. So
+  we're extracting it function by function into engine.py, verifying at each step that the extracted code produces the same numbers  
+  the notebooks did, using the notebook's own output files as the reference. When it's done, a single API call will take a lat/lon + 
+  radius and return the same kind of environmental signature EDOPS already gives for a point — but for a region.""
+  
+  ---
+  What the notebooks produced
+
+  When you ran the step1, step2, step3 notebooks by hand, they wrote TSV files to output/edop/areas/:
+
+  step2_raw.tsv        — 9 rows × 55 cols: the 9 Timbuktu basins, each with
+                         its weight + raw values for all 54 variables
+
+  step2_matrix.tsv     — 9 rows × 54 cols: same basins, but continuous vars
+                         replaced by their percentile score (0–100), categoricals
+                         as text labels, flags as raw integers
+
+  step2_class_ids.tsv  — 9 rows × 11 cols: integer class codes for the 11
+                         categorical variables (lith_class, wetland_class, etc.)
+
+  step2_meta.tsv       — 54 rows × 8 cols: one row per variable, describing
+                         kind (continuous/categorical/flag), db_col, zero_fraction, etc.
+
+  Those files are the frozen ground truth — what the notebook logic produced.
+
+  ---
+  What WO1 test does
+
+  # pseudocode
+
+  call resolve_buffer(Timbuktu, radius=100km, level=L06)
+    → engine queries PostGIS: which basins overlap this circle?
+    → returns 9 basins with weights (fraction of circle each covers)
+
+  assert: exactly 9 basins
+  assert: weights sum to 1.0
+  diff: engine's 9 weights vs the weights column in step2_raw.tsv
+    → are they the same numbers (within 0.0001)?
+
+  # no DB needed for this one
+
+  call weighted_quantile([10, 20, 30, 40], equal_weights, q=0.5)
+    → should return 20 (not 25 — explanation of why is in the test comments)
+
+  call it again with skewed weights, unnormalized weights → spot checks
+
+  ---
+  What WO2 test does
+  
+  # pseudocode
+
+  basin_set = resolve_buffer(Timbuktu, 100km, L06)
+    → 9 basins with weights  [from WO1]
+
+  meta_df = load step2_meta.tsv
+    → 54-row table describing every variable
+
+  matrix_df, class_id_df, raw_df = attach_values(basin_set, meta_df, conn, table, view)
+
+    # attach_values internally does:
+    # 1. SELECT * FROM view WHERE hybas_id IN (the 9 basins)
+    #    → raw values for all 54 variables; mask -9999 as null
+    # 2. For each of 41 continuous vars: run PERCENT_RANK over full basin table
+    #    (two-pass SQL if variable has nodata rows; zero-aware PARTITION if zero-inflated)
+    #    → score 0–100 for each basin
+    # 3. For each of 11 categorical vars: fetch integer class ID from raw table,
+    #    text label from view
+    # 4. For 2 flags (coast_flag, endorheic): copy raw integer as-is
+    # 5. Assemble matrix_df = scores + labels + flags
+
+  diff raw_df    vs step2_raw.tsv      (are raw values identical?)
+  diff matrix_df vs step2_matrix.tsv   (are percentile scores identical, within 0.01?)
+  diff class_id_df vs step2_class_ids.tsv  (are integer class codes identical?)
+
+  ---
+  Where we are in the overall assembly
+  
+  NOTEBOOK RESEARCH (frozen)          ENGINE (being built)
+  ──────────────────────────          ────────────────────
+  step1: buffer → basin set    →  WO1: resolve_buffer()         ✓ done
+  step2: basin set → values    →  WO2: attach_values()          ✓ done
+  step3: values → aggregation  →  WO3: dispatch()               ← next
+                                  WO?: response shape / envelope   later
+
+  The research produced the "what it should look like." The engine is the reusable, callable version of that same logic. The frozen
+  TSVs are the check that extraction didn't introduce any drift.
+
+  ---
+  How it will eventually be invoked
+  
+  The end goal is something like:
+
+  # one call, returns a dict like the existing /api/signature response
+
+  result = compute_area_signature(
+      lat=16.8167, lon=-2.9833,
+      radius_km=100, level='06',
+      from_year=1100, to_year=1200
+  )
+  # → {
+  #     "variable": "elev_min",
+  #     "method": "coherence",
+  #     "status": "concentrated",
+  #     "representative_score": 42.1,
+  #     "p10": 38, "p90": 51, "spread": 13,
+  #     ...
+  # }

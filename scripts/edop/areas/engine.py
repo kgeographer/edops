@@ -748,6 +748,9 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
     return rows
 
 
+_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent'})
+
+
 # ── WO3: dispatch ─────────────────────────────────────────────────────────────
 
 
@@ -808,3 +811,763 @@ def dispatch_variable(typology_cluster, kind):
     if tc == 'local-anomaly':
         return 'B5'
     return 'unknown'
+
+
+# ── WO5: B2 dominant_basin ────────────────────────────────────────────────────
+
+
+def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
+    """
+    Block 2: network-topology dominant-basin aggregation.
+
+    Discharge is cumulative — each basin already integrates upstream flow.
+    Dominant river = basin with highest annual discharge (discharge_yr) in the
+    buffer set. All three network-topology variables read from that one basin.
+
+    n_units is the full buffer-set size (not 1): the dominant basin was *selected
+    from* the full set; see WO5 report for the contract-tension note.
+
+    discharge_min > 0 → perennial stored as detail['perennial'] on the
+    discharge_min row (engine enrichment; not present in the frozen step3 TSV).
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    raw_df     : DataFrame — hybas_id as index; weight + raw values from view
+    meta_df    : DataFrame — api_key as index; columns include band,
+                             typology_cluster, kind
+
+    Returns
+    -------
+    list of make_row dicts — one per network-topology variable
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+
+    nt_vars     = meta_df[meta_df['typology_cluster'] == 'network-topology']
+    dominant_id = int(raw_df['discharge_yr'].idxmax())
+    n_total     = len(raw_df)
+
+    rows = []
+    for api_key, vrow in nt_vars.iterrows():
+        score   = round(float(matrix_df.loc[dominant_id, api_key]), 2)
+        raw_val = round(float(raw_df.loc[dominant_id, api_key]),    3)
+        band    = str(vrow.get('band', 'B'))
+
+        detail = {'dominant_hybas_id': dominant_id}
+        if api_key == 'discharge_min':
+            detail['perennial'] = bool(raw_val > 0)
+
+        rows.append(make_row(
+            variable=api_key, band=band,
+            method='dominant_basin',
+            unit_type='basin', n_units=n_total,
+            representative_score=score,
+            representative_raw=raw_val,
+            coverage=1.0, status='ok',
+            units='m³/s',
+            detail=detail,
+        ))
+
+    return rows
+
+
+# ── WO7: B3 class_mixture ─────────────────────────────────────────────────────
+
+# Categoricals excluded from B3: strata_code (opaque codes, see register) and
+# ecoregion (deduped into eco_id — same db_col; eco_id row wins).
+_B3_EXCLUDE = frozenset({'strata_code', 'ecoregion'})
+
+# eco_id's integer column and text label column have different names in the view.
+# matrix_df['eco_id'] contains integers (the view's eco_id col);
+# matrix_df['ecoregion'] contains the human-readable text.
+# For all other categoricals label col == api_key.
+_B3_LABEL_COL = {'eco_id': 'ecoregion'}
+
+
+def aggregate_b3(basin_set, matrix_df, class_id_df, meta_df,
+                 plurality_threshold=0.85,
+                 min_share_epsilon=1e-6,
+                 low_coverage_floor=0.50) -> list:
+    """
+    Block 3: categorical class-mixture aggregation.
+
+    For each categorical variable (9 vars, excluding strata_code and ecoregion):
+      - class IDs come from class_id_df (integers from raw table via db_col)
+      - text labels come from matrix_df (view text column; eco_id uses 'ecoregion' col)
+      - NoData = class_id with no known text label; those basins drop out
+      - surviving weights renormalized within the valid set → proportions per class
+      - coherence: 'concentrated' if modal_share >= plurality_threshold, else 'mixed'
+      - detail carries modal summary + full per-class mixture with labels
+
+    representative_raw is always None — modal label lives in detail, not the lean row.
+    n_units = valid-data basin count for that variable (not necessarily the full set).
+    coverage = sum of weights over valid-data basins (unnormalized buffer fraction).
+
+    Parameters
+    ----------
+    basin_set    : DataFrame — hybas_id as index (or column), weight column
+    matrix_df    : DataFrame — hybas_id as index; categorical text labels (and eco_id ints)
+    class_id_df  : DataFrame — hybas_id as index; integer class IDs per categorical var
+    meta_df      : DataFrame — api_key as index; columns include band, kind
+
+    Returns
+    -------
+    list of make_row dicts — one per B3 variable, in meta_df order
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    class_id_df = class_id_df.copy()
+    class_id_df.index = class_id_df.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    b3_meta = meta_df[
+        (meta_df['kind'] == 'categorical') &
+        (~meta_df.index.isin(_B3_EXCLUDE))
+    ]
+    b3_vars = [v for v in b3_meta.index if v in class_id_df.columns]
+
+    # Build label_map: api_key → {class_id(int): label(str)}
+    label_map = {}
+    for var in b3_vars:
+        label_col = _B3_LABEL_COL.get(var, var)
+        if label_col not in matrix_df.columns:
+            label_map[var] = {}
+            continue
+        ids    = class_id_df[var]
+        labels = matrix_df[label_col]
+        pairs  = pd.concat([ids, labels], axis=1)
+        pairs.columns = ['class_id', 'label']
+        valid = pairs.dropna(subset=['label'])
+        valid = valid[valid['label'].apply(lambda x: isinstance(x, str))]
+        label_map[var] = {int(r['class_id']): r['label']
+                          for _, r in valid.iterrows()}
+
+    joined = basin_set[['weight']].join(class_id_df[b3_vars], how='inner')
+
+    rows = []
+    for var in b3_vars:
+        band = str(b3_meta.loc[var, 'band'])
+        col  = joined[var]
+        w    = joined['weight']
+
+        valid_ids  = set(label_map.get(var, {}).keys())
+        mask       = col.isin(valid_ids)
+        surviving_w = w[mask]
+        cov_weight  = float(surviving_w.sum())
+        n_basins    = int(mask.sum())
+
+        if cov_weight < 1e-9:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='class_mixture', unit_type='basin', n_units=0,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+                detail={'modal_class_id': None, 'modal_label': None,
+                        'modal_share': None, 'n_classes': 0,
+                        'concentration': None, 'mixture': []},
+            ))
+            continue
+
+        status_val = 'low_coverage' if cov_weight < low_coverage_floor else 'ok'
+
+        w_norm = surviving_w / cov_weight
+        ids    = col[mask].astype(int)
+
+        props = (pd.DataFrame({'class_id': ids.values, 'w': w_norm.values})
+                 .groupby('class_id')['w'].sum()
+                 .reset_index()
+                 .rename(columns={'w': 'proportion'}))
+        props = props[props['proportion'] >= min_share_epsilon].copy()
+        props['label'] = props['class_id'].map(label_map[var])
+        props = props.sort_values('proportion', ascending=False).reset_index(drop=True)
+
+        modal       = props.iloc[0]
+        n_classes   = len(props)
+        hhi         = float((props['proportion'] ** 2).sum())
+        modal_share = round(float(modal['proportion']), 4)
+        coherence   = 'concentrated' if modal_share >= plurality_threshold else 'mixed'
+
+        modal_label = str(modal['label'])
+
+        mixture = [
+            {'class_id':    int(r['class_id']),
+             'class_label': str(r['label']),
+             'weight':      round(float(r['proportion']), 6)}
+            for _, r in props.iterrows()
+        ]
+
+        rows.append(make_row(
+            variable=var, band=band,
+            method='class_mixture', unit_type='basin', n_units=n_basins,
+            representative_score=None,
+            representative_raw=modal_label,
+            coverage=round(cov_weight, 4),
+            status=status_val, coherence=coherence,
+            detail={
+                'modal_class_id': int(modal['class_id']),
+                'modal_share':    modal_share,
+                'n_classes':      n_classes,
+                'concentration':  round(hhi, 4),
+                'mixture':        mixture,
+            },
+        ))
+
+    return rows
+
+
+# ── WO8: B4 flag / structural ─────────────────────────────────────────────────
+
+_OUTLET_TYPE_LABELS = {
+     0: 'Exorheic, non-coastal',
+     1: 'Exorheic, coastal',
+    10: 'Endorheic (drains to inland sink)',
+    20: 'Terminal sink basin',
+}
+
+
+def aggregate_b4(basin_set, raw_df,
+                 plurality_threshold=0.85,
+                 min_share_epsilon=1e-6) -> list:
+    """
+    Block 4: flag/structural aggregation.
+
+    Synthesizes two outputs from the raw endorheic (0/1/2) and coast_flag (0/1)
+    fields; neither input is emitted as a standalone row.
+
+    outlet_type  — method='class_mixture'; per-basin class = endo*10 + coast:
+                   0=Exorheic non-coastal, 1=Exorheic coastal,
+                   10=Endorheic (inland sink), 20=Terminal sink.
+                   Exclusivity invariant asserted: coast=1 never co-occurs with endo>0.
+                   representative_raw = modal class label (WO7b convention).
+                   coherence: concentrated|mixed by plurality_threshold.
+
+    coast_fraction — method='flag_fraction'; area-weighted fraction of basins with
+                     coast_flag=1. representative_raw = the fraction (0.0–1.0).
+                     coherence=None (scalar; no concentrated/mixed concept applies).
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    raw_df     : DataFrame — hybas_id as index; must contain endorheic, coast_flag,
+                             and weight columns
+
+    Returns
+    -------
+    list of two make_row dicts: [outlet_type_row, coast_fraction_row]
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    raw_df = raw_df.copy()
+    raw_df.index = raw_df.index.astype('int64')
+
+    w     = basin_set['weight']
+    endo  = raw_df.loc[w.index, 'endorheic'].astype(int)
+    coast = raw_df.loc[w.index, 'coast_flag'].astype(int)
+
+    bad = ((coast == 1) & (endo >= 1)).sum()
+    assert bad == 0, f'Exclusivity violated: {bad} basin(s) with coast=1 & endo>=1'
+
+    ot_id = endo * 10 + coast
+
+    # ── outlet_type class_mixture ──
+    props = (pd.DataFrame({'class_id': ot_id.values, 'w': w.values})
+             .groupby('class_id')['w'].sum()
+             .reset_index()
+             .rename(columns={'w': 'proportion'}))
+    props = props[props['proportion'] >= min_share_epsilon].copy()
+    props['label'] = props['class_id'].map(_OUTLET_TYPE_LABELS)
+    props = props.sort_values('proportion', ascending=False).reset_index(drop=True)
+
+    modal       = props.iloc[0]
+    modal_share = round(float(modal['proportion']), 4)
+    n_classes   = len(props)
+    hhi         = round(float((props['proportion'] ** 2).sum()), 4)
+    coherence   = 'concentrated' if modal_share >= plurality_threshold else 'mixed'
+    cov_weight  = round(float(w.sum()), 4)
+
+    mixture = [
+        {'class_id':    int(r['class_id']),
+         'class_label': str(r['label']),
+         'weight':      round(float(r['proportion']), 6)}
+        for _, r in props.iterrows()
+    ]
+
+    ot_row = make_row(
+        variable='outlet_type', band='E',
+        method='class_mixture', unit_type='basin', n_units=len(w),
+        representative_score=None,
+        representative_raw=str(modal['label']),
+        coverage=cov_weight, status='ok', coherence=coherence,
+        detail={
+            'modal_class_id': int(modal['class_id']),
+            'modal_share':    modal_share,
+            'n_classes':      n_classes,
+            'concentration':  hhi,
+            'mixture':        mixture,
+        },
+    )
+
+    # ── coast_fraction flag_fraction ──
+    coast_frac = round(float((coast * w).sum()), 6)
+
+    cf_row = make_row(
+        variable='coast_fraction', band='E',
+        method='flag_fraction', unit_type='basin', n_units=len(w),
+        representative_score=None,
+        representative_raw=coast_frac,
+        coverage=cov_weight, status='ok', coherence=None,
+    )
+
+    return [ot_row, cf_row]
+
+
+# ── WO9: B5 fallback + extreme ────────────────────────────────────────────────
+
+# Only river_area takes the extreme path; river_area_upstream is deferred (register).
+_B5_EXTREME_VARS    = frozenset({'river_area'})
+_SPREAD_THRESHOLD   = 20.0  # concentrated if (p90-p10) < T — provisional; shared by B1 + B5
+
+
+def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
+    """
+    Block 5: fallback aggregation — two sub-paths.
+
+    distribution_only — untyped continuous variables (typology_cluster is NaN):
+      Surfaces the weighted distribution without rendering a verdict.
+      representative_score = weighted mean percentile (always populated).
+      representative_raw   = None (native-unit means deferred per register).
+      coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
+      detail               = {spread, p10, p90, unit: 'percentile'}.
+      status               = 'untyped'.
+
+    extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
+      Selects the basin carrying the maximum score (monotone with raw value).
+      representative_score = carrier basin's percentile score.
+      representative_raw   = carrier basin's raw value (km²).
+      coherence            = None.
+      detail               = {dominant_hybas_id}.
+      status               = 'ok'.
+
+    Companion rows (second return value): one row per {variable, basin} for
+    distribution_only variables — the full weighted distribution so any quantile
+    is recoverable downstream.
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    raw_df     : DataFrame — hybas_id as index; raw values including river_area
+    meta_df    : DataFrame — api_key as index; columns include band, kind,
+                             typology_cluster
+
+    Returns
+    -------
+    (rows, companion_rows) where:
+      rows          : list of make_row dicts
+      companion_rows: list of {variable, hybas_id, weight, score} dicts
+                      (one per basin for each distribution_only variable)
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+    raw_df = raw_df.copy()
+    raw_df.index = raw_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    untyped_meta = meta_df[
+        (meta_df['kind'] == 'continuous') &
+        meta_df['typology_cluster'].isna()
+    ]
+    untyped_vars = [v for v in untyped_meta.index if v in joined.columns]
+
+    extreme_meta = meta_df[meta_df['typology_cluster'] == 'local-anomaly']
+    extreme_vars = [v for v in _B5_EXTREME_VARS
+                    if v in joined.columns and v in extreme_meta.index]
+
+    rows           = []
+    companion_rows = []
+
+    # ── distribution_only ──
+    for var in untyped_vars:
+        band = str(untyped_meta.loc[var, 'band'])
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+        n      = int(mask.sum())
+        cov    = float(wts.sum())
+
+        if n == 0 or cov == 0:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='distribution_only', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+            ))
+            continue
+
+        wts_norm = wts / cov
+        wmean    = round(float(np.dot(scores, wts_norm)), 2)
+        p10_raw  = weighted_quantile(scores, wts_norm, 0.10)
+        p90_raw  = weighted_quantile(scores, wts_norm, 0.90)
+        spread   = round(p90_raw - p10_raw, 2)
+        p10      = round(p10_raw, 2)
+        p90      = round(p90_raw, 2)
+
+        coherence = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'
+        rows.append(make_row(
+            variable=var, band=band,
+            method='distribution_only', unit_type='basin', n_units=n,
+            representative_score=wmean, representative_raw=None,
+            coverage=round(cov, 4), status='untyped', coherence=coherence,
+            detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
+        ))
+
+        for hid, score, wt in zip(joined.index[mask], scores, w[mask].values):
+            companion_rows.append({
+                'variable': var,
+                'hybas_id': int(hid),
+                'weight':   round(float(wt), 6),
+                'score':    round(float(score), 4),
+            })
+
+    # ── extreme ──
+    for var in extreme_vars:
+        band = str(extreme_meta.loc[var, 'band'])
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+        n    = int(mask.sum())
+        cov  = float(w[mask].sum())
+
+        if n == 0:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='extreme', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+            ))
+            continue
+
+        carrier_id    = int(col.idxmax())
+        carrier_score = round(float(col.loc[carrier_id]), 2)
+        carrier_raw   = (round(float(raw_df.loc[carrier_id, var]), 3)
+                         if var in raw_df.columns else None)
+
+        rows.append(make_row(
+            variable=var, band=band,
+            method='extreme', unit_type='basin', n_units=n,
+            representative_score=carrier_score,
+            representative_raw=carrier_raw,
+            coverage=round(cov, 4), status='ok', coherence=None,
+            detail={'dominant_hybas_id': carrier_id},
+        ))
+
+    return rows, companion_rows
+
+
+# ── WO10: B6 modality post-pass ───────────────────────────────────────────────
+
+_MODALITY_GAP      = 0.50   # gap threshold as fraction of spread — provisional
+_MIN_REGIME_WEIGHT = 0.20   # minimum weight on each side to count as a regime
+
+
+def detect_modality(scores, weights_norm, spread,
+                    modality_gap=_MODALITY_GAP,
+                    min_regime_weight=_MIN_REGIME_WEIGHT):
+    """
+    Detect unimodal vs two_regime distribution.
+
+    De-closured from step3 Cell 27 detect_modality.  Consumes only what it
+    computes; the notebook's endorheic_set is used for seam-alignment reporting
+    only (not detection) and is therefore not reproduced here.
+
+    Parameters
+    ----------
+    scores, weights_norm : np.array — notna-filtered; weights_norm sums to 1
+    spread               : float — p90 - p10 (precomputed)
+
+    Returns
+    -------
+    (modality, evidence)
+      modality : 'two_regime' | 'unimodal'
+      evidence : dict or None
+        keys: gap_size, threshold, split_between,
+              left_weight, right_weight, left_center, right_center,
+              n_left, n_right
+    """
+    if len(scores) < 2 or spread == 0.0:
+        return 'unimodal', None
+
+    idx      = np.argsort(scores)
+    s_sorted = scores[idx]
+    w_sorted = weights_norm[idx]
+
+    threshold = modality_gap * spread
+    best      = None
+    best_gap  = 0.0
+
+    for i in range(len(s_sorted) - 1):
+        gap = float(s_sorted[i + 1] - s_sorted[i])
+        if gap > threshold:
+            lw = float(w_sorted[:i + 1].sum())
+            rw = float(w_sorted[i + 1:].sum())
+            if lw >= min_regime_weight and rw >= min_regime_weight and gap > best_gap:
+                best_gap = gap
+                lc = float(np.dot(s_sorted[:i + 1],     w_sorted[:i + 1]     / lw))
+                rc = float(np.dot(s_sorted[i + 1:],     w_sorted[i + 1:]     / rw))
+                best = {
+                    'gap_size':      round(gap, 2),
+                    'threshold':     round(threshold, 2),
+                    'split_between': (round(float(s_sorted[i]),     2),
+                                      round(float(s_sorted[i + 1]), 2)),
+                    'left_weight':   round(lw, 4),
+                    'right_weight':  round(rw, 4),
+                    'left_center':   round(lc, 2),
+                    'right_center':  round(rc, 2),
+                    'n_left':        i + 1,
+                    'n_right':       len(s_sorted) - i - 1,
+                }
+
+    if best is not None:
+        return 'two_regime', best
+    return 'unimodal', None
+
+
+def apply_modality(rows, basin_set, matrix_df,
+                   modality_gap=_MODALITY_GAP,
+                   min_regime_weight=_MIN_REGIME_WEIGHT):
+    """
+    B6 post-pass: overlay modality detection on distribution-bearing rows.
+
+    Runs after B1 (area_weighted) and B5 (distribution_only).  Mutates each row
+    dict in-place; returns the same list plus the regimes companion table.
+
+    Determination (WO10):
+    - modality ∈ {unimodal, two_regime} on every distribution-bearing row
+      (never null — B6 always renders a verdict for continuous rows it covers)
+    - score_suppressed=True ONLY when B6 is the reason the score is null
+      (concentrated row that turned out to be two_regime); not set for spread
+      rows that are also two_regime (score was already null for spread)
+    - suppressed value preserved in detail['suppressed_score'] (not discarded)
+    - endorheic_set: seam-alignment reporting only in the notebook; not reproduced
+
+    Parameters
+    ----------
+    rows      : list of make_row dicts from B1 + B5
+    basin_set : DataFrame — hybas_id as index (or column), weight column
+    matrix_df : DataFrame — hybas_id as index; percentile score columns
+
+    Returns
+    -------
+    (rows, regimes_companion) where regimes_companion is a list of dicts:
+      {variable, regime_id, regime_center, regime_weight, n_basins, coverage_weight}
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    regimes_companion = []
+
+    for row in rows:
+        var    = row['variable']
+        spread = float(row.get('detail', {}).get('spread') or 0.0)
+
+        if var not in joined.columns or spread == 0.0:
+            row['modality'] = 'unimodal'
+            continue
+
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+        n    = int(mask.sum())
+
+        if n < 2:
+            row['modality'] = 'unimodal'
+            continue
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+        cov    = float(wts.sum())
+        if cov == 0.0:
+            row['modality'] = 'unimodal'
+            continue
+        wts_norm = wts / cov
+
+        modality, evidence = detect_modality(
+            scores, wts_norm, spread,
+            modality_gap=modality_gap,
+            min_regime_weight=min_regime_weight,
+        )
+        row['modality'] = modality
+
+        if modality == 'two_regime' and evidence is not None:
+            # Suppressed-score: only when B6 is the reason (was concentrated)
+            if row.get('representative_score') is not None:
+                row['detail']['suppressed_score'] = row['representative_score']
+                row['representative_score']        = None
+                row['score_suppressed']            = True
+
+            # Regime breakdown in detail (bounded spatial expansion, §6)
+            row['detail']['regimes'] = [
+                {'id': 0, 'center': evidence['left_center'],
+                 'weight': evidence['left_weight']},
+                {'id': 1, 'center': evidence['right_center'],
+                 'weight': evidence['right_weight']},
+            ]
+
+            # Companion table
+            cov_weight = float(row.get('coverage', 1.0))
+            for regime_id, center_key, weight_key, n_key in [
+                    (0, 'left_center',  'left_weight',  'n_left'),
+                    (1, 'right_center', 'right_weight', 'n_right')]:
+                regimes_companion.append({
+                    'variable':        var,
+                    'regime_id':       regime_id,
+                    'regime_center':   evidence[center_key],
+                    'regime_weight':   evidence[weight_key],
+                    'n_basins':        evidence[n_key],
+                    'coverage_weight': cov_weight,
+                })
+
+    return rows, regimes_companion
+
+
+# ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
+
+
+def aggregate_b1(basin_set, matrix_df, meta_df,
+                 spread_threshold=_SPREAD_THRESHOLD,
+                 zero_fraction_threshold=0.20,
+                 zero_coverage_threshold=0.90) -> list:
+    """
+    Block 1: area-weighted coherence aggregation for continental-gradient and
+    scale-dependent continuous variables.
+
+    For each variable:
+      - weight = basin_set weight (fraction of buffer area)
+      - scores = global-percentile scores from matrix_df
+      - null scores dropped; surviving weights renormalized → coverage
+      - weight_at_zero = fraction of total buffer weight at score 0.0
+      - coherence: 'concentrated' if weighted (p90-p10) < T, else 'spread'
+      - outside_active_domain guard: if zero_fraction >= threshold AND
+        weight_at_zero >= zero_coverage_threshold
+
+    representative_raw is always None — native-unit means are deferred.
+
+    B1 emits all rows with non-null score for 'concentrated' rows, including
+    those the frozen step3 TSV marks two_regime. Those rows are correct B6
+    inputs; B6 (WO10) owns the score-nulling and modality field. This function
+    does NOT interact with B6 — it is the first pass only.
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    meta_df    : DataFrame — api_key as index; columns include band,
+                             typology_cluster, kind, zero_fraction
+    spread_threshold       : float — T; coherence boundary (default 20.0, provisional)
+    zero_fraction_threshold: float — catalog threshold for zero-aware vars (default 0.20)
+    zero_coverage_threshold: float — outside_active_domain guard (default 0.90)
+
+    Returns
+    -------
+    list of make_row dicts — one per B1 variable, in meta_df order
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    b1_meta     = meta_df[
+        (meta_df['kind'] == 'continuous') &
+        (meta_df['typology_cluster'].isin(_BLOCK1_CLUSTERS))
+    ]
+    block1_vars = [v for v in b1_meta.index if v in joined.columns]
+
+    rows = []
+    for api_key in block1_vars:
+        col  = pd.to_numeric(joined[api_key], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+
+        n        = int(mask.sum())
+        coverage = float(wts.sum())
+
+        band = str(b1_meta.loc[api_key, 'band'])
+        zf   = _parse_zf(b1_meta.loc[api_key].get('zero_fraction'))
+
+        if n == 0 or coverage == 0:
+            rows.append(make_row(
+                variable=api_key, band=band,
+                method='area_weighted', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data',
+            ))
+            continue
+
+        wts_norm       = wts / coverage
+        weight_at_zero = round(float(wts[scores == 0.0].sum()), 4)
+
+        wmean   = round(float(np.dot(scores, wts_norm)), 2)
+        p10_raw = weighted_quantile(scores, wts_norm, 0.10)
+        p90_raw = weighted_quantile(scores, wts_norm, 0.90)
+        spread  = round(p90_raw - p10_raw, 2)   # from unrounded values, matching notebook
+        p10     = round(p10_raw, 2)
+        p90     = round(p90_raw, 2)
+
+        if (zf is not None
+                and zf >= zero_fraction_threshold
+                and weight_at_zero >= zero_coverage_threshold):
+            status_val = 'outside_active_domain'
+            coherence  = None
+            rep_score  = None
+        elif spread < spread_threshold:
+            status_val = 'ok'
+            coherence  = 'concentrated'
+            rep_score  = wmean
+        else:
+            status_val = 'ok'
+            coherence  = 'spread'
+            rep_score  = None
+
+        rows.append(make_row(
+            variable=api_key, band=band,
+            method='area_weighted',
+            unit_type='basin', n_units=n,
+            representative_score=rep_score,
+            representative_raw=None,
+            coverage=round(coverage, 4),
+            status=status_val,
+            coherence=coherence,
+            weight_at_zero=weight_at_zero,
+            detail={
+                'spread': spread,
+                'p10':    p10,
+                'p90':    p90,
+                'unit':   'percentile',
+            },
+        ))
+
+    return rows
