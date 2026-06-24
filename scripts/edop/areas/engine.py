@@ -808,3 +808,64 @@ def dispatch_variable(typology_cluster, kind):
     if tc == 'local-anomaly':
         return 'B5'
     return 'unknown'
+
+
+# ── WO5: B2 dominant_basin ────────────────────────────────────────────────────
+
+
+def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
+    """
+    Block 2: network-topology dominant-basin aggregation.
+
+    Discharge is cumulative — each basin already integrates upstream flow.
+    Dominant river = basin with highest annual discharge (discharge_yr) in the
+    buffer set. All three network-topology variables read from that one basin.
+
+    n_units is the full buffer-set size (not 1): the dominant basin was *selected
+    from* the full set; see WO5 report for the contract-tension note.
+
+    discharge_min > 0 → perennial stored as detail['perennial'] on the
+    discharge_min row (engine enrichment; not present in the frozen step3 TSV).
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    raw_df     : DataFrame — hybas_id as index; weight + raw values from view
+    meta_df    : DataFrame — api_key as index; columns include band,
+                             typology_cluster, kind
+
+    Returns
+    -------
+    list of make_row dicts — one per network-topology variable
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+
+    nt_vars     = meta_df[meta_df['typology_cluster'] == 'network-topology']
+    dominant_id = int(raw_df['discharge_yr'].idxmax())
+    n_total     = len(raw_df)
+
+    rows = []
+    for api_key, vrow in nt_vars.iterrows():
+        score   = round(float(matrix_df.loc[dominant_id, api_key]), 2)
+        raw_val = round(float(raw_df.loc[dominant_id, api_key]),    3)
+        band    = str(vrow.get('band', 'B'))
+
+        detail = {'dominant_hybas_id': dominant_id}
+        if api_key == 'discharge_min':
+            detail['perennial'] = bool(raw_val > 0)
+
+        rows.append(make_row(
+            variable=api_key, band=band,
+            method='dominant_basin',
+            unit_type='basin', n_units=n_total,
+            representative_score=score,
+            representative_raw=raw_val,
+            coverage=1.0, status='ok',
+            units='m³/s',
+            detail=detail,
+        ))
+
+    return rows

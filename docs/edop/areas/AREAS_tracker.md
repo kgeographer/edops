@@ -5,7 +5,7 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-23
+- **Last updated:** 2026-06-24
 - **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
   decision is locked; read at the start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -18,8 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: all blocks 1–7 done. **WO1–WO4 done.** Response contract approved (four
-pins closed). `make_row` is the conformance target. **B1–B6 extraction (WO5+) is next.**
+(aggregator) is underway: all blocks 1–7 done. **WO1–WO5 done.** Response contract approved (four
+pins closed). `make_row` is the conformance target. B2 extraction done. **WO6 (B1 area_weighted) is next.**
 
 ---
 
@@ -67,7 +67,8 @@ resolver.
 | WO2 | Attachment pass — `attach_values` + SQL builders (`_val_expr`, `rank_expr`, `two_pass_sql`) → engine.py | **done** — regression passes vs step2_matrix.tsv, step2_raw.tsv, step2_class_ids.tsv |
 | WO3 | Dispatch — `dispatch_variable(typology_cluster, kind)` → block label | **done** — 49/54 meta_df vars verified; 5 surfaced (see below) |
 | WO4 | `make_row` + projector + assembler + Band T promotion | **done** — `make_row`, `project_row`, `assemble_payload`, `CAVEAT_TEXTS` + `aggregate_band_t` (wired to make_row) in engine.py. All 5 acceptance tests PASS. `make_row` is now the conformance target for B1–B6 extraction. |
-| — | B1–B6 extraction (WO5+) | todo |
+| WO5 | B2 — `dominant_basin` extraction | **done** — `aggregate_b2(basin_set, matrix_df, raw_df, meta_df)` in engine.py. 4/4 acceptance tests PASS. Three determinations: (1) B2 rows carry both score + raw; (2) `perennial` stored in `detail` on discharge_min row (engine enrichment); (3) `n_units=9` = full buffer set (not 1); dominant basin carried via `detail['dominant_hybas_id']`. `test_engine_wo5.py` strict PASS. |
+| — | B1, B3, B4, B5, B6 extraction (WO6+) | todo |
 
 ### Later in the phase
 
@@ -169,6 +170,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-24** — Engine WO5 complete. `aggregate_b2(basin_set, matrix_df, raw_df, meta_df)` added to engine.py. 4/4 acceptance tests PASS. Three determinations flagged: (1) B2 rows carry both representative_score (dominant basin percentile) and representative_raw (m³/s); (2) perennial flag stored in detail on discharge_min row (engine enrichment not in frozen TSV); (3) n_units=9 = full buffer set — dominant basin identified via detail['dominant_hybas_id'], not by a separate n_contributing field.
 - **2026-06-23** — Engine WO4b complete (diagnosis-only; no code change). WO4b surfaced a contradiction: engine returned 425 HYDE cells and an 11% higher grazing mean vs the TSV's 426 cells. Diagnosis confirmed: step3b notebook used rounded coordinates (LAT=16.8167, LON=-2.9833); engine test used WHG-resolved precise coordinates (16.76618535, -3.00777252). A ~4 km buffer shift changes the marginal cell set. Engine IS deterministic (verified: same result on two runs, DB unchanged). Fix: update test fixture to notebook coordinates. No weighting bug, no DB change, no geometry non-determinism. Regression now strictly PASS (float_tol=0.01) with no loose tolerances. Band T fixture coordinates documented in test file.
 - **2026-06-23** — Engine WO4 complete. `make_row`, `project_row`, `assemble_payload`, `CAVEAT_TEXTS` added to engine.py. `aggregate_band_t` promoted from step3b_band_t.ipynb and re-wired to `make_row` (no behavior change to numeric outputs). Four contract pins implemented: Pin 1 status vocabulary (ok|outside_active_domain|no_data); Pin 2 caveat key-refs in rows + text in assemble_payload top-level dict; Pin 4 score_suppressed bool disambiguates null-because-two_regime from null-not-applicable. LMR caveat now applied to all LMR rows in `aggregate_band_t` (was missing from notebook's aggregate path). Spatial boundary effect noted: 1 HYDE cell at the 100 km buffer edge gives n_units=425 vs TSV's 426; high-value cell (grazing/rangeland ~7 km²) shifts mean ~10%; not a code error. `test_engine_wo4.py` 5/5 PASS. `make_row` is now the conformance target for WO5+ B1–B6 extraction.
 - **2026-06-22** — Engine WO3 complete. `dispatch_variable(typology_cluster, kind)` added to engine.py. `zero_fraction` dropped from proposed signature (confirmed not a routing input). Coverage: 49/54 meta_df vars verified against step3_results.tsv methods; 5 surfaced — `river_area_upstream` (B5, deferred within B5; `EXTREME_VARS` hardcoded to `['river_area']`), `strata_code` (B3, excluded within B3; opaque codes), `ecoregion` (B3, deduped within B3; same col as eco_id), `endorheic` + `coast_flag` (B4, produce synthetic outputs `outlet_type`/`coast_fraction` — not standalone in results). Band T confirmed separate path (not in meta_df). Pre-contract extractions now complete. `test_engine_wo3.py` PASS.
