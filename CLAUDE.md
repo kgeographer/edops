@@ -115,7 +115,7 @@ state, block status, locked decisions, and what's next. Consult
 - WO7 — B3 class_mixture extraction: **done** (6/6 strict PASS)
 - WO8 — B4 flag/structural extraction: **done** (7/7 strict PASS)
 - WO9 — B5 distribution_only + extreme extraction: **done** (6/6 strict PASS)
-- WO10 — B6 modality post-pass: **next**
+- WO10 — B6 modality post-pass: **done** (6/6 strict PASS; pct_sand lineage artifact noted)
 
 **Deferred items note (2026-06-24):** Two new items added to deferred register from the
 WO4b "doh moment" — (1) edge-sensitivity diagnostic (boundary leverage, candidate trust-layer

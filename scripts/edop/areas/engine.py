@@ -1275,6 +1275,177 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
     return rows, companion_rows
 
 
+# ── WO10: B6 modality post-pass ───────────────────────────────────────────────
+
+_MODALITY_GAP      = 0.50   # gap threshold as fraction of spread — provisional
+_MIN_REGIME_WEIGHT = 0.20   # minimum weight on each side to count as a regime
+
+
+def detect_modality(scores, weights_norm, spread,
+                    modality_gap=_MODALITY_GAP,
+                    min_regime_weight=_MIN_REGIME_WEIGHT):
+    """
+    Detect unimodal vs two_regime distribution.
+
+    De-closured from step3 Cell 27 detect_modality.  Consumes only what it
+    computes; the notebook's endorheic_set is used for seam-alignment reporting
+    only (not detection) and is therefore not reproduced here.
+
+    Parameters
+    ----------
+    scores, weights_norm : np.array — notna-filtered; weights_norm sums to 1
+    spread               : float — p90 - p10 (precomputed)
+
+    Returns
+    -------
+    (modality, evidence)
+      modality : 'two_regime' | 'unimodal'
+      evidence : dict or None
+        keys: gap_size, threshold, split_between,
+              left_weight, right_weight, left_center, right_center,
+              n_left, n_right
+    """
+    if len(scores) < 2 or spread == 0.0:
+        return 'unimodal', None
+
+    idx      = np.argsort(scores)
+    s_sorted = scores[idx]
+    w_sorted = weights_norm[idx]
+
+    threshold = modality_gap * spread
+    best      = None
+    best_gap  = 0.0
+
+    for i in range(len(s_sorted) - 1):
+        gap = float(s_sorted[i + 1] - s_sorted[i])
+        if gap > threshold:
+            lw = float(w_sorted[:i + 1].sum())
+            rw = float(w_sorted[i + 1:].sum())
+            if lw >= min_regime_weight and rw >= min_regime_weight and gap > best_gap:
+                best_gap = gap
+                lc = float(np.dot(s_sorted[:i + 1],     w_sorted[:i + 1]     / lw))
+                rc = float(np.dot(s_sorted[i + 1:],     w_sorted[i + 1:]     / rw))
+                best = {
+                    'gap_size':      round(gap, 2),
+                    'threshold':     round(threshold, 2),
+                    'split_between': (round(float(s_sorted[i]),     2),
+                                      round(float(s_sorted[i + 1]), 2)),
+                    'left_weight':   round(lw, 4),
+                    'right_weight':  round(rw, 4),
+                    'left_center':   round(lc, 2),
+                    'right_center':  round(rc, 2),
+                    'n_left':        i + 1,
+                    'n_right':       len(s_sorted) - i - 1,
+                }
+
+    if best is not None:
+        return 'two_regime', best
+    return 'unimodal', None
+
+
+def apply_modality(rows, basin_set, matrix_df,
+                   modality_gap=_MODALITY_GAP,
+                   min_regime_weight=_MIN_REGIME_WEIGHT):
+    """
+    B6 post-pass: overlay modality detection on distribution-bearing rows.
+
+    Runs after B1 (area_weighted) and B5 (distribution_only).  Mutates each row
+    dict in-place; returns the same list plus the regimes companion table.
+
+    Determination (WO10):
+    - modality ∈ {unimodal, two_regime} on every distribution-bearing row
+      (never null — B6 always renders a verdict for continuous rows it covers)
+    - score_suppressed=True ONLY when B6 is the reason the score is null
+      (concentrated row that turned out to be two_regime); not set for spread
+      rows that are also two_regime (score was already null for spread)
+    - suppressed value preserved in detail['suppressed_score'] (not discarded)
+    - endorheic_set: seam-alignment reporting only in the notebook; not reproduced
+
+    Parameters
+    ----------
+    rows      : list of make_row dicts from B1 + B5
+    basin_set : DataFrame — hybas_id as index (or column), weight column
+    matrix_df : DataFrame — hybas_id as index; percentile score columns
+
+    Returns
+    -------
+    (rows, regimes_companion) where regimes_companion is a list of dicts:
+      {variable, regime_id, regime_center, regime_weight, n_basins, coverage_weight}
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    regimes_companion = []
+
+    for row in rows:
+        var    = row['variable']
+        spread = float(row.get('detail', {}).get('spread') or 0.0)
+
+        if var not in joined.columns or spread == 0.0:
+            row['modality'] = 'unimodal'
+            continue
+
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+        n    = int(mask.sum())
+
+        if n < 2:
+            row['modality'] = 'unimodal'
+            continue
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+        cov    = float(wts.sum())
+        if cov == 0.0:
+            row['modality'] = 'unimodal'
+            continue
+        wts_norm = wts / cov
+
+        modality, evidence = detect_modality(
+            scores, wts_norm, spread,
+            modality_gap=modality_gap,
+            min_regime_weight=min_regime_weight,
+        )
+        row['modality'] = modality
+
+        if modality == 'two_regime' and evidence is not None:
+            # Suppressed-score: only when B6 is the reason (was concentrated)
+            if row.get('representative_score') is not None:
+                row['detail']['suppressed_score'] = row['representative_score']
+                row['representative_score']        = None
+                row['score_suppressed']            = True
+
+            # Regime breakdown in detail (bounded spatial expansion, §6)
+            row['detail']['regimes'] = [
+                {'id': 0, 'center': evidence['left_center'],
+                 'weight': evidence['left_weight']},
+                {'id': 1, 'center': evidence['right_center'],
+                 'weight': evidence['right_weight']},
+            ]
+
+            # Companion table
+            cov_weight = float(row.get('coverage', 1.0))
+            for regime_id, center_key, weight_key, n_key in [
+                    (0, 'left_center',  'left_weight',  'n_left'),
+                    (1, 'right_center', 'right_weight', 'n_right')]:
+                regimes_companion.append({
+                    'variable':        var,
+                    'regime_id':       regime_id,
+                    'regime_center':   evidence[center_key],
+                    'regime_weight':   evidence[weight_key],
+                    'n_basins':        evidence[n_key],
+                    'coverage_weight': cov_weight,
+                })
+
+    return rows, regimes_companion
+
+
 # ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
 
 
