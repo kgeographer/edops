@@ -748,6 +748,9 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
     return rows
 
 
+_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent'})
+
+
 # ── WO3: dispatch ─────────────────────────────────────────────────────────────
 
 
@@ -866,6 +869,131 @@ def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
             coverage=1.0, status='ok',
             units='m³/s',
             detail=detail,
+        ))
+
+    return rows
+
+
+# ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
+
+
+def aggregate_b1(basin_set, matrix_df, meta_df,
+                 spread_threshold=20.0,
+                 zero_fraction_threshold=0.20,
+                 zero_coverage_threshold=0.90) -> list:
+    """
+    Block 1: area-weighted coherence aggregation for continental-gradient and
+    scale-dependent continuous variables.
+
+    For each variable:
+      - weight = basin_set weight (fraction of buffer area)
+      - scores = global-percentile scores from matrix_df
+      - null scores dropped; surviving weights renormalized → coverage
+      - weight_at_zero = fraction of total buffer weight at score 0.0
+      - coherence: 'concentrated' if weighted (p90-p10) < T, else 'spread'
+      - outside_active_domain guard: if zero_fraction >= threshold AND
+        weight_at_zero >= zero_coverage_threshold
+
+    representative_raw is always None — native-unit means are deferred.
+
+    B1 emits all rows with non-null score for 'concentrated' rows, including
+    those the frozen step3 TSV marks two_regime. Those rows are correct B6
+    inputs; B6 (WO10) owns the score-nulling and modality field. This function
+    does NOT interact with B6 — it is the first pass only.
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    meta_df    : DataFrame — api_key as index; columns include band,
+                             typology_cluster, kind, zero_fraction
+    spread_threshold       : float — T; coherence boundary (default 20.0, provisional)
+    zero_fraction_threshold: float — catalog threshold for zero-aware vars (default 0.20)
+    zero_coverage_threshold: float — outside_active_domain guard (default 0.90)
+
+    Returns
+    -------
+    list of make_row dicts — one per B1 variable, in meta_df order
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    b1_meta     = meta_df[
+        (meta_df['kind'] == 'continuous') &
+        (meta_df['typology_cluster'].isin(_BLOCK1_CLUSTERS))
+    ]
+    block1_vars = [v for v in b1_meta.index if v in joined.columns]
+
+    rows = []
+    for api_key in block1_vars:
+        col  = pd.to_numeric(joined[api_key], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+
+        n        = int(mask.sum())
+        coverage = float(wts.sum())
+
+        band = str(b1_meta.loc[api_key, 'band'])
+        zf   = _parse_zf(b1_meta.loc[api_key].get('zero_fraction'))
+
+        if n == 0 or coverage == 0:
+            rows.append(make_row(
+                variable=api_key, band=band,
+                method='area_weighted', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data',
+            ))
+            continue
+
+        wts_norm       = wts / coverage
+        weight_at_zero = round(float(wts[scores == 0.0].sum()), 4)
+
+        wmean   = round(float(np.dot(scores, wts_norm)), 2)
+        p10_raw = weighted_quantile(scores, wts_norm, 0.10)
+        p90_raw = weighted_quantile(scores, wts_norm, 0.90)
+        spread  = round(p90_raw - p10_raw, 2)   # from unrounded values, matching notebook
+        p10     = round(p10_raw, 2)
+        p90     = round(p90_raw, 2)
+
+        if (zf is not None
+                and zf >= zero_fraction_threshold
+                and weight_at_zero >= zero_coverage_threshold):
+            status_val = 'outside_active_domain'
+            coherence  = None
+            rep_score  = None
+        elif spread < spread_threshold:
+            status_val = 'ok'
+            coherence  = 'concentrated'
+            rep_score  = wmean
+        else:
+            status_val = 'ok'
+            coherence  = 'spread'
+            rep_score  = None
+
+        rows.append(make_row(
+            variable=api_key, band=band,
+            method='area_weighted',
+            unit_type='basin', n_units=n,
+            representative_score=rep_score,
+            representative_raw=None,
+            coverage=round(coverage, 4),
+            status=status_val,
+            coherence=coherence,
+            weight_at_zero=weight_at_zero,
+            detail={
+                'spread': spread,
+                'p10':    p10,
+                'p90':    p90,
+                'unit':   'percentile',
+            },
         ))
 
     return rows
