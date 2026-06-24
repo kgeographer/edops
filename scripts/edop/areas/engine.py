@@ -1127,6 +1127,154 @@ def aggregate_b4(basin_set, raw_df,
     return [ot_row, cf_row]
 
 
+# ── WO9: B5 fallback + extreme ────────────────────────────────────────────────
+
+# Only river_area takes the extreme path; river_area_upstream is deferred (register).
+_B5_EXTREME_VARS = frozenset({'river_area'})
+
+
+def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
+    """
+    Block 5: fallback aggregation — two sub-paths.
+
+    distribution_only — untyped continuous variables (typology_cluster is NaN):
+      Surfaces the weighted distribution without rendering a verdict.
+      representative_score = weighted mean percentile (always populated).
+      representative_raw   = None (native-unit means deferred per register).
+      coherence            = None (typing presupposition doesn't hold here).
+      detail               = {spread, p10, p90, unit: 'percentile'}.
+      status               = 'untyped'.
+
+    extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
+      Selects the basin carrying the maximum score (monotone with raw value).
+      representative_score = carrier basin's percentile score.
+      representative_raw   = carrier basin's raw value (km²).
+      coherence            = None.
+      detail               = {dominant_hybas_id}.
+      status               = 'ok'.
+
+    Companion rows (second return value): one row per {variable, basin} for
+    distribution_only variables — the full weighted distribution so any quantile
+    is recoverable downstream.
+
+    Parameters
+    ----------
+    basin_set  : DataFrame — hybas_id as index (or column), weight column
+    matrix_df  : DataFrame — hybas_id as index; continuous position scores
+    raw_df     : DataFrame — hybas_id as index; raw values including river_area
+    meta_df    : DataFrame — api_key as index; columns include band, kind,
+                             typology_cluster
+
+    Returns
+    -------
+    (rows, companion_rows) where:
+      rows          : list of make_row dicts
+      companion_rows: list of {variable, hybas_id, weight, score} dicts
+                      (one per basin for each distribution_only variable)
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+    raw_df = raw_df.copy()
+    raw_df.index = raw_df.index.astype('int64')
+
+    joined = basin_set[['weight']].join(matrix_df, how='inner')
+
+    untyped_meta = meta_df[
+        (meta_df['kind'] == 'continuous') &
+        meta_df['typology_cluster'].isna()
+    ]
+    untyped_vars = [v for v in untyped_meta.index if v in joined.columns]
+
+    extreme_meta = meta_df[meta_df['typology_cluster'] == 'local-anomaly']
+    extreme_vars = [v for v in _B5_EXTREME_VARS
+                    if v in joined.columns and v in extreme_meta.index]
+
+    rows           = []
+    companion_rows = []
+
+    # ── distribution_only ──
+    for var in untyped_vars:
+        band = str(untyped_meta.loc[var, 'band'])
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+
+        scores = col[mask].values.astype(float)
+        wts    = w[mask].values.astype(float)
+        n      = int(mask.sum())
+        cov    = float(wts.sum())
+
+        if n == 0 or cov == 0:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='distribution_only', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+            ))
+            continue
+
+        wts_norm = wts / cov
+        wmean    = round(float(np.dot(scores, wts_norm)), 2)
+        p10_raw  = weighted_quantile(scores, wts_norm, 0.10)
+        p90_raw  = weighted_quantile(scores, wts_norm, 0.90)
+        spread   = round(p90_raw - p10_raw, 2)
+        p10      = round(p10_raw, 2)
+        p90      = round(p90_raw, 2)
+
+        rows.append(make_row(
+            variable=var, band=band,
+            method='distribution_only', unit_type='basin', n_units=n,
+            representative_score=wmean, representative_raw=None,
+            coverage=round(cov, 4), status='untyped', coherence=None,
+            detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
+        ))
+
+        for hid, score, wt in zip(joined.index[mask], scores, w[mask].values):
+            companion_rows.append({
+                'variable': var,
+                'hybas_id': int(hid),
+                'weight':   round(float(wt), 6),
+                'score':    round(float(score), 4),
+            })
+
+    # ── extreme ──
+    for var in extreme_vars:
+        band = str(extreme_meta.loc[var, 'band'])
+        col  = pd.to_numeric(joined[var], errors='coerce')
+        w    = joined['weight']
+        mask = col.notna()
+        n    = int(mask.sum())
+        cov  = float(w[mask].sum())
+
+        if n == 0:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='extreme', unit_type='basin', n_units=n,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+            ))
+            continue
+
+        carrier_id    = int(col.idxmax())
+        carrier_score = round(float(col.loc[carrier_id]), 2)
+        carrier_raw   = (round(float(raw_df.loc[carrier_id, var]), 3)
+                         if var in raw_df.columns else None)
+
+        rows.append(make_row(
+            variable=var, band=band,
+            method='extreme', unit_type='basin', n_units=n,
+            representative_score=carrier_score,
+            representative_raw=carrier_raw,
+            coverage=round(cov, 4), status='ok', coherence=None,
+            detail={'dominant_hybas_id': carrier_id},
+        ))
+
+    return rows, companion_rows
+
+
 # ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
 
 

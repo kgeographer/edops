@@ -18,8 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: all blocks 1–7 done. **WO1–WO8 done.** Response contract approved (four
-pins closed). `make_row` is the conformance target. B2, B1, B3, B4 extraction done. **WO9 (B5 distribution_only + extreme) is next.**
+(aggregator) is underway: all blocks 1–7 done. **WO1–WO9 done.** Response contract approved (four
+pins closed). `make_row` is the conformance target. B2, B1, B3, B4, B5 extraction done. **WO10 (B6 modality post-pass) is next.**
 
 ---
 
@@ -71,7 +71,8 @@ resolver.
 | WO6 | B1 — `area_weighted` extraction | **done** — `aggregate_b1(basin_set, matrix_df, meta_df, …)` in engine.py. 5/5 acceptance tests PASS. `representative_raw=None` throughout (native-unit means deferred). Spread computed from un-rounded p10_raw/p90_raw (matches notebook ordering; avoids 0.01 rounding boundary). Two-regime rows: B1 emits correct non-null scores for 2 concentrated two_regime rows (≈ frozen `representative_score_suppressed`); B6 post-pass is WO10. `test_engine_wo6.py` strict PASS. |
 | WO7 | B3 — `class_mixture` extraction | **done** — `aggregate_b3(basin_set, matrix_df, class_id_df, meta_df, …)` in engine.py. 6/6 acceptance tests PASS. Three determinations: (1) `representative_raw=None` — modal label in `detail['modal_label']`, not lean row (confirmed from frozen TSV); (2) lean carries `coherence`; detail carries `modal_class_id`, `modal_label`, `modal_share`, `n_classes`, `concentration`, `mixture` list; (3) coherence rule: `modal_share >= 0.85` → `'concentrated'`, else `'mixed'` — value set is exactly `{concentrated, mixed}`, no `no_data` in fixture. Special case: `eco_id` text labels come from `matrix_df['ecoregion']`, not `matrix_df['eco_id']` (which holds integers). `test_engine_wo7.py` strict PASS. |
 | WO8 | B4 — `flag/structural` extraction | **done** — `aggregate_b4(basin_set, raw_df)` in engine.py. 7/7 acceptance tests PASS. Determinations: (1) `coast_fraction` carries `coherence=None` (scalar; no concentrated/mixed concept); `representative_raw=0.0` (the fraction); (2) `outlet_type` `representative_raw='Exorheic, non-coastal'` (modal label; WO7b convention; frozen TSV re-frozen); (3) cross-block consistency confirmed: endorheic fraction (0.4654) ≈ `dist_sink` `weight_at_zero` (0.4700, gap=0.005). Exclusivity assertion live. `endorheic` and `coast_flag` not emitted standalone. `test_engine_wo8.py` strict PASS. |
-| — | B5, B6 extraction (WO9+) | todo |
+| WO9 | B5 — `distribution_only` + `extreme` extraction | **done** — `aggregate_b5(basin_set, matrix_df, raw_df, meta_df)` in engine.py. Returns `(rows, companion_rows)`. 6/6 acceptance tests PASS. Determinations: (1) `distribution_only` `coherence=None` — fallback surfaces distribution without rendering a typed verdict; `representative_score` = weighted mean percentile (always populated); (2) `extreme` `representative_raw` = max raw value (km²); `representative_score` = carrier percentile; `dominant_hybas_id` in detail; `coherence=None`. Inner Niger Delta split preserved: river_area carrier (1060582960) ≠ B2 discharge dominant (1060564960). `test_engine_wo9.py` strict PASS. |
+| — | B6 extraction — modality post-pass (WO10) | todo |
 
 ### Later in the phase
 
