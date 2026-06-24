@@ -113,7 +113,7 @@ So `&detail` governs the bounded spatial expansion; the temporal volume is gover
 
 **Resolved (draft §7, now built):** ① `n_units`/`unit_type` unified, `n_basins` retired. ② `coverage` one meaning, `shortfall` separate top-level, Band T split deferred to the coastal fixture. ③ single `&detail`, `&dists` dropped. ④ lean trust layer confirmed — `coherence`, `modality`, `distribution`, `weight_at_zero`, `caveat`, plus `score_suppressed`. ⑤ synthetic provenance lives in the catalog `notes` column, not a payload field.
 
-**Open — one decision:** **distribution_only coherence.** `distribution_only` populates `representative_score` but emits `coherence=null`, leaving a headline with no trust flag — the one place the self-trusting-lean-row principle isn't met. `coherence` is a pure spread test (weighted p90−p10 < T) that B5 already computes, so it's free to emit. **Recommendation: emit it.** Settle at the post-WO10 consistency pass.
+**Open decisions: none.** All §7 items resolved. The last item — **distribution_only coherence** — was settled at the WO10b consistency pass (2026-06-24): `coherence` is now emitted on `distribution_only` rows using the same spread test as B1 (`'concentrated'` if p90−p10 < 20, else `'spread'`); `extreme` path unchanged (`coherence=null`). See amendments file, Folded item 7.
 
 ## 8. Reconstructions — confirmed (closed)
 

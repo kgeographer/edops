@@ -10,9 +10,15 @@ deferred register's discipline, applied to contract drift instead of deferred wo
 
 ## Pending (not yet in the contract)
 
-| Item | Status |
-|---|---|
-| **distribution_only coherence** — distribution_only populates `representative_score` but emits `coherence=null`, so its lean row carries a headline with no trust flag — the one place the self-trusting-lean-row principle isn't met. `coherence` is a pure spread test (weighted p90−p10 < T) that B5 already computes, so it's free to emit. Opus recommends emitting it. | **Open decision** — carried into contract §7 as the single open item; settle at the post-WO10 consistency pass. |
+*(empty)*
+
+---
+
+## Folded — 2026-06-24 (WO10b amendment pass)
+
+| # | Item | Where folded |
+|---|---|---|
+| 7 | **distribution_only coherence** — `coherence` now emitted on `distribution_only` rows using the same spread test as B1 (`'concentrated'` if p90−p10 < 20, else `'spread'`). Extreme path unchanged (`coherence=null`). Blessed deviation from frozen TSV (which had no coherence value); re-frozen 2026-06-24. | §4 (null-score reasons; quality flag inventory); §7 (item resolved, Pending now empty) |
 
 ---
 

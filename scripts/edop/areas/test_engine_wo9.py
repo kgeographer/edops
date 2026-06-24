@@ -14,9 +14,11 @@ Acceptance (from WO9 work order):
   5. extreme/B2 carrier split confirmed (river_area carrier ≠ B2 discharge dominant)
   6. Sample projection: lean + full for one distribution_only row and river_area
 
-Determinations flagged (WO9):
-  1. distribution_only coherence=None — fallback surfaces distribution without verdict;
-     typing presupposition doesn't hold; confirmed from frozen TSV (no coherence value).
+Determinations flagged (WO9 / amended WO10b):
+  1. distribution_only coherence — WO10b blessed deviation: coherence now emitted as
+     'concentrated' (spread < 20) or 'spread'; engine adds the trust flag the frozen TSV
+     lacked. temp_min spread=5.65, temp_max spread=3.23 → both 'concentrated'.
+     Amended from WO9 original (coherence=None); re-freeze signed off 2026-06-24.
   2. distribution_only representative_score = weighted mean percentile (always populated,
      unlike B1 which nulls it for spread rows); confirmed from frozen TSV (78.98, 95.56).
   3. extreme envelope: representative_raw=raw km² value; representative_score=carrier
@@ -175,9 +177,9 @@ def test_envelope():
     ok = True
 
     expected = {
-        'temp_min':   ('distribution_only', 'untyped', None),
-        'temp_max':   ('distribution_only', 'untyped', None),
-        'river_area': ('extreme',           'ok',      None),
+        'temp_min':   ('distribution_only', 'untyped', 'concentrated'),  # spread=5.65 < 20; WO10b
+        'temp_max':   ('distribution_only', 'untyped', 'concentrated'),  # spread=3.23 < 20; WO10b
+        'river_area': ('extreme',           'ok',       None),
     }
 
     for r in rows:

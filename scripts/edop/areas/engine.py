@@ -1130,7 +1130,8 @@ def aggregate_b4(basin_set, raw_df,
 # ── WO9: B5 fallback + extreme ────────────────────────────────────────────────
 
 # Only river_area takes the extreme path; river_area_upstream is deferred (register).
-_B5_EXTREME_VARS = frozenset({'river_area'})
+_B5_EXTREME_VARS    = frozenset({'river_area'})
+_SPREAD_THRESHOLD   = 20.0  # concentrated if (p90-p10) < T — provisional; shared by B1 + B5
 
 
 def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
@@ -1141,7 +1142,7 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
       Surfaces the weighted distribution without rendering a verdict.
       representative_score = weighted mean percentile (always populated).
       representative_raw   = None (native-unit means deferred per register).
-      coherence            = None (typing presupposition doesn't hold here).
+      coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
       detail               = {spread, p10, p90, unit: 'percentile'}.
       status               = 'untyped'.
 
@@ -1224,11 +1225,12 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
         p10      = round(p10_raw, 2)
         p90      = round(p90_raw, 2)
 
+        coherence = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'
         rows.append(make_row(
             variable=var, band=band,
             method='distribution_only', unit_type='basin', n_units=n,
             representative_score=wmean, representative_raw=None,
-            coverage=round(cov, 4), status='untyped', coherence=None,
+            coverage=round(cov, 4), status='untyped', coherence=coherence,
             detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
         ))
 
@@ -1450,7 +1452,7 @@ def apply_modality(rows, basin_set, matrix_df,
 
 
 def aggregate_b1(basin_set, matrix_df, meta_df,
-                 spread_threshold=20.0,
+                 spread_threshold=_SPREAD_THRESHOLD,
                  zero_fraction_threshold=0.20,
                  zero_coverage_threshold=0.90) -> list:
     """
