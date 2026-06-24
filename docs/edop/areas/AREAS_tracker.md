@@ -18,8 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: all blocks 1–7 done. **WO1–WO6 done.** Response contract approved (four
-pins closed). `make_row` is the conformance target. B2 + B1 extraction done. **WO7 (B3 class_mixture) is next.**
+(aggregator) is underway: all blocks 1–7 done. **WO1–WO7 done.** Response contract approved (four
+pins closed). `make_row` is the conformance target. B2, B1, B3 extraction done. **Synthetics→catalog step (outlet_type, coast_fraction catalog rows) must land before WO8 (B4). Then WO8 is next.**
 
 ---
 
@@ -69,7 +69,8 @@ resolver.
 | WO4 | `make_row` + projector + assembler + Band T promotion | **done** — `make_row`, `project_row`, `assemble_payload`, `CAVEAT_TEXTS` + `aggregate_band_t` (wired to make_row) in engine.py. All 5 acceptance tests PASS. `make_row` is now the conformance target for B1–B6 extraction. |
 | WO5 | B2 — `dominant_basin` extraction | **done** — `aggregate_b2(basin_set, matrix_df, raw_df, meta_df)` in engine.py. 4/4 acceptance tests PASS. Three determinations: (1) B2 rows carry both score + raw; (2) `perennial` stored in `detail` on discharge_min row (engine enrichment); (3) `n_units=9` = full buffer set (not 1); dominant basin carried via `detail['dominant_hybas_id']`. `test_engine_wo5.py` strict PASS. |
 | WO6 | B1 — `area_weighted` extraction | **done** — `aggregate_b1(basin_set, matrix_df, meta_df, …)` in engine.py. 5/5 acceptance tests PASS. `representative_raw=None` throughout (native-unit means deferred). Spread computed from un-rounded p10_raw/p90_raw (matches notebook ordering; avoids 0.01 rounding boundary). Two-regime rows: B1 emits correct non-null scores for 2 concentrated two_regime rows (≈ frozen `representative_score_suppressed`); B6 post-pass is WO10. `test_engine_wo6.py` strict PASS. |
-| — | B3, B4, B5, B6 extraction (WO7+) | todo |
+| WO7 | B3 — `class_mixture` extraction | **done** — `aggregate_b3(basin_set, matrix_df, class_id_df, meta_df, …)` in engine.py. 6/6 acceptance tests PASS. Three determinations: (1) `representative_raw=None` — modal label in `detail['modal_label']`, not lean row (confirmed from frozen TSV); (2) lean carries `coherence`; detail carries `modal_class_id`, `modal_label`, `modal_share`, `n_classes`, `concentration`, `mixture` list; (3) coherence rule: `modal_share >= 0.85` → `'concentrated'`, else `'mixed'` — value set is exactly `{concentrated, mixed}`, no `no_data` in fixture. Special case: `eco_id` text labels come from `matrix_df['ecoregion']`, not `matrix_df['eco_id']` (which holds integers). `test_engine_wo7.py` strict PASS. |
+| — | B4, B5, B6 extraction (WO8+) | todo — note: synthetics→catalog step (outlet_type, coast_fraction) lands between WO7 and WO8 per register |
 
 ### Later in the phase
 
@@ -171,6 +172,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-24** — Engine WO7 complete. `aggregate_b3(basin_set, matrix_df, class_id_df, meta_df, …)` added to engine.py. 6/6 acceptance tests PASS. Three determinations confirmed: (1) `representative_raw=None`; (2) lean carries `coherence`; detail carries modal summary + per-class mixture list with human-readable labels; (3) coherence rule: `modal_share >= 0.85` → `'concentrated'`, else `'mixed'`. eco_id special case: text labels from `matrix_df['ecoregion']` not `matrix_df['eco_id']` (integer col). Coherence split: 2 concentrated (lith_class, zone_name; modal_share=1.0), 7 mixed. `test_engine_wo7.py` strict PASS. Synthetics→catalog step (deferred register) must land before WO8.
 - **2026-06-24** — Engine WO6 complete. `aggregate_b1(basin_set, matrix_df, meta_df, …)` added to engine.py. 5/5 acceptance tests PASS. Key fix during implementation: spread must be computed from un-rounded p10_raw/p90_raw (matching notebook's computation order); rounding p10/p90 first then subtracting causes 0.01 boundary error on ~7 vars. `representative_raw=None` confirmed throughout. Two-regime rows verified: B1 emits non-null mean for 2 concentrated two_regime vars (correct B6 input); 10 spread two_regime vars correctly emit null score. B6 post-pass ownership (score-nulling, modality) remains WO10.
 - **2026-06-24** — Engine WO5 complete. `aggregate_b2(basin_set, matrix_df, raw_df, meta_df)` added to engine.py. 4/4 acceptance tests PASS. Three determinations flagged: (1) B2 rows carry both representative_score (dominant basin percentile) and representative_raw (m³/s); (2) perennial flag stored in detail on discharge_min row (engine enrichment not in frozen TSV); (3) n_units=9 = full buffer set — dominant basin identified via detail['dominant_hybas_id'], not by a separate n_contributing field.
 - **2026-06-23** — Engine WO4b complete (diagnosis-only; no code change). WO4b surfaced a contradiction: engine returned 425 HYDE cells and an 11% higher grazing mean vs the TSV's 426 cells. Diagnosis confirmed: step3b notebook used rounded coordinates (LAT=16.8167, LON=-2.9833); engine test used WHG-resolved precise coordinates (16.76618535, -3.00777252). A ~4 km buffer shift changes the marginal cell set. Engine IS deterministic (verified: same result on two runs, DB unchanged). Fix: update test fixture to notebook coordinates. No weighting bug, no DB change, no geometry non-determinism. Regression now strictly PASS (float_tol=0.01) with no loose tolerances. Band T fixture coordinates documented in test file.

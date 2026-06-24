@@ -874,6 +874,152 @@ def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
     return rows
 
 
+# ── WO7: B3 class_mixture ─────────────────────────────────────────────────────
+
+# Categoricals excluded from B3: strata_code (opaque codes, see register) and
+# ecoregion (deduped into eco_id — same db_col; eco_id row wins).
+_B3_EXCLUDE = frozenset({'strata_code', 'ecoregion'})
+
+# eco_id's integer column and text label column have different names in the view.
+# matrix_df['eco_id'] contains integers (the view's eco_id col);
+# matrix_df['ecoregion'] contains the human-readable text.
+# For all other categoricals label col == api_key.
+_B3_LABEL_COL = {'eco_id': 'ecoregion'}
+
+
+def aggregate_b3(basin_set, matrix_df, class_id_df, meta_df,
+                 plurality_threshold=0.85,
+                 min_share_epsilon=1e-6,
+                 low_coverage_floor=0.50) -> list:
+    """
+    Block 3: categorical class-mixture aggregation.
+
+    For each categorical variable (9 vars, excluding strata_code and ecoregion):
+      - class IDs come from class_id_df (integers from raw table via db_col)
+      - text labels come from matrix_df (view text column; eco_id uses 'ecoregion' col)
+      - NoData = class_id with no known text label; those basins drop out
+      - surviving weights renormalized within the valid set → proportions per class
+      - coherence: 'concentrated' if modal_share >= plurality_threshold, else 'mixed'
+      - detail carries modal summary + full per-class mixture with labels
+
+    representative_raw is always None — modal label lives in detail, not the lean row.
+    n_units = valid-data basin count for that variable (not necessarily the full set).
+    coverage = sum of weights over valid-data basins (unnormalized buffer fraction).
+
+    Parameters
+    ----------
+    basin_set    : DataFrame — hybas_id as index (or column), weight column
+    matrix_df    : DataFrame — hybas_id as index; categorical text labels (and eco_id ints)
+    class_id_df  : DataFrame — hybas_id as index; integer class IDs per categorical var
+    meta_df      : DataFrame — api_key as index; columns include band, kind
+
+    Returns
+    -------
+    list of make_row dicts — one per B3 variable, in meta_df order
+    """
+    if 'hybas_id' in basin_set.columns:
+        basin_set = basin_set.set_index('hybas_id')
+    basin_set.index = basin_set.index.astype('int64')
+    class_id_df = class_id_df.copy()
+    class_id_df.index = class_id_df.index.astype('int64')
+    matrix_df = matrix_df.copy()
+    matrix_df.index = matrix_df.index.astype('int64')
+
+    b3_meta = meta_df[
+        (meta_df['kind'] == 'categorical') &
+        (~meta_df.index.isin(_B3_EXCLUDE))
+    ]
+    b3_vars = [v for v in b3_meta.index if v in class_id_df.columns]
+
+    # Build label_map: api_key → {class_id(int): label(str)}
+    label_map = {}
+    for var in b3_vars:
+        label_col = _B3_LABEL_COL.get(var, var)
+        if label_col not in matrix_df.columns:
+            label_map[var] = {}
+            continue
+        ids    = class_id_df[var]
+        labels = matrix_df[label_col]
+        pairs  = pd.concat([ids, labels], axis=1)
+        pairs.columns = ['class_id', 'label']
+        valid = pairs.dropna(subset=['label'])
+        valid = valid[valid['label'].apply(lambda x: isinstance(x, str))]
+        label_map[var] = {int(r['class_id']): r['label']
+                          for _, r in valid.iterrows()}
+
+    joined = basin_set[['weight']].join(class_id_df[b3_vars], how='inner')
+
+    rows = []
+    for var in b3_vars:
+        band = str(b3_meta.loc[var, 'band'])
+        col  = joined[var]
+        w    = joined['weight']
+
+        valid_ids  = set(label_map.get(var, {}).keys())
+        mask       = col.isin(valid_ids)
+        surviving_w = w[mask]
+        cov_weight  = float(surviving_w.sum())
+        n_basins    = int(mask.sum())
+
+        if cov_weight < 1e-9:
+            rows.append(make_row(
+                variable=var, band=band,
+                method='class_mixture', unit_type='basin', n_units=0,
+                representative_score=None, representative_raw=None,
+                coverage=0.0, status='no_data', coherence=None,
+                detail={'modal_class_id': None, 'modal_label': None,
+                        'modal_share': None, 'n_classes': 0,
+                        'concentration': None, 'mixture': []},
+            ))
+            continue
+
+        status_val = 'low_coverage' if cov_weight < low_coverage_floor else 'ok'
+
+        w_norm = surviving_w / cov_weight
+        ids    = col[mask].astype(int)
+
+        props = (pd.DataFrame({'class_id': ids.values, 'w': w_norm.values})
+                 .groupby('class_id')['w'].sum()
+                 .reset_index()
+                 .rename(columns={'w': 'proportion'}))
+        props = props[props['proportion'] >= min_share_epsilon].copy()
+        props['label'] = props['class_id'].map(label_map[var])
+        props = props.sort_values('proportion', ascending=False).reset_index(drop=True)
+
+        modal       = props.iloc[0]
+        n_classes   = len(props)
+        hhi         = float((props['proportion'] ** 2).sum())
+        modal_share = round(float(modal['proportion']), 4)
+        coherence   = 'concentrated' if modal_share >= plurality_threshold else 'mixed'
+
+        modal_label = str(modal['label'])
+
+        mixture = [
+            {'class_id':    int(r['class_id']),
+             'class_label': str(r['label']),
+             'weight':      round(float(r['proportion']), 6)}
+            for _, r in props.iterrows()
+        ]
+
+        rows.append(make_row(
+            variable=var, band=band,
+            method='class_mixture', unit_type='basin', n_units=n_basins,
+            representative_score=None,
+            representative_raw=modal_label,
+            coverage=round(cov_weight, 4),
+            status=status_val, coherence=coherence,
+            detail={
+                'modal_class_id': int(modal['class_id']),
+                'modal_share':    modal_share,
+                'n_classes':      n_classes,
+                'concentration':  round(hhi, 4),
+                'mixture':        mixture,
+            },
+        ))
+
+    return rows
+
+
 # ── WO6: B1 area_weighted ─────────────────────────────────────────────────────
 
 
