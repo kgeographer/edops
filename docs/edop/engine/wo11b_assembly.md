@@ -1,4 +1,4 @@
-# CC work order — Engine assembly WO11: final assembly
+# CC work order — Engine assembly WO11b: final assembly
 
 **Date:** 2026-06-24 · branch off WO10b (`engine11` or your naming) · the capstone. Stop for review.
 

@@ -1705,3 +1705,118 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         ))
 
     return rows
+
+
+# ── WO11b: assembly ───────────────────────────────────────────────────────────
+
+_CATALOG_CACHE = {}   # level (int) → meta_df; populated lazily on first call
+
+_LEVEL_TABLE = {6: 'public.basin06',               8: 'public.basin08'}
+_LEVEL_VIEW  = {6: 'public.v_basin06_persist_rev1', 8: 'public.v_basin08_persist_rev1'}
+_BASIN_BANDS = list('ABCDE')
+
+
+def areal_signature(
+    lat, lon, radius_km,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Full areal signature for a buffer neighborhood.
+
+    Build-once catalog is loaded lazily per level on first call and cached.
+
+    Per-query pipeline
+    ------------------
+    1. resolve_buffer      → weighted basin set
+    2. attach_values       → matrix_df, class_id_df, raw_df
+    3. B1–B5 blocks        → basin-path rows (51 for Timbuktu)
+    4. apply_modality      → B6 post-pass on B1+B5 distribution rows (in-place)
+    5. aggregate_band_t    → Band T rows (gated: bands contains 'T' and span given)
+    6. assemble_payload    → contract-shaped payload
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    radius_km      : float — buffer radius
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — band letters to include; None = all
+                     ('A'–'E' always; 'T' only when from_year+to_year are given)
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool — include detail sub-block in projected rows
+
+    Returns
+    -------
+    dict — assemble_payload output:
+        {neighborhood, shortfall, bands, temporal, caveats, rows}
+    """
+    # Build-once catalog, lazy per level
+    if level not in _CATALOG_CACHE:
+        _CATALOG_CACHE[level] = load_catalog(level=level)
+    meta_df = _CATALOG_CACHE[level]
+
+    table     = _LEVEL_TABLE[level]
+    view      = _LEVEL_VIEW[level]
+    level_str = f'{level:02d}'
+
+    # ── 1. Resolve buffer ────────────────────────────────────────────────────
+    basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
+    shortfall = round(1.0 - float(basin_set['weight'].sum()), 6)
+
+    neighborhood = {
+        'type':      'buffer',
+        'lat':       lat,
+        'lon':       lon,
+        'radius_km': radius_km,
+        'level':     level,
+        'n_units':   len(basin_set),
+        'unit_type': 'basin',
+    }
+
+    # ── 2. Attach values ─────────────────────────────────────────────────────
+    matrix_df, class_id_df, raw_df = attach_values(
+        basin_set, meta_df, conn, table, view,
+    )
+
+    # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
+    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df)
+    b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
+    b4_rows = aggregate_b4(basin_set, raw_df)
+    b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
+
+    # ── 4. B6 modality post-pass (distribution-bearing rows only) ────────────
+    # apply_modality mutates dicts in place; pass B1+B5 only so B2/B3/B4 rows
+    # are not stamped with modality (those blocks have no distribution spread)
+    apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
+
+    basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    # ── 5. Band T path (gated on span presence) ───────────────────────────────
+    want_t  = (bands is None or 'T' in bands)
+    have_span = from_year is not None and to_year is not None
+    run_t   = want_t and have_span
+
+    t_rows = aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn) if run_t else []
+
+    all_rows = basin_rows + t_rows
+
+    # ── 6. Assemble payload ───────────────────────────────────────────────────
+    active_bands = (
+        bands if bands is not None
+        else _BASIN_BANDS + (['T'] if run_t else [])
+    )
+    temporal = {'from_year': from_year, 'to_year': to_year} if run_t else None
+
+    return assemble_payload(
+        all_rows, neighborhood, shortfall,
+        bands=active_bands,
+        temporal=temporal,
+        include_detail=include_detail,
+    )
