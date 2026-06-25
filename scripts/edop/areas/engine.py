@@ -1278,7 +1278,9 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
       representative_raw   = None (native-unit means deferred per register).
       coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
       detail               = {spread, p10, p90, unit: 'percentile'}.
-      status               = 'untyped'.
+      status               = 'ok' (the fallback's untyped-ness is carried by
+                             method='distribution_only', not status; Pin 1
+                             vocabulary is {ok, outside_active_domain, no_data}).
 
     extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
       Selects the basin carrying the maximum score (monotone with raw value).
@@ -1364,7 +1366,7 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
             variable=var, band=band,
             method='distribution_only', unit_type='basin', n_units=n,
             representative_score=wmean, representative_raw=None,
-            coverage=round(cov, 4), status='untyped', coherence=coherence,
+            coverage=round(cov, 4), status='ok', coherence=coherence,
             detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
         ))
 

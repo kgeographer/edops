@@ -177,8 +177,8 @@ def test_envelope():
     ok = True
 
     expected = {
-        'temp_min':   ('distribution_only', 'untyped', 'concentrated'),  # spread=5.65 < 20; WO10b
-        'temp_max':   ('distribution_only', 'untyped', 'concentrated'),  # spread=3.23 < 20; WO10b
+        'temp_min':   ('distribution_only', 'ok', 'concentrated'),  # spread=5.65 < 20; WO10b; status normalized untyped→ok (assembly review)
+        'temp_max':   ('distribution_only', 'ok', 'concentrated'),  # spread=3.23 < 20; WO10b; status normalized untyped→ok (assembly review)
         'river_area': ('extreme',           'ok',       None),
     }
 

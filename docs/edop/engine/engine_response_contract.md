@@ -115,6 +115,8 @@ So `&detail` governs the bounded spatial expansion; the temporal volume is gover
 
 **Open decisions: none.** All §7 items resolved. The last item — **distribution_only coherence** — was settled at the WO10b consistency pass (2026-06-24): `coherence` is now emitted on `distribution_only` rows using the same spread test as B1 (`'concentrated'` if p90−p10 < 20, else `'spread'`); `extreme` path unchanged (`coherence=null`). See amendments file, Folded item 7.
 
+**Status vocabulary note (assembly review, 2026-06-25):** `distribution_only` rows carry `status='ok'`. The fallback's untyped-ness — the fact that no typed aggregation path exists for the variable — is signalled by `method='distribution_only'`, not by `status`. Do not add an `'untyped'` status value: the routing fact belongs to `method`, the data-quality fact belongs to `status`.
+
 ## 8. Reconstructions — confirmed (closed)
 
 Confirmed during extraction WO4–WO9: the inline B1–B6 field names; the `status` value set (`{ok, outside_active_domain, no_data}`); that no B7 `_row` field is dropped in the unification (`n_units`, `unit_type`, `year`, `epoch_year`, the caveat keys all carried). This section is closed.
