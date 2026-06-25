@@ -5,7 +5,7 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-24
+- **Last updated:** 2026-06-25
 - **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
   decision is locked; read at the start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -18,8 +18,8 @@ stand*, this one wins.
 
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
-(aggregator) is underway: all blocks 1–7 done. **WO1–WO10 done.** Response contract approved (four
-pins closed). `make_row` is the conformance target. All primary branches B1–B5 + B7 emit through `make_row`; B6 post-pass closes the WO6-deferred fields. **Post-WO10 consistency pass + final engine assembly is next.** One open item: `distribution_only` coherence (§7).
+(aggregator) is underway: all blocks 1–7 done. **WO1–WO11a done.** Response contract fully closed.
+`make_row` is the conformance target. All primary branches B1–B5 + B7 emit through `make_row`; B6 post-pass closes the WO6-deferred fields. `load_catalog` reads the live codebook → meta_df (build-once startup layer); sourced/derived fork in place. **WO11 final assembly is next.**
 
 ---
 
@@ -73,6 +73,7 @@ resolver.
 | WO8 | B4 — `flag/structural` extraction | **done** — `aggregate_b4(basin_set, raw_df)` in engine.py. 7/7 acceptance tests PASS. Determinations: (1) `coast_fraction` carries `coherence=None` (scalar; no concentrated/mixed concept); `representative_raw=0.0` (the fraction); (2) `outlet_type` `representative_raw='Exorheic, non-coastal'` (modal label; WO7b convention; frozen TSV re-frozen); (3) cross-block consistency confirmed: endorheic fraction (0.4654) ≈ `dist_sink` `weight_at_zero` (0.4700, gap=0.005). Exclusivity assertion live. `endorheic` and `coast_flag` not emitted standalone. `test_engine_wo8.py` strict PASS. |
 | WO9 | B5 — `distribution_only` + `extreme` extraction | **done** — `aggregate_b5(basin_set, matrix_df, raw_df, meta_df)` in engine.py. Returns `(rows, companion_rows)`. 6/6 acceptance tests PASS. Determinations: (1) `distribution_only` `coherence=None` — fallback surfaces distribution without rendering a typed verdict; `representative_score` = weighted mean percentile (always populated); (2) `extreme` `representative_raw` = max raw value (km²); `representative_score` = carrier percentile; `dominant_hybas_id` in detail; `coherence=None`. Inner Niger Delta split preserved: river_area carrier (1060582960) ≠ B2 discharge dominant (1060564960). `test_engine_wo9.py` strict PASS. |
 | WO10 | B6 — modality post-pass | **done** — `detect_modality(scores, weights_norm, spread, …)` + `apply_modality(rows, basin_set, matrix_df)` in engine.py. Returns `(rows, regimes_companion)`. 6/6 acceptance tests PASS. De-closure: `detect_modality` consumed `joined[var]` (scores), `joined['weight']` (weights), `endo_hybas` (seam annotation only — not detection). **Determination: `endorheic_set` is used only for seam-alignment reporting, not detection; omitted in engine.** Modality ∈ {`unimodal`, `two_regime`} on all 36 distribution-bearing rows (contract §4 values; not `concentrated`/`broad`). `score_suppressed=True` only when B6 is reason for null (was concentrated): `cropland_extent` (5.29→null) + `temp_yr_upstream` (96.45→null); suppressed values preserved in `detail['suppressed_score']`. 11/12 regime centers match frozen TSV exactly. **Data lineage artifact:** `pct_sand` regime centers (76.16/94.05 engine vs 72.65/89.71 frozen) — step3_block6_regimes.tsv produced pre-population-hygiene-fix; regime_weight and two_regime classification correct. Action: re-freeze pct_sand rows. |
+| WO11a | Catalog layer — `load_catalog` + sourced/derived fork | **done** — `load_catalog(level, codebook_path)` in engine.py. Reads live codebook → meta_df (59 rows: 54 sourced + 5 derived). Sourced rows == step2_meta.tsv on all columns; one expected diff: `endorheic.schema_key='endorheic'` (Karl's 2026-06-24 catalog edit; frozen was 'outlet_type'). `kind` derivation: `_FLAG_API_KEYS` override first; `position_method='rarity_rank'` → categorical (covers integer-coded class IDs eco_id/wetland_class); else type-based. Derived rows (coast_fraction, elev_point, outlet_type, relief_position, relief_range_m): all `derived=True`, `db_col=None`. `attach_values` skips derived rows; dispatch routing 54 sourced vars: B1=34, B2=3, B3=11, B4=2, B5=4, unknowns=0. 7/7 acceptance tests PASS including B1 + B4 live regressions. WO expected 2 derived rows; actual 5 (elev_point/relief_position/relief_range_m were already status='implemented'). |
 
 ### Later in the phase
 
@@ -113,6 +114,11 @@ Append-only; dated. Settled unless explicitly revisited here.
   `outside_active_domain` when a query's `weight_at_zero ≥ 0.90`.
 - **Level matters** — scores and zero-fractions are level-specific; all current results are
   **L06**.
+
+**2026-06-25**
+
+- **Derived catalog rows** — rows with `source='Derived'` have no DB column and are skipped by `attach_values` (no SQL query) and the assembly dispatch loop (no branch routing). They are present in meta_df so the assembly can key to them by api_key and pull catalog provenance (`notes`, `position_notes`). Their values are produced by their synthesizing branch: B4 for `outlet_type` / `coast_fraction`; future branches for `elev_point`, `relief_range_m`, `relief_position`.
+- **`kind` derivation in `load_catalog`** — flags detected by `_FLAG_API_KEYS = {'endorheic', 'coast_flag'}` (endorheic is `type='string'` in the catalog but consumed as a raw-integer B4 input); categoricals by `position_method='rarity_rank'` (logically coherent: rarity_rank is chosen specifically for class-membership variables with no intrinsic ordering; covers integer-coded class IDs like eco_id/wetland_class that map to text via lu_* views); all others continuous by type.
 
 **2026-06-18**
 
@@ -174,6 +180,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-25** — Engine WO11a complete. `load_catalog(level, codebook_path)` added to engine.py. Reads live codebook → meta_df (59 rows: 54 sourced + 5 derived). Sourced rows reproduce step2_meta.tsv with one expected diff (endorheic.schema_key). `kind` derivation: _FLAG_API_KEYS override → flag; rarity_rank → categorical; else type-based. Derived rows (5): coast_fraction, elev_point, outlet_type, relief_position, relief_range_m — all derived=True, db_col=None. `attach_values` patched to skip derived rows. dispatch routing: B1=34, B2=3, B3=11, B4=2, B5=4. 7/7 PASS. WO1–WO10 suite still 34/34 PASS. `assembly` branch. WO11 (final assembly) is next.
 - **2026-06-24** — Engine WO7 complete. `aggregate_b3(basin_set, matrix_df, class_id_df, meta_df, …)` added to engine.py. 6/6 acceptance tests PASS. Three determinations confirmed: (1) `representative_raw=None`; (2) lean carries `coherence`; detail carries modal summary + per-class mixture list with human-readable labels; (3) coherence rule: `modal_share >= 0.85` → `'concentrated'`, else `'mixed'`. eco_id special case: text labels from `matrix_df['ecoregion']` not `matrix_df['eco_id']` (integer col). Coherence split: 2 concentrated (lith_class, zone_name; modal_share=1.0), 7 mixed. `test_engine_wo7.py` strict PASS. Synthetics→catalog step (deferred register) must land before WO8.
 - **2026-06-24** — Engine WO6 complete. `aggregate_b1(basin_set, matrix_df, meta_df, …)` added to engine.py. 5/5 acceptance tests PASS. Key fix during implementation: spread must be computed from un-rounded p10_raw/p90_raw (matching notebook's computation order); rounding p10/p90 first then subtracting causes 0.01 boundary error on ~7 vars. `representative_raw=None` confirmed throughout. Two-regime rows verified: B1 emits non-null mean for 2 concentrated two_regime vars (correct B6 input); 10 spread two_regime vars correctly emit null score. B6 post-pass ownership (score-nulling, modality) remains WO10.
 - **2026-06-24** — Engine WO5 complete. `aggregate_b2(basin_set, matrix_df, raw_df, meta_df)` added to engine.py. 4/4 acceptance tests PASS. Three determinations flagged: (1) B2 rows carry both representative_score (dominant basin percentile) and representative_raw (m³/s); (2) perennial flag stored in detail on discharge_min row (engine enrichment not in frozen TSV); (3) n_units=9 = full buffer set — dominant basin identified via detail['dominant_hybas_id'], not by a separate n_contributing field.

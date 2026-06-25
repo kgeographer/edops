@@ -1,19 +1,25 @@
 """
-EDOPS Areas Engine — promoted primitives (WO1 + WO2 + WO3).
+EDOPS Areas Engine — promoted primitives (WO1 + WO2 + WO3) and aggregation blocks.
 
 Bottom-of-stack pieces (WO1):
   resolve_buffer    — point + radius → weighted basin set (was inline in step1/step2)
   weighted_quantile — weighted quantile primitive (was duplicated in step3/step3b)
   diff_output       — regression harness: compare engine output to a reference
 
+Catalog layer (WO11a):
+  load_catalog      — reads codebook TSV → meta_df (build-once startup layer)
+                      rows: sourced (has DB col) + derived (no DB col, branch-synthesized)
+
 Attachment pass (WO2):
   attach_values     — basin set + meta_df → (matrix_df, class_id_df, raw_df)
+                      skips derived rows (no DB col to attach)
 
   Private SQL builders (call via attach_values):
   _parse_zf, _val_expr, rank_expr, two_pass_sql
 
 Dispatch (WO3):
   dispatch_variable — (typology_cluster, kind) → block label
+                      caller skips derived rows before invoking
 """
 
 import numpy as np
@@ -184,6 +190,131 @@ def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
     return ok
 
 
+# ── WO11a: catalog layer ─────────────────────────────────────────────────────
+
+from pathlib import Path as _Path
+
+# endorheic is type='string' in the codebook (3-class integer-coded value 0/1/2)
+# but is consumed by aggregate_b4 as a raw integer flag — same as coast_flag
+# (type='boolean'). A future catalog 'kind' column would make this explicit.
+_FLAG_API_KEYS = frozenset({'endorheic', 'coast_flag'})
+_SKIP_API_KEYS = frozenset({'gdp_avg', 'human_dev_idx'})
+_SKIP_BANDS    = frozenset({'T', 'output'})
+
+_TYPE_TO_KIND = {
+    'float':    'continuous',
+    'integer':  'continuous',
+    'string':   'categorical',
+    'boolean':  'flag',
+    'fraction': 'continuous',
+}
+
+_CATALOG_PATH = (
+    _Path(__file__).resolve().parents[3]
+    / 'documentation' / 'EDOPS_variable_catalog_v0.3.tsv'
+)
+
+
+def load_catalog(level=6, codebook_path=None):
+    """
+    Build-once catalog layer: reads the codebook TSV → meta_df for engine use.
+
+    Two row classes
+    ---------------
+    Sourced  (source != 'Derived'): have a basin08_col; flowed through
+             attach_values and dispatch_variable.
+    Derived  (source == 'Derived'): no DB column; synthesized by their branch
+             (B4 for outlet_type / coast_fraction; future branches for
+             elevation_point, relief_range_m, relief_position).
+             Present in meta_df for assembly keying and provenance; attach_values
+             and the dispatch loop skip them.
+
+    Parameters
+    ----------
+    level         : int  — 6 or 8; selects zero_fraction_*_L{level}
+    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.3.tsv
+
+    Returns
+    -------
+    DataFrame indexed by api_key; columns:
+        schema_key, su, db_col, kind, band, position_method,
+        typology_cluster, zero_fraction, derived (bool)
+
+    Integrity note
+    --------------
+    The sourced rows exactly reproduce step2_meta.tsv (the frozen notebook output)
+    modulo: (a) endorheic.schema_key = 'endorheic' (Karl's 2026-06-24 catalog edit;
+    was 'outlet_type' when step2_meta was frozen); (b) the new 'derived' column.
+    """
+    import csv
+
+    path = codebook_path or _CATALOG_PATH
+
+    zf_s_col = f'zero_fraction_s_L{level}'
+    zf_u_col = f'zero_fraction_u_L{level}'
+
+    rows = []
+
+    with open(path, newline='') as fh:
+        for rec in csv.DictReader(fh, delimiter='\t'):
+            band   = (rec.get('band')   or '').strip()
+            status = (rec.get('status') or '').strip()
+            source = (rec.get('source') or '').strip()
+
+            if band in _SKIP_BANDS or status != 'implemented':
+                continue
+
+            raw_type = (rec.get('type') or '').strip()
+            if raw_type == 'object':  # pnv_shares: multi-column variable, no single db_col
+                continue
+
+            is_derived = (source == 'Derived')
+            schema_key = (rec.get('schema_key')        or '').strip() or None
+            tc         = (rec.get('typology_cluster')  or '').strip() or None
+            pm         = (rec.get('position_method')   or '').strip() or None
+            col_s      = (rec.get('basin08_col_s')     or '').strip() or None
+            col_u      = (rec.get('basin08_col_u')     or '').strip() or None
+
+            def _emit(ak, su, col, zf_raw):
+                if not ak or ak in _SKIP_API_KEYS:
+                    return
+                if not is_derived and not col:
+                    return  # sourced row with no db column (e.g. reservoir_vol)
+                # Flags first (endorheic: type='string' but raw-integer B4 input).
+                # rarity_rank → categorical: the method is chosen specifically for
+                # class-membership variables (no intrinsic ordering); covers integer-
+                # coded IDs like eco_id / wetland_class that map to text via lu_* views.
+                if ak in _FLAG_API_KEYS:
+                    kind = 'flag'
+                elif pm == 'rarity_rank':
+                    kind = 'categorical'
+                else:
+                    kind = _TYPE_TO_KIND.get(raw_type, 'continuous')
+                rows.append({
+                    'api_key':          ak,
+                    'schema_key':       schema_key,
+                    'su':               su,
+                    'db_col':           col,
+                    'kind':             kind,
+                    'band':             band,
+                    'position_method':  pm,
+                    'typology_cluster': tc,
+                    'zero_fraction':    _parse_zf(zf_raw),
+                    'derived':          is_derived,
+                })
+
+            _emit(
+                (rec.get('api_key_s') or '').strip(), 's',
+                col_s, rec.get(zf_s_col),
+            )
+            _emit(
+                (rec.get('api_key_u') or '').strip(), 'u',
+                col_u, rec.get(zf_u_col),
+            )
+
+    return pd.DataFrame(rows).set_index('api_key')
+
+
 # ── WO2: attachment pass ──────────────────────────────────────────────────────
 
 
@@ -311,6 +442,10 @@ def attach_values(basin_set, meta_df, conn, table, view,
 
     ids_clause = ', '.join(str(h) for h in basin_set.index)
 
+    # Derived rows have no db_col; skip the DB query pass (produced by their branch)
+    if 'derived' in meta_df.columns:
+        meta_df = meta_df[~meta_df['derived']]
+
     cont_vars = meta_df[meta_df['kind'] == 'continuous']
     cat_vars  = meta_df[meta_df['kind'] == 'categorical']
     flag_vars = meta_df[meta_df['kind'] == 'flag']
@@ -434,7 +569,6 @@ CAVEAT_TEXTS = {
         "epoch before annual data begins; value may not reflect real land-use change."
     ),
 }
-
 
 def make_row(
     variable, band, method, unit_type, n_units,
