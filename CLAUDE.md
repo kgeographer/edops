@@ -105,9 +105,9 @@ state, block status, locked decisions, and what's next. Consult
 - Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
 - Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
 - Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
-- Engine assembly: **in progress** (WO10b done; WO11 final assembly next)
+- Engine assembly: **done** (WO11b complete; `areal_signature` is the public entry point)
 
-**Engine assembly status (as of 2026-06-24):**
+**Engine assembly status (as of 2026-06-25):**
 - WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
 - WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
 - WO5 — B2 dominant_basin extraction: **done** (4/4 strict PASS)
@@ -117,6 +117,8 @@ state, block status, locked decisions, and what's next. Consult
 - WO9 — B5 distribution_only + extreme extraction: **done** (6/6 strict PASS)
 - WO10 — B6 modality post-pass: **done** (6/6 strict PASS)
 - WO10b — distribution_only coherence flag: **done** (6/6 strict PASS; contract fully closed)
+- WO11a — `load_catalog` + sourced/derived fork: **done** (7/7 strict PASS)
+- WO11b — `areal_signature` final assembly: **done** (8/8 capstone PASS; 51 basin + 321 Band T rows)
 
 **Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
 diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /

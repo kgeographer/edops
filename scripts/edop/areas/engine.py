@@ -1,19 +1,25 @@
 """
-EDOPS Areas Engine — promoted primitives (WO1 + WO2 + WO3).
+EDOPS Areas Engine — promoted primitives (WO1 + WO2 + WO3) and aggregation blocks.
 
 Bottom-of-stack pieces (WO1):
   resolve_buffer    — point + radius → weighted basin set (was inline in step1/step2)
   weighted_quantile — weighted quantile primitive (was duplicated in step3/step3b)
   diff_output       — regression harness: compare engine output to a reference
 
+Catalog layer (WO11a):
+  load_catalog      — reads codebook TSV → meta_df (build-once startup layer)
+                      rows: sourced (has DB col) + derived (no DB col, branch-synthesized)
+
 Attachment pass (WO2):
   attach_values     — basin set + meta_df → (matrix_df, class_id_df, raw_df)
+                      skips derived rows (no DB col to attach)
 
   Private SQL builders (call via attach_values):
   _parse_zf, _val_expr, rank_expr, two_pass_sql
 
 Dispatch (WO3):
   dispatch_variable — (typology_cluster, kind) → block label
+                      caller skips derived rows before invoking
 """
 
 import numpy as np
@@ -184,6 +190,131 @@ def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
     return ok
 
 
+# ── WO11a: catalog layer ─────────────────────────────────────────────────────
+
+from pathlib import Path as _Path
+
+# endorheic is type='string' in the codebook (3-class integer-coded value 0/1/2)
+# but is consumed by aggregate_b4 as a raw integer flag — same as coast_flag
+# (type='boolean'). A future catalog 'kind' column would make this explicit.
+_FLAG_API_KEYS = frozenset({'endorheic', 'coast_flag'})
+_SKIP_API_KEYS = frozenset({'gdp_avg', 'human_dev_idx'})
+_SKIP_BANDS    = frozenset({'T', 'output'})
+
+_TYPE_TO_KIND = {
+    'float':    'continuous',
+    'integer':  'continuous',
+    'string':   'categorical',
+    'boolean':  'flag',
+    'fraction': 'continuous',
+}
+
+_CATALOG_PATH = (
+    _Path(__file__).resolve().parents[3]
+    / 'documentation' / 'EDOPS_variable_catalog_v0.3.tsv'
+)
+
+
+def load_catalog(level=6, codebook_path=None):
+    """
+    Build-once catalog layer: reads the codebook TSV → meta_df for engine use.
+
+    Two row classes
+    ---------------
+    Sourced  (source != 'Derived'): have a basin08_col; flowed through
+             attach_values and dispatch_variable.
+    Derived  (source == 'Derived'): no DB column; synthesized by their branch
+             (B4 for outlet_type / coast_fraction; future branches for
+             elevation_point, relief_range_m, relief_position).
+             Present in meta_df for assembly keying and provenance; attach_values
+             and the dispatch loop skip them.
+
+    Parameters
+    ----------
+    level         : int  — 6 or 8; selects zero_fraction_*_L{level}
+    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.3.tsv
+
+    Returns
+    -------
+    DataFrame indexed by api_key; columns:
+        schema_key, su, db_col, kind, band, position_method,
+        typology_cluster, zero_fraction, derived (bool)
+
+    Integrity note
+    --------------
+    The sourced rows exactly reproduce step2_meta.tsv (the frozen notebook output)
+    modulo: (a) endorheic.schema_key = 'endorheic' (Karl's 2026-06-24 catalog edit;
+    was 'outlet_type' when step2_meta was frozen); (b) the new 'derived' column.
+    """
+    import csv
+
+    path = codebook_path or _CATALOG_PATH
+
+    zf_s_col = f'zero_fraction_s_L{level}'
+    zf_u_col = f'zero_fraction_u_L{level}'
+
+    rows = []
+
+    with open(path, newline='') as fh:
+        for rec in csv.DictReader(fh, delimiter='\t'):
+            band   = (rec.get('band')   or '').strip()
+            status = (rec.get('status') or '').strip()
+            source = (rec.get('source') or '').strip()
+
+            if band in _SKIP_BANDS or status != 'implemented':
+                continue
+
+            raw_type = (rec.get('type') or '').strip()
+            if raw_type == 'object':  # pnv_shares: multi-column variable, no single db_col
+                continue
+
+            is_derived = (source == 'Derived')
+            schema_key = (rec.get('schema_key')        or '').strip() or None
+            tc         = (rec.get('typology_cluster')  or '').strip() or None
+            pm         = (rec.get('position_method')   or '').strip() or None
+            col_s      = (rec.get('basin08_col_s')     or '').strip() or None
+            col_u      = (rec.get('basin08_col_u')     or '').strip() or None
+
+            def _emit(ak, su, col, zf_raw):
+                if not ak or ak in _SKIP_API_KEYS:
+                    return
+                if not is_derived and not col:
+                    return  # sourced row with no db column (e.g. reservoir_vol)
+                # Flags first (endorheic: type='string' but raw-integer B4 input).
+                # rarity_rank → categorical: the method is chosen specifically for
+                # class-membership variables (no intrinsic ordering); covers integer-
+                # coded IDs like eco_id / wetland_class that map to text via lu_* views.
+                if ak in _FLAG_API_KEYS:
+                    kind = 'flag'
+                elif pm == 'rarity_rank':
+                    kind = 'categorical'
+                else:
+                    kind = _TYPE_TO_KIND.get(raw_type, 'continuous')
+                rows.append({
+                    'api_key':          ak,
+                    'schema_key':       schema_key,
+                    'su':               su,
+                    'db_col':           col,
+                    'kind':             kind,
+                    'band':             band,
+                    'position_method':  pm,
+                    'typology_cluster': tc,
+                    'zero_fraction':    _parse_zf(zf_raw),
+                    'derived':          is_derived,
+                })
+
+            _emit(
+                (rec.get('api_key_s') or '').strip(), 's',
+                col_s, rec.get(zf_s_col),
+            )
+            _emit(
+                (rec.get('api_key_u') or '').strip(), 'u',
+                col_u, rec.get(zf_u_col),
+            )
+
+    return pd.DataFrame(rows).set_index('api_key')
+
+
 # ── WO2: attachment pass ──────────────────────────────────────────────────────
 
 
@@ -311,6 +442,10 @@ def attach_values(basin_set, meta_df, conn, table, view,
 
     ids_clause = ', '.join(str(h) for h in basin_set.index)
 
+    # Derived rows have no db_col; skip the DB query pass (produced by their branch)
+    if 'derived' in meta_df.columns:
+        meta_df = meta_df[~meta_df['derived']]
+
     cont_vars = meta_df[meta_df['kind'] == 'continuous']
     cat_vars  = meta_df[meta_df['kind'] == 'categorical']
     flag_vars = meta_df[meta_df['kind'] == 'flag']
@@ -434,7 +569,6 @@ CAVEAT_TEXTS = {
         "epoch before annual data begins; value may not reflect real land-use change."
     ),
 }
-
 
 def make_row(
     variable, band, method, unit_type, n_units,
@@ -1144,7 +1278,9 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
       representative_raw   = None (native-unit means deferred per register).
       coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
       detail               = {spread, p10, p90, unit: 'percentile'}.
-      status               = 'untyped'.
+      status               = 'ok' (the fallback's untyped-ness is carried by
+                             method='distribution_only', not status; Pin 1
+                             vocabulary is {ok, outside_active_domain, no_data}).
 
     extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
       Selects the basin carrying the maximum score (monotone with raw value).
@@ -1230,7 +1366,7 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
             variable=var, band=band,
             method='distribution_only', unit_type='basin', n_units=n,
             representative_score=wmean, representative_raw=None,
-            coverage=round(cov, 4), status='untyped', coherence=coherence,
+            coverage=round(cov, 4), status='ok', coherence=coherence,
             detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
         ))
 
@@ -1571,3 +1707,118 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         ))
 
     return rows
+
+
+# ── WO11b: assembly ───────────────────────────────────────────────────────────
+
+_CATALOG_CACHE = {}   # level (int) → meta_df; populated lazily on first call
+
+_LEVEL_TABLE = {6: 'public.basin06',               8: 'public.basin08'}
+_LEVEL_VIEW  = {6: 'public.v_basin06_persist_rev1', 8: 'public.v_basin08_persist_rev1'}
+_BASIN_BANDS = list('ABCDE')
+
+
+def areal_signature(
+    lat, lon, radius_km,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Full areal signature for a buffer neighborhood.
+
+    Build-once catalog is loaded lazily per level on first call and cached.
+
+    Per-query pipeline
+    ------------------
+    1. resolve_buffer      → weighted basin set
+    2. attach_values       → matrix_df, class_id_df, raw_df
+    3. B1–B5 blocks        → basin-path rows (51 for Timbuktu)
+    4. apply_modality      → B6 post-pass on B1+B5 distribution rows (in-place)
+    5. aggregate_band_t    → Band T rows (gated: bands contains 'T' and span given)
+    6. assemble_payload    → contract-shaped payload
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    radius_km      : float — buffer radius
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — band letters to include; None = all
+                     ('A'–'E' always; 'T' only when from_year+to_year are given)
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool — include detail sub-block in projected rows
+
+    Returns
+    -------
+    dict — assemble_payload output:
+        {neighborhood, shortfall, bands, temporal, caveats, rows}
+    """
+    # Build-once catalog, lazy per level
+    if level not in _CATALOG_CACHE:
+        _CATALOG_CACHE[level] = load_catalog(level=level)
+    meta_df = _CATALOG_CACHE[level]
+
+    table     = _LEVEL_TABLE[level]
+    view      = _LEVEL_VIEW[level]
+    level_str = f'{level:02d}'
+
+    # ── 1. Resolve buffer ────────────────────────────────────────────────────
+    basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
+    shortfall = round(1.0 - float(basin_set['weight'].sum()), 6)
+
+    neighborhood = {
+        'type':      'buffer',
+        'lat':       lat,
+        'lon':       lon,
+        'radius_km': radius_km,
+        'level':     level,
+        'n_units':   len(basin_set),
+        'unit_type': 'basin',
+    }
+
+    # ── 2. Attach values ─────────────────────────────────────────────────────
+    matrix_df, class_id_df, raw_df = attach_values(
+        basin_set, meta_df, conn, table, view,
+    )
+
+    # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
+    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df)
+    b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
+    b4_rows = aggregate_b4(basin_set, raw_df)
+    b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
+
+    # ── 4. B6 modality post-pass (distribution-bearing rows only) ────────────
+    # apply_modality mutates dicts in place; pass B1+B5 only so B2/B3/B4 rows
+    # are not stamped with modality (those blocks have no distribution spread)
+    apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
+
+    basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    # ── 5. Band T path (gated on span presence) ───────────────────────────────
+    want_t  = (bands is None or 'T' in bands)
+    have_span = from_year is not None and to_year is not None
+    run_t   = want_t and have_span
+
+    t_rows = aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn) if run_t else []
+
+    all_rows = basin_rows + t_rows
+
+    # ── 6. Assemble payload ───────────────────────────────────────────────────
+    active_bands = (
+        bands if bands is not None
+        else _BASIN_BANDS + (['T'] if run_t else [])
+    )
+    temporal = {'from_year': from_year, 'to_year': to_year} if run_t else None
+
+    return assemble_payload(
+        all_rows, neighborhood, shortfall,
+        bands=active_bands,
+        temporal=temporal,
+        include_detail=include_detail,
+    )
