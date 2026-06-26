@@ -19,7 +19,9 @@ stand*, this one wins.
 Building the aggregation **engine** (resolver → aggregator) along the buffer-neighborhood path,
 using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 complete. Step 3
 (aggregator) is underway: all blocks 1–7 done. **WO1–WO11a done.** Response contract fully closed.
-`make_row` is the conformance target. All primary branches B1–B5 + B7 emit through `make_row`; B6 post-pass closes the WO6-deferred fields. `load_catalog` reads the live codebook → meta_df (build-once startup layer); sourced/derived fork in place. **`areal_signature` is the public entry point; engine assembled and whole. Routes are the thin front doors — next step.**
+`make_row` is the conformance target. All primary branches B1–B5 + B7 emit through `make_row`; B6 post-pass closes the WO6-deferred fields. `load_catalog` reads the live codebook → meta_df (build-once startup layer); sourced/derived fork in place. **`areal_signature` is the public entry point; engine assembled and whole.**
+
+**Next:** extend to additional resolver types and scales before wiring routes. Candidate work: (1) L8 experiment — run Timbuktu at level=8 (77 basins vs. 9) to assess MAUP sensitivity; (2) polity resolver — polygon WKT in → ST_Intersection weights → same pipeline (directly enables Cliopatria queries and Phase 4); (3) multi-basin topology resolver — containing basin + ST_Touches adjacency. Routes are thin front doors and come after at least one new resolver is validated.
 
 ---
 

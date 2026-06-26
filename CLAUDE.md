@@ -345,4 +345,7 @@ docs/ hold old drafts and works-in-progress (gitignored)
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
   for BCE queries; population density in signature; EarthStat/HYDE divergence; LMR proxy
-  bias disclosure — held for October 2026 expert meeting
+  bias disclosure — held pending expert review; no fixed date
+- **Braga milestone (2026-09-20)** — UNED Digital Humanities conference; demo opportunity with
+  Pitt colleagues. Target: v0.4 signature + updated sandbox surfacing areal engine (lean/full,
+  new resolver types, endpoint params). ~11 weeks out from 2026-06-25.
