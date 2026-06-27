@@ -1822,3 +1822,106 @@ def areal_signature(
         temporal=temporal,
         include_detail=include_detail,
     )
+
+
+# ── WO14: single-basin resolver + entry point ─────────────────────────────────
+
+def resolve_single_basin(lat, lon, level, conn):
+    """
+    Single-basin resolver: point → {hybas_id: 1.0}.
+
+    Reuses the same ST_Contains / geom lookup the live /signature path uses,
+    so the returned hybas_id is guaranteed to match v0.3's containing basin.
+    Returns a one-row DataFrame with weight=1.0.
+    Shortfall is 0 by definition — the query is the basin itself.
+    """
+    table = _LEVEL_TABLE[level]
+    sql = f"""
+    SELECT hybas_id
+    FROM {table}
+    WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
+    """
+    df = pd.read_sql(sql, conn)
+    df['hybas_id'] = df['hybas_id'].astype('int64')
+    df['weight']   = 1.0
+    return df
+
+
+def single_basin_signature(
+    lat, lon,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Areal signature for the single containing basin at a point.
+
+    The resolver returns {hybas_id: 1.0}; every downstream block runs unchanged.
+    Shortfall is 0.0 — the query is the basin, so no geographic absence is possible.
+
+    Band T is not yet supported: aggregate_band_t takes a circular buffer geometry;
+    single-basin Band T needs the basin polygon as the query area. Deferred.
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — band letters; None = A–E only
+    from_year      : int or None — reserved (Band T not yet supported here)
+    to_year        : int or None — reserved
+    include_detail : bool
+
+    Returns
+    -------
+    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
+    """
+    if level not in _CATALOG_CACHE:
+        _CATALOG_CACHE[level] = load_catalog(level=level)
+    meta_df = _CATALOG_CACHE[level]
+
+    table = _LEVEL_TABLE[level]
+    view  = _LEVEL_VIEW[level]
+
+    # ── 1. Resolve single basin ───────────────────────────────────────────────
+    basin_set = resolve_single_basin(lat, lon, level, conn)
+    shortfall = 0.0   # structural zero: the query is the basin itself
+
+    neighborhood = {
+        'type':      'basin',
+        'lat':       lat,
+        'lon':       lon,
+        'level':     level,
+        'hybas_id':  int(basin_set['hybas_id'].iloc[0]),
+        'n_units':   1,
+        'unit_type': 'basin',
+    }
+
+    # ── 2. Attach values ─────────────────────────────────────────────────────
+    matrix_df, class_id_df, raw_df = attach_values(
+        basin_set, meta_df, conn, table, view,
+    )
+
+    # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
+    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df)
+    b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
+    b4_rows = aggregate_b4(basin_set, raw_df)
+    b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
+
+    # ── 4. B6 modality post-pass ─────────────────────────────────────────────
+    apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
+
+    basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    active_bands = bands if bands is not None else _BASIN_BANDS
+
+    return assemble_payload(
+        basin_rows, neighborhood, shortfall,
+        bands=active_bands,
+        temporal=None,
+        include_detail=include_detail,
+    )
