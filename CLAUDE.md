@@ -107,7 +107,7 @@ state, block status, locked decisions, and what's next. Consult
 - Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
 - Engine assembly: **done** (WO11b complete; `areal_signature` is the public entry point)
 
-**Engine assembly status (as of 2026-06-25):**
+**Engine assembly status (as of 2026-06-26):**
 - WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
 - WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
 - WO5 — B2 dominant_basin extraction: **done** (4/4 strict PASS)
@@ -119,13 +119,16 @@ state, block status, locked decisions, and what's next. Consult
 - WO10b — distribution_only coherence flag: **done** (6/6 strict PASS; contract fully closed)
 - WO11a — `load_catalog` + sourced/derived fork: **done** (7/7 strict PASS)
 - WO11b — `areal_signature` final assembly: **done** (8/8 capstone PASS; 51 basin + 321 Band T rows)
+- WO12 — Buffer L8 validation: **done** (Band T invariant; 11/11 modality flips; shortfall slivers; AF.6–AF.10)
+- WO13/WO13a — Modality floor close-out: **done** (floor retired; support-relative posture settled; no engine edit)
+- WO14 — Single-basin resolver + v0.3 comparison: **in progress** (resolver + entry point + Band T polygon path done; Parts 2–5 comparison pending)
 
 **Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
 diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /
 WHG attestation cloud (Phase 4 input design). See `docs/design/areas/deferred_items_register.md`.
 
 **Engine contract fully closed (2026-06-24):** `contract_amendments.md` Pending is empty.
-Last item settled: distribution_only coherence (WO10b). Branch: `engine02`.
+Last item settled: distribution_only coherence (WO10b). Branch: `engine_v0.4b`.
 
 **Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
 

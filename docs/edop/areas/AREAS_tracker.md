@@ -5,7 +5,7 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-25
+- **Last updated:** 2026-06-26
 - **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
   decision is locked; read at the start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -25,7 +25,9 @@ using the **Timbuktu 100 km / L06 buffer** as the working fixture. Steps 1–2 c
 
 **WO13/WO13a complete (2026-06-26).** Modality floor experiment: technically a 1.97 pp separating window exists, but wet_pct_grp1 (80.54 pp, a flipper) sits just below dist_sink (82.51 pp), making any floor kill large-gap vars that aren't noise. Floor retired as broken proxy. Modality posture settled: support-relative, disclosed not corrected. AF.7 in final form. Register: two items closed (absolute-separation floor; support-relative vs seam-prior), one consolidated item added (single-level bimodality instrument, deferred to multi-fixture).
 
-**Next:** polity resolver — polygon WKT in → ST_Intersection weights → same pipeline (directly enables Cliopatria queries and Phase 4). Also candidate: multi-basin topology resolver (containing basin + ST_Touches adjacency). Routes come after at least one new resolver is validated.
+**WO14 in progress (2026-06-26).** Single-basin neighborhood: `resolve_single_basin` + `single_basin_signature` added to engine.py. Band T enabled for single-basin: `aggregate_band_t` extended with `geom_wkt` parameter — basin polygon fetched from DB and passed instead of circular buffer; buffer path unchanged. Notebook `single_basin_comparison.ipynb` cells 1–5 run: resolver gate PASS (hybas_id=1060551560, weight=1.0, shortfall=0.0); full payload: 372 rows (51 basin + 321 Band T), Bands A–E + T. Parts 2–5 (comparison, degeneracy assertions, Band T reference check) next.
+
+**Next:** WO14 Parts 2–5 — four-bucket comparison (v0.3 vs v0.4), n=1 degeneracy assertions, Band T reference check (LMR cell, HYDE epoch-for-epoch, volcanic exact invariant). Findings AF.11+. After WO14: polity resolver.
 
 ---
 
@@ -187,6 +189,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-26** — WO14 Part 1 complete. `resolve_single_basin` + `single_basin_signature` added to engine.py (branch `engine_v0.4b`). `aggregate_band_t` extended with `geom_wkt` parameter — basin polygon path; buffer path unchanged, 51 existing tests still pass. `single_basin_comparison.ipynb` cells 1–5: resolver gate PASS (hybas_id=1060551560, weight=1.0, shortfall=0.0); v0.4 payload = 372 rows (51 basin + 321 Band T), Bands A–E + T. Parts 2–5 (four-bucket comparison, degeneracy assertions, Band T reference check) to follow.
 - **2026-06-26** — WO13/WO13a complete. Modality floor investigation: Part 1 found a 1.97 pp separating window (flipper max `wet_pct_grp1` at 80.54 pp; `dist_sink` at 82.51 pp) — technically clean but not a useful instrument (any A ≈ 81 pp would also kill large-gap non-noise vars). Floor retired as broken proxy. Root cause: gap magnitude is not evidence of genuine bimodality; `dist_sink` survives because its valley is structurally unfillable, not because its gap is large. Modality posture settled: support-relative, not corrected from coarse data. Register: two items closed (absolute-separation floor; support-relative vs seam-prior), consolidated into "single-level bimodality instrument" (deferred to multi-fixture). AF.7 in final form. No engine edit. Branch: `engine01`.
 - **2026-06-26** — WO12 complete. `notebooks/edop/areas/buffer_l8_comparison.ipynb` (14 cells). Level-threading confirmed clean (Part 0). Band T invariant holds (321 rows, delta=0). Shortfall non-invariant: L8 adds 0.25% from geometry-precision slivers, not geography. 11/11 modality flips two_regime→unimodal; seam-alignment check (cell 13): 6/11 seam-aligned, 5/11 not — confirms gap magnitude, not partition structure, is the L6↔L8 discriminator. 4 coherence flips, no directional bias (MAUP-sensitive, not MAUP-biased). Outlet_type sub-class structure (endo inland vs terminal sink) visible only at L8. B2 raw stable; scores rise (finer support → higher rank in L8 population). B5 carrier split and cross-block consistency preserved. AF.6–AF.10 written. TSV: `output/edop/areas/wo12_l6_l8_comparison.tsv`. Branch: `engine01`.
 - **2026-06-25** — Engine WO11b complete. `areal_signature(lat, lon, radius_km, conn, …)` added to engine.py. Build-once catalog cached per level. Full Timbuktu capstone (r=100 km, L06, Band T 1100–1200 CE): basin rows=51, Band T rows=321, total payload=372 rows. All 8 capstone tests PASS. Engine assembled and whole; v0.3 areal signature complete end to end. `assembly` branch.
