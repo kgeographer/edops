@@ -3,7 +3,8 @@
 Coded observations from the aggregation work. Short entries: observation + implication.
 Tags: **[method]** aggregation behavior · **[signal]** substantive place content · **[data]** source data properties.
 
-Numbering: AF.n, sequential. Add at the bottom; no retroactive renumbering.
+Numbering: AF.n sequential for WO1–WO17 findings (AF.1–AF.19, retained as-is).
+From WO18 onward: AF.WO<n>.<m> — WO number + per-WO sequence. Add at the bottom; no retroactive renumbering.
 
 ---
 
@@ -232,3 +233,74 @@ These 15 variables are heterogeneous at basin boundaries regardless of fixture. 
 **10 variables appearing at 1 fixture only** encode local environmental character rather than generic basin-boundary heterogeneity: pop_density and wet fractions (Timbuktu — desert-city and Niger Delta); dist_sink (Kaifeng — endorheic/exorheic distinction at fine scale); human_footprint (Timbuktu); pct_sand, cropland_extent (single-fixture). These distinguish *where* you are, not just that you are at a basin boundary.
 
 *Implication:* The structural core (15 vars) is a candidate fixed component of any basin-ring transition report — expected to be informative at any fixture. The fixture-specific group is what makes each location's transition signature distinctive. A transition report that separates "universal boundary heterogeneity" from "local environmental character" variables would be more interpretable than a flat ranked list.
+
+---
+
+## AF.WO18.1 [method] — Transition-character comparator separates the spanning-10; space is not a recapitulation of the signature PCA clusters
+
+WO18 Cell 5–7 results: 10-city spanning set, L06, 29-variable intersection, 58-feature comparator (mean_abs + max_abs per variable), Euclidean distance on standardised vectors.
+
+**Variable intersection:** 29 of 40 union variables are universal across all 10 fixtures. The 11 dropped (karst, karst_upstream, wet_pct_grp1/2 and their upstream variants, pasture_extent/upstream, cropland_extent/upstream, dist_sink) are absent at some fixtures because they are outside the active domain at those locations — no karst in the tropics, no wetland signal in the desert, etc. Their absence is geographic signal, not missing data.
+
+**Distance range:** Pairwise distances 7.42–14.23; ratio ~1.9. No city pair collapses (nothing below 7); no city is wildly isolated (nothing above 15). The comparator differentiates — gate criterion met.
+
+**Surprising nearness pairs:**
+- Córdoba (Mediterranean) ↔ Brasília (Tropical Wet-Dry): 7.42 — tightest pair globally. Two opposite-climate, opposite-hemisphere cities nearest in comparator space. Both sit in moderate-gradient zones: neither sharp-boundary outliers nor deep-interior basins. Transition character is insensitive to what the environment *is*; it measures how sharply it changes at the edge.
+- Timbuktu (Arid Desert) nearest to Panama City (Tropical Wet): 10.22. Counterintuitive; both may have comparable divergence magnitudes from their respective ring neighbors despite completely different environmental settings.
+
+**Loose fluvial/wet cluster:** Luang Prabang ↔ Panama City (8.19), Panama City ↔ Brasília (8.45), Luang Prabang ↔ Brasília (9.26), Guanajuato ↔ Luang Prabang (8.97). Four cities with active fluvial gradients form a denser sub-region. Whether this reflects shared transition structure or shared n_sharp magnitude requires the PCA plot (Cell 8) to resolve.
+
+**Kraków most isolated:** Farthest from both Brasília (14.23) and Tallinn (14.22), despite Tallinn also being Northern/Central European. Kraków has the largest ring (9 neighbors) and 29 sharp vars — the Central European drainage mosaic produces a distinctive transition fingerprint not shared by the simpler Fennoscandian setting at Tallinn (18 sharp vars).
+
+**Key interpretive point:** Transition-character space is orthogonal to signature space. The PCA clusters reflect what the environment *is*; this comparator measures how sharply it *changes* at basin boundaries. The fact that the comparator does not recapitulate PCA clusters is the expected and desired result — it is measuring something new. Two places with very different signatures can share similar transition character (both moderate-gradient); two places with similar signatures can differ sharply if one is on a seam and the other is in an interior.
+
+*Implication:* The comparator is a valid independent instrument. Gate criterion (separation of deliberately diverse cities) is met on the distance-matrix evidence. PCA plot (Cell 8) and threshold-sensitivity check (Cell 9) are required before the formal gate verdict.
+
+---
+
+## AF.WO18.2 [method] — PCA plot confirms separation; known-answer fixtures in expected relative positions; space has depth beyond two dimensions
+
+WO18 Cell 8: PCA on 58-feature standardised comparator vector, n=10, L06. PC1=22.9%, PC2=21.5%, cumulative 44.4%.
+
+**44.4% in two components** — the comparator space has genuine depth. This plot is a slice, not the whole story; cluster analysis at n=50–100 will need more components.
+
+**WO17 known-answer check passes.** Timbuktu (★ top-right, PC1~+3.8, PC2~+4.8) and Kaifeng (★ middle-right, PC1~+2.3, PC2~−1.8) share positive PC1 but are separated cleanly on PC2 by ~6.5 units. Two cities with known different transition archetypes (boundary-location vs alluvial-plain outlier) land in clearly different positions — the instrument discriminates where it should.
+
+**Kraków is the extreme PC1 outlier** (PC1~+7, bottom-right). Consistent with the distance matrix: most isolated city, farthest from Brasília (14.23) and Tallinn (14.22). Nine ring neighbors and 29 sharp vars in a dense Central European drainage mosaic produces a transition fingerprint unlike any other fixture here.
+
+**Tallinn is the extreme PC2 outlier** (PC1~−1.5, PC2~+7). Only 18 sharp vars — the Fennoscandian setting has the flattest, least-contrasted transition character of the 10. Low sharpness and uniformity load strongly onto PC2.
+
+**Brasília and Córdoba cluster bottom-left** — consistent with their 7.42 distance in the matrix. The nearest pair in matrix space are visual neighbors on the plot.
+
+**Bergen sits near Timbuktu** in the upper-right quadrant. Geographically surprising but interpretively legible: both are high-contrast boundary locations — extreme-precipitation seam (Bergen) vs desert/floodplain seam (Timbuktu) — producing similar sharpness profiles in different variable groups. Transition character is not environment-specific.
+
+**Luang Prabang and Guanajuato share the lower quadrant** (both had n_sharp=32, the highest in the set). Low PC2 may index high-intensity sharpness of a different character from Kraków's.
+
+**Panama City** sits between the left cluster (Brasília/Córdoba) and the right-side group — bridge position consistent with it being nearest neighbor of both Luang Prabang and Tallinn in the distance matrix.
+
+*Implication:* Gate criterion met on the visual evidence: clear separation, no collapse, known-answer fixtures in sensible relative positions. Formal gate verdict pending Cell 9 (threshold sensitivity) and Cell 10 (gate summary).
+
+---
+
+## AF.WO18.3 [method] — WO18 gate: PASS; threshold stable at ≥10 pp; two transition-profile types identified
+
+WO18 Cells 9–10. Gate verdict: **PASS** — proceed to 20/50 hunt.
+
+**Threshold sensitivity (Cell 9):**
+- thr=10 vs thr=15: Spearman r=0.929 (p<0.001) — city rankings by n_sharp are highly stable above 10 pp. The 10 pp threshold sits on the stable side of the inflection point.
+- thr=5 vs thr=10: r=0.633 (p=0.050) — 5 pp is noisy. Many variables are borderline at that level and their presence/absence is not structurally meaningful.
+- thr=5 vs thr=15: r=0.508 (p=0.134) — not significant. The 5 pp and 15 pp rankings are effectively unrelated.
+- The continuous mean_abs/max_abs vectors used for comparison are threshold-free; this check governs only interpretive n_sharp claims, which require ≥10 pp.
+
+**Two transition-profile types:**
+- *Deep-stable*: n_sharp count holds across thresholds — Luang Prabang (37→32→27), Guanajuato (35→32→25), Timbuktu (31→29→26), Kraków (32→29→24). These cities have genuinely sharp basin-boundary contrasts.
+- *Wide-shallow*: high count at 5 pp collapses steeply — Panama City (37→26→19), Brasília (34→25→19). Many variables barely cross 5 pp; fewer survive to 15 pp. These are broad but low-contrast transition environments. This is a property of the setting, not a measurement artifact.
+
+**Gate evidence summary:**
+1. No collapse: min pairwise distance 7.42, max 14.23, ratio 1.9. All 10 cities distinguishable.
+2. Known-answer fixtures confirmed in expected relative positions (Timbuktu and Kaifeng separated by ~6.5 units on PC2 despite shared positive PC1).
+3. Threshold sensitivity passed at primary threshold.
+
+**Notes for 20/50 run:** 44.4% variance in PC1+PC2 — use ≥3 components for clustering; the 2-D plot is a slice. Transition-character space is orthogonal to the signature PCA space used for fixture selection (AF.WO18.1) — this is the expected and desired property of an independent instrument.
+
+*Implication:* The basin-ring transition-character comparator is validated as an instrument. Scaling to 20/50 WHC cities is the next step; any emergent clustering found there is not pre-supposed by WO18.
