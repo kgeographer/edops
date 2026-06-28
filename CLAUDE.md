@@ -107,7 +107,7 @@ state, block status, locked decisions, and what's next. Consult
 - Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
 - Engine assembly: **done** (WO11b complete; `areal_signature` is the public entry point)
 
-**Engine assembly status (as of 2026-06-26):**
+**Engine assembly status (as of 2026-06-27):**
 - WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
 - WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
 - WO5 — B2 dominant_basin extraction: **done** (4/4 strict PASS)
@@ -121,7 +121,9 @@ state, block status, locked decisions, and what's next. Consult
 - WO11b — `areal_signature` final assembly: **done** (8/8 capstone PASS; 51 basin + 321 Band T rows)
 - WO12 — Buffer L8 validation: **done** (Band T invariant; 11/11 modality flips; shortfall slivers; AF.6–AF.10)
 - WO13/WO13a — Modality floor close-out: **done** (floor retired; support-relative posture settled; no engine edit)
-- WO14 — Single-basin resolver + v0.3 comparison: **in progress** (resolver + entry point + Band T polygon path done; Parts 2–5 comparison pending)
+- WO14 — Single-basin resolver + v0.3 comparison: **done** (373 rows payload; 0 MISMATCH/UNEXPLAINED; AF.11–AF.12)
+- WO15 — Area-weighted cell weighting: **done** (HYDE + LMR `overlap/cell_area` normalization; size-bias removed; AF.13; 58 tests PASS)
+- WO16 — Basin-ring resolver exploration: **done** (ST_Touches clean across Timbuktu L06/L08, Rome L06, Baghdad L06; all contacts ST_MultiLineString; no slivers; three weight schemes surfaced but not decided; notebook `basin_ring_exploration.ipynb`)
 
 **Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
 diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /
@@ -142,7 +144,7 @@ Band T (separate notebook `step3b_band_t.ipynb`): `step3b_block7_primary.tsv` (3
 representative_raw, n_basins, coverage_weight` + method-specific detail columns.
 Block 7 extensions: `n_units`, `unit_type` (replace `n_basins`), `year`, `epoch_year`, `lmr_caveat`, `hyde_caveat`. Note: Block 7 `p10`/`p90`/`sd` are in native units (km²/cell); Blocks 1–6 use percentile points — engine assembly must reconcile (see deferred register).
 
-**Findings**: `docs/edop/areas/areas_findings.md` — coded observations AF.1–AF.5 (method behavior, signal content, data quality). Add new AF.n entries as the phase proceeds.
+**Findings**: `docs/edop/areas/areas_findings.md` — coded observations AF.1–AF.13 (method behavior, signal content, data quality). Add new AF.n entries as the phase proceeds.
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
@@ -309,8 +311,16 @@ NOTE: see documentation/API_guide.md (master, public)
 ```bash
 curl http://localhost:8000/api/health
 curl "http://localhost:8000/api/signature?lat=16.76618535&lon=-3.00777252"  # Timbuktu
-python -m pytest tests/
+python -m pytest tests/                        # full suite (app + engine)
+python -m pytest tests/engine/                 # engine contract tests only
+python -m pytest tests/ --ignore=tests/engine/ # app tests only
 ```
+
+**Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
+- A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.
+- A warning is either resolved or explicitly suppressed with a comment explaining why it is safe to ignore.
+- Never explain away a failure and move on — the longer a known failure rides, the harder it is to unravel.
+- Engine tests go in `tests/engine/test_engine_contract.py`. They test contracts and invariants, never frozen notebook TSV values. When an algorithmic improvement changes output, update the contract (or confirm it still holds) in the same commit.
 
 `tests/test_live_server.py` runs smoke tests against the production server — skipped unless
 `EDOPS_LIVE_URL` is set. Run after each deployment:
