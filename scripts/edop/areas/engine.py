@@ -279,7 +279,12 @@ def load_catalog(level=6, codebook_path=None):
                 if not ak or ak in _SKIP_API_KEYS:
                     return
                 if not is_derived and not col:
-                    return  # sourced row with no db column (e.g. reservoir_vol)
+                    # Upstream-only coalesce: sourced row has no _s column but _u exists.
+                    # Use the upstream column so the variable still appears in the payload.
+                    if su == 's' and col_u:
+                        col = col_u
+                    else:
+                        return
                 # Flags first (endorheic: type='string' but raw-integer B4 input).
                 # rarity_rank → categorical: the method is chosen specifically for
                 # class-membership variables (no intrinsic ordering); covers integer-
@@ -676,13 +681,21 @@ _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
 def _agg_hyde_b7(df, var_col, buf_area_m2):
-    """Area-weighted mean + distribution detail for one HYDE variable."""
+    """Fractional-overlap-weighted mean + distribution for one HYDE variable.
+
+    Weight = overlap_m2 / cell_area_m2 (fraction of each cell inside query area).
+    Cells that are 10% inside contribute weight 0.1 regardless of their absolute size,
+    so unequal cell areas (which vary with latitude) don't bias the mean.
+    Coverage is reported as sum(overlap_m2) / buf_area_m2 (physical coverage).
+    w_eff = sum of fractional coverages; honest effective-cell-count for detail block.
+    """
     valid = df[df[var_col].notna()].copy()
     if len(valid) == 0:
         return {'representative_raw': None, 'p10': None, 'p90': None,
-                'sd': None, 'n_units': 0, 'coverage': 0.0, 'status': 'no_data'}
-    tot_w  = float(valid['overlap_m2'].sum())
-    w      = (valid['overlap_m2'] / tot_w).values
+                'sd': None, 'n_units': 0, 'w_eff': 0.0,
+                'coverage': 0.0, 'status': 'no_data'}
+    frac   = (valid['overlap_m2'] / (valid['area_km2'] * 1e6)).values
+    w      = frac / frac.sum()
     v      = valid[var_col].values.astype(float)
     mean_  = float(np.dot(v, w))
     return {
@@ -691,7 +704,8 @@ def _agg_hyde_b7(df, var_col, buf_area_m2):
         'p90':     weighted_quantile(v, w, 0.9),
         'sd':      float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
         'n_units': len(valid),
-        'coverage': tot_w / buf_area_m2,
+        'w_eff':   round(float(frac.sum()), 2),
+        'coverage': float(valid['overlap_m2'].sum()) / buf_area_m2,
         'status':  'ok',
     }
 
@@ -707,36 +721,45 @@ def _agg_lmr_b7(overlap_m2, values, buf_area_m2):
     }
 
 
-def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
+def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn, geom_wkt=None):
     """
     Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
-    eVolv2k (global_forcing) for a lat/lon buffer over a year span.
+    eVolv2k (global_forcing) for a query area over a year span.
 
     Promoted from step3b_band_t.ipynb Cell 13; wired to make_row instead of _row.
-    No behavior change to the numeric outputs — same SQL, same aggregation math.
 
-    New behaviors vs. notebook aggregate_band_t:
+    Changes vs. notebook aggregate_band_t:
     - lmr_caveat applied to every LMR row (missing from notebook's aggregate path)
     - hyde_caveat applied to HYDE rows where epoch_year == 1950
     - status uses Pin 1 vocabulary (no_data instead of no_events when eVolv2k absent)
     - coverage_weight renamed to coverage; p10/p90/sd moved to detail sub-block
+    - WO15: HYDE and LMR weights changed from overlap_m2/sum(overlap_m2) to
+      overlap_m2/cell_area_m2 (fractional coverage of each cell's own area), so cells
+      at different latitudes are not biased by their absolute size. HYDE detail block
+      gains w_eff (sum of fractional coverages; honest effective cell count).
 
     Parameters
     ----------
-    lat, lon    : float — WGS-84 coordinates of the buffer centre
-    radius_km   : float — buffer radius in km
+    lat, lon    : float — WGS-84 coordinates (buffer centre, or point within polygon)
+    radius_km   : float — buffer radius in km; ignored when geom_wkt is provided
     from_year   : int   — start of span (CE)
     to_year     : int   — end of span (CE)
     conn        : psycopg3 connection
+    geom_wkt    : str or None — WKT polygon to use instead of a circular buffer;
+                  when provided, lat/lon/radius_km are not used for geometry
 
     Returns
     -------
     list of make_row dicts — pass to assemble_payload for the top-level payload
     """
-    radius_m     = radius_km * 1000.0
-    pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
-    buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
-    buf_geom_sql = f"({buf_geog_sql})::geometry"
+    if geom_wkt is not None:
+        buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
+        buf_geog_sql = f"({buf_geom_sql})::geography"
+    else:
+        radius_m     = radius_km * 1000.0
+        pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
+        buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
+        buf_geom_sql = f"({buf_geog_sql})::geometry"
 
     buf_area_m2 = float(
         conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
@@ -791,10 +814,11 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
                 caveat=caveat,
                 year=yr, epoch_year=yr, units=units,
                 detail={
-                    'p10':  agg['p10'],
-                    'p90':  agg['p90'],
-                    'sd':   agg['sd'],
-                    'unit': 'km2_per_cell',
+                    'p10':   agg['p10'],
+                    'p90':   agg['p90'],
+                    'sd':    agg['sd'],
+                    'w_eff': agg['w_eff'],
+                    'unit':  'km2_per_cell',
                 },
             ))
 
@@ -822,7 +846,8 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
             FROM temporal.lmr_climate lc
         )
         SELECT f.pdsi_slice, f.air_slice, f.prate_slice,
-               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2
+               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2,
+               ST_Area(f.fp::geography)                                 AS cell_area_m2
         FROM footprints f, buf
         WHERE ST_Intersects(f.fp, buf.buf_geom)
         ORDER BY overlap_m2 DESC
@@ -830,7 +855,9 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
         lmr_ts = pd.read_sql(lmr_sql, conn)
 
         ov      = lmr_ts['overlap_m2'].values.astype(float)
-        w_lmr   = ov / ov.sum()
+        ca      = lmr_ts['cell_area_m2'].values.astype(float)
+        frac_l  = ov / ca
+        w_lmr   = frac_l / frac_l.sum()
         cov_lmr = float(ov.sum() / buf_area_m2)
         n_fp    = len(lmr_ts)
         years_l = list(range(lmr_from, lmr_to + 1))
@@ -1889,13 +1916,19 @@ def single_basin_signature(
     # ── 1. Resolve single basin ───────────────────────────────────────────────
     basin_set = resolve_single_basin(lat, lon, level, conn)
     shortfall = 0.0   # structural zero: the query is the basin itself
+    hybas_id  = int(basin_set['hybas_id'].iloc[0])
+
+    # Fetch basin polygon for Band T (aggregate_band_t needs a query area)
+    basin_geom_wkt = conn.execute(
+        f"SELECT ST_AsText(geom) FROM {table} WHERE hybas_id = {hybas_id}"
+    ).fetchone()[0]
 
     neighborhood = {
         'type':      'basin',
         'lat':       lat,
         'lon':       lon,
         'level':     level,
-        'hybas_id':  int(basin_set['hybas_id'].iloc[0]),
+        'hybas_id':  hybas_id,
         'n_units':   1,
         'unit_type': 'basin',
     }
@@ -1917,11 +1950,24 @@ def single_basin_signature(
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
-    active_bands = bands if bands is not None else _BASIN_BANDS
+    # ── 5. Band T — uses basin polygon geometry instead of circular buffer ────
+    want_t    = (bands is None or 'T' in (bands or []))
+    have_span = from_year is not None and to_year is not None
+    run_t     = want_t and have_span
+
+    t_rows = aggregate_band_t(
+        lat, lon, radius_km=None,
+        from_year=from_year, to_year=to_year,
+        conn=conn, geom_wkt=basin_geom_wkt,
+    ) if run_t else []
+
+    all_rows     = basin_rows + t_rows
+    active_bands = bands if bands is not None else _BASIN_BANDS + (['T'] if run_t else [])
+    temporal     = {'from_year': from_year, 'to_year': to_year} if run_t else None
 
     return assemble_payload(
-        basin_rows, neighborhood, shortfall,
+        all_rows, neighborhood, shortfall,
         bands=active_bands,
-        temporal=None,
+        temporal=temporal,
         include_detail=include_detail,
     )
