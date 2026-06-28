@@ -1,8 +1,8 @@
 """
 WO5 acceptance test: aggregate_b2 regression against step3_results.tsv B2 rows.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo5.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo5.py
 
 Acceptance (from WO5 work order):
   1. Numeric regression: representative_score, representative_raw, dominant_hybas_id
@@ -91,7 +91,7 @@ def test_regression():
         id_col='variable',
         label='B2 regression',
     )
-    return ok
+    assert ok
 
 
 def test_envelope():
@@ -106,7 +106,7 @@ def test_envelope():
 
     if len(rows) != 3:
         print(f'  FAIL  expected 3 rows, got {len(rows)}')
-        return False
+        assert False
     print(f'  OK    3 rows emitted')
 
     for r in rows:
@@ -153,7 +153,7 @@ def test_envelope():
         print('  OK    perennial absent from discharge_yr detail (correct)')
 
     print('  PASS  envelope' if ok else '  FAIL  envelope')
-    return ok
+    assert ok
 
 
 def test_projection():
@@ -182,7 +182,7 @@ def test_projection():
     print()
     print('  PASS  lean omits detail; full carries dominant_hybas_id' if ok
           else '  FAIL  projection error')
-    return ok
+    assert ok
 
 
 def test_status_vocabulary():
@@ -197,23 +197,6 @@ def test_status_vocabulary():
     if bad:
         vals = {r['status'] for r in bad}
         print(f'  FAIL  unexpected status values: {vals}')
-        return False
+        assert False
     print(f'  OK    all {len(rows)} rows status ∈ {VALID_STATUSES}')
     print('  PASS  status vocabulary')
-    return True
-
-
-if __name__ == '__main__':
-    results = [
-        test_regression(),
-        test_envelope(),
-        test_projection(),
-        test_status_vocabulary(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(results)
-    print(f"WO5: {'PASS' if all(results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(results) else 1)

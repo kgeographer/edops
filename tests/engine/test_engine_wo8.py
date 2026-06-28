@@ -1,8 +1,8 @@
 """
 WO8 acceptance test: aggregate_b4 regression against frozen TSV targets.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo8.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo8.py
 
 Acceptance (from WO8 work order):
   1. outlet_type mixture — strict: class_id + weight_fraction vs step3_block3_mixture.tsv
@@ -75,7 +75,7 @@ def test_outlet_type_mixture():
 
     if len(actual) != len(ref_ot):
         print(f'  FAIL  expected {len(ref_ot)} mixture rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} mixture rows')
 
     ok = diff_output(
@@ -85,7 +85,7 @@ def test_outlet_type_mixture():
         id_col='row_id',
         label='outlet_type mixture',
     )
-    return ok
+    assert ok
 
 
 def test_outlet_type_modal():
@@ -114,7 +114,7 @@ def test_outlet_type_modal():
 
     ok = diff_output(actual, ref, float_tol=0.001, id_col='variable',
                      label='outlet_type modal')
-    return ok
+    assert ok
 
 
 def test_coast_fraction_value():
@@ -139,7 +139,7 @@ def test_coast_fraction_value():
         print(f'  OK    coast_fraction={val!r}  (matches frozen TSV)')
 
     print('  PASS  coast_fraction' if ok else '  FAIL  coast_fraction')
-    return ok
+    assert ok
 
 
 def test_coherence_and_envelope():
@@ -190,7 +190,7 @@ def test_coherence_and_envelope():
         print(f'  OK    all envelope fields correct for both rows')
 
     print('  PASS  coherence + envelope' if ok else '  FAIL  coherence + envelope')
-    return ok
+    assert ok
 
 
 def test_exclusivity():
@@ -206,7 +206,7 @@ def test_exclusivity():
         return True
     except AssertionError as e:
         print(f'  FAIL  {e}')
-        return False
+        assert False
 
 
 def test_cross_block_consistency():
@@ -247,7 +247,7 @@ def test_cross_block_consistency():
         print(f'  FAIL  gap {gap:.4f} >= 0.02 — unexpected divergence')
 
     print('  PASS  cross-block consistency' if ok else '  FAIL  cross-block consistency')
-    return ok
+    assert ok
 
 
 def test_sample_projection():
@@ -275,23 +275,3 @@ def test_sample_projection():
             print(f'    detail.modal_share         = {d.get("modal_share")!r}')
             print(f'    detail.mixture             = {d.get("mixture")}')
 
-    return True
-
-
-if __name__ == '__main__':
-    results = [
-        test_outlet_type_mixture(),
-        test_outlet_type_modal(),
-        test_coast_fraction_value(),
-        test_coherence_and_envelope(),
-        test_exclusivity(),
-        test_cross_block_consistency(),
-        test_sample_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO8: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)

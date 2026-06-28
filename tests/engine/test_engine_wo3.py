@@ -1,8 +1,8 @@
 """
 WO3 coverage test: dispatch_variable full-catalog check.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo3.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo3.py
 
 Acceptance (from WO3 work order):
   For every variable in step2_meta.tsv that appears in step3_results.tsv,
@@ -102,9 +102,4 @@ def test_dispatch_coverage():
         print()
 
     print('WO3:', 'PASS' if ok else 'FAIL')
-    return ok
-
-
-if __name__ == '__main__':
-    ok = test_dispatch_coverage()
-    sys.exit(0 if ok else 1)
+    assert ok

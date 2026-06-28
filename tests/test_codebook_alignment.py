@@ -86,13 +86,18 @@ def test_implemented_fields_accessible(timbuktu_sig):
     implemented but not delivered) or the code is wrong (field dropped from
     query or profile_groups).
     """
+    # These fields are synthesized by the areal engine and are deliberately
+    # absent from the point signature (codebook notes: "Areal-engine output
+    # only — not emitted by point signature").
+    AREAL_ONLY = {"coast_fraction", "outlet_type"}
+
     accessible = _all_accessible_keys(timbuktu_sig)
     missing = []
 
     for row in _codebook_implemented(exclude_bands=["T", "output"]):
         for col in ("api_key_s", "api_key_u"):
             key = (row.get(col) or "").strip()
-            if key and key not in accessible:
+            if key and key not in accessible and key not in AREAL_ONLY:
                 missing.append(
                     f"  {row['schema_key']:35s} {col}='{key}'"
                 )

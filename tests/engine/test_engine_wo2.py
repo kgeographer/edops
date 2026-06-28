@@ -1,8 +1,8 @@
 """
 WO2 regression: attach_values fixture.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo2.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo2.py
 
 Acceptance criteria (from WO2 work order):
   attach_values on Timbuktu 100 km / L06 basin set →
@@ -66,14 +66,3 @@ def test_attach_values(conn):
                       id_col='hybas_id', label='class_ids')
 
     return ok1 and ok2 and ok3
-
-
-if __name__ == '__main__':
-    from scripts.shared.db_utils import db_connect
-    conn = db_connect()
-    try:
-        ok = test_attach_values(conn)
-        print()
-        print('WO2:', 'PASS' if ok else 'FAIL')
-    finally:
-        conn.close()

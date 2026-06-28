@@ -1,8 +1,8 @@
 """
 WO4 acceptance test: make_row / aggregate_band_t regression against step3b TSVs.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo4.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo4.py
 
 Acceptance (from WO4 work order):
   1. Numeric regression: representative_raw, n_units, coverage, year, epoch_year,
@@ -107,7 +107,7 @@ def test_regression(conn):
         id_col=None,
         label='primary 1100–1200 strict',
     )
-    return ok
+    assert ok
 
 
 def test_caveat_mechanism(conn):
@@ -163,7 +163,7 @@ def test_caveat_mechanism(conn):
             ok = False
 
     print('  PASS  caveat mechanism' if ok else '  FAIL  caveat mechanism')
-    return ok
+    assert ok
 
 
 def test_hyde_1950_caveat(conn):
@@ -181,7 +181,7 @@ def test_hyde_1950_caveat(conn):
                  and r.get('epoch_year') == 1950]
     if not hyde_1950:
         print('  FAIL  no HYDE rows at epoch_year=1950 in span 1900–2000')
-        return False
+        assert False
 
     bad = [r for r in hyde_1950 if 'hyde_caveat' not in r.get('caveat', [])]
     if bad:
@@ -201,7 +201,7 @@ def test_hyde_1950_caveat(conn):
         print("  OK    assemble_payload caveats include 'hyde_caveat'")
 
     print('  PASS  hyde_caveat at 1950' if ok else '  FAIL  hyde_caveat at 1950')
-    return ok
+    assert ok
 
 
 def test_lean_projection(conn):
@@ -232,7 +232,7 @@ def test_lean_projection(conn):
         print('  PASS  lean omits detail; full carries p10/p90/sd')
     else:
         print('  FAIL  projection error')
-    return ok
+    assert ok
 
 
 def test_status_values(conn):
@@ -247,26 +247,6 @@ def test_status_values(conn):
     if bad:
         vals = {r['status'] for r in bad}
         print(f'  FAIL  unexpected status values: {vals}')
-        return False
+        assert False
     print(f'  OK    all {len(rows)} rows status ∈ {VALID_STATUSES}')
     print('  PASS  status vocabulary')
-    return True
-
-
-if __name__ == '__main__':
-    conn    = db_connect()
-    results = [
-        test_regression(conn),
-        test_caveat_mechanism(conn),
-        test_hyde_1950_caveat(conn),
-        test_lean_projection(conn),
-        test_status_values(conn),
-    ]
-    conn.close()
-
-    print()
-    print('=' * 60)
-    n_pass = sum(results)
-    print(f"WO4: {'PASS' if all(results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(results) else 1)

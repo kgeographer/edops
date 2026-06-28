@@ -1,8 +1,8 @@
 """
 WO1 regression: resolver fixture + weighted_quantile spot-check.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo1.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo1.py
 
 Acceptance criteria (from WO1 work order):
   resolver  — Timbuktu 100 km / L06 → 9 basins, weight sum 1.0000, weights
@@ -63,16 +63,3 @@ def test_weighted_quantile():
     assert abs(weighted_quantile(scores, weights3, 0.5) - 20.0) < 1e-6
 
     print('[quantile] PASS')
-    return True
-
-
-if __name__ == '__main__':
-    from scripts.shared.db_utils import db_connect
-    conn = db_connect()
-    try:
-        r1 = test_resolve_buffer(conn)
-        r2 = test_weighted_quantile()
-        print()
-        print('WO1:', 'PASS' if r1 and r2 else 'FAIL')
-    finally:
-        conn.close()

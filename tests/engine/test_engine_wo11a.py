@@ -1,8 +1,8 @@
 """
 WO11a acceptance test: load_catalog integrity + derived/sourced fork.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo11a.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo11a.py
 
 Acceptance (from WO11a work order):
   1. Row counts — sourced=54, derived=5, total=59
@@ -73,7 +73,7 @@ def test_row_counts():
             ok = False
 
     print('  PASS  row counts' if ok else '  FAIL  row counts')
-    return ok
+    assert ok
 
 
 def test_sourced_vs_frozen():
@@ -141,7 +141,7 @@ def test_sourced_vs_frozen():
         print(f'  OK    only expected diff(s): {[d[0] for d in expected_seen]}')
 
     print('  PASS  sourced vs frozen' if ok else '  FAIL  sourced vs frozen')
-    return ok
+    assert ok
 
 
 def test_derived_rows():
@@ -175,7 +175,7 @@ def test_derived_rows():
         print(f'  OK    all {len(derived)} derived rows: derived=True, db_col=None')
 
     print('  PASS  derived rows' if ok else '  FAIL  derived rows')
-    return ok
+    assert ok
 
 
 def test_attach_skips_derived():
@@ -220,7 +220,7 @@ def test_attach_skips_derived():
         print(f'  OK    no derived keys in matrix columns')
 
     print('  PASS  attach skips derived' if ok else '  FAIL  attach skips derived')
-    return ok
+    assert ok
 
 
 def test_dispatch_routing():
@@ -274,7 +274,7 @@ def test_dispatch_routing():
         print(f'  OK    all {len(sourced)} sourced vars routed; no unknowns')
 
     print('  PASS  dispatch routing' if ok else '  FAIL  dispatch routing')
-    return ok
+    assert ok
 
 
 def test_b1_regression():
@@ -313,7 +313,7 @@ def test_b1_regression():
         ref[['variable', 'representative_score', 'n_basins', 'coverage_weight']],
         float_tol=0.01, id_col='variable', label='B1',
     )
-    return ok
+    assert ok
 
 
 def test_b4_regression():
@@ -355,23 +355,4 @@ def test_b4_regression():
         ref[['variable', 'representative_score', 'n_basins', 'coverage_weight']],
         float_tol=0.01, id_col='variable', label='B4',
     )
-    return ok
-
-
-if __name__ == '__main__':
-    results = [
-        test_row_counts(),
-        test_sourced_vs_frozen(),
-        test_derived_rows(),
-        test_attach_skips_derived(),
-        test_dispatch_routing(),
-        test_b1_regression(),
-        test_b4_regression(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO11a: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)
+    assert ok

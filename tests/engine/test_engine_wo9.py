@@ -1,8 +1,8 @@
 """
 WO9 acceptance test: aggregate_b5 regression against frozen TSV targets.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo9.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo9.py
 
 Acceptance (from WO9 work order):
   1. distribution_only headline — strict: representative_score, spread, p10, p90,
@@ -76,7 +76,7 @@ def test_distribution_only_headline():
 
     if len(actual) != 2:
         print(f'  FAIL  expected 2 distribution_only rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} distribution_only rows')
 
     ok = diff_output(
@@ -88,7 +88,7 @@ def test_distribution_only_headline():
         id_col='variable',
         label='B5 distribution_only',
     )
-    return ok
+    assert ok
 
 
 def test_companion_rows():
@@ -107,7 +107,7 @@ def test_companion_rows():
 
     if len(actual) != len(ref):
         print(f'  FAIL  expected {len(ref)} companion rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} companion rows')
 
     ok = diff_output(
@@ -117,7 +117,7 @@ def test_companion_rows():
         id_col='row_id',
         label='B5 companion scores',
     )
-    return ok
+    assert ok
 
 
 def test_extreme_headline():
@@ -131,7 +131,7 @@ def test_extreme_headline():
     ext = next((r for r in rows if r['method'] == 'extreme'), None)
     if ext is None:
         print('  FAIL  no extreme row emitted')
-        return False
+        assert False
 
     actual = pd.DataFrame([{
         'variable':             ext['variable'],
@@ -163,7 +163,7 @@ def test_extreme_headline():
     else:
         print(f'  OK    carrier basin = {carrier}')
 
-    return ok
+    assert ok
 
 
 def test_envelope():
@@ -203,7 +203,7 @@ def test_envelope():
         print(f'  OK    all {len(rows)} rows: method/unit_type/status/coherence correct')
 
     print('  PASS  envelope' if ok else '  FAIL  envelope')
-    return ok
+    assert ok
 
 
 def test_carrier_split():
@@ -240,7 +240,7 @@ def test_carrier_split():
         print(f'  FAIL  same basin — expected different carriers')
 
     print('  PASS  carrier split' if ok else '  FAIL  carrier split')
-    return ok
+    assert ok
 
 
 def test_sample_projection():
@@ -267,22 +267,3 @@ def test_sample_projection():
             print(f'    {k:28s} = {lean.get(k)!r}')
         print(f'    detail                       = {full.get("detail")}')
 
-    return True
-
-
-if __name__ == '__main__':
-    results = [
-        test_distribution_only_headline(),
-        test_companion_rows(),
-        test_extreme_headline(),
-        test_envelope(),
-        test_carrier_split(),
-        test_sample_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO9: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)

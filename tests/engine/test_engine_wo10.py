@@ -1,8 +1,8 @@
 """
 WO10 acceptance test: apply_modality + detect_modality regression.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo10.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo10.py
 
 Acceptance (from WO10 work order):
   1. Two-regime classification — strict: exactly the 12 two_regime vars match frozen TSV
@@ -96,7 +96,7 @@ def test_two_regime_classification():
         print(f'  OK    {len(actual_two_regime)} two_regime vars: {sorted(actual_two_regime)}')
 
     print('  PASS  two_regime classification' if ok else '  FAIL  two_regime classification')
-    return ok
+    assert ok
 
 
 def test_modality_coverage():
@@ -110,7 +110,7 @@ def test_modality_coverage():
 
     if len(rows) != 36:
         print(f'  FAIL  expected 36 rows, got {len(rows)}')
-        return False
+        assert False
     print(f'  OK    {len(rows)} rows')
 
     missing = [r['variable'] for r in rows if r.get('modality') is None]
@@ -123,7 +123,7 @@ def test_modality_coverage():
         print(f'  OK    unimodal={n_unimodal}  two_regime={n_two_regime}')
 
     print('  PASS  modality coverage' if ok else '  FAIL  modality coverage')
-    return ok
+    assert ok
 
 
 def test_suppressed_scores():
@@ -168,7 +168,7 @@ def test_suppressed_scores():
             print(f"  OK    {var}: suppressed_score={suppressed_val}  (expected ~{expected_val})")
 
     print('  PASS  suppressed scores' if ok else '  FAIL  suppressed scores')
-    return ok
+    assert ok
 
 
 def test_spread_two_regime_not_suppressed():
@@ -199,7 +199,7 @@ def test_spread_two_regime_not_suppressed():
         print(f'  OK    {len(spread_two_regime)} spread+two_regime rows all have score_suppressed=False')
 
     print('  PASS  spread two_regime' if ok else '  FAIL  spread two_regime')
-    return ok
+    assert ok
 
 
 def test_regimes_companion():
@@ -225,7 +225,7 @@ def test_regimes_companion():
 
     if len(actual) != 24:
         print(f'  FAIL  expected 24 regimes rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} rows')
 
     actual['row_id'] = actual['variable'] + ':' + actual['regime_id'].astype(str)
@@ -263,7 +263,7 @@ def test_regimes_companion():
     print('  NOTE: two_regime classification and regime_weight are identical — only centers differ.')
     print('  Action for Karl: re-freeze step3_block6_regimes.tsv pct_sand rows with engine values.')
 
-    return ok
+    assert ok
 
 
 def test_sample_projection():
@@ -295,22 +295,3 @@ def test_sample_projection():
     print(f'    detail.p90                   = {d.get("p90")!r}')
     print(f'    detail.regimes               = {d.get("regimes")}')
 
-    return True
-
-
-if __name__ == '__main__':
-    results = [
-        test_two_regime_classification(),
-        test_modality_coverage(),
-        test_suppressed_scores(),
-        test_spread_two_regime_not_suppressed(),
-        test_regimes_companion(),
-        test_sample_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO10: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)

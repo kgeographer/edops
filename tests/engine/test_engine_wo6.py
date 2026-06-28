@@ -1,8 +1,8 @@
 """
 WO6 acceptance test: aggregate_b1 regression against step3_results.tsv B1 rows.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo6.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo6.py
 
 Acceptance (from WO6 work order):
   1. Distribution fields — strict, all 34 B1 rows:
@@ -105,7 +105,7 @@ def test_distribution_fields():
 
     if len(actual) != 34:
         print(f'  FAIL  expected 34 rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    34 rows emitted')
 
     compare_cols = ['variable', 'spread', 'p10', 'p90',
@@ -118,7 +118,7 @@ def test_distribution_fields():
         id_col='variable',
         label='B1 distribution',
     )
-    return ok
+    assert ok
 
 
 def test_score_and_coherence():
@@ -194,7 +194,7 @@ def test_score_and_coherence():
         print(f'  OK    status translations correct for {len(compare_vars)} rows')
 
     print('  PASS  score + coherence (32 rows)' if ok else '  FAIL  score + coherence')
-    return ok
+    assert ok
 
 
 def test_two_regime_b1_inputs():
@@ -245,7 +245,7 @@ def test_two_regime_b1_inputs():
 
     print('  PASS  concentrated-two_regime B6 inputs' if ok
           else '  FAIL  concentrated-two_regime B6 inputs')
-    return ok
+    assert ok
 
 
 def test_envelope():
@@ -299,7 +299,7 @@ def test_envelope():
         ok = False
 
     print('  PASS  envelope' if ok else '  FAIL  envelope')
-    return ok
+    assert ok
 
 
 def test_sample_projection():
@@ -332,21 +332,3 @@ def test_sample_projection():
             print(f'    {k:28s} = {lean.get(k)!r}')
         print(f'    detail                       = {full.get("detail")}')
 
-    return True   # display-only test
-
-
-if __name__ == '__main__':
-    results = [
-        test_distribution_fields(),
-        test_score_and_coherence(),
-        test_two_regime_b1_inputs(),
-        test_envelope(),
-        test_sample_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO6: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)

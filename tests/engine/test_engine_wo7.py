@@ -1,8 +1,8 @@
 """
 WO7 acceptance test: aggregate_b3 regression against frozen TSV targets.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo7.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo7.py
 
 Acceptance (from WO7 work order):
   1. Coverage + n_basins — strict, all 9 B3 rows
@@ -92,7 +92,7 @@ def test_coverage_and_n_basins():
 
     if len(actual) != 9:
         print(f'  FAIL  expected 9 rows, got {len(actual)}')
-        return False
+        assert False
     print(f'  OK    9 rows emitted')
 
     ok = diff_output(
@@ -102,7 +102,7 @@ def test_coverage_and_n_basins():
         id_col='variable',
         label='B3 coverage',
     )
-    return ok
+    assert ok
 
 
 def test_modal_fields():
@@ -133,7 +133,7 @@ def test_modal_fields():
         id_col='variable',
         label='B3 modal fields',
     )
-    return ok
+    assert ok
 
 
 def test_mixture_rows():
@@ -153,7 +153,7 @@ def test_mixture_rows():
         print(f'  FAIL  expected {len(ref)} mixture rows, got {len(actual)}')
         print(f'  ref vars: {sorted(ref["variable"].unique())}')
         print(f'  act vars: {sorted(actual["variable"].unique())}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} mixture rows')
 
     # Build compound id for diff_output
@@ -169,7 +169,7 @@ def test_mixture_rows():
         id_col='row_id',
         label='B3 mixture',
     )
-    return ok
+    assert ok
 
 
 def test_coherence():
@@ -206,7 +206,7 @@ def test_coherence():
         print(f'  OK    coherence correct: concentrated={n_conc}  mixed={n_mixed}')
 
     print('  PASS  coherence' if ok else '  FAIL  coherence')
-    return ok
+    assert ok
 
 
 def test_envelope():
@@ -241,7 +241,7 @@ def test_envelope():
               f'score=None, raw=modal_label(str), status=ok')
 
     print('  PASS  envelope' if ok else '  FAIL  envelope')
-    return ok
+    assert ok
 
 
 def test_sample_projection():
@@ -276,22 +276,3 @@ def test_sample_projection():
         print(f'    detail.concentration       = {d.get("concentration")!r}')
         print(f'    detail.mixture (top 2)     = {d.get("mixture", [])[:2]}')
 
-    return True   # display-only test
-
-
-if __name__ == '__main__':
-    results = [
-        test_coverage_and_n_basins(),
-        test_modal_fields(),
-        test_mixture_rows(),
-        test_coherence(),
-        test_envelope(),
-        test_sample_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO7: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)

@@ -1,8 +1,8 @@
 """
 WO11b capstone test: areal_signature end-to-end regression.
 
-Run from repo root:
-    python scripts/edop/areas/test_engine_wo11b.py
+Run via pytest:
+    pytest tests/engine/test_engine_wo11b.py
 
 Fixture: Timbuktu 100 km / L06 (lat=16.8167, lon=-2.9833, r=100, level=6)
 Band T span: 1100–1200 CE
@@ -73,7 +73,7 @@ def test_basin_row_count():
     ok = len(basin_rows) == 51
     print(f'  {"OK" if ok else "FAIL"}  basin rows={len(basin_rows)}, expected 51')
     print('  PASS  basin row count' if ok else '  FAIL  basin row count')
-    return ok
+    assert ok
 
 
 def test_basin_scores():
@@ -101,14 +101,14 @@ def test_basin_scores():
     ref = pd.read_csv(OUT / 'step3_results.tsv', sep='\t')
     if len(actual) != len(ref):
         print(f'  FAIL  rows: got {len(actual)}, expected {len(ref)}')
-        return False
+        assert False
 
     ok = diff_output(
         actual[['variable', 'representative_score', 'n_basins', 'coverage_weight']],
         ref[['variable', 'representative_score', 'n_basins', 'coverage_weight']],
         float_tol=0.01, id_col='variable', label='basin scores',
     )
-    return ok
+    assert ok
 
 
 def test_b3_mixture():
@@ -140,7 +140,7 @@ def test_b3_mixture():
 
     if len(actual) != len(ref):
         print(f'  FAIL  mixture rows: got {len(actual)}, expected {len(ref)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} mixture rows')
 
     actual['row_id'] = actual['variable'] + ':' + actual['class_id'].astype(str)
@@ -151,7 +151,7 @@ def test_b3_mixture():
         ref[['row_id', 'weight_fraction']],
         float_tol=0.0001, id_col='row_id', label='B3 mixture',
     )
-    return ok
+    assert ok
 
 
 def test_b5_distribution_companion():
@@ -176,7 +176,7 @@ def test_b5_distribution_companion():
 
     if len(actual) != len(ref):
         print(f'  FAIL  companion rows: got {len(actual)}, expected {len(ref)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} companion rows')
 
     ok = diff_output(
@@ -184,7 +184,7 @@ def test_b5_distribution_companion():
         ref[['row_id', 'score']],
         float_tol=0.001, id_col='row_id', label='B5 companion',
     )
-    return ok
+    assert ok
 
 
 def test_b6_regimes():
@@ -211,7 +211,7 @@ def test_b6_regimes():
 
     if len(actual) != len(ref):
         print(f'  FAIL  regimes rows: got {len(actual)}, expected {len(ref)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} regime rows')
 
     actual['row_id'] = actual['variable'] + ':' + actual['regime_id'].astype(str)
@@ -222,7 +222,7 @@ def test_b6_regimes():
         ref[['row_id', 'regime_center', 'regime_weight', 'n_basins']],
         float_tol=0.01, id_col='row_id', label='B6 regimes',
     )
-    return ok
+    assert ok
 
 
 def test_band_t_primary():
@@ -254,7 +254,7 @@ def test_band_t_primary():
 
     if len(actual) != len(ref):
         print(f'  FAIL  rows: got {len(actual)}, expected {len(ref)}')
-        return False
+        assert False
     print(f'  OK    {len(actual)} Band T rows')
 
     actual['row_id'] = (actual['variable'].astype(str) + ':'
@@ -269,7 +269,7 @@ def test_band_t_primary():
         ref[['row_id', 'representative_score', 'n_units', 'coverage_weight']],
         float_tol=0.01, id_col='row_id', label='Band T primary',
     )
-    return ok
+    assert ok
 
 
 def test_payload_structure():
@@ -318,7 +318,7 @@ def test_payload_structure():
               f'n_rows={len(payload["rows"])}, caveats={list(payload["caveats"].keys())}')
 
     print('  PASS  payload structure' if ok else '  FAIL  payload structure')
-    return ok
+    assert ok
 
 
 def test_lean_full_projection():
@@ -367,24 +367,4 @@ def test_lean_full_projection():
         print(f'  OK    lean/full projection gating correct')
 
     print('  PASS  lean/full projection' if ok else '  FAIL  lean/full projection')
-    return ok
-
-
-if __name__ == '__main__':
-    results = [
-        test_basin_row_count(),
-        test_basin_scores(),
-        test_b3_mixture(),
-        test_b5_distribution_companion(),
-        test_b6_regimes(),
-        test_band_t_primary(),
-        test_payload_structure(),
-        test_lean_full_projection(),
-    ]
-
-    print()
-    print('=' * 60)
-    n_pass = sum(r for r in results if r is True)
-    print(f"WO11b: {'PASS' if all(r is True for r in results) else 'FAIL'}  "
-          f"({n_pass}/{len(results)} tests passed)")
-    sys.exit(0 if all(r is True for r in results) else 1)
+    assert ok
