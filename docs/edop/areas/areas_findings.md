@@ -304,3 +304,65 @@ WO18 Cells 9–10. Gate verdict: **PASS** — proceed to 20/50 hunt.
 **Notes for 20/50 run:** 44.4% variance in PC1+PC2 — use ≥3 components for clustering; the 2-D plot is a slice. Transition-character space is orthogonal to the signature PCA space used for fixture selection (AF.WO18.1) — this is the expected and desired property of an independent instrument.
 
 *Implication:* The basin-ring transition-character comparator is validated as an instrument. Scaling to 20/50 WHC cities is the next step; any emergent clustering found there is not pre-supposed by WO18.
+
+---
+
+## AF.WO19.1 [method] — Variable intersection stable at n=47; permafrost_extent joins union but not universal
+
+At n=47 the 29-variable universal intersection is unchanged from WO18 (n=10): the 11 WO18-dropped variables remain dropped (karst family, wet_pct family, pasture/cropland families, dist_sink). One new variable enters the union at n=47 but fails universality: `permafrost_extent` appears at high-latitude fixtures (Tinn, Rauma, Bergen) but not at tropical or arid cities. Four fixtures are excluded before the intersection: three ring=0 island cities (San Cristóbal de La Laguna, Willemstad, Zanzibar City — no L06 basin neighbors, no transition character possible at this level) and one duplicate basin (San Miguel de Allende = Querétaro, both resolving to basin 7060831470 — less-prominent city dropped, Querétaro kept).
+
+*Implication:* The 29-var intersection is stable to 5× sample expansion. The absence of karst, wetland, pasture, and permafrost variables from the universal set reflects geographic domain — those variables are nonzero only where they apply; their absence is real signal. Any comparator using this intersection implicitly measures what is universally *active* across all fixtures, not what is everywhere *present*.
+
+---
+
+## AF.WO19.2 [method] — PCA requires 6 components for ≥70% variance; 2D projection is a slice only
+
+At n=47, PC1=23.1% and PC2=16.5% (39.6% total), down from WO18's 44.4% in 2 PCs. Six components are needed for ≥70% cumulative variance. The reduction is expected: 5× sample expansion spreads variance into more independent directions. Clustering was performed in 6-component PCA space; the 2D plot is a visualization tool only.
+
+*Implication:* Do not interpret the 2D geometry literally — cities that appear close in the PC1/PC2 projection may differ substantially on PC3–PC6. The silhouette-optimal k=3 and all co-assignment frequencies are computed in the full 6-component space.
+
+---
+
+## AF.WO19.3 [signal] — Anchoring test: clustering tracks region and discharge; climate zone association consistent but under-powered
+
+k=3 silhouette-optimal clustering (silhouette=0.338), n=47, Cramér V against external covariates:
+
+| Covariate | V | p | Verdict |
+|---|---|---|---|
+| Region (WHC classification) | 0.502 | 0.003 | significant — primary anchor |
+| Discharge tier | 0.373 | 0.042 | significant |
+| Drainage type | 0.334 | 0.033 | significant |
+| Basin size class | 0.305 | 0.068 | borderline |
+| Climate zone (13 classes) | 0.547 | 0.256 | highest V; not significant (thin cells) |
+
+Cluster structure: Cluster 0 (n=7) — Americas + Asia Pacific only, "extremely hot" climate zones, tropical/monsoon transition character; Cluster 1 (n=36) — mainstream temperate, all regions, European-heavy, exorheic, medium/low discharge; Cluster 2 (n=4) — small, Americas + Arab states, hot/xeric mid-latitude, terminal_sink present.
+
+Climate zone's non-significance is a power problem: 13 categories × 3 clusters at n=47 gives very thin cells; chi² is unreliable. The V magnitude (0.547) is consistent with the other anchored covariates, suggesting genuine association under-tested rather than a null.
+
+*Implication:* Verdict ANCHORED (partial). The clustering aligns with external geographic and hydrological covariates it was not built from. The climate zone association warrants a larger study (n≥100) before it can be confirmed or ruled out.
+
+---
+
+## AF.WO19.4 [method] — Stability test: sample-stable, representation-dependent
+
+**Part A — bootstrap (N=200, drop 20% non-WO18 cities per run):** WO18 pair co-assignment mean=0.874, min=0.640, max=0.995. Many pairs co-assign at 1.000 across all runs: Bam↔Kandy, Bolgar↔Kazan↔Colonia del Sacramento, Rauma↔Tinn↔Bergen, Istanbul↔Kaifeng↔Vatican City, Belo Horizonte↔Querétaro, Jaipur↔Kraków. The core cluster structure is robust to 20% sample perturbation. **Verdict: STABLE.**
+
+**Part B — representation swap (sign_pattern binary vector replacing mean_abs + max_abs):** ARI = −0.017 ≈ 0. Swap collapses to 42 cities in one cluster, 4 in another, Kandy alone. Sign-space is effectively flat at n=47: most cities have "mixed" sign patterns (center ranks higher than some ring neighbors and lower than others in different directions), so the binary representation provides almost no discriminating information. **Verdict: REPRESENTATION-DEPENDENT.**
+
+*Implication:* The representation-dependence is informative, not a defect. Transition *magnitude* (how much the environment changes at basin boundaries) and transition *direction* (which way it shifts) are genuinely different aspects of basin-boundary character and partition the space differently. The magnitude-based comparator finds real, sample-stable structure. The sign-based partition collapses here because most cities are mixed-direction at L06 — their ring transitions go both ways depending on which border is crossed. Whether sign-based structure is recoverable at L08 or with a larger fixture set is an open question.
+
+---
+
+## AF.WO19.5 [verdict] — Branch verdict: ANCHORED + SAMPLE-STABLE + REPRESENTATION-DEPENDENT; instrument valid at L06-static scope
+
+Three-test verdict from WO19 (n=47, L06, single first-order ring, Bands A–E, static):
+
+**(a) Anchoring:** ANCHORED (partial) — region (V=0.50, p=0.003) and discharge tier (V=0.37, p=0.042) both significant; climate zone shows highest V (0.55) but underpowered at n=47 with 13 categories.
+
+**(b) Stability:** MIXED — sample-stable (bootstrap co-assignment mean=0.874, many pairs at 1.000); representation-dependent (ARI=−0.017 on sign_pattern swap).
+
+**(c) Cultural probe:** DEFERRED — no structured cultural attribute data available for the WHC city set at this stage.
+
+**Branch verdict:** The magnitude-based transition-character comparator earns its keep at L06-static scope. It finds real, anchored, sample-stable structure in how sharply basin-boundary environments change across the WHC sample. The representation-dependence is a method finding: magnitude and direction are different instruments and should be developed separately if both are to be useful. The cultural probe is the remaining open question for the branch's humanistic relevance; it requires structured external data (D-PLACE linkage, Seshat, or equivalent) to test.
+
+**Scope of all conclusions:** L06, single first-order ring, Bands A–E, static. Nulls mean "not found at this resolution and scope," not "not present anywhere."
