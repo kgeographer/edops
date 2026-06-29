@@ -443,6 +443,9 @@
               <option value="lmr_temp_anomaly">Temperature anomaly</option>
               <option value="lmr_precip_anomaly">Precipitation anomaly</option>
             </optgroup>
+            <optgroup label="Land use — BasinATLAS">
+              <option value="cropland_pct">Cropland extent %</option>
+            </optgroup>
             <optgroup label="Land use — HYDE 3.4">
               <option value="hyde_cropland">Cropland fraction</option>
               <option value="hyde_grazing">Grazing fraction</option>
@@ -1096,6 +1099,7 @@ const BASIN_VARS = [
   { key: 'aridity_index',        su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
   { key: 'precipitation_annual', su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
   { key: 'temperature_annual',   su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
+  { key: 'cropland_pct',         su: 's', reverse: false, loLabel: '0%',   hiLabel: 'high %' },
 ];
 
 let _basinsLoaded    = false;
