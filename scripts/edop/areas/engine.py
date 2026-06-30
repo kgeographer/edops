@@ -22,8 +22,16 @@ Dispatch (WO3):
                       caller skips derived rows before invoking
 """
 
+import warnings
 import numpy as np
 import pandas as pd
+
+# psycopg3 connections work fine with pd.read_sql; suppress the SQLAlchemy nag
+warnings.filterwarnings(
+    'ignore',
+    message='pandas only supports SQLAlchemy connectable',
+    category=UserWarning,
+)
 
 
 def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
@@ -127,7 +135,7 @@ def resolve_polygon(geom_wkt, level, conn, epsilon=0.0):
     return df
 
 
-def resolve_polity(polity_name, year, level, conn, epsilon=0.001):
+def resolve_polity(polity_name, year, level, conn, epsilon=0.0):
     """
     Polity resolver: Cliopatria name + year → (geom_wkt, basin_set, polity_meta).
 
@@ -1845,6 +1853,7 @@ def _areal_signature_from_basin_set(
     from_year=None,
     to_year=None,
     include_detail=False,
+    run_modality=True,
 ):
     """
     Shared aggregation pipeline for any resolver that produces a weighted basin set.
@@ -1874,7 +1883,8 @@ def _areal_signature_from_basin_set(
     b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
 
     # ── 4. B6 modality post-pass (B1 + B5 distribution rows only) ────────────
-    apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
+    if run_modality:
+        apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
@@ -2118,7 +2128,7 @@ def areal_signature_polygon(
         },
     }
 
-    return _areal_signature_from_basin_set(
+    payload = _areal_signature_from_basin_set(
         basin_set, level, conn,
         neighborhood=neighborhood,
         shortfall=shortfall,
@@ -2127,4 +2137,7 @@ def areal_signature_polygon(
         from_year=from_year,
         to_year=to_year,
         include_detail=include_detail,
+        run_modality=False,
     )
+    payload['modality_post_pass'] = 'skipped — not calibrated for polygon scale'
+    return payload

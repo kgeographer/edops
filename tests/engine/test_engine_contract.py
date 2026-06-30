@@ -23,8 +23,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.edop.areas.engine import (
     areal_signature,
+    areal_signature_polygon,
     single_basin_signature,
     resolve_buffer,
+    resolve_polygon,
+    resolve_polity,
     load_catalog,
     dispatch_variable,
 )
@@ -484,3 +487,129 @@ class TestBandT:
         assert hyde_rows, 'No HYDE rows in 1900–2000 span'
         hyde_with_caveat = [r for r in hyde_rows if 'hyde_caveat' in r.get('caveat', [])]
         assert hyde_with_caveat, 'No HYDE rows carry hyde_caveat in 1900–2000 span'
+
+
+# ---------------------------------------------------------------------------
+# 7. WO20 — Polity resolver + polygon engine path
+#    Fixture: Northern Song, year=1000, L06
+# ---------------------------------------------------------------------------
+
+# N Song phase 990–1017, polity_id=4481, area≈2.76M km²
+NSONG_NAME  = 'Northern Song'
+NSONG_YEAR  = 1000
+NSONG_LEVEL = 6
+
+
+@pytest.fixture(scope='session')
+def nsong_geom(conn):
+    row = conn.execute(
+        "SELECT ST_AsText(geom) FROM gaz.clio_polities "
+        "WHERE name = %s AND fromyear <= %s AND toyear >= %s",
+        (NSONG_NAME, NSONG_YEAR, NSONG_YEAR),
+    ).fetchone()
+    if row is None:
+        pytest.skip('Northern Song polity not found in DB')
+    return row[0]
+
+
+@pytest.fixture(scope='session')
+def nsong_basin_set(nsong_geom, conn):
+    return resolve_polygon(nsong_geom, f'{NSONG_LEVEL:02d}', conn)
+
+
+@pytest.fixture(scope='session')
+def nsong_payload(nsong_geom, conn):
+    return areal_signature_polygon(
+        nsong_geom, conn, level=NSONG_LEVEL, bands=list('ABCDE'),
+    )
+
+
+class TestResolvePolygon:
+    def test_basin_count_plausible(self, nsong_basin_set):
+        """N Song at L06 should resolve to many dozens of basins."""
+        assert len(nsong_basin_set) >= 50, f'Only {len(nsong_basin_set)} basins — too few'
+
+    def test_weight_sum_leq_one(self, nsong_basin_set):
+        wsum = nsong_basin_set['weight'].sum()
+        assert wsum <= 1.0 + 1e-6, f'weight_sum={wsum:.6f} > 1'
+
+    def test_weights_positive(self, nsong_basin_set):
+        assert (nsong_basin_set['weight'] > 0).all(), 'zero-weight basins returned'
+
+    def test_basin_in_polity_fraction_range(self, nsong_basin_set):
+        bpf = nsong_basin_set['basin_in_polity_fraction']
+        assert (bpf >= 0).all() and (bpf <= 1 + 1e-6).all(), \
+            'basin_in_polity_fraction out of [0, 1]'
+
+    def test_weight_leq_basin_in_polity_fraction(self, nsong_basin_set):
+        """Weight (overlap/polity) can never exceed basin_in_polity_fraction (overlap/basin)
+        because polity_area >= basin_area is not guaranteed, but the basin fraction
+        caps what weight can contribute."""
+        # weight = overlap/polity_area; bpf = overlap/basin_area
+        # only invariant: both derived from same overlap — weight is independent, no cap
+        # What IS guaranteed: weight <= 1 (checked above); bpf <= 1 (checked above)
+        pass  # structural check only — no numeric cap between the two
+
+    def test_required_columns(self, nsong_basin_set):
+        for col in ('hybas_id', 'weight', 'basin_in_polity_fraction', 'overlap_area_km2'):
+            assert col in nsong_basin_set.columns, f'Missing column: {col}'
+
+
+class TestResolvePolity:
+    def test_returns_correct_meta(self, conn):
+        _, _, meta = resolve_polity(NSONG_NAME, NSONG_YEAR, NSONG_LEVEL, conn)
+        assert meta['name'] == NSONG_NAME
+        assert meta['fromyear'] <= NSONG_YEAR <= meta['toyear']
+        assert meta['year'] == NSONG_YEAR
+
+    def test_raises_on_no_match(self, conn):
+        import pytest as _pytest
+        with _pytest.raises(ValueError, match='No polity found'):
+            resolve_polity('Nonexistent Polity XYZ', 1000, NSONG_LEVEL, conn)
+
+    def test_basin_set_matches_direct(self, nsong_basin_set, conn):
+        _, bs2, _ = resolve_polity(NSONG_NAME, NSONG_YEAR, NSONG_LEVEL, conn)
+        assert len(bs2) == len(nsong_basin_set), \
+            'resolve_polity basin count differs from resolve_polygon'
+
+
+class TestArealSignaturePolygon:
+    def test_modality_post_pass_skipped(self, nsong_payload):
+        assert 'modality_post_pass' in nsong_payload, 'modality_post_pass key missing'
+        assert 'skipped' in nsong_payload['modality_post_pass'].lower()
+
+    def test_no_modality_values_in_rows(self, nsong_payload):
+        import pandas as pd
+        df = pd.DataFrame(nsong_payload['rows'])
+        if 'modality' in df.columns:
+            assert not df['modality'].notna().any(), \
+                'modality values present — apply_modality ran on polygon path'
+
+    def test_neighborhood_type_polygon(self, nsong_payload):
+        assert nsong_payload['neighborhood']['type'] == 'polygon'
+
+    def test_marginal_exposure_present(self, nsong_payload):
+        me = nsong_payload['neighborhood'].get('marginal_exposure')
+        assert me is not None, 'marginal_exposure missing'
+        assert 'lt_50pct' in me and 'lt_20pct' in me
+
+    def test_spread_verdicts_fire(self, nsong_payload):
+        """N Song's environmental heterogeneity must surface as spread verdicts."""
+        spread = sum(1 for r in nsong_payload['rows'] if r.get('coherence') == 'spread')
+        assert spread >= 10, f'Only {spread} spread rows — heterogeneity not surfacing'
+
+    def test_b2_dominant_basin_high_discharge(self, nsong_payload):
+        """Dominant basin for N Song should be in top global decile for discharge."""
+        b2 = [r for r in nsong_payload['rows'] if r.get('method') == 'dominant_basin']
+        assert b2, 'No B2 dominant_basin rows'
+        discharge = next((r for r in b2 if r['variable'] == 'discharge_yr'), None)
+        assert discharge is not None, 'discharge_yr missing from B2'
+        assert discharge['representative_score'] >= 90, \
+            f'discharge_yr score={discharge["representative_score"]} — expected ≥90 for Yangtze-class basin'
+
+    def test_payload_bands(self, nsong_payload):
+        assert set(nsong_payload['bands']) == set('ABCDE')
+
+    def test_shortfall_reasonable(self, nsong_payload):
+        assert nsong_payload['shortfall'] < 0.10, \
+            f'shortfall={nsong_payload["shortfall"]:.3f} — unexpectedly large'

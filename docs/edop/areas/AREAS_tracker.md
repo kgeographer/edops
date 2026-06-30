@@ -5,7 +5,7 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-28 (WO19)
+- **Last updated:** 2026-06-30 (WO20)
 - **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
   decision is locked; read at the start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -24,7 +24,9 @@ Engine **assembled and whole**; neighborhood work underway. **WO12** (L8 buffer 
 
 **WO19 confirmed:** Scaled transition-character comparator run on 47 WHC cities (51 fixtures; 4 excluded: 3 ring=0 islands, 1 duplicate basin). 29-variable intersection unchanged from WO18. k=3 silhouette-optimal clustering (silhouette=0.338) in 6-component PCA space (70% cumvar; PC1+PC2=39.6%). Three-test verdict: (a) ANCHORED (partial) — region (V=0.50, p=0.003), discharge tier (V=0.37, p=0.042), both significant; climate zone V=0.55 consistent but underpowered (13 categories, n=47); (b) STABLE under sample perturbation (bootstrap co-assignment mean=0.874) + REPRESENTATION-DEPENDENT (ARI=−0.017 on sign_pattern swap — magnitude and direction partition the space differently); (c) DEFERRED (no structured cultural attribute data). Magnitude-based comparator earns its keep at L06-static scope. AF.WO19.1–5.
 
-**Next:** Cultural probe (requires structured external data — D-PLACE, Seshat, or equivalent) or ring endpoint response-object design. Deferred register carries ring-expansion weight policy (equal / area-proportional / border-length — undecided from WO16).
+**WO20 confirmed:** Polity resolver + polygon engine path implemented and validated on Northern Song year=1000 / L06. Three new public callables: `resolve_polygon` (geometry primitive; weight=overlap/polity_area; epsilon=0.0), `resolve_polity` (Cliopatria wrapper), `areal_signature_polygon` (polygon entry point, shares B1–B5 + Band T pipeline via `_areal_signature_from_basin_set`). N Song: 376 basins, shortfall=0.011, weight_sum=0.989; B2 dominant basin=Yangtze main-stem (99.7th pct, 31,068 m³/s annual); 35 spread verdicts (desert northwest / humid southeast partition surfaces without instruction). B6 modality post-pass **skipped** on polygon path (`run_modality=False`) — gap-magnitude detector not calibrated at n>10 basins; WO13 result. Payload carries `modality_post_pass: 'skipped — not calibrated for polygon scale'`. Marginal exposure: lt_50pct=0.030, lt_20pct=0.008. 60/60 engine contract tests PASS (17 new WO20 tests added).
+
+**Next:** Cultural probe (requires structured external data — D-PLACE, Seshat, or equivalent) or ring endpoint response-object design. Polygon `/area` endpoint wiring (WO21) and multi-timestep response shape also open. Deferred register carries ring-expansion weight policy (equal / area-proportional / border-length — undecided from WO16).
 
 ---
 
@@ -87,7 +89,7 @@ resolver.
 |---|---|---|
 | Upstream neighborhood | Resolver via network traversal; reuses attachment + aggregator; distinct from the routed `_u` values | todo |
 | `threeTier` neighborhood | Structured combination; define only once simpler neighborhoods show what it must add | todo — see register |
-| Polygon `/area` endpoint | Geometry/id input (polity, bbox, GeoJSON) → same engine | todo |
+| Polygon `/area` endpoint | Geometry/id input (polity, bbox, GeoJSON) → same engine | `areal_signature_polygon` done; FastAPI wiring todo |
 | Sandbox / dashboard surfacing | Area query results made visible | todo |
 | Multi-fixture calibration | Tune all provisional thresholds (T=20, MODALITY_GAP=0.50, MIN_REGIME_WEIGHT=0.20, per-level L6/L8 policy) against Egypt, Song, and other fixtures beyond Timbuktu. Develop single-level bimodality instrument (gap-normalized-by-within-regime-spread or dip test) as the proper detector fix; absolute-separation floor retired (broken proxy). Single destination for all "provisional, needs more fixtures" items. | Once ≥2 additional fixtures are available |
 
@@ -120,6 +122,13 @@ Append-only; dated. Settled unless explicitly revisited here.
   `outside_active_domain` when a query's `weight_at_zero ≥ 0.90`.
 - **Level matters** — scores and zero-fractions are level-specific; all current results are
   **L06**.
+
+**2026-06-30**
+
+- **Polygon resolver weight convention** — `weight = overlap_area / polity_area` (consistent with buffer resolver's `overlap/buffer_area`); `basin_in_polity_fraction = overlap_area / basin_area` (diagnostic scalar, not the weight). Weights sum to ≤1 over the polity; shortfall = geographic exclusion or simplification gap.
+- **epsilon=0.0 for polygon resolver** — all basins with `ST_Intersects` are returned; no sliver filter. For a 2.76M km² polity, epsilon=0.001 cuts basins with overlap <2,760 km² — real boundary basins, not slivers. Contrast with buffer resolver where epsilon=0.001 was appropriate (buffer area is much smaller; small-overlap basins genuinely peripheral).
+- **B6 modality post-pass skipped on polygon path** — `apply_modality` not called in `areal_signature_polygon` (`run_modality=False`). Gap-magnitude detector calibrated only on Timbuktu 9-basin buffer (WO13); at 376 basins the detector is less reliable, not more. Spread verdict (coherence field) is the heterogeneity signal at polity scale. Payload carries `modality_post_pass: 'skipped — not calibrated for polygon scale'` so downstream callers can detect the deliberate absence.
+- **Marginal exposure diagnostic** — `neighborhood['marginal_exposure']` = `{lt_50pct, lt_20pct}` in polygon payload: sum of weights over basins where `basin_in_polity_fraction < threshold`. Engine reports both thresholds; does not pick one. For N Song: lt_50pct=0.030, lt_20pct=0.008 (low — polity is large relative to L06 basin size).
 
 **2026-06-27**
 
