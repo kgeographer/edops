@@ -274,13 +274,19 @@ class TestBlockContracts:
                 assert coh in VALID_COHERENCES, \
                     f'{r["variable"]}: unknown coherence {coh!r}'
 
-    def test_b1_spread_rows_have_null_score(self, buf_rows):
-        """Spread B1 rows must null the representative_score."""
+    def test_b1_spread_rows_carry_score(self, buf_rows):
+        """Spread B1 rows emit the weighted-mean score; coherence='spread' is the flag.
+        Engine describes (emits the number); surface decides what to do with it.
+        Exception: B6 may suppress score for two_regime rows (separate path)."""
         spread = [r for r in buf_rows
-                  if r['method'] == 'area_weighted' and r.get('coherence') == 'spread']
+                  if r['method'] == 'area_weighted' and r.get('coherence') == 'spread'
+                  and r.get('modality') != 'two_regime']
+        assert spread, 'No non-two_regime spread rows to check'
         for r in spread:
-            assert r['representative_score'] is None, \
-                f'{r["variable"]}: spread row has non-null score {r["representative_score"]}'
+            assert r['representative_score'] is not None, \
+                f'{r["variable"]}: spread row missing representative_score'
+            assert 0 <= r['representative_score'] <= 100, \
+                f'{r["variable"]}: spread score out of range: {r["representative_score"]}'
 
     def test_b2_dominant_basin_geographic(self, buf_rows):
         """Discharge dominant basin for Timbuktu 100 km / L06 is the Niger main-stem."""

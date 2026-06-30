@@ -1815,7 +1815,7 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         else:
             status_val = 'ok'
             coherence  = 'spread'
-            rep_score  = None
+            rep_score  = wmean
 
         rows.append(make_row(
             variable=api_key, band=band,
