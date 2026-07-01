@@ -13,6 +13,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.settings import settings
+from scripts.edop.areas.engine import areal_signature_polygon
 
 from pathlib import Path
 import re
@@ -2869,3 +2870,107 @@ def polity_geom(id: int):
         },
         "geometry": r[7],
     }
+
+
+# -----------------------
+# /area endpoint — areal signature for a named polity
+# -----------------------
+
+@router.get("/area")
+def area(
+    polity: str,
+    year: int,
+    level: int = 6,
+    bands: str = "ABCDET",
+    from_year: Optional[int] = None,
+    to_year: Optional[int] = None,
+    detail: bool = False,
+):
+    """Return an areal environmental signature for a named Cliopatria polity.
+
+    Parameters
+    ----------
+    polity     : Cliopatria polity name (exact match, e.g. "Northern Song")
+    year       : resolver year — selects the polity boundary active at this year CE
+    level      : basin hierarchy level — 6 or 8 (default 6)
+    bands      : which bands to compute (default ABCDET)
+    from_year  : Band T span start (CE); required only when T is in bands
+    to_year    : Band T span end (CE); required only when T is in bands
+    detail     : if true, include per-variable histogram objects in the response
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
+
+    requested = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    try:
+        conn = db_connect()
+
+        # Lightweight polity lookup — no basin resolution yet
+        sql_lookup = """
+            SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
+            FROM gaz.clio_polities
+            WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
+        """
+        rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
+
+        if not rows:
+            # Check whether the name exists at any other period (nice-to-have 404 detail)
+            alt_rows = conn.execute(
+                "SELECT fromyear, toyear FROM gaz.clio_polities "
+                "WHERE NOT is_component AND name = %s ORDER BY fromyear",
+                (polity,),
+            ).fetchall()
+            if alt_rows:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "message": f"Polity '{polity}' not active at year {year}",
+                        "available_periods": [
+                            {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
+                        ],
+                    },
+                )
+            raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
+
+        # Multiple matches: pick narrowest temporal span (mirrors resolve_polity)
+        if len(rows) > 1:
+            rows = sorted(rows, key=lambda r: r[3] - r[2])
+        polity_id, polity_name, fromyear, toyear, geom_wkt = (
+            rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
+        )
+
+        band_t_from = from_year if "T" in requested else None
+        band_t_to   = to_year   if "T" in requested else None
+
+        payload = areal_signature_polygon(
+            geom_wkt,
+            conn,
+            level=level,
+            bands=sorted(requested),
+            from_year=band_t_from,
+            to_year=band_t_to,
+            include_detail=detail,
+            resolver_year=year,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+    payload["resolver"] = {
+        "type":      "polity",
+        "polity":    polity_name,
+        "polity_id": int(polity_id),
+        "fromyear":  int(fromyear),
+        "toyear":    int(toyear),
+        "year":      year,
+    }
+    if "T" in requested and band_t_from is not None:
+        payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+    return payload

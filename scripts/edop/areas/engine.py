@@ -2169,6 +2169,7 @@ def areal_signature_polygon(
     from_year=None,
     to_year=None,
     include_detail=False,
+    resolver_year=None,
 ):
     """
     Full areal signature for a polygon geometry.
@@ -2224,6 +2225,7 @@ def areal_signature_polygon(
         to_year=to_year,
         include_detail=include_detail,
         run_modality=False,
+        resolver_year=resolver_year,
     )
     payload['modality_post_pass'] = 'skipped — not calibrated for polygon scale'
     return payload
