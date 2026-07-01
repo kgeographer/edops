@@ -56,7 +56,7 @@ resolver → variable-aware aggregator → endpoint. Closed with WO22 (`/area` e
 **Engine** (`scripts/edop/areas/engine.py`): resolver → aggregator → payload. Resolvers:
 buffer, single-basin, basin-ring, polygon/polity. Aggregator: Blocks 1–7 across all
 variable types; Band T (HYDE/LMR/eVolv2k); `_weighted_histogram` in `detail['distribution']`
-across basin/HYDE/LMR substrates, temporally stamped; no collapse. 168 tests PASS.
+across basin/HYDE/LMR substrates, temporally stamped; no collapse. 185 tests PASS.
 
 **Settled background**: `docs/edop/areas/AREAS_tracker.md` (frozen reference). Design
 decisions, WO log, and locked decisions live there — read for background, do not extend.
@@ -84,15 +84,17 @@ Read `docs/edop/surface/SURFACE_tracker.md` — authoritative goto for current s
 and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cross-phase).
 
 **Engine (stable background — Areas complete 2026-06-30):**
-`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Two public entry points:
-- `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path; served on `/api/signature`
+`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Three public entry points:
+- `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path (not yet HTTP-wired)
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
+- `single_basin_signature(lat, lon, conn, ...)` — single containing basin (not yet HTTP-wired)
+- `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents (not yet HTTP-wired)
 
-Resolvers: buffer, single-basin, basin-ring (`resolve_basin_ring`), polygon/polity (`resolve_polygon`, `resolve_polity`).
+Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `resolve_polygon`, `resolve_polity` — all in engine.py.
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-168 tests PASS (60 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py`).
+185 tests PASS (77 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
