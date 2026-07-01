@@ -22,7 +22,9 @@ Dispatch (WO3):
                       caller skips derived rows before invoking
 """
 
+import math
 import warnings
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 
@@ -2157,6 +2159,185 @@ def single_basin_signature(
         to_year=to_year,
         include_detail=include_detail,
     )
+
+
+# ── WO17: basin-ring resolver + entry point ───────────────────────────────────
+
+def _bearing(lat1, lon1, lat2, lon2):
+    """Great-circle bearing from (lat1,lon1) to (lat2,lon2), 0=N clockwise, [0,360)."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dl = math.radians(lon2 - lon1)
+    x = math.sin(dl) * math.cos(phi2)
+    y = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dl)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def resolve_basin_ring(lat, lon, level, conn):
+    """
+    Basin-ring resolver: point → (center_df, ring_gdf).
+
+    center_df : one-row DataFrame — hybas_id (int64), weight=1.0
+    ring_gdf  : GeoDataFrame — one row per first-order adjacent basin:
+                  hybas_id, sub_area_km2, shared_km,
+                  neighbor_lat, neighbor_lon  (ST_PointOnSurface — guaranteed inside polygon),
+                  border_mid_lat, border_mid_lon  (shared-edge midpoint),
+                  border_bearing  (° to shared-edge midpoint, 0=N clockwise),
+                  centroid_bearing  (° to neighbor interior point — diagnostic),
+                  geometry  (neighbor polygon, SRID 4326)
+
+    Shortfall = 0 by construction (ring is whole basins; no clipping).
+    Coastal centres have fewer land neighbours — not special-cased, just noted.
+
+    border_bearing is the operationally useful direction: where the crossing happens.
+    centroid_bearing is retained for diagnostic comparison.
+
+    Note (WO17): 486/16,397 L06 basins have centroids outside their own polygon.
+    neighbor_lat/lon use ST_PointOnSurface so that single_basin_signature called on
+    any ring neighbour always resolves to that neighbour's hybas_id, not an adjacent one.
+
+    Parameters
+    ----------
+    lat, lon : float — WGS-84 query point
+    level    : int   — 6 or 8
+    conn     : psycopg3 connection
+
+    Returns
+    -------
+    (center_df, ring_gdf)
+    """
+    table = _LEVEL_TABLE[level]
+
+    row = conn.execute(f"""
+        SELECT hybas_id,
+               ST_Y(ST_Centroid(geom)) AS clat,
+               ST_X(ST_Centroid(geom)) AS clon
+        FROM {table}
+        WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
+    """).fetchone()
+    center_id  = int(row[0])
+    center_lat = float(row[1])
+    center_lon = float(row[2])
+
+    center_df = pd.DataFrame({'hybas_id': [center_id], 'weight': [1.0]})
+    center_df['hybas_id'] = center_df['hybas_id'].astype('int64')
+
+    ring_sql = f"""
+    WITH center AS (
+        SELECT geom FROM {table} WHERE hybas_id = {center_id}
+    )
+    SELECT
+        b.hybas_id,
+        b.sub_area                                                    AS sub_area_km2,
+        b.geom,
+        ST_Y(ST_PointOnSurface(b.geom))                               AS neighbor_lat,
+        ST_X(ST_PointOnSurface(b.geom))                               AS neighbor_lon,
+        ST_Y(ST_Centroid(ST_Intersection(b.geom, c.geom)))            AS border_mid_lat,
+        ST_X(ST_Centroid(ST_Intersection(b.geom, c.geom)))            AS border_mid_lon,
+        CASE
+            WHEN ST_Dimension(ST_Intersection(b.geom, c.geom)) = 1
+            THEN ROUND(
+                (ST_Length(ST_Intersection(b.geom, c.geom)::geography) / 1000.0)::numeric, 2
+            )
+            ELSE 0.0
+        END AS shared_km
+    FROM {table} b, center c
+    WHERE ST_Touches(b.geom, c.geom)
+    ORDER BY b.sub_area DESC
+    """
+    ring_gdf = gpd.read_postgis(ring_sql, conn, geom_col='geom').rename_geometry('geometry')
+    ring_gdf['hybas_id'] = ring_gdf['hybas_id'].astype('int64')
+
+    ring_gdf['border_bearing'] = ring_gdf.apply(
+        lambda r: _bearing(center_lat, center_lon, r['border_mid_lat'], r['border_mid_lon']),
+        axis=1,
+    )
+    ring_gdf['centroid_bearing'] = ring_gdf.apply(
+        lambda r: _bearing(center_lat, center_lon, r['neighbor_lat'], r['neighbor_lon']),
+        axis=1,
+    )
+
+    return center_df, ring_gdf
+
+
+def basin_ring_signature(
+    lat, lon,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Areal signature for a basin-ring neighbourhood: centre + first-order adjacents.
+
+    Unlike buffer/polygon entry points, there is no meaningful aggregate across the
+    ring — the per-neighbour comparison is the payload. Returns a centre signature
+    and one signature per ring member, along with the ring geometry metadata
+    (bearing, shared border length).
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — passed to each single_basin_signature call
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool
+
+    Returns
+    -------
+    dict — {type, lat, lon, level, center, ring}
+      center : single_basin_signature payload for the containing basin
+      ring   : list of dicts, one per adjacent basin, each containing:
+                 hybas_id, sub_area_km2, shared_km,
+                 border_bearing, centroid_bearing,
+                 neighbor_lat, neighbor_lon,
+                 signature  (single_basin_signature payload)
+    """
+    center_df, ring_gdf = resolve_basin_ring(lat, lon, level, conn)
+
+    center_sig = single_basin_signature(
+        lat, lon, conn,
+        level=level,
+        bands=bands,
+        from_year=from_year,
+        to_year=to_year,
+        include_detail=include_detail,
+    )
+
+    ring_members = []
+    for _, nb in ring_gdf.iterrows():
+        nb_lat = float(nb['neighbor_lat'])
+        nb_lon = float(nb['neighbor_lon'])
+        nb_sig = single_basin_signature(
+            nb_lat, nb_lon, conn,
+            level=level,
+            bands=bands,
+            from_year=from_year,
+            to_year=to_year,
+            include_detail=include_detail,
+        )
+        ring_members.append({
+            'hybas_id':         int(nb['hybas_id']),
+            'sub_area_km2':     float(nb['sub_area_km2']),
+            'shared_km':        float(nb['shared_km']),
+            'border_bearing':   round(float(nb['border_bearing']),   1),
+            'centroid_bearing': round(float(nb['centroid_bearing']), 1),
+            'neighbor_lat':     nb_lat,
+            'neighbor_lon':     nb_lon,
+            'signature':        nb_sig,
+        })
+
+    return {
+        'type':  'basin_ring',
+        'lat':   lat,
+        'lon':   lon,
+        'level': level,
+        'center': center_sig,
+        'ring':   ring_members,
+    }
 
 
 # ── WO20: polygon resolver + polity entry point ───────────────────────────────

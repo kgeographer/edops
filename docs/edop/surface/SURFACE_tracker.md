@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-06-30 (phase opened)
+- **Last updated:** 2026-07-01 (SF.1 capability-gap analysis complete)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -58,8 +58,8 @@ before any page is built.
 
 | Item | What | Status |
 |---|---|---|
-| Sandbox capability-gap analysis | Inventory: what the engine now offers that no UI exposes; what `sandbox.html` currently exposes; the delta; and whether the existing markup can absorb the new elements or forces a new page. **Analysis, not a build** — decides the fork question on evidence. Needs the actual `sandbox.html` for the extensibility read (or CC's read of it, with the engine-capability-delta as input). | **next** |
-| New sandbox page | A fresh page (decided: new page, not in-place — `sandbox.html` is public and its tests stay all-green) that exercises the engine end to end: point-rooted queries (point → basin / buffer / ring / upstream) AND area queries (polity; later user-drawn polygon). Lean + `&detail`. Both temporal axes (resolver year vs Band T span) as distinct controls. Histogram object rendered as a distribution widget. The API's proving ground and a stakeholder demo of what's in the signature. | after gap analysis |
+| Sandbox capability-gap analysis | Inventory: what the engine now offers that no UI exposes; what `sandbox.html` currently exposes; the delta; and whether the existing markup can absorb the new elements or forces a new page. | **complete** — see SF.1 |
+| New sandbox page spec | Spec for a fresh page exercising the engine end to end: point-rooted queries (buffer, single-basin) AND polity path. Lean + `&detail`. Both temporal axes as distinct controls. Histogram widget. Polity boundary overlay on map. Needs decisions on (a) buffer endpoint, (b) map library, (c) Band T rendering model, (d) histogram widget design — see SF.1. | **next** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 

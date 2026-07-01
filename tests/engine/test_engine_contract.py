@@ -25,9 +25,11 @@ from scripts.edop.areas.engine import (
     areal_signature,
     areal_signature_polygon,
     single_basin_signature,
+    basin_ring_signature,
     resolve_buffer,
     resolve_polygon,
     resolve_polity,
+    resolve_basin_ring,
     load_catalog,
     dispatch_variable,
 )
@@ -622,3 +624,122 @@ class TestArealSignaturePolygon:
     def test_shortfall_reasonable(self, nsong_payload):
         assert nsong_payload['shortfall'] < 0.10, \
             f'shortfall={nsong_payload["shortfall"]:.3f} — unexpectedly large'
+
+
+# ---------------------------------------------------------------------------
+# Section 8 — Basin-ring resolver + entry point (WO17)
+# ---------------------------------------------------------------------------
+
+TIM_RING_CENTER_L06 = 1060551560
+TIM_RING_COUNT_L06  = 5
+
+
+@pytest.fixture(scope='session')
+def ring_result(conn):
+    """Timbuktu L06 basin-ring resolver output."""
+    return resolve_basin_ring(TIM_LAT, TIM_LON, TIM_LEVEL, conn)
+
+
+@pytest.fixture(scope='session')
+def ring_payload(conn):
+    """Timbuktu L06 basin_ring_signature — Bands A–E, no detail."""
+    return basin_ring_signature(
+        TIM_LAT, TIM_LON, conn,
+        level=TIM_LEVEL, bands=['A', 'B', 'C', 'D', 'E'],
+    )
+
+
+class TestResolveBasinRing:
+    def test_center_id(self, ring_result):
+        """Geographic: Timbuktu L06 center basin is 1060551560."""
+        center_df, _ = ring_result
+        assert int(center_df['hybas_id'].iloc[0]) == TIM_RING_CENTER_L06
+
+    def test_ring_count(self, ring_result):
+        """Geographic: Timbuktu L06 has 5 adjacent basins."""
+        _, ring_gdf = ring_result
+        assert len(ring_gdf) == TIM_RING_COUNT_L06
+
+    def test_center_df_dtype(self, ring_result):
+        """center_df: hybas_id is int64, weight is 1.0."""
+        center_df, _ = ring_result
+        assert str(center_df['hybas_id'].dtype) == 'int64'
+        assert float(center_df['weight'].iloc[0]) == 1.0
+
+    def test_ring_hybas_id_dtype(self, ring_result):
+        """ring_gdf: hybas_id is int64."""
+        _, ring_gdf = ring_result
+        assert str(ring_gdf['hybas_id'].dtype) == 'int64'
+
+    def test_bearings_in_range(self, ring_result):
+        """All border_bearing and centroid_bearing in [0, 360)."""
+        _, ring_gdf = ring_result
+        for col in ('border_bearing', 'centroid_bearing'):
+            assert (ring_gdf[col] >= 0).all() and (ring_gdf[col] < 360).all(), \
+                f'{col} values out of [0, 360)'
+
+    def test_shared_km_non_negative(self, ring_result):
+        """shared_km >= 0 for all ring members."""
+        _, ring_gdf = ring_result
+        assert (ring_gdf['shared_km'] >= 0).all()
+
+    def test_center_not_in_ring(self, ring_result):
+        """Center basin ID must not appear as a ring member."""
+        center_df, ring_gdf = ring_result
+        center_id = int(center_df['hybas_id'].iloc[0])
+        assert center_id not in ring_gdf['hybas_id'].values
+
+    def test_required_ring_columns(self, ring_result):
+        """ring_gdf carries all expected metadata columns."""
+        _, ring_gdf = ring_result
+        for col in ('hybas_id', 'sub_area_km2', 'shared_km',
+                    'neighbor_lat', 'neighbor_lon',
+                    'border_bearing', 'centroid_bearing'):
+            assert col in ring_gdf.columns, f'Missing column: {col}'
+
+
+class TestBasinRingSignature:
+    def test_top_level_keys(self, ring_payload):
+        for key in ('type', 'center', 'ring', 'lat', 'lon', 'level'):
+            assert key in ring_payload, f'Missing top-level key: {key}'
+
+    def test_type_field(self, ring_payload):
+        assert ring_payload['type'] == 'basin_ring'
+
+    def test_center_has_rows(self, ring_payload):
+        assert 'rows' in ring_payload['center']
+        assert len(ring_payload['center']['rows']) > 0
+
+    def test_center_shortfall_zero(self, ring_payload):
+        assert ring_payload['center']['shortfall'] == 0.0
+
+    def test_center_neighborhood_type(self, ring_payload):
+        assert ring_payload['center']['neighborhood']['type'] == 'basin'
+
+    def test_ring_count(self, ring_payload):
+        """Geographic: Timbuktu L06 ring has 5 members."""
+        assert len(ring_payload['ring']) == TIM_RING_COUNT_L06
+
+    def test_ring_member_keys(self, ring_payload):
+        """Every ring member carries required keys."""
+        required = ('hybas_id', 'sub_area_km2', 'shared_km',
+                    'border_bearing', 'centroid_bearing',
+                    'neighbor_lat', 'neighbor_lon', 'signature')
+        for m in ring_payload['ring']:
+            for key in required:
+                assert key in m, f'Ring member missing key: {key}'
+
+    def test_ring_member_signatures_valid(self, ring_payload):
+        """Each ring member signature is a valid single_basin_signature payload."""
+        for m in ring_payload['ring']:
+            sig = m['signature']
+            assert 'rows' in sig, 'ring member signature missing rows'
+            assert sig['shortfall'] == 0.0
+            assert len(sig['rows']) > 0
+
+    def test_ring_bearings_in_range(self, ring_payload):
+        """All ring member bearings in [0, 360)."""
+        for m in ring_payload['ring']:
+            for key in ('border_bearing', 'centroid_bearing'):
+                val = m[key]
+                assert 0 <= val < 360, f'{key}={val} out of [0, 360)'
