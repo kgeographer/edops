@@ -8,25 +8,20 @@ Coded SF.n. Session-by-session detail in `logs/session_log_YYYYMMDD.md`.
 
 ### What the engine offers
 
-**Resolvers in engine.py:**
+**Resolvers in engine.py (all five):**
 - `resolve_buffer` — point + radius → weighted basin set (fractional overlap)
 - `resolve_single_basin` — point → exact containing basin (weight=1.0)
+- `resolve_basin_ring` — point → (center_df, ring_gdf); centre + first-order adjacents with `border_bearing`, `centroid_bearing`, `shared_km` (WO17; promoted to engine.py 2026-07-01)
 - `resolve_polygon` — WKT polygon → weighted basin set (overlap/polity_area)
 - `resolve_polity` — Cliopatria name + year → WKT → delegates to `resolve_polygon`
 
-Note: `resolve_basin_ring` was **built in WO17** and is fully functional — but it lives in the
-notebooks only (`notebooks/edop/areas/basin_ring_exploration.ipynb` cell 13, copied into
-`wo18_transition_comparator.ipynb` and `wo19_comparator_n50.ipynb` for self-containment).
-It was **never promoted to engine.py**. Promotion is a Surface task before the basin-ring path
-can be wired to an endpoint. CLAUDE.md incorrectly lists it among engine.py resolvers; that
-claim needs qualification (built, notebook-only).
-
-**Public entry points in engine.py:**
+**Public entry points in engine.py (four):**
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path; runs B1–B6 + Band T
-- `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; same aggregation
 - `single_basin_signature(lat, lon, conn, ...)` — exact basin path; runs B1–B6, Band T deferred
+- `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents; **distinct payload shape** (see below)
+- `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; same aggregation as buffer
 
-**Payload shape (all three entry points):**
+**Payload shape (buffer, single-basin, polygon/polity):**
 ```json
 {
   "neighborhood": { "type", "level", "n_units", "unit_type", ...resolver-specific... },
@@ -37,6 +32,25 @@ claim needs qualification (built, notebook-only).
   "rows":         [ make_row dicts ]
 }
 ```
+
+**Payload shape (basin-ring — structurally different; no aggregate rows[]):**
+```json
+{
+  "type":   "basin_ring",
+  "lat":    float, "lon": float, "level": int,
+  "center": { <single_basin_signature payload> },
+  "ring": [
+    {
+      "hybas_id": int, "sub_area_km2": float, "shared_km": float,
+      "border_bearing": float, "centroid_bearing": float,
+      "neighbor_lat": float, "neighbor_lon": float,
+      "signature": { <single_basin_signature payload> }
+    }
+  ]
+}
+```
+The ring path exposes per-neighbour comparison, not an aggregate. The surface must render
+centre vs. each ring member individually — no single representative score for the ring as a whole.
 
 **make_row fields per variable:**
 `variable`, `band`, `method`, `unit_type`, `n_units`, `representative_score`,
@@ -77,6 +91,7 @@ claim needs qualification (built, notebook-only).
 **Not wired to any endpoint:**
 - `areal_signature` (buffer path)
 - `single_basin_signature` (exact basin path)
+- `basin_ring_signature` (basin-ring path)
 
 ---
 
@@ -110,7 +125,7 @@ Accesses: `sig.profile_groups`, `sig.profile_summary`, `sig.eco_id`, `sig.up_are
 
 | Dimension | Engine offers | sandbox.html exposes | Gap |
 |---|---|---|---|
-| Resolvers | buffer, single-basin, polygon/polity | single-basin point (v0.3 path, bypasses engine) | All three engine paths invisible |
+| Resolvers | buffer, single-basin, basin-ring, polygon/polity | single-basin point (v0.3 path, bypasses engine) | All four engine paths invisible |
 | Input type | polity-by-name+year | lat/lon only | Polity input entirely absent |
 | Payload schema | `{rows, neighborhood, shortfall, caveats}` | `{profile_groups, profile_summary}` | Structurally incompatible; different renderer required |
 | Quality metadata | coherence, modality, score_suppressed, coverage, weight_at_zero | None | Never displayed anywhere |
@@ -121,7 +136,7 @@ Accesses: `sig.profile_groups`, `sig.profile_summary`, `sig.eco_id`, `sig.up_are
 | Neighborhood metadata | `{type, n_units, unit_type, marginal_exposure}` | Partial (adjacent basins on map) | `marginal_exposure`, `shortfall`, `n_units` never shown |
 | Polity boundary | `/api/polity/geom` available | Not consumed | Map overlay absent |
 | Caveats | Top-level `caveats` dict with text | Not displayed | Never surfaced |
-| Basin-ring resolver | Built (WO17); notebook-only — not yet in engine.py | N/A | Promotion + entry point needed before an endpoint can be wired |
+| Basin-ring resolver | `resolve_basin_ring` + `basin_ring_signature` in engine.py (2026-07-01) | N/A | Not yet HTTP-wired; distinct payload shape needs its own rendering path |
 
 ---
 
@@ -167,8 +182,8 @@ the rendering logic transfers directly.
    and Band T variables (native-unit x-axis). The temporal stamp fields (`resolver_year`,
    `band_t_from`, `band_t_to`) should be displayed in a caption.
 
-5. **Basin-ring promotion** — `resolve_basin_ring` was built (WO17, notebook cells 13–20) but
-   never extracted to engine.py. It needs to be promoted to engine.py alongside a new entry
-   point (analogous to `single_basin_signature` or `areal_signature`) before a basin-ring
-   endpoint can be wired. CLAUDE.md's resolver list should note "notebook-only, not yet in
-   engine.py" until promotion is complete.
+5. **Basin-ring endpoint** — `resolve_basin_ring` and `basin_ring_signature` are now in
+   engine.py (promoted 2026-07-01, 77/77 engine tests pass). HTTP wiring is the remaining
+   step. The basin-ring payload shape is structurally distinct from the other three entry points
+   (`{center, ring[]}` rather than `{rows[], neighborhood}`), so it needs its own endpoint and
+   its own rendering path on the new page.
