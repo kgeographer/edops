@@ -92,7 +92,7 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. **Branch: `areas_step3`.**
+Phase 3 — Areas is the active work block. **Branch: `engine_v0.4b`.**
 Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto for current
 state, block status, locked decisions, and what's next. Consult
 `docs/design/areas/deferred_items_register.md` at each step resumption.
@@ -104,10 +104,10 @@ state, block status, locked decisions, and what's next. Consult
 - Block 4 — flag/structural path (outlet_type 4-class mixture + coast_fraction flag_fraction): **done**
 - Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
 - Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
-- Block 7 — Band T gridded path (HYDE distribution + LMR collapse + eVolv2k global): **done**
+- Block 7 — Band T gridded path (HYDE distribution + LMR distribution + eVolv2k global): **done**
 - Engine assembly: **done** (WO11b complete; `areal_signature` is the public entry point)
 
-**Engine assembly status (as of 2026-06-27):**
+**Engine assembly status (as of 2026-06-30):**
 - WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
 - WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
 - WO5 — B2 dominant_basin extraction: **done** (4/4 strict PASS)
@@ -124,6 +124,11 @@ state, block status, locked decisions, and what's next. Consult
 - WO14 — Single-basin resolver + v0.3 comparison: **done** (373 rows payload; 0 MISMATCH/UNEXPLAINED; AF.11–AF.12)
 - WO15 — Area-weighted cell weighting: **done** (HYDE + LMR `overlap/cell_area` normalization; size-bias removed; AF.13; 58 tests PASS)
 - WO16 — Basin-ring resolver exploration: **done** (ST_Touches clean across Timbuktu L06/L08, Rome L06, Baghdad L06; all contacts ST_MultiLineString; no slivers; three weight schemes surfaced but not decided; notebook `basin_ring_exploration.ipynb`)
+- WO17 — Basin-ring resolver + transition diagnostic: **done** (`resolve_basin_ring`; `border_bearing`; ST_PointOnSurface fix; 3 L06 fixtures; AF.14–AF.19)
+- WO18 — Transition-character comparator: **done** (29-var universal intersection; 58 features; spanning-10 gate PASS; AF.WO18.1–3)
+- WO19 — Scaled comparator n=50: **done** (47 WHC cities; k=3 silhouette-optimal clustering; ANCHORED partial; AF.WO19.1–5)
+- WO20 — Polity resolver + polygon engine path: **done** (`resolve_polygon`, `resolve_polity`, `areal_signature_polygon`; N Song 376 basins; B6 skipped; 60/60 PASS)
+- WO21b — Distribution histograms: **done** (`_weighted_histogram` in `detail` across basin/HYDE/LMR substrates; LMR collapse retired; `grid_areal_collapsed` + sentinels removed; 60/60 PASS)
 
 **Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
 diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /
