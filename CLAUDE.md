@@ -92,10 +92,9 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 **v0.3 public release complete as of 2026-06-10.** No known open blockers.
 
-Phase 3 — Areas is the active work block. **Branch: `engine_v0.4b`.**
-Read `docs/edop/areas/AREAS_tracker.md` first — it is the authoritative goto for current
-state, block status, locked decisions, and what's next. Consult
-`docs/design/areas/deferred_items_register.md` at each step resumption.
+**Phase 3 — Areas is CLOSED (2026-06-30).** `AREAS_tracker.md` is now frozen reference.
+Active work moves to a new Surface track (`docs/edop/surface/SURFACE_tracker.md`). Branch: `engine_v0.4b`.
+Consult `docs/design/areas/deferred_items_register.md` (cross-phase, not forked).
 
 **Step 3 aggregator status (as of 2026-06-21):**
 - Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
@@ -129,6 +128,7 @@ state, block status, locked decisions, and what's next. Consult
 - WO19 — Scaled comparator n=50: **done** (47 WHC cities; k=3 silhouette-optimal clustering; ANCHORED partial; AF.WO19.1–5)
 - WO20 — Polity resolver + polygon engine path: **done** (`resolve_polygon`, `resolve_polity`, `areal_signature_polygon`; N Song 376 basins; B6 skipped; 60/60 PASS)
 - WO21b — Distribution histograms: **done** (`_weighted_histogram` in `detail` across basin/HYDE/LMR substrates; LMR collapse retired; `grid_areal_collapsed` + sentinels removed; 60/60 PASS)
+- WO22 — `/area` endpoint stub: **done** (`GET /api/area?polity=<name>&year=<int>`; thin front door over `areal_signature_polygon`; two independent temporal axes; 404 with `available_periods`; 168/168 PASS) — **phase closed**
 
 **Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
 diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /

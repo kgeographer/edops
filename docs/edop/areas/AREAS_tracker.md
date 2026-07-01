@@ -5,9 +5,8 @@ and locked decisions. If any other Areas document disagrees with this one about 
 stand*, this one wins.
 
 - **Location:** `docs/edop/areas/AREAS_tracker.md`
-- **Last updated:** 2026-06-30 (WO21b)
-- **Maintained:** updated by CC at session end (part of the pre-commit ritual) and whenever a
-  decision is locked; read at the start of each step and each phase gate.
+- **Last updated:** 2026-06-30 (WO22 — phase closed)
+- **Status:** **FROZEN REFERENCE** — active work moves to `SURFACE_tracker.md`.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-looking note (in "You are here", block table, or deferred register) **in the same
   edit** — never leave a resolved item as an open question elsewhere in the file.
@@ -16,7 +15,7 @@ stand*, this one wins.
 
 ## You are here
 
-Engine **assembled and whole**; neighborhood work underway. **WO12** (L8 buffer MAUP), **WO14** (single-basin, v0.3 comparison), **WO15** (area-weighted cell weighting), **WO16** (basin-ring spatial exploration), **WO17** (basin-ring resolver + per-neighbor transition diagnostic, 3 fixtures), **WO18** (transition-character comparator, spanning-10, gate PASS), **WO19** (scaled comparator n=50, k=3 clustering), **WO20** (polity resolver + polygon engine path), and **WO21b** (distribution histograms; LMR collapse retired) are all done. Branch: `engine_v0.4b`.
+Engine **assembled and whole**; neighborhood work complete. **WO12** (L8 buffer MAUP), **WO14** (single-basin, v0.3 comparison), **WO15** (area-weighted cell weighting), **WO16** (basin-ring spatial exploration), **WO17** (basin-ring resolver + per-neighbor transition diagnostic, 3 fixtures), **WO18** (transition-character comparator, spanning-10, gate PASS), **WO19** (scaled comparator n=50, k=3 clustering), **WO20** (polity resolver + polygon engine path), **WO21b** (distribution histograms; LMR collapse retired), and **WO22** (`/area` endpoint stub) are all done. Branch: `engine_v0.4b`.
 
 **WO17 confirmed:** `resolve_basin_ring` (lat, lon, level) → (center_df, ring_gdf) with `border_bearing` (to shared-edge midpoint) and `centroid_bearing` (diagnostic). ST_PointOnSurface used for neighbor query points — 486/16,397 L06 basins have centroids outside their own polygon; using ST_Centroid silently resolves to the wrong basin. Three L06 transition archetypes surfaced (provisional, n=3): boundary-location (Timbuktu), interior-dominant (Rome), alluvial-plain outlier (Kaifeng). 15-variable structural core sharp at all fixtures. AF.14–AF.19.
 
@@ -28,7 +27,43 @@ Engine **assembled and whole**; neighborhood work underway. **WO12** (L8 buffer 
 
 **WO21b confirmed:** `_weighted_histogram(values, raw_weights, unit_type, n_bins=20)` added to engine.py. Weighted binning (20 fixed bins; bin contributions are summed normalized weights, not raw counts) across all three substrates: basin (api_key scores 0–100; low_res if n_units < 3), HYDE cells (native km²/cell; low_res if w_eff < 5), LMR cells (native anomaly units; low_res if w_eff < 5). Returned object emitted as `detail['distribution']` with temporal stamp fields (`resolver_year`, `band_t_from`, `band_t_to`) added by caller. **LMR collapse retired:** `grid_areal_collapsed` method removed; `distribution='reported'` and `distribution='collapsed_subresolution'` sentinels removed; all LMR rows now method=`grid_areal_distribution`. `aggregate_b1` and `aggregate_band_t` both accept `resolver_year=None`; `_areal_signature_from_basin_set` threads it through. ECC diagnostic confirmed on N Song / 1000 CE: 93 raw LMR cells, w_eff=65.25 — collapse was always wrong for large polities; heterogeneity (NW dry / SE wet prate gradient) now surfaces directly. 60/60 engine contract tests PASS. Commit: `e854422`.
 
-**Next:** Cultural probe (requires structured external data — D-PLACE, Seshat, or equivalent) or ring endpoint response-object design. Polygon `/area` endpoint wiring and multi-timestep response shape also open. Deferred register carries ring-expansion weight policy (equal / area-proportional / border-length — undecided from WO16) and per-unit polity rendering (polity boundary filtered paint, weight-aware).
+**WO22 confirmed:** `GET /api/area?polity=<name>&year=<int>` wired as a thin front door over `areal_signature_polygon`. Lightweight polity lookup (ST_AsText in the same query; no extra DB round-trip). 404 returns `available_periods` when the name exists at other years. `resolver_year` threaded through to histogram stamps. Two temporal axes kept separable throughout: `year` moves the boundary; `from_year`/`to_year` moves the Band T aggregation window. `resolver` block and `band_t_span` injected at top level for self-description. 21 tests in `tests/test_area.py`; 168 total PASS (60 engine + 108 app). Commit: `446dd2f`.
+
+---
+
+## Phase status — CLOSED (2026-06-30)
+
+**Areas is complete: resolver → aggregator → endpoint, whole.** The engine has been
+assembled since WO11b; everything after was serving it. WO22 (`/area` endpoint stub) was
+the phase's final act — the last engine-adjacent wiring, closing the `/area` todo that had
+been on the roadmap since the phase opened.
+
+This tracker is now **frozen reference**, in the same sense `areas.md` and
+`areas_phase_outline.md` were frozen when this tracker superseded them. It records where the
+engine work landed and why; it is read for settled background, not extended. Active work
+moves to `SURFACE_tracker.md`.
+
+**What stands, end to end:**
+- Resolvers: buffer (WO1), single-basin (WO14), basin-ring (WO17), polygon/polity (WO20).
+- Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k); modality
+  post-pass (buffer path only, calibration deferred).
+- Histograms: `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR
+  substrates, temporally stamped, no collapse (WO21b).
+- Endpoint: `areal_signature` (point/buffer, on `/signature`) and `GET /api/area`
+  (polity-by-name+year, WO22). Two temporal axes kept separable throughout.
+
+**What did NOT close here (carried forward):**
+- Multi-fixture calibration (all provisional thresholds; single-level bimodality instrument)
+  — deferred register, needs ≥2 fixtures beyond Timbuktu.
+- `/area` input types beyond polity-by-name+year (raw GeoJSON, buffer-fronting,
+  multi-timestep) — surface-driven, deferred.
+- `threeTier` neighborhood — parked; a composite with no pulling use case. Leave parked.
+- Upstream neighborhood resolver — todo, no use case pulling.
+- Per-unit weight-aware polity rendering — deferred register; the global tileset feeds the
+  map, so unneeded until a use case wants weighted or polity-isolated paint.
+
+**Shared going forward:** the deferred items register is cross-phase and stays one file.
+The Surface track consults and adds to it; it is not forked.
 
 ---
 
@@ -208,6 +243,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 
 ## Changelog
 
+- **2026-06-30** — **Phase closed.** WO22 (`/area` endpoint stub) is the final WO. `GET /api/area?polity=<name>&year=<int>[&level][&bands][&from_year][&to_year][&detail]` wired as a thin front door over `areal_signature_polygon`. Lightweight polity lookup; 404 with `available_periods`; two independent temporal axes; `resolver_year` threaded to histogram stamps; `resolver` + `band_t_span` at top level. 21 new tests in `tests/test_area.py`; 168 total PASS. Commit: `446dd2f`. Active work moves to `SURFACE_tracker.md`. Branch: `engine_v0.4b`.
 - **2026-06-30** — WO21b complete. `_weighted_histogram(values, raw_weights, unit_type, n_bins=20)` added to engine.py; 20 fixed bins, weight-normalized contributions. Wired into all three substrates: basin (A–E, api_key scores), HYDE cells (native km²/cell), LMR cells (native anomaly units). `low_resolution` flag emitted; `resolver_year`/`band_t_from`/`band_t_to` stamp added by caller. **LMR collapse retired:** `grid_areal_collapsed` method removed; sentinels `distribution='reported'` + `distribution='collapsed_subresolution'` gone. All LMR rows now method=`grid_areal_distribution`. N Song (1000 CE, L06): basin n=376 low_res=False, HYDE n=37901 w_eff=37375 low_res=False, LMR n=93 w_eff=65.25 low_res=False. 60/60 engine contract tests PASS. New notebook `wo21b_distributions.ipynb` (13 cells). Commit: `e854422`. Branch: `engine_v0.4b`.
 - **2026-06-28** — WO19 complete. `notebooks/edop/areas/wo19_comparator_n50.ipynb` (13 cells). Scaled transition-character comparator: 51 WHC fixtures → 47 in comparator (3 ring=0 islands excluded — no L06 neighbors; San Miguel de Allende excluded — duplicate basin of Querétaro, both basin 7060831470). 29-variable universal intersection unchanged from WO18; permafrost_extent joins union but not universal (high-lat only). Comparator matrix 47 × 58 features (mean_abs + max_abs). Pairwise distance range 3.56–20.80; Lima farthest neighbor for 34/47 cities (Atacama/Andes extreme gradient, confirmed real signal). PCA: 6 components for ≥70% cumvar (PC1+PC2=39.6%). k=3 silhouette-optimal (silhouette=0.338) in 6-component space. Three-test verdict: (a) ANCHORED (partial) — region V=0.50 p=0.003, discharge tier V=0.37 p=0.042, drainage type V=0.33 p=0.033; climate zone V=0.55 underpowered (13 categories); (b) MIXED: sample-STABLE (bootstrap N=200, WO18 co-assignment mean=0.874, many pairs at 1.000) + REPRESENTATION-DEPENDENT (ARI=−0.017 on sign_pattern swap; sign-space collapses to near-one-cluster at n=47 — most cities are mixed-direction, no discriminating power); (c) DEFERRED — no structured cultural data. Branch verdict: magnitude-based comparator earns its keep. AF.WO19.1–5. Notebook: `wo19_comparator_n50.ipynb`. Branch: `engine_v0.4b`.
 - **2026-06-28** — WO18 complete. `notebooks/edop/areas/wo18_transition_comparator.ipynb` (11 cells). Spanning-10 city selection via Route A (one city per PCA cluster: Timbuktu, Kaifeng, Córdoba, Kraków, Tallinn, Bergen, Luang Prabang, Panama City, Brasília, Guanajuato). 29-variable universal intersection (of 40 union); 58-feature threshold-free comparator (mean_abs + max_abs per variable). Pairwise distance range 7.42–14.23; PCA PC1=22.9% + PC2=21.5% = 44.4%. Gate PASS: no collapse, WO17 anchors (Timbuktu/Kaifeng) separated on PC2 as expected. Threshold sensitivity: thr=10 vs 15 Spearman r=0.929 (stable); thr=5 vs 10 r=0.633 (noisy — 5 pp unreliable). Two transition-profile types identified: "deep-stable" (Luang Prabang, Guanajuato, Timbuktu, Kraków) and "wide-shallow" (Panama City, Brasília). Key finding: transition-character space orthogonal to signature PCA space — an independent instrument. ST_PointOnSurface fix confirmed: 486/16,397 L06 basins have centroids outside their polygon; Kaifeng ring neighbor 4060579370 affected (misrouted in WO17 original run; corrected in both notebooks). AF.WO18.1–3; new numbering scheme AF.WO\<n\>.\<m\> for WO18+. Commit: `fdfe783`. Branch: `engine_v0.4b`.
