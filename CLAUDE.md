@@ -6,8 +6,8 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 **Three-file planning system** — project status and planning context lives in three files
 that must be kept consistent. Always read all three at the start of an active phase session:
 - `CLAUDE.md` (this file) — high-level phase status, architecture, conventions
-- `docs/edop/areas/AREAS_tracker.md` — authoritative current state, block table, locked decisions
-- `docs/design/areas/deferred_items_register.md` — parked items and their triggers
+- `docs/edop/surface/SURFACE_tracker.md` — authoritative current state, roadmap, locked decisions
+- `docs/design/areas/deferred_items_register.md` — parked items and their triggers (cross-phase; not forked)
 
 ---
 
@@ -49,38 +49,25 @@ Comprised two strands: EDA (statistical) and ESDA (spatial).
 - CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
 - **Explorer page** (`explorer.html`) — visual CHAR product
 
-### Phase 3 — Areas (active)
-**Also called**: Aggregation, Neighborhoods (earlier working names; "Areas" is canonical).
-**Goal**: Expand EDOPS API to deliver signatures for *areal* locations — new endpoint(s)
-accepting polygon features of various kinds: Cliopatria polity geometries, user-defined
-study areas (bboxes to start), and neighborhood types TBD (buffer, adjacent basins, etc.).
-Core GISci question: area-weighted vs. flow-weighted aggregation for hydrological variables.
+### Phase 3 — Areas (complete 2026-06-30)
+**Goal**: Expand EDOPS API to deliver signatures for areal locations — weighted basin-set
+resolver → variable-aware aggregator → endpoint. Closed with WO22 (`/area` endpoint stub).
 
-**Work folders**: `notebooks/edop/areas/`, `scripts/edop/areas/`, `output/edop/areas/`
+**Engine** (`scripts/edop/areas/engine.py`): resolver → aggregator → payload. Resolvers:
+buffer, single-basin, basin-ring, polygon/polity. Aggregator: Blocks 1–7 across all
+variable types; Band T (HYDE/LMR/eVolv2k); `_weighted_histogram` in `detail['distribution']`
+across basin/HYDE/LMR substrates, temporally stamped; no collapse. 168 tests PASS.
 
-**Deferred items register**: `docs/design/areas/deferred_items_register.md` — consult at every step resumption; add rows there, not as loose flags in notebooks or reports.
+**Settled background**: `docs/edop/areas/AREAS_tracker.md` (frozen reference). Design
+decisions, WO log, and locked decisions live there — read for background, do not extend.
+Deferred items register is cross-phase: `docs/design/areas/deferred_items_register.md`.
 
-**Products so far**:
-- `notebooks/edop/areas/aggregation_figures.ipynb` — Phase 3 orientation figures (Kingdom of Egypt / discharge heterogeneity, resolution mismatch, aggregation pathways)
-- `notebooks/edop/areas/step1_buffer_resolver.ipynb` — buffer resolver: (lat, lon, radius_km, level) → weighted basin set `{hybas_id, weight}`; uses `geog` column directly; tested Timbuktu 100 km → 9 basins, weight sum = 1.0
-- `notebooks/edop/areas/step2_value_attachment.ipynb` — value attachment: basin set → raw values (from view) + position scores + categorical class IDs + flags; outputs `step2_raw.tsv`, `step2_matrix.tsv`, `step2_class_ids.tsv`, `step2_meta.tsv`
-- `notebooks/edop/areas/step3_aggregation.ipynb` — block 1 aggregation: continental-gradient continuous variables → weighted p10/p90/mean + spread verdict; outputs `step3_block1_results.tsv`
+### Surface (active — see SURFACE_tracker.md)
+**Goal**: Build what a person sees and does with the engine. Areas built the engine;
+Surface builds the consumer. First deliverable: a new sandbox page exercising the engine
+end to end. Milestone: Braga demo (2026-09-20). Branch: `surface`.
 
-**Step 2 design notes** (do not revisit):
-- Continuous scores: PERCENT_RANK over full basin table with outer CASE guard for -9999/NULL → NULL score (without the outer guard, NoData basins rank highest due to NULLS LAST)
-- Zero-aware variant: if catalog `zero_fraction` ≥ 0.20, zeros score 0.0 explicitly and non-zeros rank within the positive subpopulation via PARTITION BY — prevents zero pile compressing non-zero range; scores are within-active-domain ranks, not global percentiles
-- Categorical rarity: must fetch integer class IDs from raw TABLE using `db_col` for both basin values and global frequency; view returns text labels that don't match integer codes
-- Flags (coast_flag, endorheic): emitted as raw integers, not scored
-- `v_basin06_persist_rev1` and `v_basin08_persist_rev1` include `hybas_id` as second column (non-breaking additive fix)
-- TSV files saved in different row orders — always join on hybas_id, never use positional `.values`
-
-**Step 3 design notes** (do not revisit):
-- Block 1 handles continental-gradient + scale-dependent continuous variables (34 vars); network-topology → Block 2; categoricals → Block 3
-- Block 3: categorical class mixture; `strata_code` excluded (opaque sub-zone codes, undocumented intra-zone differences; see deferred register)
-- Weighted quantiles via sorted cumulative weights + linear interpolation; spread = p90 − p10 (percentile points)
-- `SPREAD_THRESHOLD = 20`; `ZERO_FRACTION_THRESHOLD = 0.20`; `ZERO_COVERAGE_THRESHOLD = 0.90` (all provisional)
-- Degenerate-at-floor guard: if a variable's catalog `zero_fraction` ≥ 0.20 AND the buffer's `weight_at_zero` ≥ 0.90 → verdict = `outside_active_domain` (variable does not apply at this location)
-- Block 1 verdicts are L6-only; they may flip at L8 due to MAUP (see deferred items register)
+**Work folders**: `notebooks/edop/surface/`, `docs/edop/surface/`, `output/edop/surface/`
 
 ### Phase 4 — Correspondence testing (not started)
 **Goal**: Test the degree to which environmental signatures predict or correlate with
@@ -90,69 +77,31 @@ cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets
 
 ## Current work
 
-**v0.3 public release complete as of 2026-06-10.** No known open blockers.
+**v0.3 public release complete (2026-06-10).** No known open blockers.
 
-**Phase 3 — Areas is CLOSED (2026-06-30).** `AREAS_tracker.md` is now frozen reference.
-Active work moves to a new Surface track (`docs/edop/surface/SURFACE_tracker.md`). Branch: `engine_v0.4b`.
-Consult `docs/design/areas/deferred_items_register.md` (cross-phase, not forked).
+**Surface is the active track. Branch: `surface`.**
+Read `docs/edop/surface/SURFACE_tracker.md` — authoritative goto for current state, roadmap,
+and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cross-phase).
 
-**Step 3 aggregator status (as of 2026-06-21):**
-- Block 1 — area-weighted coherence (continental-gradient + scale-dependent, 34 vars): **done**
-- Block 2 — dominant basin (network-topology: discharge_annual, discharge_min, discharge_max): **done**
-- Block 3 — categorical class mixture (9 vars): **done**
-- Block 4 — flag/structural path (outlet_type 4-class mixture + coast_fraction flag_fraction): **done**
-- Block 5 — untyped fallback (distribution-only) + extreme (river_area): **done**
-- Block 6 — modality refinement (12 two_regime vars; seam-aligned with endorheic partition): **done**
-- Block 7 — Band T gridded path (HYDE distribution + LMR distribution + eVolv2k global): **done**
-- Engine assembly: **done** (WO11b complete; `areal_signature` is the public entry point)
+**Engine (stable background — Areas complete 2026-06-30):**
+`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Two public entry points:
+- `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path; served on `/api/signature`
+- `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
 
-**Engine assembly status (as of 2026-06-30):**
-- WO4 — `make_row` / projector / assembler + Band T promotion: **done** (5/5 strict PASS)
-- WO4b — Band T regression coordinate diagnosis: **done** (no code change; coordinate fixture corrected)
-- WO5 — B2 dominant_basin extraction: **done** (4/4 strict PASS)
-- WO6 — B1 area_weighted extraction: **done** (5/5 strict PASS)
-- WO7 — B3 class_mixture extraction: **done** (6/6 strict PASS)
-- WO8 — B4 flag/structural extraction: **done** (7/7 strict PASS)
-- WO9 — B5 distribution_only + extreme extraction: **done** (6/6 strict PASS)
-- WO10 — B6 modality post-pass: **done** (6/6 strict PASS)
-- WO10b — distribution_only coherence flag: **done** (6/6 strict PASS; contract fully closed)
-- WO11a — `load_catalog` + sourced/derived fork: **done** (7/7 strict PASS)
-- WO11b — `areal_signature` final assembly: **done** (8/8 capstone PASS; 51 basin + 321 Band T rows)
-- WO12 — Buffer L8 validation: **done** (Band T invariant; 11/11 modality flips; shortfall slivers; AF.6–AF.10)
-- WO13/WO13a — Modality floor close-out: **done** (floor retired; support-relative posture settled; no engine edit)
-- WO14 — Single-basin resolver + v0.3 comparison: **done** (373 rows payload; 0 MISMATCH/UNEXPLAINED; AF.11–AF.12)
-- WO15 — Area-weighted cell weighting: **done** (HYDE + LMR `overlap/cell_area` normalization; size-bias removed; AF.13; 58 tests PASS)
-- WO16 — Basin-ring resolver exploration: **done** (ST_Touches clean across Timbuktu L06/L08, Rome L06, Baghdad L06; all contacts ST_MultiLineString; no slivers; three weight schemes surfaced but not decided; notebook `basin_ring_exploration.ipynb`)
-- WO17 — Basin-ring resolver + transition diagnostic: **done** (`resolve_basin_ring`; `border_bearing`; ST_PointOnSurface fix; 3 L06 fixtures; AF.14–AF.19)
-- WO18 — Transition-character comparator: **done** (29-var universal intersection; 58 features; spanning-10 gate PASS; AF.WO18.1–3)
-- WO19 — Scaled comparator n=50: **done** (47 WHC cities; k=3 silhouette-optimal clustering; ANCHORED partial; AF.WO19.1–5)
-- WO20 — Polity resolver + polygon engine path: **done** (`resolve_polygon`, `resolve_polity`, `areal_signature_polygon`; N Song 376 basins; B6 skipped; 60/60 PASS)
-- WO21b — Distribution histograms: **done** (`_weighted_histogram` in `detail` across basin/HYDE/LMR substrates; LMR collapse retired; `grid_areal_collapsed` + sentinels removed; 60/60 PASS)
-- WO22 — `/area` endpoint stub: **done** (`GET /api/area?polity=<name>&year=<int>`; thin front door over `areal_signature_polygon`; two independent temporal axes; 404 with `available_periods`; 168/168 PASS) — **phase closed**
-
-**Deferred items note (2026-06-24):** Two items added from WO4b "doh moment" — (1) edge-sensitivity
-diagnostic (boundary leverage, candidate trust-layer flag); (2) representative-point uncertainty /
-WHG attestation cloud (Phase 4 input design). See `docs/design/areas/deferred_items_register.md`.
-
-**Engine contract fully closed (2026-06-24):** `contract_amendments.md` Pending is empty.
-Last item settled: distribution_only coherence (WO10b). Branch: `engine_v0.4b`.
-
-**Population hygiene fix (2026-06-18):** step2 scorer now excludes -9999/NULL from PERCENT_RANK window via two-pass SQL; 9 vars corrected (pct_clay/silt/sand ×2, stream_gradient, slope_avg/upstream). No verdict flips at Timbuktu.
-
-Output: `output/edop/areas/step3_results.tsv` — 51 rows + modality column; 12 two_regime scores suppressed; validated on Timbuktu 100 km / L06.
-Companion: `output/edop/areas/step3_block3_mixture.tsv` — 22 rows (B3 + B4 outlet_type classes).
-Companion: `output/edop/areas/step3_block5_distribution.tsv` — 18 rows (full per-basin distribution for untyped vars).
-Companion: `output/edop/areas/step3_block6_regimes.tsv` — 24 rows (12 two_regime vars × 2 regimes).
-Band T (separate notebook `step3b_band_t.ipynb`): `step3b_block7_primary.tsv` (321 rows, 1100–1200 CE), `step3b_block7_wide.tsv` (3427 rows, 1000–2000 CE), `step3b_block7_hyde_distributions.tsv` (332 rows, HYDE distribution companion with `spread_native` in km²/cell).
-
-**Shared output envelope** (all blocks): `variable, method, status, representative_score,
-representative_raw, n_basins, coverage_weight` + method-specific detail columns.
-Block 7 extensions: `n_units`, `unit_type` (replace `n_basins`), `year`, `epoch_year`, `lmr_caveat`, `hyde_caveat`. Note: Block 7 `p10`/`p90`/`sd` are in native units (km²/cell); Blocks 1–6 use percentile points — engine assembly must reconcile (see deferred register).
-
-**Findings**: `docs/edop/areas/areas_findings.md` — coded observations AF.1–AF.13 (method behavior, signal content, data quality). Add new AF.n entries as the phase proceeds.
+Resolvers: buffer, single-basin, basin-ring (`resolve_basin_ring`), polygon/polity (`resolve_polygon`, `resolve_polity`).
+Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
+`_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
+Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
+168 tests PASS (60 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
+
+**Surface — first step:** sandbox capability-gap analysis (what the engine offers vs. what any
+UI exposes; extensibility of `sandbox.html`), then new sandbox page spec. See SURFACE_tracker.
+
+**Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference; new sandbox page
+demonstrating the areal engine is the deliverable. ~12 weeks from phase open.
 
 ---
 
@@ -177,13 +126,19 @@ app/
     └── ...
 
 documentation/           # Public-facing docs (tracked)
-docs/                    # Older draft docs and WIP (partial; remainder in cedop repo)— gitignored
+docs/                    # Design docs and WIP — gitignored with exceptions:
+docs/edop/areas/         #   Areas tracker (frozen ref) + findings (tracked)
+docs/edop/engine/        #   Work-order specs (tracked)
+docs/edop/surface/       #   Surface tracker + findings (tracked) ← active
+docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
-scripts/edop/areas/      # Phase 3 — Areas scripts
+scripts/edop/areas/      # Areas engine — engine.py is the primary artifact
 notebooks/edop/explore/  # CHAR phase EDA notebooks
 notebooks/edop/spatial/  # CHAR phase ESDA notebooks
-notebooks/edop/areas/    # Phase 3 — Areas notebooks
-output/edop/areas/       # Phase 3 — Areas figures and output (gitignored)
+notebooks/edop/areas/    # Areas phase notebooks (research record; frozen)
+notebooks/edop/surface/  # Surface phase notebooks ← active
+output/edop/areas/       # Areas output (gitignored)
+output/edop/surface/     # Surface output (gitignored)
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
 logs/2026_jan-may/       # Archived earlier session logs
 metadata/                # gitignored
@@ -216,7 +171,7 @@ Band T (LMR 5-period / HYDE 4-var 3-view / eVolv2k timeline).
 Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supported
 (LMR with country overlay, HYDE raster). Controls strip persists across tabs.
 
-**Compare** — provisionally complete. See Current work above.
+**Compare** — provisionally complete.
 
 ### Explorer architecture decisions (do not revisit)
 - **PMTiles + flat values API**: geometry served once from `basin06.pmtiles`;
@@ -259,6 +214,11 @@ NOTE: see documentation/API_guide.md (master, public)
 
 /api/explorer/scatter?x=VAR&y=VAR&level=6
     Paired values for bivariate scatter: {x_meta, y_meta, n_paired, values: [[id,x,y],…]}
+
+/api/area?polity=<name>&year=<int>[&level=6|8][&bands=ABCDET][&from_year=N&to_year=N][&detail=true]
+    Areal signature for a Cliopatria polity. Two independent temporal axes: year moves the
+    polity boundary; from_year/to_year moves the Band T aggregation window. detail=true adds
+    histogram objects (detail['distribution']) across basin/HYDE/LMR substrates.
 
 /api/polity/search, /api/polity/slices, /api/polity/period, /api/polity/geom
     Cliopatria polity queries — used by cliopatria.html.
@@ -354,16 +314,14 @@ docs/ hold old drafts and works-in-progress (gitignored)
 
 ## Open / deferred items
 
-- **Explorer L8 choropleth** — deferred until after 8 June demo
-- **Lookup neighborhood types** — single basin / neighbors / buffer; polygon aggregation
-  is methodologically thorny; deferred to Phase 3 (Aggregation)
+- **Explorer L8 choropleth** — deferred; no active pull
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; social diff, basin06
-  overlay, and nav link are open threads; code is Phase 4 Correspondence precursor
-- **Server migration** — complete as of 2026-06-07; working dir is `/var/www/edops`, service is `edops`
+  overlay, and nav link open; code is Phase 4 Correspondence precursor
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
   for BCE queries; population density in signature; EarthStat/HYDE divergence; LMR proxy
   bias disclosure — held pending expert review; no fixed date
-- **Braga milestone (2026-09-20)** — UNED Digital Humanities conference; demo opportunity with
-  Pitt colleagues. Target: v0.4 signature + updated sandbox surfacing areal engine (lean/full,
-  new resolver types, endpoint params). ~11 weeks out from 2026-06-25.
+- **Areas deferred items** — multi-fixture calibration, `/area` input types beyond polity,
+  per-unit polity rendering, upstream resolver — all in `docs/design/areas/deferred_items_register.md`
+- **Braga milestone (2026-09-20)** — UNED Digital Humanities conference; demo with Pitt
+  colleagues. Deliverable: new sandbox page surfacing the areal engine. ~12 weeks from 2026-06-30.
