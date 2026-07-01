@@ -50,7 +50,7 @@ VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data'})
 VALID_METHODS     = frozenset({
     'area_weighted', 'dominant_basin', 'class_mixture', 'flag_fraction',
     'distribution_only', 'extreme',
-    'grid_areal_collapsed', 'grid_areal_distribution', 'global_forcing',
+    'grid_areal_distribution', 'global_forcing',
 })
 VALID_MODALITIES  = frozenset({'unimodal', 'two_regime'})
 VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'mixed', 'outside_active_domain'})
@@ -459,18 +459,21 @@ class TestBandT:
         assert len(t_rows) > 0, 'No Band T rows returned'
 
     def test_lmr_method_and_caveat(self, t_rows):
-        lmr = [r for r in t_rows if r['method'] == 'grid_areal_collapsed']
-        assert lmr, 'No LMR (grid_areal_collapsed) rows'
+        """LMR rows use grid_areal_distribution (WO21b: collapse retired)."""
+        lmr = [r for r in t_rows if r['unit_type'] == 'lmr_cell']
+        assert lmr, 'No LMR (lmr_cell) rows'
         for r in lmr:
+            assert r['method'] == 'grid_areal_distribution', \
+                f'{r["variable"]}: LMR method={r["method"]!r} (expected grid_areal_distribution)'
             assert 'lmr_caveat' in r.get('caveat', []), \
                 f'{r["variable"]}: LMR row missing lmr_caveat'
 
     def test_hyde_method_and_unit_type(self, t_rows):
-        hyde = [r for r in t_rows if r['method'] == 'grid_areal_distribution']
-        assert hyde, 'No HYDE (grid_areal_distribution) rows'
+        hyde = [r for r in t_rows if r['unit_type'] == 'hyde_cell']
+        assert hyde, 'No HYDE (hyde_cell) rows'
         for r in hyde:
-            assert r['unit_type'] == 'hyde_cell', \
-                f'{r["variable"]}: HYDE unit_type={r["unit_type"]!r}'
+            assert r['method'] == 'grid_areal_distribution', \
+                f'{r["variable"]}: HYDE method={r["method"]!r}'
 
     def test_evolv2k_method(self, t_rows):
         evolv = [r for r in t_rows if r['method'] == 'global_forcing']

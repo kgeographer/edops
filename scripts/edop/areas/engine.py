@@ -34,6 +34,11 @@ warnings.filterwarnings(
 )
 
 
+_N_HIST_BINS             = 20
+_LOW_RES_CELL_THRESHOLD  = 5    # w_eff below which histogram is flagged low_resolution
+_LOW_RES_BASIN_THRESHOLD = 3    # n_units below which basin histogram is flagged
+
+
 def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
     """
     Buffer resolver: point + radius → weighted basin set.
@@ -201,6 +206,59 @@ def weighted_quantile(scores, weights, q):
     cumw = np.cumsum(sw)
     cumw /= cumw[-1]
     return float(np.interp(q, cumw, sv))
+
+
+def _weighted_histogram(values, raw_weights, unit_type, n_bins=_N_HIST_BINS):
+    """
+    Weighted histogram for the distribution detail block.
+
+    values      : array-like float — per-unit scores (basin) or native values (cells)
+    raw_weights : array-like float — fractional coverage (cells: overlap/area;
+                  basins: area-weight). Normalized internally.
+    unit_type   : 'basin' | 'hyde_cell' | 'lmr_cell'
+    n_bins      : fixed count; keeps payload bounded regardless of unit count
+
+    Temporal stamp fields (resolver_year, band_t_from, band_t_to) are added by
+    the caller after this returns so the function stays substrate-agnostic.
+
+    Returns None if no valid units.
+    """
+    v = np.asarray(values,      dtype=float)
+    w = np.asarray(raw_weights, dtype=float)
+    mask = np.isfinite(v) & np.isfinite(w) & (w > 0)
+    v, w = v[mask], w[mask]
+    if len(v) == 0:
+        return None
+
+    w_eff  = float(w.sum())
+    w_norm = w / w_eff
+    n      = int(len(v))
+    mean_  = float(np.dot(v, w_norm))
+
+    vmin, vmax = float(v.min()), float(v.max())
+    edges = (np.linspace(vmin - 0.5, vmin + 0.5, n_bins + 1)
+             if vmax == vmin else np.linspace(vmin, vmax, n_bins + 1))
+
+    bin_idx = np.clip(np.digitize(v, edges[1:-1]), 0, n_bins - 1)
+    bin_w   = np.zeros(n_bins)
+    for i, ww in zip(bin_idx, w_norm):
+        bin_w[i] += ww
+
+    low_res = (w_eff < _LOW_RES_CELL_THRESHOLD) if unit_type != 'basin' \
+              else (n < _LOW_RES_BASIN_THRESHOLD)
+
+    return {
+        'bins':           [round(float(e), 4) for e in edges],
+        'weights':        [round(float(ww), 6) for ww in bin_w],
+        'n_units':        n,
+        'unit_type':      unit_type,
+        'low_resolution': low_res,
+        'min':            round(vmin, 4),
+        'max':            round(vmax, 4),
+        'p10':            round(weighted_quantile(v, w, 0.1), 4),
+        'p90':            round(weighted_quantile(v, w, 0.9), 4),
+        'mean':           round(mean_, 4),
+    }
 
 
 def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
@@ -795,20 +853,21 @@ def _agg_hyde_b7(df, var_col, buf_area_m2):
     if len(valid) == 0:
         return {'representative_raw': None, 'p10': None, 'p90': None,
                 'sd': None, 'n_units': 0, 'w_eff': 0.0,
-                'coverage': 0.0, 'status': 'no_data'}
+                'coverage': 0.0, 'status': 'no_data', 'histogram': None}
     frac   = (valid['overlap_m2'] / (valid['area_km2'] * 1e6)).values
     w      = frac / frac.sum()
     v      = valid[var_col].values.astype(float)
     mean_  = float(np.dot(v, w))
     return {
         'representative_raw': mean_,
-        'p10':     weighted_quantile(v, w, 0.1),
-        'p90':     weighted_quantile(v, w, 0.9),
-        'sd':      float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
-        'n_units': len(valid),
-        'w_eff':   round(float(frac.sum()), 2),
+        'p10':      weighted_quantile(v, w, 0.1),
+        'p90':      weighted_quantile(v, w, 0.9),
+        'sd':       float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
+        'n_units':  len(valid),
+        'w_eff':    round(float(frac.sum()), 2),
         'coverage': float(valid['overlap_m2'].sum()) / buf_area_m2,
-        'status':  'ok',
+        'status':   'ok',
+        'histogram': _weighted_histogram(v, frac, unit_type='hyde_cell'),
     }
 
 
@@ -823,7 +882,8 @@ def _agg_lmr_b7(overlap_m2, values, buf_area_m2):
     }
 
 
-def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn, geom_wkt=None):
+def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
+                     geom_wkt=None, resolver_year=None):
     """
     Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
     eVolv2k (global_forcing) for a query area over a year span.
@@ -905,6 +965,13 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn, geom_wkt=Non
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
             agg = _agg_hyde_b7(grp, var, buf_area_m2)
+            hist_h = agg['histogram']
+            if hist_h is not None:
+                hist_h.update({
+                    'resolver_year': resolver_year,
+                    'band_t_from':   from_year,
+                    'band_t_to':     to_year,
+                })
             rows.append(make_row(
                 variable=f'hyde_{var}', band='T',
                 method='grid_areal_distribution',
@@ -912,15 +979,15 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn, geom_wkt=Non
                 representative_score=None,
                 representative_raw=agg['representative_raw'],
                 coverage=agg['coverage'], status=agg['status'],
-                distribution='reported',
                 caveat=caveat,
                 year=yr, epoch_year=yr, units=units,
                 detail={
-                    'p10':   agg['p10'],
-                    'p90':   agg['p90'],
-                    'sd':    agg['sd'],
-                    'w_eff': agg['w_eff'],
-                    'unit':  'km2_per_cell',
+                    'p10':          agg['p10'],
+                    'p90':          agg['p90'],
+                    'sd':           agg['sd'],
+                    'w_eff':        agg['w_eff'],
+                    'unit':         'km2_per_cell',
+                    'distribution': hist_h,
                 },
             ))
 
@@ -974,16 +1041,24 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn, geom_wkt=Non
                 ('air',   air_mat,   'K anomaly'),
                 ('prate', prate_mat, 'mm/day anomaly'),
             ]:
+                col_vals = mat[:, i]
+                hist_l   = _weighted_histogram(col_vals, frac_l, unit_type='lmr_cell')
+                if hist_l is not None:
+                    hist_l.update({
+                        'resolver_year': resolver_year,
+                        'band_t_from':   from_year,
+                        'band_t_to':     to_year,
+                    })
                 rows.append(make_row(
                     variable=f'lmr_{api_name}', band='T',
-                    method='grid_areal_collapsed',
+                    method='grid_areal_distribution',
                     unit_type='lmr_cell', n_units=n_fp,
                     representative_score=None,
-                    representative_raw=float(np.dot(mat[:, i], w_lmr)),
+                    representative_raw=float(np.dot(col_vals, w_lmr)),
                     coverage=cov_lmr, status='ok',
-                    distribution='collapsed_subresolution',
                     caveat=['lmr_caveat'],
                     year=year, epoch_year=None, units=units,
+                    detail={'distribution': hist_l},
                 ))
 
     # ── eVolv2k ───────────────────────────────────────────────────────────────
@@ -1719,7 +1794,8 @@ def apply_modality(rows, basin_set, matrix_df,
 def aggregate_b1(basin_set, matrix_df, meta_df,
                  spread_threshold=_SPREAD_THRESHOLD,
                  zero_fraction_threshold=0.20,
-                 zero_coverage_threshold=0.90) -> list:
+                 zero_coverage_threshold=0.90,
+                 resolver_year=None) -> list:
     """
     Block 1: area-weighted coherence aggregation for continental-gradient and
     scale-dependent continuous variables.
@@ -1817,6 +1893,13 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             coherence  = 'spread'
             rep_score  = wmean
 
+        hist_b = _weighted_histogram(scores, wts, unit_type='basin')
+        if hist_b is not None:
+            hist_b.update({
+                'resolver_year': resolver_year,
+                'band_t_from':   None,
+                'band_t_to':     None,
+            })
         rows.append(make_row(
             variable=api_key, band=band,
             method='area_weighted',
@@ -1828,10 +1911,11 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             coherence=coherence,
             weight_at_zero=weight_at_zero,
             detail={
-                'spread': spread,
-                'p10':    p10,
-                'p90':    p90,
-                'unit':   'percentile',
+                'spread':       spread,
+                'p10':          p10,
+                'p90':          p90,
+                'unit':         'percentile',
+                'distribution': hist_b,
             },
         ))
 
@@ -1854,6 +1938,7 @@ def _areal_signature_from_basin_set(
     to_year=None,
     include_detail=False,
     run_modality=True,
+    resolver_year=None,
 ):
     """
     Shared aggregation pipeline for any resolver that produces a weighted basin set.
@@ -1876,7 +1961,7 @@ def _areal_signature_from_basin_set(
     )
 
     # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
-    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df)
+    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df, resolver_year=resolver_year)
     b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
     b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
     b4_rows = aggregate_b4(basin_set, raw_df)
@@ -1894,7 +1979,8 @@ def _areal_signature_from_basin_set(
     run_t     = want_t and have_span
 
     t_rows = aggregate_band_t(
-        lat, lon, radius_km, from_year, to_year, conn, geom_wkt=geom_wkt,
+        lat, lon, radius_km, from_year, to_year, conn,
+        geom_wkt=geom_wkt, resolver_year=resolver_year,
     ) if run_t else []
 
     all_rows = basin_rows + t_rows
