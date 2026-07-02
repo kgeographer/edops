@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-01 (WO1 inspection begun; F1.1–F1.3 recorded; cells 4–13 remain)
+- **Last updated:** 2026-07-02 (WO1 complete; all TODOs fixed; 80/80 engine tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,12 +50,12 @@ Phase opened 2026-06-30. Engine is whole: four entry points, five resolvers, all
 
 **SF.1 (sandbox capability-gap analysis) complete** — `docs/edop/surface/surface_findings.md`.
 
-**WO1 (exemplar payload inspection) in progress** — `docs/edop/surface/wo1_findings.md`.
-10 JSON payloads captured (5 scopes × lean/detail). Inspection notebook
-`notebooks/edop/surface/wo1_exemplar_inspection.ipynb`; Cells 1–3 run, findings F1.1–F1.3 recorded.
-**Cells 4–13 remain for next session.**
+**WO1 (exemplar payload inspection) complete** — all 13 cells run; findings F1.1–F1.13 in
+`docs/edop/surface/wo1_findings.md`. Three engine TODOs fixed (shortfall clamp, dead
+`row["distribution"]` field removed, basin-ring key contract); 80/80 engine tests pass.
+Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10).
 
-**Next after WO1:** new sandbox page spec.
+**Next: new sandbox page spec** (Karl working with Opus; fresh session).
 
 ---
 
@@ -64,7 +64,7 @@ Phase opened 2026-06-30. Engine is whole: four entry points, five resolvers, all
 | Item | What | Status |
 |---|---|---|
 | Sandbox capability-gap analysis | Inventory: what the engine now offers that no UI exposes; what `sandbox.html` currently exposes; the delta; and whether the existing markup can absorb the new elements or forces a new page. | **complete** — see SF.1 |
-| WO1 — exemplar payload inspection | Capture + inspect real payload dumps for all five query scopes (single-basin, buffer, polity+Band T, basin-ring, polygon). Ground truth for page design decisions. | **in progress** — F1.1–F1.3; cells 4–13 remain |
+| WO1 — exemplar payload inspection | Capture + inspect real payload dumps for all five query scopes (single-basin, buffer, polity+Band T, basin-ring, polygon). Ground truth for page design decisions. | **complete** — F1.1–F1.13; TODOs fixed |
 | New sandbox page spec | Spec for a fresh page exercising the engine end to end: point-rooted queries (buffer, single-basin) AND polity path. Lean + `&detail`. Both temporal axes as distinct controls. Histogram widget. Polity boundary overlay on map. Depends on WO1 complete. | **next** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |

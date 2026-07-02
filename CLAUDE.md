@@ -94,17 +94,17 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-185 tests PASS (77 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py`).
+188 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO1 exemplar payload inspection.
-- SF.1 (sandbox capability-gap analysis) complete — see `docs/edop/surface/surface_findings.md`
-- WO1 (`docs/edop/surface/wo1_exemplar-payloads.md`): 10 payload files captured (5 scopes × lean/detail);
-  inspection notebook `notebooks/edop/surface/wo1_exemplar_inspection.ipynb` (13 cells);
-  findings in `docs/edop/surface/wo1_findings.md` (F1.1–F1.3 recorded; cells 4–13 remain)
-- **Next after WO1:** new sandbox page spec
+**Surface — current step:** new sandbox page spec (next session; Karl working with Opus).
+- SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
+- WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
+  design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
+- Engine row schema: `make_row` no longer emits `row["distribution"]` (was always null; removed)
+- **Next:** new sandbox page spec — will arrive as a WO from Opus
 
 **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference; new sandbox page
 demonstrating the areal engine is the deliverable. ~11 weeks from 2026-07-01.

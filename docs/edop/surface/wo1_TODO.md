@@ -16,7 +16,7 @@ floating-point arithmetic in the area summation.
 **Fix:** `shortfall = max(0.0, shortfall)` before the value is placed in the payload.
 **Test:** add assertion `shortfall >= 0` to contract test suite; verify with S5 4-corners.
 
-Status: **open**
+Status: **done** (commit 3a8f177)
 
 ---
 
@@ -34,7 +34,7 @@ The field serves no purpose as currently populated.
 **Test:** add assertion that `"distribution" not in row` for a representative set of rows
 (area_weighted lean, area_weighted detail, grid_areal_distribution detail).
 
-Status: **open**
+Status: **done** (commit 3a8f177)
 
 ---
 
@@ -51,4 +51,4 @@ top-level keys would go undetected.
 in `TestBasinRingSignature`.
 **Test:** is the fix (no engine change needed — test only).
 
-Status: **open**
+Status: **done** (commit 3a8f177)
