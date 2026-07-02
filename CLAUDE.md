@@ -84,7 +84,7 @@ Read `docs/edop/surface/SURFACE_tracker.md` — authoritative goto for current s
 and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cross-phase).
 
 **Engine (stable background — Areas complete 2026-06-30):**
-`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Three public entry points:
+`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path (not yet HTTP-wired)
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
 - `single_basin_signature(lat, lon, conn, ...)` — single containing basin (not yet HTTP-wired)
@@ -99,11 +99,15 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — first step:** sandbox capability-gap analysis (what the engine offers vs. what any
-UI exposes; extensibility of `sandbox.html`), then new sandbox page spec. See SURFACE_tracker.
+**Surface — current step:** WO1 exemplar payload inspection.
+- SF.1 (sandbox capability-gap analysis) complete — see `docs/edop/surface/surface_findings.md`
+- WO1 (`docs/edop/surface/wo1_exemplar-payloads.md`): 10 payload files captured (5 scopes × lean/detail);
+  inspection notebook `notebooks/edop/surface/wo1_exemplar_inspection.ipynb` (13 cells);
+  findings in `docs/edop/surface/wo1_findings.md` (F1.1–F1.3 recorded; cells 4–13 remain)
+- **Next after WO1:** new sandbox page spec
 
 **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference; new sandbox page
-demonstrating the areal engine is the deliverable. ~12 weeks from phase open.
+demonstrating the areal engine is the deliverable. ~11 weeks from 2026-07-01.
 
 ---
 
