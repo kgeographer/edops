@@ -255,6 +255,17 @@ class TestPayloadEnvelope:
         unexpected_missing = missing - KNOWN_ABSENT
         assert not unexpected_missing, f'Variables absent from payload: {unexpected_missing}'
 
+    def test_shortfall_non_negative(self, buf_payload):
+        """shortfall is a coverage fraction — floating-point arithmetic must not produce negatives."""
+        assert buf_payload['shortfall'] >= 0.0, \
+            f'shortfall={buf_payload["shortfall"]} is negative'
+
+    def test_no_row_distribution_field(self, buf_rows):
+        """Top-level row["distribution"] was removed — histogram lives at row["detail"]["distribution"]."""
+        for r in buf_rows:
+            assert 'distribution' not in r, \
+                f'{r["variable"]}: stale top-level "distribution" key found on row'
+
 
 # ---------------------------------------------------------------------------
 # Section 4 — Block dispatch contracts
@@ -625,6 +636,11 @@ class TestArealSignaturePolygon:
         assert nsong_payload['shortfall'] < 0.10, \
             f'shortfall={nsong_payload["shortfall"]:.3f} — unexpectedly large'
 
+    def test_shortfall_non_negative(self, nsong_payload):
+        """Polygon area arithmetic must not produce negative shortfall."""
+        assert nsong_payload['shortfall'] >= 0.0, \
+            f'shortfall={nsong_payload["shortfall"]} is negative'
+
 
 # ---------------------------------------------------------------------------
 # Section 8 — Basin-ring resolver + entry point (WO17)
@@ -700,8 +716,9 @@ class TestResolveBasinRing:
 
 class TestBasinRingSignature:
     def test_top_level_keys(self, ring_payload):
-        for key in ('type', 'center', 'ring', 'lat', 'lon', 'level'):
-            assert key in ring_payload, f'Missing top-level key: {key}'
+        """Basin-ring has a distinct top-level envelope — no rows/shortfall/caveats."""
+        assert set(ring_payload.keys()) == {'type', 'center', 'ring', 'lat', 'lon', 'level'}, \
+            f'Unexpected top-level keys: {set(ring_payload.keys())}'
 
     def test_type_field(self, ring_payload):
         assert ring_payload['type'] == 'basin_ring'

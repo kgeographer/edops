@@ -742,7 +742,7 @@ def make_row(
     representative_score, representative_raw, coverage, status,
     # quality flags (Pin 1, 4)
     coherence=None, modality=None, score_suppressed=False,
-    distribution=None, weight_at_zero=None,
+    weight_at_zero=None,
     caveat=None,          # Pin 2: list of caveat keys; empty list = no caveats
     # temporal fields (B7 only; None on basin-path rows)
     year=None, epoch_year=None,
@@ -778,7 +778,6 @@ def make_row(
         # quality flags
         'coherence':           coherence,
         'modality':            modality,
-        'distribution':        distribution,
         'weight_at_zero':      weight_at_zero,
         'caveat':              caveat if caveat is not None else [],
         # temporal (None on non-B7 rows; serializer omits None fields as needed)
@@ -2049,7 +2048,7 @@ def areal_signature(
     # ── 1. Resolve buffer ────────────────────────────────────────────────────
     level_str = f'{level:02d}'
     basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
-    shortfall = round(1.0 - float(basin_set['weight'].sum()), 6)
+    shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     neighborhood = {
         'type':      'buffer',
@@ -2379,7 +2378,7 @@ def areal_signature_polygon(
     """
     level_str = f'{level:02d}'
     basin_set = resolve_polygon(geom_wkt, level_str, conn)
-    shortfall = round(1.0 - float(basin_set['weight'].sum()), 6)
+    shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     bif = basin_set['basin_in_polity_fraction']
     me_lt50 = float(basin_set.loc[bif < 0.5, 'weight'].sum())
