@@ -94,21 +94,24 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-228 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py` + 40 surface `tests/surface/`).
+241 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py` + 53 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO2 (Step 1 rows-renderer, single-basin atomic fixture).
+**Surface — current step:** Playwright setup, then WO3 (Step 2 leaf widgets).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
 - Engine row schema: `make_row` no longer emits `row["distribution"]` (was always null; removed)
 - **Step 0 (skeleton) complete** — `app/templates/sandbox_v2.html` at `/sandbox/lookup2`;
-  scope gate + Band T toggle; Level fixed L06; 5-scope dropdown; 40 structural tests in `tests/surface/`
+  scope gate + Band T toggle; Level fixed L06; 5-scope dropdown
+- **WO2 (Step 1 rows-renderer) complete** — fixture harness (`/dev/exemplars/` static mount);
+  `renderSignature` → band accordion; `renderLeaf` 6-method dispatch; accept gate passed
+- Field names in fixture: `representative_score`, `representative_raw`, `score_suppressed`
+- 53 tests in `tests/surface/` (structural + fixture contract); 241 total
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
-- **Next:** WO2 = Step 1 (rows-renderer against single-basin exemplar fixture)
 
 **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference; new sandbox page
 demonstrating the areal engine is the deliverable. ~11 weeks from 2026-07-01.

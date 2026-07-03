@@ -77,6 +77,10 @@ EXAMPLE_VALUES = [
 BANDS_CHECKED_ON_LOAD   = ["A", "B", "C", "D", "E"]
 BANDS_UNCHECKED_ON_LOAD = ["T"]
 
+SINGLE_BASIN_FIXTURE = "/dev/exemplars/01_single_basin_detail.json"
+EXPECTED_METHODS = {"area_weighted", "dominant_basin", "class_mixture",
+                    "flag_fraction", "distribution_only", "extreme"}
+
 
 # ---------------------------------------------------------------------------
 # Route
@@ -167,6 +171,62 @@ class TestExampleOptions:
 # ---------------------------------------------------------------------------
 # Band checkboxes
 # ---------------------------------------------------------------------------
+
+class TestFixtureHarness:
+    """
+    Verify the dev exemplar fixture is served correctly and has the structural
+    contract the renderer depends on.  Tests skip if the fixture dir is absent
+    (gitignored output/; not present on server or CI).
+    """
+
+    @pytest.fixture(scope="class")
+    def fixture_json(self, client):
+        r = client.get(SINGLE_BASIN_FIXTURE)
+        if r.status_code != 200:
+            pytest.skip("Exemplar fixtures not available (output/edop/surface/exemplars/)")
+        return r.json()
+
+    def test_fixture_served(self, client):
+        r = client.get(SINGLE_BASIN_FIXTURE)
+        if r.status_code != 200:
+            pytest.skip("Exemplar fixtures not available")
+        assert "application/json" in r.headers["content-type"]
+
+    def test_top_level_keys(self, fixture_json):
+        assert {"rows", "neighborhood", "bands", "shortfall"} <= set(fixture_json.keys())
+
+    def test_row_count(self, fixture_json):
+        assert len(fixture_json["rows"]) == 52
+
+    def test_all_methods_present(self, fixture_json):
+        methods = {r["method"] for r in fixture_json["rows"]}
+        assert methods == EXPECTED_METHODS
+
+    def test_representative_score_field_name(self, fixture_json):
+        """Guard against field-name drift — renderer uses representative_score, not score."""
+        row = fixture_json["rows"][0]
+        assert "representative_score" in row
+        assert "score" not in row
+
+    def test_representative_raw_field_name(self, fixture_json):
+        row = fixture_json["rows"][0]
+        assert "representative_raw" in row
+        assert "raw" not in row
+
+    def test_class_mixture_raw_is_string(self, fixture_json):
+        """DN7: class_mixture.representative_raw must be a string label, not a number."""
+        row = next(r for r in fixture_json["rows"] if r["method"] == "class_mixture")
+        assert isinstance(row["representative_raw"], str)
+
+    def test_neighborhood_block(self, fixture_json):
+        nb = fixture_json["neighborhood"]
+        assert {"type", "level", "hybas_id", "n_units", "unit_type"} <= set(nb.keys())
+
+    @pytest.mark.parametrize("band", ["A", "B", "C", "D", "E"])
+    def test_rows_in_band(self, fixture_json, band):
+        rows_in_band = [r for r in fixture_json["rows"] if r["band"] == band]
+        assert len(rows_in_band) > 0, f"No rows in band {band}"
+
 
 class TestBandChecks:
     @pytest.mark.parametrize("band", BANDS_CHECKED_ON_LOAD)

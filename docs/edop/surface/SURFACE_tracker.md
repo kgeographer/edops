@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-02 (Step 0 skeleton complete; 228/228 tests)
+- **Last updated:** 2026-07-02 (WO2 rows-renderer complete; 241/241 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -73,7 +73,9 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 | Sandbox capability-gap analysis | Inventory: what the engine now offers that no UI exposes; what `sandbox.html` currently exposes; the delta; and whether the existing markup can absorb the new elements or forces a new page. | **complete** — see SF.1 |
 | WO1 — exemplar payload inspection | Capture + inspect real payload dumps for all five query scopes (single-basin, buffer, polity+Band T, basin-ring, polygon). Ground truth for page design decisions. | **complete** — F1.1–F1.13; TODOs fixed |
 | New sandbox page — Step 0 skeleton | `sandbox_v2.html` at `/sandbox/lookup2`; scope gate + Band T toggle; Level L06 fixed; 5 scopes; 4 examples; 40 tests. | **complete** |
-| New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **next — WO2** |
+| New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **complete — WO2** |
+| Playwright setup | Browser-automation test harness for JS state tests (scope gate, T toggle, renderer output). Karl evaluated and confirmed. | **next** |
+| New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | pending |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -110,6 +112,28 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-02 (WO2 — rows-renderer)**
+
+- **Fixture harness** — `app/main.py` conditionally mounts `output/edop/surface/exemplars/`
+  at `/dev/exemplars/` via `StaticFiles` (try/except so absent on server). JS fetches the
+  static JSON; swapping `FIXTURE_URLS[scope]` value to a live route is the one-line wiring
+  step. Forward constraint: route must serialize payload unmodified when wired.
+- **`renderSignature(payload)`** — builds band accordion (A–E) from `payload.rows[]`;
+  dispatches each row on `row.method` to `renderLeaf`. Written single-basin-atomic; same
+  function over more rows covers multi-unit. All 6 method branches implemented:
+  `area_weighted` (score + coherence + `[hist]` slot), `dominant_basin` (score + raw numeric
+  + carrier basin id), `class_mixture` (string label from `representative_raw` — DN7 handled),
+  `flag_fraction` (0–1 fraction), `distribution_only` (p10–p90 range + suppressed caveat),
+  `extreme` (score + raw + carrier basin).
+- **Field names confirmed from fixture:** `representative_score`, `representative_raw`,
+  `score_suppressed` (not the shorthand `score`/`raw` in the WO doc).
+- **13 fixture contract tests** added to `tests/surface/test_sandbox_v2.py`: fixture served,
+  top-level keys, row count (52), all 6 methods present, field name guards, DN7 string-raw
+  check, neighborhood block, rows in each band.
+- **Accept gate passed** — all 6 method types render without throwing; single-basin fixture
+  loads and displays in the Signature accordion.
+- Band T not rendered (out of scope for WO2; T rows absent from single-basin fixture by design).
 
 **2026-07-02 (Step 0 skeleton)**
 

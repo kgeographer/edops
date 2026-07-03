@@ -222,6 +222,19 @@
   let currentScope = '';
   let map = null;
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function humanizeKey(k) {
+    return k.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function fmtNum(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    return String(v);
+  }
+
   // ── Band T toggle ─────────────────────────────────────────────────────────
   function updateBandT() {
     const tChecked = document.getElementById('v2-band-T').checked;
@@ -293,6 +306,167 @@
     }
 
     this.value = ''; // reset dropdown
+  });
+
+  // ── Fixture harness ───────────────────────────────────────────────────────
+  // Swap a FIXTURE_URLS value for the live route URL when that scope is wired.
+  const FIXTURE_URLS = {
+    single: '/dev/exemplars/01_single_basin_detail.json',
+    // buffer, ring, polity, draw: added as each scope's renderer is proven (Steps 3–6)
+  };
+
+  async function loadFixture(scope) {
+    const url = FIXTURE_URLS[scope];
+    if (!url) throw new Error(`No fixture registered for scope "${scope}"`);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Fixture fetch failed (${r.status}): ${url}`);
+    return r.json();
+  }
+
+  // ── Signature renderer ────────────────────────────────────────────────────
+  const BAND_ORDER  = ['A','B','C','D','E','T'];
+  const BAND_LABELS = {
+    A: 'Physiographic', B: 'Hydroclimatic', C: 'Bioclimatic',
+    D: 'Anthropocene',  E: 'Coastality',    T: 'Temporal',
+  };
+
+  function renderSignature(payload) {
+    const pane = document.getElementById('v2-pane-sig');
+
+    // Header from neighborhood block
+    const nb = payload.neighborhood || {};
+    let heading = nb.hybas_id
+      ? `Basin ${nb.hybas_id}`
+      : `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}`;
+    if (nb.level) heading += ` · L${String(nb.level).padStart(2,'0')}`;
+
+    // Group rows by band
+    const byBand = {};
+    for (const row of payload.rows || []) {
+      (byBand[row.band] = byBand[row.band] || []).push(row);
+    }
+
+    let html = `
+      <div class="d-flex justify-content-between align-items-baseline mb-2">
+        <h5 class="mb-0">${escapeHtml(heading)}</h5>
+        <span class="text-muted small">n=${nb.n_units ?? 1}</span>
+      </div>
+      <div class="accordion accordion-flush" id="v2-sig-accordion">`;
+
+    for (const band of BAND_ORDER) {
+      const rows = byBand[band];
+      if (!rows) continue;
+      const paneId = `v2-acc-${band}`;
+      html += `
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button py-1 px-2" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#${paneId}">
+              <span style="font-size:0.85rem;">Band ${band} — ${BAND_LABELS[band]}</span>
+              <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${rows.length}</span>
+            </button>
+          </h2>
+          <div id="${paneId}" class="accordion-collapse collapse show">
+            <div class="accordion-body p-0">
+              <table class="table table-sm mb-0" style="font-size:0.8rem;">
+                <tbody>${rows.map(renderRow).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+    pane.innerHTML = html;
+  }
+
+  function renderRow(row) {
+    return `<tr>
+      <td class="text-muted ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}</td>
+      <td>${renderLeaf(row)}</td>
+    </tr>`;
+  }
+
+  function renderLeaf(row) {
+    const score = row.representative_score;
+    const raw   = row.representative_raw;
+    const det   = row.detail || {};
+
+    switch (row.method) {
+
+      case 'area_weighted': {
+        const s = score !== null && score !== undefined
+          ? `${score.toFixed(1)}<span class="text-muted ms-1" style="font-size:0.75rem;">pct</span>`
+          : '—';
+        const coh = row.coherence
+          ? `<span class="text-muted ms-2" style="font-size:0.75rem;">${row.coherence}</span>`
+          : '';
+        // histogram widget slot — Step 2
+        return `${s}${coh} <span class="text-muted" style="font-size:0.72rem;">[hist]</span>`;
+      }
+
+      case 'dominant_basin': {
+        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const b = det.dominant_hybas_id
+          ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>`
+          : '';
+        return `${s}${r}${b}`;
+      }
+
+      case 'class_mixture': {
+        // representative_raw is a string label here — never format as number (DN7)
+        const lbl   = raw !== null ? escapeHtml(String(raw)) : '—';
+        const share = det.modal_share !== undefined
+          ? ` <span class="text-muted" style="font-size:0.75rem;">(${(det.modal_share*100).toFixed(0)}%)</span>`
+          : '';
+        return `${lbl}${share}`;
+      }
+
+      case 'flag_fraction': {
+        // raw is 0–1 fraction; detail is empty (DN10)
+        return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
+      }
+
+      case 'distribution_only': {
+        const p10 = det.p10 !== undefined ? det.p10.toFixed(1) : '—';
+        const p90 = det.p90 !== undefined ? det.p90.toFixed(1) : '—';
+        const note = row.score_suppressed
+          ? ` <span class="text-muted" style="font-size:0.72rem;">(score suppressed — bimodal)</span>`
+          : '';
+        return `p10 ${p10} – p90 ${p90}${note}`;
+      }
+
+      case 'extreme': {
+        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const b = det.dominant_hybas_id
+          ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>`
+          : '';
+        return `${s}${r}${b}`;
+      }
+
+      default:
+        return `<span class="text-muted" style="font-size:0.72rem;">[${escapeHtml(row.method)}]</span>`;
+    }
+  }
+
+  // ── Sig button click ──────────────────────────────────────────────────────
+  document.getElementById('v2-sig-btn').addEventListener('click', async () => {
+    if (!currentScope) return;
+    const sigTabBtn = document.getElementById('v2-tab-sig-btn');
+    try {
+      const payload = await loadFixture(currentScope);
+      renderSignature(payload);
+      sigTabBtn.classList.remove('disabled');
+      bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+      document.getElementById('v2-intro').style.display = 'none';
+    } catch (err) {
+      console.error('[v2] fixture load error:', err);
+      document.getElementById('v2-pane-sig').innerHTML =
+        `<p class="text-danger mt-3 ms-2">Could not load fixture: ${escapeHtml(err.message)}</p>`;
+      sigTabBtn.classList.remove('disabled');
+      bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+    }
   });
 
   // ── Map initialization ────────────────────────────────────────────────────
