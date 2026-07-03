@@ -220,6 +220,8 @@
 (() => {
   // ── State ─────────────────────────────────────────────────────────────────
   let currentScope = '';
+  let currentLat   = null;
+  let currentLon   = null;
   let map = null;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -289,6 +291,10 @@
 
     if (POINT_SCOPES.has(scope)) {
       document.getElementById('v2-place-input').value = parts[2]; // name
+      // parts[1] is "lat,lon" — store for live API calls
+      const coords = (parts[1] || '').split(',');
+      currentLat = coords[0] ? parseFloat(coords[0]) : null;
+      currentLon = coords[1] ? parseFloat(coords[1]) : null;
     }
     if (scope === 'buffer') {
       document.getElementById('v2-radius').value = parts[3] ?? 100;
@@ -543,24 +549,66 @@
     }
   }
 
+  // ── Build live URL for buffer scope ──────────────────────────────────────
+  function buildBufferUrl() {
+    const lat       = currentLat;
+    const lon       = currentLon;
+    const radius_km = parseFloat(document.getElementById('v2-radius').value);
+    if (lat == null || lon == null || isNaN(radius_km)) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'buffer', lat, lon, radius_km, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
   // ── Sig button click ──────────────────────────────────────────────────────
   document.getElementById('v2-sig-btn').addEventListener('click', async () => {
     if (!currentScope) return;
     const sigTabBtn = document.getElementById('v2-tab-sig-btn');
+    const pane      = document.getElementById('v2-pane-sig');
+
+    // Client-side Band T guard — fast-fail before any fetch
+    if ([...document.querySelectorAll('.v2-band-chk:checked')].map(cb => cb.value).includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (!fy || !ty) {
+        pane.innerHTML = `<p class="text-warning mt-3 ms-2">Band T requires a timespan — fill in <em>from</em> and <em>to</em> years.</p>`;
+        sigTabBtn.classList.remove('disabled');
+        bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+        return;
+      }
+    }
+
     try {
-      const payload = await loadFixture(currentScope);
-      // Sync controls to what the fixture actually represents (honest but non-functional)
-      if (currentScope === 'buffer' && payload.neighborhood?.radius_km != null) {
-        document.getElementById('v2-radius').value = payload.neighborhood.radius_km;
+      let payload;
+      if (currentScope === 'buffer') {
+        const url = buildBufferUrl();
+        if (!url) throw new Error('Buffer scope requires a resolved lat/lon and radius.');
+        const r = await fetch(url);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `Server error ${r.status}`);
+        }
+        payload = await r.json();
+      } else {
+        payload = await loadFixture(currentScope);
       }
       renderSignature(payload);
       sigTabBtn.classList.remove('disabled');
       bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
       document.getElementById('v2-intro').style.display = 'none';
     } catch (err) {
-      console.error('[v2] fixture load error:', err);
-      document.getElementById('v2-pane-sig').innerHTML =
-        `<p class="text-danger mt-3 ms-2">Could not load fixture: ${escapeHtml(err.message)}</p>`;
+      console.error('[v2] signature error:', err);
+      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
       sigTabBtn.classList.remove('disabled');
       bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     }

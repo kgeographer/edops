@@ -13,7 +13,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature_polygon
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
 
 from pathlib import Path
 import re
@@ -2972,5 +2972,86 @@ def area(
     }
     if "T" in requested and band_t_from is not None:
         payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+    return payload
+
+
+# -----------------------
+# /areas endpoint — type-dispatched areal signature (v2 sandbox)
+# -----------------------
+
+@router.get("/areas")
+def areas(
+    type: str,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    radius_km: Optional[float] = None,
+    level: int = 6,
+    bands: str = "ABCDE",
+    from_year: Optional[int] = None,
+    to_year: Optional[int] = None,
+    detail: bool = False,
+):
+    """Areal signature dispatcher for the v2 sandbox.
+
+    Parameters
+    ----------
+    type       : resolver type — currently 'buffer' (others deferred)
+    lat, lon   : WGS-84 query point (required for buffer)
+    radius_km  : buffer radius in km (required for buffer)
+    level      : basin hierarchy level — 6 or 8 (default 6)
+    bands      : band letters to compute (default ABCDE; add T for temporal)
+    from_year  : Band T span start CE (required when T in bands)
+    to_year    : Band T span end CE (required when T in bands)
+    detail     : include per-variable histogram objects in the response
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
+
+    requested = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    # Pass 1 — type-params
+    if type == "buffer":
+        missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=buffer requires: {', '.join(missing)}",
+            )
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported type '{type}'. Supported: buffer",
+        )
+
+    # Pass 2 — Band T span (cross-cutting)
+    if "T" in requested:
+        if from_year is None or to_year is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Band T requires a timespan (from_year, to_year)",
+            )
+
+    band_t_from = from_year if "T" in requested else None
+    band_t_to   = to_year   if "T" in requested else None
+
+    try:
+        conn = db_connect()
+        payload = areal_signature(
+            lat, lon, radius_km,
+            conn,
+            level=level,
+            bands=sorted(requested),
+            from_year=band_t_from,
+            to_year=band_t_to,
+            include_detail=detail,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
 
     return payload
