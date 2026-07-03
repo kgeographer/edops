@@ -213,11 +213,10 @@ class TestRenderer:
         page.wait_for_selector("#v2-sig-accordion")
         expect(page.locator("#v2-intro")).to_be_hidden()
 
-    def test_hist_slot_present(self, page: Page, live_server_url):
-        """area_weighted rows should carry the [hist] placeholder slot."""
+    def test_histogram_widget_present(self, page: Page, live_server_url):
+        """area_weighted rows should render SVG histogram widgets (not the [hist] placeholder)."""
         goto(page, live_server_url)
         select_scope(page, "single")
         page.click("#v2-sig-btn")
         page.wait_for_selector("#v2-sig-accordion")
-        hist_slots = page.locator("text=[hist]")
-        assert hist_slots.count() > 0
+        assert page.locator("#v2-sig-accordion svg").count() > 0
