@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-03 (Playwright set up; 263/263 tests)
+- **Last updated:** 2026-07-03 (WO3 complete; 263/263 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -63,9 +63,14 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 **State/renderer model:** `docs/edop/surface/surface_state-analysis.md`.
 
 **Playwright browser tests complete** — 22 UI state tests in `tests/surface/test_sandbox_v2_ui.py`;
-live server fixture in `tests/surface/conftest.py`. Total: 263/263 tests pass.
+live server fixture in `tests/surface/conftest.py`.
 
-**Next: WO3 = Step 2** (leaf widget polish: histogram, coherence badge, range-bar, mixture bar).
+**WO3 (Step 2 leaf widgets) complete** — buffer scope live; B1 histogram (weighted SVG, native-unit
+axis); B2 coherence badge (concentrated/spread/null); B3 range-bar (p10–p90 + regime marks);
+B4 mixture bar (modal label + proportion fill). Findings F3.1–F3.4; 263/263 tests pass.
+Per-WO branch pattern established: `surf_wo3` merged back to `surface`.
+
+**Next: WO4** (per Opus spec; Karl feeds findings to Opus after break).
 
 ---
 
@@ -78,7 +83,7 @@ live server fixture in `tests/surface/conftest.py`. Total: 263/263 tests pass.
 | New sandbox page — Step 0 skeleton | `sandbox_v2.html` at `/sandbox/lookup2`; scope gate + Band T toggle; Level L06 fixed; 5 scopes; 4 examples; 40 tests. | **complete** |
 | New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **complete — WO2** |
 | Playwright setup | Browser-automation test harness for JS state tests (scope gate, T toggle, renderer output). Karl evaluated and confirmed. | **complete** |
-| New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | **next — WO3** |
+| New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | **complete — WO3** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -115,6 +120,29 @@ live server fixture in `tests/surface/conftest.py`. Total: 263/263 tests pass.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-03 (WO3 — leaf widgets)**
+
+- **Native-unit histogram axis** — bins are native values, not global percentiles. Fixed
+  0–100 domain dropped. Each histogram has its own x-scale; cross-variable visual comparison
+  is intentionally foreclosed (shape within a variable is the read; score handles global rank).
+  Forward: Band T reuses the same `renderHistogram` function with native units.
+- **Histogram trigger on method, not null-check (DN9)** — `renderHistogram` called inside
+  `area_weighted` case only; safe-returns empty string if distribution data absent.
+- **`detail.classes` null for all resolver types** — minority class breakdown unavailable
+  from the engine. Mixture bar shows modal label + proportion fill only. Engine gap logged in
+  deferred register; surface display deferred pending engine change.
+- **Modality trigger is `regimes !== null`**, not `modality === 'two_regime'` — fixture shows
+  `modality: null` even for bimodal rows; regime marks drawn when `det.regimes` is non-null.
+- **Per-WO branch pattern** — `surf_wo3` branched from `surface`, merged back on accept gate.
+  Pattern: `surf_wo{n}` → feature work → merge to `surface` at WO close.
+- **n=1 cross-unit widget suppression** — histogram and coherence badge should render nothing
+  when `n_units === 1` (no spread to show). Deferred to polish pass; rule generalises to all
+  cross-unit widgets.
+- **Per-variable direction metadata needed** — aridity is humidity-positive (low score = dry),
+  exposing a semantic-inversion class of error present across multiple variables. Surface needs
+  a direction annotation read from the variable catalog, not per-variable hardcoding. Catalog
+  audit and `direction_note` column are the action item (F3.3).
 
 **2026-07-03 (Playwright setup)**
 

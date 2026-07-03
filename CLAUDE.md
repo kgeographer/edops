@@ -99,7 +99,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** Playwright complete (22 browser tests); next: WO3 (Step 2 leaf widgets).
+**Surface — current step:** WO3 complete (B1–B4 leaf widgets); next: WO4.
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -110,6 +110,9 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   `renderSignature` → band accordion; `renderLeaf` 6-method dispatch; accept gate passed
 - Field names in fixture: `representative_score`, `representative_raw`, `score_suppressed`
 - 75 tests in `tests/surface/` (53 structural/contract + 22 Playwright browser); 263 total
+- **WO3 (Step 2 leaf widgets) complete** — buffer scope live; B1 histogram; B2 coherence badge;
+  B3 range-bar + regime marks; B4 mixture bar. Findings F3.1–F3.4 in `wo3_findings.md`.
+- Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
 
