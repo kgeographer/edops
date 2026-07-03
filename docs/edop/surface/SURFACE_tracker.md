@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-02 (WO2 rows-renderer complete; 241/241 tests)
+- **Last updated:** 2026-07-03 (Playwright set up; 263/263 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -62,7 +62,10 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 **Build workflow established:** `docs/edop/surface/surface_workflow_opus.md`.
 **State/renderer model:** `docs/edop/surface/surface_state-analysis.md`.
 
-**Next: WO2 = Step 1** (rows-renderer, single-basin atomic fixture).
+**Playwright browser tests complete** — 22 UI state tests in `tests/surface/test_sandbox_v2_ui.py`;
+live server fixture in `tests/surface/conftest.py`. Total: 263/263 tests pass.
+
+**Next: WO3 = Step 2** (leaf widget polish: histogram, coherence badge, range-bar, mixture bar).
 
 ---
 
@@ -74,8 +77,8 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 | WO1 — exemplar payload inspection | Capture + inspect real payload dumps for all five query scopes (single-basin, buffer, polity+Band T, basin-ring, polygon). Ground truth for page design decisions. | **complete** — F1.1–F1.13; TODOs fixed |
 | New sandbox page — Step 0 skeleton | `sandbox_v2.html` at `/sandbox/lookup2`; scope gate + Band T toggle; Level L06 fixed; 5 scopes; 4 examples; 40 tests. | **complete** |
 | New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **complete — WO2** |
-| Playwright setup | Browser-automation test harness for JS state tests (scope gate, T toggle, renderer output). Karl evaluated and confirmed. | **next** |
-| New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | pending |
+| Playwright setup | Browser-automation test harness for JS state tests (scope gate, T toggle, renderer output). Karl evaluated and confirmed. | **complete** |
+| New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | **next — WO3** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -112,6 +115,17 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-03 (Playwright setup)**
+
+- **Playwright** — `pytest-playwright` confirmed as the browser-automation layer for JS
+  state tests. `tests/surface/conftest.py` provides a session-scoped `live_server_url`
+  fixture (uvicorn daemon thread on port 8765; health-check poll before yielding).
+  `tests/surface/test_sandbox_v2_ui.py` — 22 tests across 5 classes: initial state (6),
+  scope gate (6), Band T toggle (2), example pre-fill (4), renderer (4).
+  Playwright `page` fixture is function-scoped (fresh browser page per test).
+  Class-token matching uses `re.compile(r"\bdisabled\b")` — `to_have_class` with a plain
+  string checks the whole attribute, not a token.
 
 **2026-07-02 (WO2 — rows-renderer)**
 

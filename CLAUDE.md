@@ -94,12 +94,12 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-241 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py` + 53 surface `tests/surface/`).
+263 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 108 app incl. `tests/test_area.py` + 75 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** Playwright setup, then WO3 (Step 2 leaf widgets).
+**Surface — current step:** Playwright complete (22 browser tests); next: WO3 (Step 2 leaf widgets).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -109,7 +109,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 - **WO2 (Step 1 rows-renderer) complete** — fixture harness (`/dev/exemplars/` static mount);
   `renderSignature` → band accordion; `renderLeaf` 6-method dispatch; accept gate passed
 - Field names in fixture: `representative_score`, `representative_raw`, `score_suppressed`
-- 53 tests in `tests/surface/` (structural + fixture contract); 241 total
+- 75 tests in `tests/surface/` (53 structural/contract + 22 Playwright browser); 263 total
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
 
