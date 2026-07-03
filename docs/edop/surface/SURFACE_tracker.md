@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-02 (WO1 complete; all TODOs fixed; 80/80 engine tests)
+- **Last updated:** 2026-07-02 (Step 0 skeleton complete; 228/228 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -55,7 +55,14 @@ Phase opened 2026-06-30. Engine is whole: four entry points, five resolvers, all
 `row["distribution"]` field removed, basin-ring key contract); 80/80 engine tests pass.
 Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10).
 
-**Next: new sandbox page spec** (Karl working with Opus; fresh session).
+**Step 0 (skeleton) complete** — `app/templates/sandbox_v2.html` at `/sandbox/lookup2`
+(not linked from anywhere); scope gate + Band T toggle JS; Level fixed L06; 5-scope dropdown;
+4 exemplar examples; 40 structural tests in `tests/surface/test_sandbox_v2.py`.
+
+**Build workflow established:** `docs/edop/surface/surface_workflow_opus.md`.
+**State/renderer model:** `docs/edop/surface/surface_state-analysis.md`.
+
+**Next: WO2 = Step 1** (rows-renderer, single-basin atomic fixture).
 
 ---
 
@@ -65,7 +72,8 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 |---|---|---|
 | Sandbox capability-gap analysis | Inventory: what the engine now offers that no UI exposes; what `sandbox.html` currently exposes; the delta; and whether the existing markup can absorb the new elements or forces a new page. | **complete** — see SF.1 |
 | WO1 — exemplar payload inspection | Capture + inspect real payload dumps for all five query scopes (single-basin, buffer, polity+Band T, basin-ring, polygon). Ground truth for page design decisions. | **complete** — F1.1–F1.13; TODOs fixed |
-| New sandbox page spec | Spec for a fresh page exercising the engine end to end: point-rooted queries (buffer, single-basin) AND polity path. Lean + `&detail`. Both temporal axes as distinct controls. Histogram widget. Polity boundary overlay on map. Depends on WO1 complete. | **next** |
+| New sandbox page — Step 0 skeleton | `sandbox_v2.html` at `/sandbox/lookup2`; scope gate + Band T toggle; Level L06 fixed; 5 scopes; 4 examples; 40 tests. | **complete** |
+| New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **next — WO2** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -102,6 +110,22 @@ Design notes for UI work in `docs/edop/surface/wo1_design-notes.md` (DN1–DN10)
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-02 (Step 0 skeleton)**
+
+- **`sandbox_v2.html` / `/sandbox/lookup2`** — template name and route established. Not
+  linked from anywhere (same pattern as `cliopatria.html`). No nav cross-links to existing
+  pages. Revisit linking once the page is meaningfully functional.
+- **Level fixed L06** — no level toggle on the new page (unlike the existing Lookup). Basin
+  resolution for areal scopes operates at L06 throughout. This may be revisited if a use case
+  for L08 areal signatures emerges; for now L06 is locked.
+- **5-scope dropdown order** — Single basin → Buffer → Basin ring → Polity → Draw a study area.
+  Order reflects build sequence (simpler/point-rooted first). Locked unless user research says otherwise.
+- **`tests/surface/`** — path for all surface UI structural tests. Uses FastAPI TestClient +
+  BeautifulSoup (same pattern as app suite). Browser-automation tests (Playwright) deferred;
+  Karl evaluating. Surface tests run as part of the full `python -m pytest tests/` suite.
+- **`pages.py` TemplateResponse signature** — updated to new Starlette API
+  (`TemplateResponse(request, name)`) via `_render()` helper; removes deprecation warning.
 
 **2026-06-30 (phase open)**
 

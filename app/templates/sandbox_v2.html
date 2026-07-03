@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EDOPS Sandbox v2</title>
+  <link rel="stylesheet" href="/static/css/site.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    body { font-size: 1rem; }
+    #left-col { position: sticky; top: 1rem; }
+    #v2-band-checks .form-check { margin-bottom: 0; }
+    #v2-band-checks .form-check-label { font-size: 0.8rem; }
+    .param-row label { font-size: 0.8rem; color: #666; }
+    .scope-extra { display: none; }
+  </style>
+</head>
+<body>
+
+<header class="mb-2">
+  <h4 class="d-flex align-items-center justify-content-between py-2 border-bottom">
+    <span>
+      <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height:48px;" class="me-2"></a>
+      <a href="/edops" class="text-decoration-none text-reset">EDOPS</a>
+      <span class="mx-1 text-muted">Sandbox v2</span>
+    </span>
+    <span class="badge bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">EDOPS v0.3</span>
+  </h4>
+</header>
+
+<div class="container-fluid px-3">
+  <div class="row g-3">
+
+    <!-- ===================== LEFT COLUMN ===================== -->
+    <div class="col-md-4" id="left-col">
+
+      <div class="card mb-2">
+        <div class="card-body p-2">
+
+          <!-- Place input (point-rooted scopes) -->
+          <div id="v2-point-section">
+            <div class="input-group input-group-sm mb-2">
+              <input type="text" id="v2-place-input" class="form-control"
+                     placeholder="Enter name or lat, lon">
+              <button class="btn btn-outline-primary" id="v2-resolve-btn">Resolve</button>
+            </div>
+          </div>
+
+          <!-- OR examples -->
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
+            <select id="v2-example-select" class="form-select form-select-sm text-muted">
+              <option value="">Load an example</option>
+              <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
+              <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
+              <option value="ring|16.8167,-2.9833|Timbuktu">Timbuktu — basin ring</option>
+              <option value="polity|Northern Song|1000|1000|1100">Northern Song (1000–1100 CE)</option>
+            </select>
+          </div>
+
+          <!-- Level (fixed L06) + Signature Bands -->
+          <div class="d-flex gap-2 align-items-start mb-2">
+            <div style="flex: 0 0 auto;">
+              <label class="form-label mb-0" style="font-size: 0.9rem;">Level</label>
+              <div class="badge bg-secondary mt-1" style="font-size: 0.85rem;">06</div>
+            </div>
+            <div style="flex: 1 1 auto;">
+              <label class="form-label mb-0" style="font-size: 0.9rem;">Signature Bands</label>
+              <div id="v2-band-checks" class="d-flex flex-wrap gap-2 mt-1 ps-1"
+                   style="background-color: aliceblue; padding: 4px; border-radius: 4px;">
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-A" value="A" checked>
+                  <label class="form-check-label" for="v2-band-A" title="Physiographic">A</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-B" value="B" checked>
+                  <label class="form-check-label" for="v2-band-B" title="Hydroclimatic">B</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-C" value="C" checked>
+                  <label class="form-check-label" for="v2-band-C" title="Bioclimatic">C</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-D" value="D" checked>
+                  <label class="form-check-label" for="v2-band-D" title="Anthropocene">D</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-E" value="E" checked>
+                  <label class="form-check-label" for="v2-band-E" title="Coastality">E</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-T" value="T">
+                  <label class="form-check-label" for="v2-band-T" title="Temporal">T</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Band T year range (shown when T checked) -->
+          <div id="v2-t-year-row" class="d-none mb-2">
+            <div class="d-flex gap-1 align-items-center">
+              <label class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Band T:</label>
+              <input type="number" id="v2-from-year" class="form-control form-control-sm"
+                     style="width: 80px;" placeholder="from" min="-10000" max="2023">
+              <span class="text-muted small">–</span>
+              <input type="number" id="v2-to-year" class="form-control form-control-sm"
+                     style="width: 80px;" placeholder="to" min="-10000" max="2023">
+            </div>
+          </div>
+
+          <!-- Scope dropdown -->
+          <div class="mb-2">
+            <select id="v2-scope-select" class="form-select form-select-sm">
+              <option value="">Select a scope</option>
+              <option value="single">Single basin</option>
+              <option value="buffer">Buffer</option>
+              <option value="ring">Basin ring</option>
+              <option value="polity">Polity</option>
+              <option value="draw">Draw a study area</option>
+            </select>
+          </div>
+
+          <!-- Scope-specific extras (shown/hidden by scope gate) -->
+
+          <!-- Buffer: radius -->
+          <div id="scope-extra-buffer" class="scope-extra mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <label class="text-muted small" style="white-space: nowrap;">Radius (km)</label>
+              <input type="number" id="v2-radius" class="form-control form-control-sm"
+                     style="width: 90px;" value="100" min="1" max="2000">
+            </div>
+          </div>
+
+          <!-- Polity: search + resolver year -->
+          <div id="scope-extra-polity" class="scope-extra mb-2">
+            <div class="input-group input-group-sm mb-1">
+              <input type="text" id="v2-polity-input" class="form-control"
+                     placeholder="Search polities…">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label class="text-muted small" style="white-space: nowrap;">Boundary year</label>
+              <input type="number" id="v2-resolver-year" class="form-control form-control-sm"
+                     style="width: 90px;" placeholder="year">
+            </div>
+          </div>
+
+          <!-- Draw: placeholder -->
+          <div id="scope-extra-draw" class="scope-extra mb-2">
+            <p class="text-muted small mb-0">Draw a rectangle on the map to define the study area.</p>
+          </div>
+
+          <!-- Get signature -->
+          <button class="btn btn-success btn-sm w-100" id="v2-sig-btn" disabled>
+            Get signature
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Intro text (visible on load; replaced once signature loads) -->
+      <div id="v2-intro" class="text-muted small px-1 mt-1">
+        <p><strong>EDOPS Signatures</strong> deliver multi-band environmental profiles for any
+        point or area on Earth, drawn from global datasets covering hydrology, climate, terrain,
+        ecoregion, and historical land use.</p>
+        <p>Select a scope, enter a location, choose bands, and click
+        <strong>Get signature</strong>.</p>
+      </div>
+
+    </div><!-- /left col -->
+
+    <!-- ===================== RIGHT COLUMN ===================== -->
+    <div class="col-md-8">
+
+      <ul class="nav nav-tabs mb-2" id="v2TabList" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="v2-tab-map-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-map" type="button" role="tab">Map</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v2-tab-sig-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-sig" type="button" role="tab">Signature</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v2-tab-analysis-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-analysis" type="button" role="tab">Analysis</button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+
+        <!-- Map pane -->
+        <div class="tab-pane fade show active" id="v2-pane-map" role="tabpanel">
+          <div id="v2-map" style="height: 500px; border-radius: 6px;"></div>
+        </div>
+
+        <!-- Signature pane -->
+        <div class="tab-pane fade" id="v2-pane-sig" role="tabpanel">
+          <p class="text-muted mt-3">Run <strong>Get signature</strong> to see the environmental profile.</p>
+        </div>
+
+        <!-- Analysis pane -->
+        <div class="tab-pane fade" id="v2-pane-analysis" role="tabpanel">
+          <p class="text-muted mt-3">Run <strong>Get signature</strong> to populate analysis.</p>
+        </div>
+
+      </div>
+    </div><!-- /right col -->
+
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(() => {
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentScope = '';
+  let map = null;
+
+  // ── Band T toggle ─────────────────────────────────────────────────────────
+  function updateBandT() {
+    const tChecked = document.getElementById('v2-band-T').checked;
+    document.getElementById('v2-t-year-row').classList.toggle('d-none', !tChecked);
+  }
+
+  document.querySelectorAll('.v2-band-chk').forEach(cb => {
+    cb.addEventListener('change', updateBandT);
+  });
+
+  // ── Scope gate ────────────────────────────────────────────────────────────
+  const POINT_SCOPES = new Set(['single', 'buffer', 'ring']);
+  const POLITY_SCOPE = 'polity';
+  const DRAW_SCOPE   = 'draw';
+
+  function applyScope(scope) {
+    currentScope = scope;
+
+    // Point input: visible for point-rooted scopes
+    document.getElementById('v2-point-section').style.display =
+      POINT_SCOPES.has(scope) ? '' : 'none';
+
+    // Scope extras: show only the matching one
+    document.querySelectorAll('.scope-extra').forEach(el => {
+      el.style.display = 'none';
+    });
+    if (scope === 'buffer')     document.getElementById('scope-extra-buffer').style.display = 'block';
+    if (scope === POLITY_SCOPE) document.getElementById('scope-extra-polity').style.display = 'block';
+    if (scope === DRAW_SCOPE)   document.getElementById('scope-extra-draw').style.display = 'block';
+
+    updateSigButton();
+  }
+
+  document.getElementById('v2-scope-select').addEventListener('change', function () {
+    applyScope(this.value);
+  });
+
+  // ── Sig button enable logic (Step 0: scope must be selected) ──────────────
+  function updateSigButton() {
+    document.getElementById('v2-sig-btn').disabled = !currentScope;
+  }
+
+  // ── Example handler ───────────────────────────────────────────────────────
+  document.getElementById('v2-example-select').addEventListener('change', function () {
+    if (!this.value) return;
+    const parts = this.value.split('|');
+    const scope = parts[0];
+
+    // Set scope dropdown and trigger gate
+    document.getElementById('v2-scope-select').value = scope;
+    applyScope(scope);
+
+    if (POINT_SCOPES.has(scope)) {
+      document.getElementById('v2-place-input').value = parts[2]; // name
+    }
+    if (scope === 'buffer') {
+      document.getElementById('v2-radius').value = parts[3] ?? 100;
+    }
+    if (scope === POLITY_SCOPE) {
+      document.getElementById('v2-polity-input').value = parts[1];
+      document.getElementById('v2-resolver-year').value = parts[2] ?? '';
+      // Pre-fill Band T if from/to provided
+      if (parts[3] && parts[4]) {
+        document.getElementById('v2-band-T').checked = true;
+        document.getElementById('v2-from-year').value = parts[3];
+        document.getElementById('v2-to-year').value   = parts[4];
+        updateBandT();
+      }
+    }
+
+    this.value = ''; // reset dropdown
+  });
+
+  // ── Map initialization ────────────────────────────────────────────────────
+  map = L.map('v2-map').setView([20, 10], 2);
+  L.tileLayer('https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg', {
+    maxZoom: 12, opacity: 1.0,
+    attribution: 'Hillshade: &copy; OpenStreetMap US',
+  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, opacity: 0.50,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+
+  document.getElementById('v2-tab-map-btn').addEventListener('shown.bs.tab', () => {
+    map.invalidateSize();
+  });
+
+  window.v2map = map; // dev: expose for console inspection
+
+})();
+</script>
+</body>
+</html>

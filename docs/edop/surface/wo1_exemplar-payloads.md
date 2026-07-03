@@ -1,6 +1,6 @@
 # WO — Exemplar payload capture (Surface phase)
 
-**Branch:** `engine_v0.4b`
+**Branch:** `surface`
 **Phase:** Surface · **Sub-phase:** page design (pre-build)
 **Type:** capture/inspection, not an engine change. No new engine logic; call existing entry
 points and persist their output for joint review.
