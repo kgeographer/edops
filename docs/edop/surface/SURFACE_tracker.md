@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-04 (WO7 complete; 313/313 tests)
+- **Last updated:** 2026-07-04 (WO8 complete; 313/313 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -91,8 +91,14 @@ targetYear to preserve the requested year (F7.3). Three UX polish items: accordi
 A–E collapsed / T open; map tab switches on polity change; spinner on signature load.
 Findings F7.1–F7.5 in `wo7_findings.md`. 291 non-Playwright + 22 Playwright = **313 total tests pass**.
 
-**Next: WO8** — TBD. Discuss with Opus. Candidates: ring scope live; map boundary paint;
-HYDE dense-epoch UI compensation (F7.5).
+**WO8 (MapLibre stack + layer shell) complete** — Leaflet replaced with MapLibre GL JS on v2
+page only; layer-management shell (`add`/`remove`/`restyle`/`clear`) established; polity
+boundary outline reproduced via shell as acceptance proof. GeoJSON sources for low-cardinality
+scopes; PMTiles deferred to polity choropleth. `map.invalidateSize()` → `map.resize()`.
+Findings F8.1–F8.3 in `wo8_findings.md`. 313/313 tests pass (no changes needed).
+
+**Next: WO9** — TBD. Discuss with Opus. Candidates: single-basin scope on map (WO-b);
+basin-ring scope live; HYDE dense-epoch UI compensation (F7.5).
 
 ---
 
@@ -110,6 +116,7 @@ HYDE dense-epoch UI compensation (F7.5).
 | Polity fixture + Band T charts | Northern Song fixture-wired; LMR time marginal + slider + value marginal; HYDE epoch table; eVolv2k events. | **complete — WO5** |
 | Polity scope live | `type=polity` in `/api/areas`; Northern Song wired to live DB call; equivalence confirmed. | **complete — WO6** |
 | Arbitrary polity search | Polity search field → `/api/polity/search` → slice picker → live sig call for any polity. | **complete — WO7** |
+| MapLibre stack + layer shell | Leaflet → MapLibre on v2; layer-management shell; polity outline via shell as proof. | **complete — WO8** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -146,6 +153,19 @@ HYDE dense-epoch UI compensation (F7.5).
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-04 (WO8 — MapLibre stack + layer shell)**
+
+- **Leaflet → MapLibre GL JS** on v2 page only; `sandbox.html` (Lookup) keeps Leaflet.
+- **Layer shell** (`add`/`remove`/`restyle`/`clear`) — named layers, each = one MapLibre
+  source + one or more layer specs. All future map WOs call the shell; no scope knows about
+  `map.addSource` / `map.addLayer` directly.
+- **GeoJSON sources for low-cardinality scopes** (single basin, ring, polity outline).
+  PMTiles deferred to polity choropleth (WO-e), where vector-tile performance is actually
+  needed. Shell accepts either source type without branching — no restructuring required at WO-e.
+- **`_polityLayer` retired** — `drawPolityBoundary` now calls `shell.add('polity-boundary', ...)`
+  and `geojsonBbox` for fit-bounds. Slice changes auto-remove the old layer via shell idempotency.
+- No test changes needed; no Playwright assertions were Leaflet-specific.
 
 **2026-07-04 (WO7 — arbitrary polity search)**
 
