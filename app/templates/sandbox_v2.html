@@ -581,10 +581,11 @@
   }
 
   // ── Band T — full accordion body ──────────────────────────────────────────
-  const LMR_VARS   = ['lmr_pdsi', 'lmr_air', 'lmr_prate'];
-  const HYDE_VARS  = ['hyde_cropland', 'hyde_grazing', 'hyde_pasture', 'hyde_rangeland'];
-  const LMR_LABELS = { lmr_pdsi: 'PDSI (drought index)', lmr_air: 'Temperature anomaly', lmr_prate: 'Precipitation' };
-  const HYDE_LABELS = { hyde_cropland: 'Cropland', hyde_grazing: 'Grazing', hyde_pasture: 'Pasture', hyde_rangeland: 'Rangeland' };
+  const LMR_VARS       = ['lmr_pdsi', 'lmr_air', 'lmr_prate'];
+  const HYDE_VARS      = ['hyde_cropland', 'hyde_grazing', 'hyde_pasture', 'hyde_rangeland'];
+  const LMR_LABELS     = { lmr_pdsi: 'PDSI (drought index)', lmr_air: 'Temperature anomaly', lmr_prate: 'Precipitation' };
+  const HYDE_LABELS    = { hyde_cropland: 'Cropland', hyde_grazing: 'Grazing', hyde_pasture: 'Pasture', hyde_rangeland: 'Rangeland' };
+  const VSSI_THRESHOLD = 5; // Tg S — events below this rarely have detectible hemispheric climate impact
 
   function renderTBand(rows) {
     const byVar = {};
@@ -649,13 +650,34 @@
 
     // eVolv2k
     if (byVar['evolv2k_vssi']) {
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">eVolv2k volcanic events</div>
+      const allEvolv  = byVar['evolv2k_vssi'];
+      const sigEvolv  = allEvolv.filter(r => (r.representative_raw ?? 0) >= VSSI_THRESHOLD);
+      const minorEvolv = allEvolv.filter(r => (r.representative_raw ?? 0) < VSSI_THRESHOLD);
+      const shown     = sigEvolv.length > 0 ? sigEvolv : allEvolv; // show all if none meet threshold
+      const showToggle = minorEvolv.length > 0 && sigEvolv.length > 0;
+      const toggleLink = showToggle
+        ? ` <a href="#" style="font-weight:normal;font-size:0.7rem;"
+               onclick="(function(el){var tb=document.getElementById('v2-evolv-minor');var hidden=tb.style.display==='none';tb.style.display=hidden?'':'none';el.textContent=hidden?'show fewer':'show all ${allEvolv.length}'})(this);return false"
+            >show all ${allEvolv.length}</a>`
+        : '';
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">
+        eVolv2k volcanic events — ${shown.length}${showToggle ? ` &ge; ${VSSI_THRESHOLD} Tg S` : ''}${toggleLink}
+      </div>
         <table class="table table-sm mb-0" style="font-size:0.78rem;">
-          <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead><tbody>`;
-      for (const r of byVar['evolv2k_vssi']) {
+          <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead>
+          <tbody>`;
+      for (const r of shown) {
         html += `<tr><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
       }
-      html += `</tbody></table>`;
+      html += `</tbody>`;
+      if (showToggle) {
+        html += `<tbody id="v2-evolv-minor" style="display:none;">`;
+        for (const r of minorEvolv) {
+          html += `<tr style="color:#999;"><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
+        }
+        html += `</tbody>`;
+      }
+      html += `</table>`;
     }
 
     return html + `</div>`;
