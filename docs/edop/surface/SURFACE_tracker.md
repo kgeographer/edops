@@ -70,7 +70,17 @@ axis); B2 coherence badge (concentrated/spread/null); B3 range-bar (p10–p90 + 
 B4 mixture bar (modal label + proportion fill). Findings F3.1–F3.4; 263/263 tests pass.
 Per-WO branch pattern established: `surf_wo3` merged back to `surface`.
 
-**Next: WO4** (per Opus spec; Karl feeds findings to Opus after break).
+**WO4 (`/api/areas` + buffer live) complete** — `GET /api/areas?type=buffer` wired; two-pass
+validation; buffer scope on sandbox_v2 makes live DB calls. Accept-gate equivalence tests
+(live vs `02_buffer_detail.json` fixture) pass; 271/271 tests pass (excl. Playwright).
+
+**WO5 (polity fixture + Band T charts) complete** — Northern Song example wired to polity
+fixture; Band T accordion renders LMR time marginal (mean + p10–p90 envelope) + per-variable
+year slider → value marginal histogram; HYDE epoch table; eVolv2k event list. A–E unchanged.
+Findings F5.1–F5.5 in `wo5_findings.md`; 271 non-Playwright + 22 Playwright = 293 total.
+
+**Next: WO6** — polity scope live (add `type=polity` to `/api/areas`; wire polity search +
+slice picker in the page; replace fixture with live call).
 
 ---
 
@@ -84,6 +94,8 @@ Per-WO branch pattern established: `surf_wo3` merged back to `surface`.
 | New sandbox page — Step 1 rows-renderer | Atomic rows-renderer against single-basin exemplar fixture; all 6 method leaves render something before any are made nice. | **complete — WO2** |
 | Playwright setup | Browser-automation test harness for JS state tests (scope gate, T toggle, renderer output). Karl evaluated and confirmed. | **complete** |
 | New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | **complete — WO3** |
+| `/api/areas` + buffer live | New type-dispatched route; buffer scope live with accept-gate equivalence test. | **complete — WO4** |
+| Polity fixture + Band T charts | Northern Song fixture-wired; LMR time marginal + slider + value marginal; HYDE epoch table; eVolv2k events. | **complete — WO5** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -120,6 +132,35 @@ Per-WO branch pattern established: `surf_wo3` merged back to `surface`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-03 (WO5 — polity fixture + Band T charts)**
+
+- **Band T visualization for LMR**: time marginal (mean line + p10–p90 envelope SVG) +
+  per-variable year slider → value marginal histogram. Built directly from per-year row
+  structure (`detail.distribution` in each T row). Raw-dump stage skipped — design was
+  clear from fixture inspection.
+- **Band T is a span, not a snapshot** (F5.1) — confirmed from fixture. LMR: 101 rows/var;
+  HYDE: 2 epoch rows/var; eVolv2k: 9 discrete events. No engine change needed for the
+  span case.
+- **HYDE epoch table** — two data points; blocky-bar treatment deferred; table stays.
+- **eVolv2k event list** — year + VSSI (Tg S); discrete events, not a distribution.
+- **Polity scope fixture-only** — Northern Song example wired to `03_polity_nsong_detail.json`.
+  Live polity call (`/api/areas?type=polity`) deferred to WO6.
+- **Map: no action in WO5** — polity boundary overlay on map is a later step.
+- **What a map would need** (F5.4) — per-unit values at a specific year, not an aggregate.
+  A separate endpoint scoped to a polity; add to deferred register when map step is planned.
+
+**2026-07-03 (WO4 — `/api/areas` + buffer live)**
+
+- **`GET /api/areas`** — type-dispatched front door over area resolvers. `type=buffer` only
+  in WO4 (others 422). Two-pass validation: type-params first, Band T span second.
+  Serialize unmodified — no transform in the route.
+- **`/api/area` untouched** — live route serving the existing three pages; never aliased,
+  folded, or deprecated within Surface work. `/api/areas` is a new route alongside it.
+- **Accept-gate equivalence test** — `TestFixtureEquivalence` in `tests/test_areas.py`
+  loads `02_buffer_detail.json` and diffs against the live response: variable list, method
+  per variable, band per variable, scores within 0.5 pct, neighborhood n_units/unit_type.
+- **Polity scope** — deferred in WO4; live polity path belongs in WO6.
 
 **2026-07-03 (WO3 — leaf widgets)**
 

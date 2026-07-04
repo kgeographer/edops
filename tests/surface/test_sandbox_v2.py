@@ -78,6 +78,7 @@ BANDS_CHECKED_ON_LOAD   = ["A", "B", "C", "D", "E"]
 BANDS_UNCHECKED_ON_LOAD = ["T"]
 
 SINGLE_BASIN_FIXTURE = "/dev/exemplars/01_single_basin_detail.json"
+POLITY_FIXTURE       = "/dev/exemplars/03_polity_nsong_detail.json"
 EXPECTED_METHODS = {"area_weighted", "dominant_basin", "class_mixture",
                     "flag_fraction", "distribution_only", "extreme"}
 
@@ -226,6 +227,60 @@ class TestFixtureHarness:
     def test_rows_in_band(self, fixture_json, band):
         rows_in_band = [r for r in fixture_json["rows"] if r["band"] == band]
         assert len(rows_in_band) > 0, f"No rows in band {band}"
+
+
+class TestPolityFixtureContract:
+    """Contract tests for 03_polity_nsong_detail.json — guards the T-band renderer."""
+
+    @pytest.fixture(scope="class")
+    def polity_json(self, client):
+        r = client.get(POLITY_FIXTURE)
+        if r.status_code != 200:
+            pytest.skip("Polity fixture not available (output/edop/surface/exemplars/)")
+        return r.json()
+
+    def test_fixture_served(self, client):
+        r = client.get(POLITY_FIXTURE)
+        if r.status_code != 200:
+            pytest.skip("Polity fixture not available")
+        assert "application/json" in r.headers["content-type"]
+
+    def test_top_level_keys(self, polity_json):
+        assert {"rows", "neighborhood", "bands", "shortfall"} <= set(polity_json.keys())
+
+    def test_total_row_count(self, polity_json):
+        assert len(polity_json["rows"]) == 372
+
+    def test_band_t_present(self, polity_json):
+        t_rows = [r for r in polity_json["rows"] if r.get("band") == "T"]
+        assert len(t_rows) == 320
+
+    def test_lmr_variables_present(self, polity_json):
+        t_vars = {r["variable"] for r in polity_json["rows"] if r.get("band") == "T"}
+        for v in ("lmr_pdsi", "lmr_air", "lmr_prate"):
+            assert v in t_vars, f"Missing LMR variable: {v}"
+
+    def test_hyde_variables_present(self, polity_json):
+        t_vars = {r["variable"] for r in polity_json["rows"] if r.get("band") == "T"}
+        for v in ("hyde_cropland", "hyde_grazing", "hyde_pasture", "hyde_rangeland"):
+            assert v in t_vars, f"Missing HYDE variable: {v}"
+
+    def test_evolv2k_present(self, polity_json):
+        t_vars = {r["variable"] for r in polity_json["rows"] if r.get("band") == "T"}
+        assert "evolv2k_vssi" in t_vars
+
+    def test_lmr_rows_have_year(self, polity_json):
+        lmr = [r for r in polity_json["rows"] if r.get("variable") == "lmr_pdsi"]
+        assert all(r.get("year") is not None for r in lmr)
+        assert len(lmr) == 101
+
+    def test_lmr_rows_have_distribution(self, polity_json):
+        lmr = [r for r in polity_json["rows"] if r.get("variable") == "lmr_pdsi"]
+        for r in lmr:
+            dist = r.get("detail", {}).get("distribution", {})
+            assert "bins" in dist and "weights" in dist, \
+                f"Missing distribution in lmr_pdsi row year={r.get('year')}"
+            assert "p10" in dist and "p90" in dist
 
 
 class TestBandChecks:
