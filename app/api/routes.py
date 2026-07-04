@@ -2986,6 +2986,8 @@ def areas(
     lat: Optional[float] = None,
     lon: Optional[float] = None,
     radius_km: Optional[float] = None,
+    polity: Optional[str] = None,
+    year: Optional[int] = None,
     level: int = 6,
     bands: str = "ABCDE",
     from_year: Optional[int] = None,
@@ -2996,9 +2998,11 @@ def areas(
 
     Parameters
     ----------
-    type       : resolver type — currently 'buffer' (others deferred)
+    type       : resolver type — 'buffer' or 'polity'
     lat, lon   : WGS-84 query point (required for buffer)
     radius_km  : buffer radius in km (required for buffer)
+    polity     : Cliopatria polity name (required for polity)
+    year       : resolver year — boundary slice CE (required for polity)
     level      : basin hierarchy level — 6 or 8 (default 6)
     bands      : band letters to compute (default ABCDE; add T for temporal)
     from_year  : Band T span start CE (required when T in bands)
@@ -3018,10 +3022,17 @@ def areas(
                 status_code=422,
                 detail=f"type=buffer requires: {', '.join(missing)}",
             )
+    elif type == "polity":
+        missing = [p for p, v in [("polity", polity), ("year", year)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=polity requires: {', '.join(missing)}",
+            )
     else:
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported type '{type}'. Supported: buffer",
+            detail=f"Unsupported type '{type}'. Supported: buffer, polity",
         )
 
     # Pass 2 — Band T span (cross-cutting)
@@ -3037,15 +3048,71 @@ def areas(
 
     try:
         conn = db_connect()
-        payload = areal_signature(
-            lat, lon, radius_km,
-            conn,
-            level=level,
-            bands=sorted(requested),
-            from_year=band_t_from,
-            to_year=band_t_to,
-            include_detail=detail,
-        )
+
+        if type == "buffer":
+            payload = areal_signature(
+                lat, lon, radius_km,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        else:  # polity
+            sql_lookup = """
+                SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
+                FROM gaz.clio_polities
+                WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
+            """
+            rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
+
+            if not rows:
+                alt_rows = conn.execute(
+                    "SELECT fromyear, toyear FROM gaz.clio_polities "
+                    "WHERE NOT is_component AND name = %s ORDER BY fromyear",
+                    (polity,),
+                ).fetchall()
+                if alt_rows:
+                    raise HTTPException(
+                        status_code=404,
+                        detail={
+                            "message": f"Polity '{polity}' not active at year {year}",
+                            "available_periods": [
+                                {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
+                            ],
+                        },
+                    )
+                raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
+
+            if len(rows) > 1:
+                rows = sorted(rows, key=lambda r: r[3] - r[2])
+            polity_id, polity_name, fromyear, toyear, geom_wkt = (
+                rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
+            )
+
+            payload = areal_signature_polygon(
+                geom_wkt,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+                resolver_year=year,
+            )
+            payload["resolver"] = {
+                "type":      "polity",
+                "polity":    polity_name,
+                "polity_id": int(polity_id),
+                "fromyear":  int(fromyear),
+                "toyear":    int(toyear),
+                "year":      year,
+            }
+            if "T" in requested and band_t_from is not None:
+                payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
     except HTTPException:
         raise
     except Exception as e:

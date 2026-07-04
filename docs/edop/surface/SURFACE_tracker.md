@@ -79,8 +79,11 @@ fixture; Band T accordion renders LMR time marginal (mean + p10–p90 envelope) 
 year slider → value marginal histogram; HYDE epoch table; eVolv2k event list. A–E unchanged.
 Findings F5.1–F5.5 in `wo5_findings.md`; 271 non-Playwright + 22 Playwright = 293 total.
 
-**Next: WO6** — polity scope live (add `type=polity` to `/api/areas`; wire polity search +
-slice picker in the page; replace fixture with live call).
+**WO6 (polity scope live) complete** — `type=polity` added to `/api/areas`; Northern Song
+example wired to live call; equivalence confirmed against fixture (F6.1–F6.3).
+286 non-Playwright + 22 Playwright = **308 total tests pass**.
+
+**Next: WO7** — arbitrary polity input: polity search → resolve → slice picker → live call.
 
 ---
 
@@ -96,6 +99,7 @@ slice picker in the page; replace fixture with live call).
 | New sandbox page — Step 2 leaf widgets | Polish each method leaf one at a time: histogram widget, coherence badge, range-bar, mixture bar. One review gate per leaf. | **complete — WO3** |
 | `/api/areas` + buffer live | New type-dispatched route; buffer scope live with accept-gate equivalence test. | **complete — WO4** |
 | Polity fixture + Band T charts | Northern Song fixture-wired; LMR time marginal + slider + value marginal; HYDE epoch table; eVolv2k events. | **complete — WO5** |
+| Polity scope live | `type=polity` in `/api/areas`; Northern Song wired to live DB call; equivalence confirmed. | **complete — WO6** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -132,6 +136,15 @@ slice picker in the page; replace fixture with live call).
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-04 (WO6 — polity scope live)**
+
+- **`type=polity` in `/api/areas`** — same DB lookup + narrowest-span logic as `/api/area`;
+  appends `resolver` block and `band_t_span` to payload. `/api/area` untouched.
+- **Equivalence confirmed** — live N Song response matches `03_polity_nsong_detail.json`
+  on variable list, methods, bands, row count (372), neighborhood shape.
+- **`resolver` + `band_t_span` are route-added metadata** absent from fixture (fixture was
+  captured direct from engine). Renderers ignore them; equivalence tests allow extra keys.
 
 **2026-07-03 (WO5 — polity fixture + Band T charts)**
 

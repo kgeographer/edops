@@ -14,7 +14,8 @@ import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
 
-FIXTURE_PATH = Path(__file__).parent.parent / "output/edop/surface/exemplars/02_buffer_detail.json"
+FIXTURE_PATH        = Path(__file__).parent.parent / "output/edop/surface/exemplars/02_buffer_detail.json"
+POLITY_FIXTURE_PATH = Path(__file__).parent.parent / "output/edop/surface/exemplars/03_polity_nsong_detail.json"
 
 # ---------------------------------------------------------------------------
 # Shared app client (no DB required for validation tests)
@@ -61,6 +62,26 @@ class TestValidation:
         r = client.get("/api/areas?type=ring&lat=16.8&lon=-2.9&radius_km=100")
         assert r.status_code == 422
         assert "Unsupported type" in r.json()["detail"]
+
+    def test_polity_missing_polity(self, client):
+        r = client.get("/api/areas?type=polity&year=1000")
+        assert r.status_code == 422
+        assert "polity" in r.json()["detail"]
+
+    def test_polity_missing_year(self, client):
+        r = client.get("/api/areas?type=polity&polity=Northern+Song")
+        assert r.status_code == 422
+        assert "year" in r.json()["detail"]
+
+    def test_polity_not_found(self, client):
+        r = client.get("/api/areas?type=polity&polity=Atlantis&year=500")
+        assert r.status_code == 404
+
+    def test_polity_wrong_year(self, client):
+        r = client.get("/api/areas?type=polity&polity=Northern+Song&year=500")
+        assert r.status_code == 404
+        body = r.json()["detail"]
+        assert "available_periods" in body
 
     def test_buffer_missing_lat(self, client):
         r = client.get("/api/areas?type=buffer&lon=-2.9&radius_km=100")
@@ -193,6 +214,91 @@ class TestFixtureEquivalence:
     def test_neighborhood_matches_fixture(self, timbuktu_buffer, fixture_data):
         live_nb = timbuktu_buffer["neighborhood"]
         fix_nb  = fixture_data["neighborhood"]
+        assert live_nb["type"]      == fix_nb["type"]
+        assert live_nb["n_units"]   == fix_nb["n_units"]
+        assert live_nb["unit_type"] == fix_nb["unit_type"]
+
+
+# ---------------------------------------------------------------------------
+# Polity payload — DB required
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def nsong_live(buf_client):
+    """Live Northern Song polity response — accept-gate parameters."""
+    r = buf_client.get(
+        "/api/areas?type=polity&polity=Northern+Song&year=1000"
+        "&level=6&bands=ABCDET&from_year=1000&to_year=1100&detail=true"
+    )
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+class TestPolityPayload:
+    def test_top_level_keys(self, nsong_live):
+        required = {"rows", "neighborhood", "shortfall", "bands", "resolver"}
+        missing = required - nsong_live.keys()
+        assert not missing, f"Missing top-level keys: {missing}"
+
+    def test_resolver_block(self, nsong_live):
+        res = nsong_live["resolver"]
+        assert res["type"]   == "polity"
+        assert res["polity"] == "Northern Song"
+        assert res["year"]   == 1000
+
+    def test_total_row_count(self, nsong_live):
+        assert len(nsong_live["rows"]) == 372
+
+    def test_band_t_row_count(self, nsong_live):
+        t_rows = [r for r in nsong_live["rows"] if r.get("band") == "T"]
+        assert len(t_rows) == 320
+
+    def test_neighborhood_block(self, nsong_live):
+        nb = nsong_live["neighborhood"]
+        assert nb["type"]      == "polygon"
+        assert nb["n_units"]   == 376
+        assert nb["unit_type"] == "basin"
+        assert "marginal_exposure" in nb
+
+    def test_band_t_span_present(self, nsong_live):
+        assert nsong_live.get("band_t_span") == {"from_year": 1000, "to_year": 1100}
+
+
+# ---------------------------------------------------------------------------
+# Polity equivalence — live vs captured fixture
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def polity_fixture_data():
+    if not POLITY_FIXTURE_PATH.exists():
+        pytest.skip(f"Polity fixture not found: {POLITY_FIXTURE_PATH}")
+    return json.loads(POLITY_FIXTURE_PATH.read_text())
+
+
+class TestPolityFixtureEquivalence:
+    """Live /api/areas?type=polity must match structure of 03_polity_nsong_detail.json."""
+
+    def test_same_row_count(self, nsong_live, polity_fixture_data):
+        assert len(nsong_live["rows"]) == len(polity_fixture_data["rows"])
+
+    def test_same_variable_list(self, nsong_live, polity_fixture_data):
+        live_vars    = [r["variable"] for r in nsong_live["rows"]]
+        fixture_vars = [r["variable"] for r in polity_fixture_data["rows"]]
+        assert live_vars == fixture_vars
+
+    def test_same_method_per_variable(self, nsong_live, polity_fixture_data):
+        live    = {r["variable"]: r["method"] for r in nsong_live["rows"]}
+        fixture = {r["variable"]: r["method"] for r in polity_fixture_data["rows"]}
+        assert live == fixture
+
+    def test_same_band_per_variable(self, nsong_live, polity_fixture_data):
+        live    = {r["variable"]: r["band"] for r in nsong_live["rows"]}
+        fixture = {r["variable"]: r["band"] for r in polity_fixture_data["rows"]}
+        assert live == fixture
+
+    def test_neighborhood_matches_fixture(self, nsong_live, polity_fixture_data):
+        live_nb = nsong_live["neighborhood"]
+        fix_nb  = polity_fixture_data["neighborhood"]
         assert live_nb["type"]      == fix_nb["type"]
         assert live_nb["n_units"]   == fix_nb["n_units"]
         assert live_nb["unit_type"] == fix_nb["unit_type"]

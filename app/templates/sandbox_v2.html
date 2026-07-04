@@ -698,6 +698,26 @@
     }
   }
 
+  // ── Build live URL for polity scope ──────────────────────────────────────
+  function buildPolityUrl() {
+    const polityName  = document.getElementById('v2-polity-input').value.trim();
+    const resolverYear = document.getElementById('v2-resolver-year').value;
+    if (!polityName || !resolverYear) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'polity', polity: polityName, year: resolverYear, level: 6, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
   // ── Build live URL for buffer scope ──────────────────────────────────────
   function buildBufferUrl() {
     const lat       = currentLat;
@@ -746,6 +766,15 @@
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.detail ?? `Server error ${r.status}`);
+        }
+        payload = await r.json();
+      } else if (currentScope === 'polity') {
+        const url = buildPolityUrl();
+        if (!url) throw new Error('Polity scope requires a name and boundary year.');
+        const r = await fetch(url);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(typeof body.detail === 'string' ? body.detail : `Server error ${r.status}`);
         }
         payload = await r.json();
       } else {
