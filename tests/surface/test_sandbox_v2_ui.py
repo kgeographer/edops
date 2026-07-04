@@ -199,12 +199,14 @@ class TestRenderer:
         expect(page.locator("#v2-tab-sig-btn")).not_to_have_class(re.compile(r"\bdisabled\b"))
 
     def test_accordion_bands_rendered(self, page: Page, live_server_url):
+        """A–E are collapsed by default (present in DOM, not visible); T is open."""
         goto(page, live_server_url)
         select_scope(page, "single")
         page.click("#v2-sig-btn")
         page.wait_for_selector("#v2-sig-accordion")
         for band in ("A", "B", "C", "D", "E"):
-            expect(page.locator(f"#v2-acc-{band}")).to_be_visible()
+            expect(page.locator(f"#v2-acc-{band}")).to_be_hidden()
+        # T is not present for a single-scope fixture (no Band T in payload), so skip T here.
 
     def test_intro_hidden_after_render(self, page: Page, live_server_url):
         goto(page, live_server_url)

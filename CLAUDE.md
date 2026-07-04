@@ -94,12 +94,12 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-293 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 120 app incl. `tests/test_area.py` + `tests/test_areas.py` + 93 surface `tests/surface/`).
+313 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 120 app incl. `tests/test_area.py` + `tests/test_areas.py` + 113 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO5 complete; next: WO6 (polity scope live).
+**Surface — current step:** WO7 complete; next: WO8 (TBD — discuss with Opus).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -116,9 +116,13 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   `/api/area` untouched.
 - **WO5 (polity fixture + Band T charts) complete** — Northern Song wired to fixture; Band T
   accordion: LMR time marginal SVG + slider + value marginal histogram; HYDE epoch table;
-  eVolv2k event list. Findings F5.1–F5.5 in `wo5_findings.md`. Key finding: Band T is a
-  span (101 LMR rows/var, 2 HYDE epoch rows/var, 9 eVolv2k events); no engine change needed.
-- 271 non-Playwright + 22 Playwright = **293 total tests pass**
+  eVolv2k event list. Findings F5.1–F5.5 in `wo5_findings.md`.
+- **WO6 (polity scope live) complete** — `type=polity` in `/api/areas`; live DB call; equivalence
+  confirmed. Findings F6.1–F6.3 in `wo6_findings.md`.
+- **WO7 (arbitrary polity search) complete** — polity search → `/api/polity/search` → slice picker
+  → live call. Band T auto-fills from full polity lifespan (not slice dates — F7.2). Resolver year
+  threaded through flow. UX: T open/A–E collapsed; map tab on polity change; spinner.
+  Findings F7.1–F7.5 in `wo7_findings.md`. 291 non-Playwright + 22 Playwright = **313 total tests pass**.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`

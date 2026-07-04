@@ -49,6 +49,9 @@ REQUIRED_IDS = [
     "scope-extra-draw",
     "v2-radius",
     "v2-polity-input",
+    "v2-polity-dropdown",
+    "v2-slice-row",
+    "v2-slice-select",
     "v2-resolver-year",
     "v2-from-year",
     "v2-to-year",
@@ -122,6 +125,19 @@ class TestInitialState:
             assert el is not None, f"#{extra_id} missing"
             assert "scope-extra" in el.get("class", []), \
                 f"#{extra_id} must carry .scope-extra class to be hidden on load"
+
+    def test_polity_slice_row_hidden(self, page):
+        """Slice picker must be hidden on load — shown only after a polity is selected."""
+        el = page.find(id="v2-slice-row")
+        assert el is not None, "#v2-slice-row missing"
+        assert "none" in (el.get("style") or ""), \
+            "#v2-slice-row must have display:none on load"
+
+    def test_polity_dropdown_hidden(self, page):
+        el = page.find(id="v2-polity-dropdown")
+        assert el is not None, "#v2-polity-dropdown missing"
+        assert "none" in (el.get("style") or ""), \
+            "#v2-polity-dropdown must have display:none on load"
 
     def test_t_year_row_hidden(self, page):
         el = page.find(id="v2-t-year-row")

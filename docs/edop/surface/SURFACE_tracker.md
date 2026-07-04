@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-03 (WO3 complete; 263/263 tests)
+- **Last updated:** 2026-07-04 (WO7 complete; 313/313 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -81,9 +81,18 @@ Findings F5.1–F5.5 in `wo5_findings.md`; 271 non-Playwright + 22 Playwright = 
 
 **WO6 (polity scope live) complete** — `type=polity` added to `/api/areas`; Northern Song
 example wired to live call; equivalence confirmed against fixture (F6.1–F6.3).
-286 non-Playwright + 22 Playwright = **308 total tests pass**.
+286 non-Playwright + 22 Playwright = 308 total tests pass.
 
-**Next: WO7** — arbitrary polity input: polity search → resolve → slice picker → live call.
+**WO7 (arbitrary polity search) complete** — polity search field wired to `/api/polity/search`
+(220 ms debounce, from cliopatria.html); results dropdown → `selectPolity` → `/api/polity/slices`
+→ slice picker dropdown; selecting a slice draws the boundary and fires `applySlice`. Band T
+auto-fills from polity full lifespan (not individual slice dates — F7.2); resolver year threads
+targetYear to preserve the requested year (F7.3). Three UX polish items: accordions default
+A–E collapsed / T open; map tab switches on polity change; spinner on signature load.
+Findings F7.1–F7.5 in `wo7_findings.md`. 291 non-Playwright + 22 Playwright = **313 total tests pass**.
+
+**Next: WO8** — TBD. Discuss with Opus. Candidates: ring scope live; map boundary paint;
+HYDE dense-epoch UI compensation (F7.5).
 
 ---
 
@@ -100,6 +109,7 @@ example wired to live call; equivalence confirmed against fixture (F6.1–F6.3).
 | `/api/areas` + buffer live | New type-dispatched route; buffer scope live with accept-gate equivalence test. | **complete — WO4** |
 | Polity fixture + Band T charts | Northern Song fixture-wired; LMR time marginal + slider + value marginal; HYDE epoch table; eVolv2k events. | **complete — WO5** |
 | Polity scope live | `type=polity` in `/api/areas`; Northern Song wired to live DB call; equivalence confirmed. | **complete — WO6** |
+| Arbitrary polity search | Polity search field → `/api/polity/search` → slice picker → live sig call for any polity. | **complete — WO7** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -136,6 +146,28 @@ example wired to live call; equivalence confirmed against fixture (F6.1–F6.3).
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-04 (WO7 — arbitrary polity search)**
+
+- **`applySlice` is the Band T auto-fill point** — both the example handler (pre-fills before
+  calling `selectPolity`) and the manual search path converge on `applySlice`. Guard:
+  `if (!tCb.checked || !fyEl.value)` preserves any explicit pre-fill; only auto-fills when T
+  is unchecked or from_year is empty.
+- **Band T span = full polity lifespan** — `Math.min/max` over `_politySlices` fromyear/toyear.
+  Individual slice dates can be a single year (e.g., N Song 961–961), which falls between HYDE
+  time steps and misses eVolv2k entirely. Full lifespan is the correct temporal window for
+  polity analysis. Resolver year and Band T span remain strictly separate (two-axes invariant).
+- **`resolverYear` param threaded through `selectPolity → applySlice`** — resolver year carries
+  the user-requested year (from example targetYear or slice fromyear), not silently snapped to
+  a slice endpoint.
+- **Accordion default: T open, A–E collapsed** — polity queries land on temporal charts
+  without scrolling past the A–E rows first.
+- **Map tab on polity change** — `selectPolity` and slice-change listener both switch to Map
+  tab so the user sees the new boundary before inspecting the signature.
+- **Spinner on signature load** — immediate pane feedback + tab switch before fetch; button
+  disabled during load; re-enabled in `finally`.
+- **HYDE dense-epoch layout (F7.5)** — HYDE shifts to annual steps post-~1950; the current
+  table breaks with O(span_years) columns. Deferred to a polish pass; add to deferred register.
 
 **2026-07-04 (WO6 — polity scope live)**
 

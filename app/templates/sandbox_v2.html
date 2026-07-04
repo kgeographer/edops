@@ -134,17 +134,20 @@
             </div>
           </div>
 
-          <!-- Polity: search + resolver year -->
+          <!-- Polity: search + slice picker -->
           <div id="scope-extra-polity" class="scope-extra mb-2">
-            <div class="input-group input-group-sm mb-1">
-              <input type="text" id="v2-polity-input" class="form-control"
-                     placeholder="Search polities…">
+            <div style="position:relative;" id="v2-polity-search-wrap">
+              <input type="text" id="v2-polity-input" class="form-control form-control-sm"
+                     placeholder="Search polities…" autocomplete="off">
+              <div id="v2-polity-dropdown"
+                   style="display:none;position:absolute;top:100%;left:0;right:0;
+                          background:#fff;border:1px solid #dee2e6;border-radius:4px;
+                          z-index:1050;max-height:180px;overflow-y:auto;font-size:0.8rem;"></div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-              <label class="text-muted small" style="white-space: nowrap;">Boundary year</label>
-              <input type="number" id="v2-resolver-year" class="form-control form-control-sm"
-                     style="width: 90px;" placeholder="year">
+            <div id="v2-slice-row" class="mt-1" style="display:none;">
+              <select id="v2-slice-select" class="form-select form-select-sm"></select>
             </div>
+            <input type="hidden" id="v2-resolver-year" value="">
           </div>
 
           <!-- Draw: placeholder -->
@@ -219,12 +222,18 @@
 <script>
 (() => {
   // ── State ─────────────────────────────────────────────────────────────────
-  let currentScope = '';
-  let currentLat   = null;
-  let currentLon   = null;
-  let map = null;
+  let currentScope  = '';
+  let currentLat    = null;
+  let currentLon    = null;
+  let map           = null;
+  let _polityLayer  = null;   // Leaflet GeoJSON layer for polity boundary
+  let _politySlices = [];     // slices for the currently-selected polity
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  function formatYear(y) {
+    if (y === null || y === undefined) return '?';
+    return y < 0 ? `${Math.abs(y)} BCE` : `${y} CE`;
+  }
   function escapeHtml(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
@@ -300,8 +309,6 @@
       document.getElementById('v2-radius').value = parts[3] ?? 100;
     }
     if (scope === POLITY_SCOPE) {
-      document.getElementById('v2-polity-input').value = parts[1];
-      document.getElementById('v2-resolver-year').value = parts[2] ?? '';
       // Pre-fill Band T if from/to provided
       if (parts[3] && parts[4]) {
         document.getElementById('v2-band-T').checked = true;
@@ -309,10 +316,120 @@
         document.getElementById('v2-to-year').value   = parts[4];
         updateBandT();
       }
+      // Trigger full search → slice flow (routes through same path as manual search)
+      const targetYear = parts[2] ? parseInt(parts[2]) : null;
+      selectPolity(parts[1], targetYear);
     }
 
     this.value = ''; // reset dropdown
   });
+
+  // ── Polity search + slice picker ─────────────────────────────────────────
+  let _searchTimer = null;
+
+  const polityInput    = document.getElementById('v2-polity-input');
+  const polityDropdown = document.getElementById('v2-polity-dropdown');
+  const sliceRow       = document.getElementById('v2-slice-row');
+  const sliceSelect    = document.getElementById('v2-slice-select');
+
+  polityInput.addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    const q = polityInput.value.trim();
+    if (q.length < 2) { polityDropdown.style.display = 'none'; return; }
+    _searchTimer = setTimeout(() => fetchPolitySearch(q), 220);
+  });
+
+  polityInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') polityDropdown.style.display = 'none';
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#v2-polity-search-wrap')) polityDropdown.style.display = 'none';
+  });
+
+  async function fetchPolitySearch(q) {
+    const r = await fetch(`/api/polity/search?q=${encodeURIComponent(q)}`);
+    const data = await r.json();
+    if (!data.length) { polityDropdown.style.display = 'none'; return; }
+    polityDropdown.innerHTML = data.map(it =>
+      `<div class="v2-polity-item" data-name="${escapeHtml(it.name)}"
+            style="padding:4px 8px;cursor:pointer;">
+        ${escapeHtml(it.name)}
+        <span style="color:#999;font-size:0.72rem;margin-left:4px;">
+          ${formatYear(it.first)}–${formatYear(it.last)} &middot; ${it.slices} slice${it.slices !== 1 ? 's' : ''}
+        </span>
+       </div>`
+    ).join('');
+    polityDropdown.querySelectorAll('.v2-polity-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = '#f0f4ff');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+      el.addEventListener('click', () => selectPolity(el.dataset.name));
+    });
+    polityDropdown.style.display = 'block';
+  }
+
+  async function selectPolity(name, targetYear = null) {
+    polityInput.value = name;
+    polityDropdown.style.display = 'none';
+
+    const r = await fetch(`/api/polity/slices?name=${encodeURIComponent(name)}`);
+    if (!r.ok) return;
+    _politySlices = await r.json();
+
+    sliceSelect.innerHTML = _politySlices.map((s, i) =>
+      `<option value="${i}">${formatYear(s.fromyear)} – ${formatYear(s.toyear)}</option>`
+    ).join('');
+
+    // Auto-select the slice containing targetYear, or default to first
+    let idx = 0;
+    if (targetYear !== null) {
+      const found = _politySlices.findIndex(s => s.fromyear <= targetYear && s.toyear >= targetYear);
+      if (found >= 0) idx = found;
+    }
+    sliceSelect.value = idx;
+    sliceRow.style.display = '';
+    applySlice(idx, targetYear);
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  }
+
+  function applySlice(idx, resolverYear = null) {
+    const s = _politySlices[idx];
+    if (!s) return;
+    document.getElementById('v2-resolver-year').value = resolverYear ?? s.fromyear;
+    // Auto-enable Band T with the slice's timespan unless already set by the user
+    const tCb = document.getElementById('v2-band-T');
+    const fyEl = document.getElementById('v2-from-year');
+    const tyEl = document.getElementById('v2-to-year');
+    if (!tCb.checked || !fyEl.value) {
+      // Use the full polity lifespan for Band T, not the individual slice's dates.
+      // A single slice may span only 1 year and miss all HYDE time steps and eVolv2k events.
+      const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
+      const polityTo   = Math.max(..._politySlices.map(s => s.toyear));
+      tCb.checked  = true;
+      fyEl.value   = polityFrom;
+      tyEl.value   = polityTo;
+      updateBandT();
+    }
+    drawPolityBoundary(s.id);
+  }
+
+  sliceSelect.addEventListener('change', () => {
+    applySlice(parseInt(sliceSelect.value));
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  });
+
+  async function drawPolityBoundary(id) {
+    if (_polityLayer) { _polityLayer.remove(); _polityLayer = null; }
+    try {
+      const r = await fetch(`/api/polity/geom?id=${id}`);
+      if (!r.ok) return;
+      const feature = await r.json();
+      _polityLayer = L.geoJSON(feature, {
+        style: { color: '#2c5f8a', weight: 1.5, fillOpacity: 0 },
+      }).addTo(map);
+      map.fitBounds(_polityLayer.getBounds(), { padding: [20, 20] });
+    } catch (_) { /* boundary is optional */ }
+  }
 
   // ── Fixture harness ───────────────────────────────────────────────────────
   // Swap a FIXTURE_URLS value for the live route URL when that scope is wired.
@@ -602,13 +719,13 @@
       html += `
         <div class="accordion-item">
           <h2 class="accordion-header">
-            <button class="accordion-button py-1 px-2" type="button"
+            <button class="accordion-button py-1 px-2 ${band !== 'T' ? 'collapsed' : ''}" type="button"
                     data-bs-toggle="collapse" data-bs-target="#${paneId}">
               <span style="font-size:0.85rem;">Band ${band} — ${BAND_LABELS[band]}</span>
               <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${rows.length}</span>
             </button>
           </h2>
-          <div id="${paneId}" class="accordion-collapse collapse show">
+          <div id="${paneId}" class="accordion-collapse collapse${band === 'T' ? ' show' : ''}">
             <div class="accordion-body p-0">
               ${band === 'T'
                 ? renderTBand(rows)
@@ -757,6 +874,16 @@
       }
     }
 
+    // Show spinner and switch to Signature tab immediately so the user sees activity.
+    const sigBtn = document.getElementById('v2-sig-btn');
+    sigBtn.disabled = true;
+    pane.innerHTML = `<div class="d-flex align-items-center gap-2 mt-3 ms-2">
+      <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+      <span class="text-muted" style="font-size:0.85rem;">Loading signature…</span>
+    </div>`;
+    sigTabBtn.classList.remove('disabled');
+    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+
     try {
       let payload;
       if (currentScope === 'buffer') {
@@ -783,14 +910,12 @@
       renderSignature(payload);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
-      sigTabBtn.classList.remove('disabled');
-      bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
       document.getElementById('v2-intro').style.display = 'none';
     } catch (err) {
       console.error('[v2] signature error:', err);
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
-      sigTabBtn.classList.remove('disabled');
-      bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+    } finally {
+      sigBtn.disabled = false;
     }
   });
 
