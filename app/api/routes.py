@@ -13,7 +13,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
 from pathlib import Path
 import re
@@ -1890,6 +1890,57 @@ def basin_geom(ids: str, level: int = 6):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/basin/ring", include_in_schema=False)
+def basin_ring_geom(lat: float, lon: float, level: int = 6):
+    """Fast ring topology: center + ring-member geometry and neighbor coords.
+
+    Returns center and ring as GeoJSON features — no signature computation.
+    neighbor_lat/lon on each ring member is ST_PointOnSurface, safe to pass
+    directly to type=single_basin for per-member signature fetches.
+    """
+    basin_table = "basin06" if level == 6 else "basin08"
+    try:
+        conn = db_connect()
+        center_df, ring_gdf = resolve_basin_ring(lat, lon, level, conn)
+        center_id = int(center_df["hybas_id"].iloc[0])
+
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT ST_AsGeoJSON(geom, 5) FROM public.{basin_table} WHERE hybas_id = %s",
+                (center_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Basin {center_id} not found")
+            center_geom = json.loads(row[0])
+
+        center_feature = {
+            "type": "Feature",
+            "properties": {"hybas_id": center_id},
+            "geometry": center_geom,
+        }
+
+        ring_members = [
+            {
+                "hybas_id": int(r["hybas_id"]),
+                "neighbor_lat": float(r["neighbor_lat"]),
+                "neighbor_lon": float(r["neighbor_lon"]),
+                "feature": {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(r["hybas_id"])},
+                    "geometry": r.geometry.__geo_interface__,
+                },
+            }
+            for _, r in ring_gdf.iterrows()
+        ]
+
+        return {"center": center_feature, "ring": ring_members}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # -----------------------
 # D-PLACE Societies
 # -----------------------
@@ -3031,8 +3082,8 @@ def areas(
 
     Parameters
     ----------
-    type       : resolver type — 'buffer' or 'polity'
-    lat, lon   : WGS-84 query point (required for buffer)
+    type       : resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring'
+    lat, lon   : WGS-84 query point (required for buffer, single_basin, basin_ring)
     radius_km  : buffer radius in km (required for buffer)
     polity     : Cliopatria polity name (required for polity)
     year       : resolver year — boundary slice CE (required for polity)
@@ -3069,10 +3120,17 @@ def areas(
                 status_code=422,
                 detail=f"type=polity requires: {', '.join(missing)}",
             )
+    elif type == "basin_ring":
+        missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=basin_ring requires: {', '.join(missing)}",
+            )
     else:
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported type '{type}'. Supported: buffer, single_basin, polity",
+            detail=f"Unsupported type '{type}'. Supported: buffer, single_basin, polity, basin_ring",
         )
 
     # Pass 2 — Band T span (cross-cutting)
@@ -3102,6 +3160,17 @@ def areas(
 
         elif type == "single_basin":
             payload = single_basin_signature(
+                lat, lon,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        elif type == "basin_ring":
+            payload = basin_ring_signature(
                 lat, lon,
                 conn,
                 level=level,
