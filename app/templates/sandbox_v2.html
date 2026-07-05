@@ -898,6 +898,26 @@
     return `/api/areas?${params}`;
   }
 
+  // ── Build live URL for single-basin scope ────────────────────────────────
+  function buildSingleBasinUrl() {
+    const lat = currentLat;
+    const lon = currentLon;
+    if (lat == null || lon == null) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'single_basin', lat, lon, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
   // ── Build live URL for buffer scope ──────────────────────────────────────
   function buildBufferUrl() {
     const lat       = currentLat;
@@ -949,7 +969,16 @@
 
     try {
       let payload;
-      if (currentScope === 'buffer') {
+      if (currentScope === 'single') {
+        const url = buildSingleBasinUrl();
+        if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
+        const r = await fetch(url);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `Server error ${r.status}`);
+        }
+        payload = await r.json();
+      } else if (currentScope === 'buffer') {
         const url = buildBufferUrl();
         if (!url) throw new Error('Buffer scope requires a resolved lat/lon and radius.');
         const r = await fetch(url);

@@ -182,43 +182,41 @@ class TestExamplePrefill:
 # Renderer — requires exemplar fixture served at /dev/exemplars/
 # ---------------------------------------------------------------------------
 
+def load_timbuktu_single(page: Page, base_url: str) -> None:
+    """Select the Timbuktu single-basin example (sets lat/lon) and click Get signature."""
+    goto(page, base_url)
+    page.select_option("#v2-example-select", "single|16.8167,-2.9833|Timbuktu")
+    page.click("#v2-sig-btn")
+    page.wait_for_selector("#v2-sig-accordion", timeout=15000)
+
+
 class TestRenderer:
 
     @pytest.fixture(autouse=True)
-    def require_fixture(self, live_server_url):
+    def require_db(self, live_server_url):
         import httpx
-        r = httpx.get(f"{live_server_url}/dev/exemplars/01_single_basin_detail.json")
+        r = httpx.get(
+            f"{live_server_url}/api/areas?type=single_basin&lat=16.8167&lon=-2.9833&bands=A",
+            timeout=10,
+        )
         if r.status_code != 200:
-            pytest.skip("Exemplar fixture not available via live server")
+            pytest.skip("Single-basin live endpoint not available")
 
     def test_get_signature_enables_sig_tab(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        select_scope(page, "single")
-        page.click("#v2-sig-btn")
-        page.wait_for_selector("#v2-sig-accordion")
+        load_timbuktu_single(page, live_server_url)
         expect(page.locator("#v2-tab-sig-btn")).not_to_have_class(re.compile(r"\bdisabled\b"))
 
     def test_accordion_bands_rendered(self, page: Page, live_server_url):
-        """A–E are collapsed by default (present in DOM, not visible); T is open."""
-        goto(page, live_server_url)
-        select_scope(page, "single")
-        page.click("#v2-sig-btn")
-        page.wait_for_selector("#v2-sig-accordion")
+        """A–E are collapsed by default (present in DOM, not visible); T absent without span."""
+        load_timbuktu_single(page, live_server_url)
         for band in ("A", "B", "C", "D", "E"):
             expect(page.locator(f"#v2-acc-{band}")).to_be_hidden()
-        # T is not present for a single-scope fixture (no Band T in payload), so skip T here.
 
     def test_intro_hidden_after_render(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        select_scope(page, "single")
-        page.click("#v2-sig-btn")
-        page.wait_for_selector("#v2-sig-accordion")
+        load_timbuktu_single(page, live_server_url)
         expect(page.locator("#v2-intro")).to_be_hidden()
 
     def test_histogram_widget_present(self, page: Page, live_server_url):
-        """area_weighted rows should render SVG histogram widgets (not the [hist] placeholder)."""
-        goto(page, live_server_url)
-        select_scope(page, "single")
-        page.click("#v2-sig-btn")
-        page.wait_for_selector("#v2-sig-accordion")
+        """area_weighted rows should render SVG histogram widgets."""
+        load_timbuktu_single(page, live_server_url)
         assert page.locator("#v2-sig-accordion svg").count() > 0

@@ -13,7 +13,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature
 
 from pathlib import Path
 import re
@@ -3022,6 +3022,13 @@ def areas(
                 status_code=422,
                 detail=f"type=buffer requires: {', '.join(missing)}",
             )
+    elif type == "single_basin":
+        missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=single_basin requires: {', '.join(missing)}",
+            )
     elif type == "polity":
         missing = [p for p, v in [("polity", polity), ("year", year)] if v is None]
         if missing:
@@ -3032,7 +3039,7 @@ def areas(
     else:
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported type '{type}'. Supported: buffer, polity",
+            detail=f"Unsupported type '{type}'. Supported: buffer, single_basin, polity",
         )
 
     # Pass 2 — Band T span (cross-cutting)
@@ -3052,6 +3059,17 @@ def areas(
         if type == "buffer":
             payload = areal_signature(
                 lat, lon, radius_km,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        elif type == "single_basin":
+            payload = single_basin_signature(
+                lat, lon,
                 conn,
                 level=level,
                 bands=sorted(requested),

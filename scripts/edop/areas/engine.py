@@ -2110,8 +2110,10 @@ def single_basin_signature(
     The resolver returns {hybas_id: 1.0}; every downstream block runs unchanged.
     Shortfall is 0.0 — the query is the basin, so no geographic absence is possible.
 
-    Band T is not yet supported: aggregate_band_t takes a circular buffer geometry;
-    single-basin Band T needs the basin polygon as the query area. Deferred.
+    Band T is supported: the basin polygon WKT is retrieved and passed through
+    _areal_signature_from_basin_set to aggregate_band_t(geom_wkt=...), the same
+    polygon path used by the polity resolver. Pass from_year + to_year to request
+    Band T rows.
 
     Parameters
     ----------
@@ -2119,8 +2121,8 @@ def single_basin_signature(
     conn           : psycopg3 connection
     level          : int   — 6 or 8
     bands          : list[str] or None — band letters; None = A–E only
-    from_year      : int or None — reserved (Band T not yet supported here)
-    to_year        : int or None — reserved
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
     include_detail : bool
 
     Returns

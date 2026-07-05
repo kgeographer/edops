@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-04 (WO8 complete; 313/313 tests)
+- **Last updated:** 2026-07-04 (WO10 complete; 332/332 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -97,8 +97,17 @@ boundary outline reproduced via shell as acceptance proof. GeoJSON sources for l
 scopes; PMTiles deferred to polity choropleth. `map.invalidateSize()` → `map.resize()`.
 Findings F8.1–F8.3 in `wo8_findings.md`. 313/313 tests pass (no changes needed).
 
-**Next: WO9** — TBD. Discuss with Opus. Candidates: single-basin scope on map (WO-b);
-basin-ring scope live; HYDE dense-epoch UI compensation (F7.5).
+**WO9 (audit) complete** — single-basin true state confirmed (fixture-only, no live route);
+basin-ring weight policy row closed in deferred register (design: per-member signatures, no
+aggregate). Findings in `wo9_audit_findings.md`.
+
+**WO10 (single-basin live) complete** — `type=single_basin` added to `/api/areas`;
+`single_basin_signature` entry point now HTTP-wired; frontend live branch added; Band T
+verified live via polygon path. Stale "not yet supported" docstring corrected. Playwright
+`TestRenderer` updated to use live path. 332/332 tests pass.
+Findings in `wo10_findings.md`.
+
+**Next: WO11** — single-basin on the map (containing basin polygon layer via shell).
 
 ---
 
@@ -117,6 +126,7 @@ basin-ring scope live; HYDE dense-epoch UI compensation (F7.5).
 | Polity scope live | `type=polity` in `/api/areas`; Northern Song wired to live DB call; equivalence confirmed. | **complete — WO6** |
 | Arbitrary polity search | Polity search field → `/api/polity/search` → slice picker → live sig call for any polity. | **complete — WO7** |
 | MapLibre stack + layer shell | Leaflet → MapLibre on v2; layer-management shell; polity outline via shell as proof. | **complete — WO8** |
+| Single-basin live | `type=single_basin` in `/api/areas`; frontend live; Band T verified via polygon path. | **complete — WO10** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
