@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-04 (WO11 complete; 336/336 tests)
+- **Last updated:** 2026-07-05 (WO12 complete; 355/355 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -113,7 +113,16 @@ fit-bounds to basin. No tab switch on sig load (design: user navigates Map tab t
 Timbuktu basin is MultiPolygon — test accepts both polygon types. 336/336 tests pass.
 Findings in `wo11_findings.md`.
 
-**Next: WO12** — discuss with Opus.
+**WO12 (example-select standard + buffer map) complete** — example handler standardised
+(single/buffer/polity/ring/draw all follow one shape); Map is default landing tab after
+Get signature; buffer geometry drawn via shell (member basins unclipped + dashed circle);
+`member_ids` added to buffer neighborhood; new `GET /api/basin/geom` route; `FIXTURE_URLS`
+cleaned up; ring and draw get placeholder messages. `fitBounds` refactored to fire via
+`map.once('resize')` after tab switch (was off-centre when map hidden). `geojsonBbox`
+extended for FeatureCollections. 355/355 tests pass.
+Findings in `wo12_findings.md`.
+
+**Next: WO13** — discuss with Opus.
 
 ---
 
@@ -134,6 +143,7 @@ Findings in `wo11_findings.md`.
 | MapLibre stack + layer shell | Leaflet → MapLibre on v2; layer-management shell; polity outline via shell as proof. | **complete — WO8** |
 | Single-basin live | `type=single_basin` in `/api/areas`; frontend live; Band T verified via polygon path. | **complete — WO10** |
 | Single-basin map | Containing basin polygon drawn via shell after sig load; honesty check; fit-bounds. | **complete — WO11** |
+| Example-select standard + buffer map | One handler shape for all scopes; Map-first landing; buffer basins + circle via shell; member_ids in payload; /api/basin/geom route. | **complete — WO12** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -170,6 +180,25 @@ Findings in `wo11_findings.md`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-05 (WO12 — example-select standard + buffer map)**
+
+- **`member_ids`** added to buffer neighborhood block in `areal_signature` — list of
+  hybas_ids for the member basin set, enabling the map draw honesty check.
+- **`GET /api/basin/geom?ids=<csv>&level=6`** — new read-only route; returns GeoJSON
+  FeatureCollection for a hybas_id list. hybas_ids cast to int (DB returns float).
+- **Buffer map:** `shell.add('buffer-basins', fc, [fill, line])` (fill + 0.75 px border)
+  then `shell.add('buffer-circle', geodesicCircle, [dashed line])`. Circle constructed
+  client-side (64-step geodesic trig, no library). Honesty check: returned id set must
+  equal `member_ids` exactly.
+- **Map-first landing** — after Get signature (single, buffer, polity), Map tab becomes
+  active. `fitBounds` fires via `map.once('resize', ...)` registered before tab switch;
+  `shown.bs.tab` → `map.resize()` → fitBounds with correct container dimensions.
+- **`geojsonBbox` extended** for FeatureCollections — collects coordinates from all features.
+- **`FIXTURE_URLS` cleaned up** — all three entries were dead (live handler branches
+  precede the else fallthrough). Ring and draw get explicit placeholder branches.
+- **Example handler standard** — one shape for all five scopes; polity's
+  slice-fetch-renders-immediately remains codified, not a special case.
 
 **2026-07-04 (WO11 — single-basin map)**
 

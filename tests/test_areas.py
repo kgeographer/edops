@@ -483,3 +483,65 @@ class TestSingleBasinMapHonestyCheck:
             f"Signature resolved basin {sig_id} but basin-preview resolved {preview_id} "
             "— map and signature would describe different basins"
         )
+
+
+# ---------------------------------------------------------------------------
+# WO12 — buffer member_ids + /api/basin/geom route
+# ---------------------------------------------------------------------------
+
+class TestBufferMemberIds:
+    """Buffer neighborhood must expose member_ids for map draw."""
+
+    def test_member_ids_present(self, timbuktu_buffer):
+        nb = timbuktu_buffer["neighborhood"]
+        assert "member_ids" in nb, "neighborhood missing member_ids"
+
+    def test_member_ids_is_list(self, timbuktu_buffer):
+        assert isinstance(timbuktu_buffer["neighborhood"]["member_ids"], list)
+
+    def test_member_ids_count_matches_n_units(self, timbuktu_buffer):
+        nb = timbuktu_buffer["neighborhood"]
+        assert len(nb["member_ids"]) == nb["n_units"]
+
+    def test_member_ids_are_integers(self, timbuktu_buffer):
+        for mid in timbuktu_buffer["neighborhood"]["member_ids"]:
+            assert isinstance(mid, int), f"member_id {mid!r} is not int"
+
+
+class TestBasinGeomRoute:
+    """GET /api/basin/geom returns correct GeoJSON for a hybas_id list."""
+
+    def test_returns_feature_collection(self, buf_client, timbuktu_buffer):
+        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["type"] == "FeatureCollection"
+
+    def test_feature_count_matches_request(self, buf_client, timbuktu_buffer):
+        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
+        assert len(r.json()["features"]) == 3
+
+    def test_returned_ids_are_integers(self, buf_client, timbuktu_buffer):
+        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
+        for f in r.json()["features"]:
+            assert isinstance(f["properties"]["hybas_id"], int)
+
+    def test_full_member_set_honesty_check(self, buf_client, timbuktu_buffer):
+        """Basin set returned by /api/basin/geom must equal the signature member_ids exactly."""
+        member_ids = timbuktu_buffer["neighborhood"]["member_ids"]
+        r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in member_ids)}&level=6")
+        assert r.status_code == 200, r.text
+        returned = {f["properties"]["hybas_id"] for f in r.json()["features"]}
+        expected = set(member_ids)
+        assert returned == expected, f"Mismatch — expected {expected}, got {returned}"
+
+    def test_empty_ids_returns_422(self, client):
+        r = client.get("/api/basin/geom?ids=&level=6")
+        assert r.status_code == 422
+
+    def test_non_integer_ids_returns_422(self, client):
+        r = client.get("/api/basin/geom?ids=abc,def&level=6")
+        assert r.status_code == 422

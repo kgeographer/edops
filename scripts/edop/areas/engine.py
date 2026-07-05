@@ -2051,13 +2051,14 @@ def areal_signature(
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     neighborhood = {
-        'type':      'buffer',
-        'lat':       lat,
-        'lon':       lon,
-        'radius_km': radius_km,
-        'level':     level,
-        'n_units':   len(basin_set),
-        'unit_type': 'basin',
+        'type':       'buffer',
+        'lat':        lat,
+        'lon':        lon,
+        'radius_km':  radius_km,
+        'level':      level,
+        'n_units':    len(basin_set),
+        'unit_type':  'basin',
+        'member_ids': basin_set['hybas_id'].tolist(),
     }
 
     return _areal_signature_from_basin_set(
