@@ -220,3 +220,34 @@ class TestRenderer:
         """area_weighted rows should render SVG histogram widgets."""
         load_timbuktu_single(page, live_server_url)
         assert page.locator("#v2-sig-accordion svg").count() > 0
+
+
+# ---------------------------------------------------------------------------
+# WO11 — single-basin map layer
+# ---------------------------------------------------------------------------
+
+class TestSingleBasinMapLayer:
+
+    @pytest.fixture(autouse=True)
+    def require_db(self, live_server_url):
+        import httpx
+        r = httpx.get(
+            f"{live_server_url}/api/areas?type=single_basin&lat=16.8167&lon=-2.9833&bands=A",
+            timeout=10,
+        )
+        if r.status_code != 200:
+            pytest.skip("Single-basin live endpoint not available")
+
+    def test_single_basin_shell_layer_present(self, page: Page, live_server_url):
+        """After loading Timbuktu single-basin, the shell source should be registered."""
+        load_timbuktu_single(page, live_server_url)
+        sources = page.evaluate("() => Object.keys(window.v2map.getStyle().sources)")
+        assert "src-single-basin" in sources, f"src-single-basin not in map sources: {sources}"
+
+    def test_single_basin_layer_is_polygon(self, page: Page, live_server_url):
+        """The single-basin source must be a polygon-type GeoJSON feature (not a point or line)."""
+        load_timbuktu_single(page, live_server_url)
+        geom_type = page.evaluate(
+            "() => window.v2map.getSource('src-single-basin')._data.geometry.type"
+        )
+        assert geom_type in ("Polygon", "MultiPolygon"), f"Expected polygon type, got {geom_type}"

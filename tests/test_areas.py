@@ -459,3 +459,27 @@ class TestSingleBasinBandT:
         for row in lmr_rows:
             det = row.get("detail") or {}
             assert "distribution" in det, f"LMR row missing detail.distribution: {row['variable']} y={row.get('year')}"
+
+
+# ---------------------------------------------------------------------------
+# WO11 honesty check — signature hybas_id matches basin-preview containing basin
+# ---------------------------------------------------------------------------
+
+class TestSingleBasinMapHonestyCheck:
+    """The basin drawn on the map must be the basin the signature describes."""
+
+    def test_hybas_id_in_neighborhood(self, timbuktu_single):
+        nb = timbuktu_single["neighborhood"]
+        assert "hybas_id" in nb, "neighborhood block missing hybas_id"
+        assert nb["hybas_id"] is not None
+
+    def test_signature_id_matches_basin_preview(self, buf_client, timbuktu_single):
+        sig_id = timbuktu_single["neighborhood"]["hybas_id"]
+        r = buf_client.get("/api/basin-preview?lat=16.8167&lon=-2.9833&level=6")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        preview_id = data["containing_basin"]["properties"]["hybas_id"]
+        assert sig_id == preview_id, (
+            f"Signature resolved basin {sig_id} but basin-preview resolved {preview_id} "
+            "— map and signature would describe different basins"
+        )

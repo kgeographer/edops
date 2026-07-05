@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-04 (WO10 complete; 332/332 tests)
+- **Last updated:** 2026-07-04 (WO11 complete; 336/336 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -107,7 +107,13 @@ verified live via polygon path. Stale "not yet supported" docstring corrected. P
 `TestRenderer` updated to use live path. 332/332 tests pass.
 Findings in `wo10_findings.md`.
 
-**Next: WO11** — single-basin on the map (containing basin polygon layer via shell).
+**WO11 (single-basin map) complete** — `drawSingleBasin()` added; fetches `/api/basin-preview`,
+confirms `hybas_id` honesty check (sig ↔ map same basin), draws polygon via `shell.add('single-basin', ...)`,
+fit-bounds to basin. No tab switch on sig load (design: user navigates Map tab themselves).
+Timbuktu basin is MultiPolygon — test accepts both polygon types. 336/336 tests pass.
+Findings in `wo11_findings.md`.
+
+**Next: WO12** — discuss with Opus.
 
 ---
 
@@ -127,6 +133,7 @@ Findings in `wo10_findings.md`.
 | Arbitrary polity search | Polity search field → `/api/polity/search` → slice picker → live sig call for any polity. | **complete — WO7** |
 | MapLibre stack + layer shell | Leaflet → MapLibre on v2; layer-management shell; polity outline via shell as proof. | **complete — WO8** |
 | Single-basin live | `type=single_basin` in `/api/areas`; frontend live; Band T verified via polygon path. | **complete — WO10** |
+| Single-basin map | Containing basin polygon drawn via shell after sig load; honesty check; fit-bounds. | **complete — WO11** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -163,6 +170,18 @@ Findings in `wo10_findings.md`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-04 (WO11 — single-basin map)**
+
+- **`drawSingleBasin(lat, lon, sigHybas_id)`** — fetches `/api/basin-preview`, extracts
+  `containing_basin`, compares `hybas_id` to `payload.neighborhood.hybas_id` before drawing.
+  Mismatch logs error and skips draw. Map mismatch guard is a contract test in `TestSingleBasinMapHonestyCheck`.
+- **Shell call:** `shell.add('single-basin', { type: 'geojson', data: feature }, [fill, line])`.
+  Fill: `#4a90c4` at 0.15 opacity; line: `#2c5f8a` 1.5 px. `fitBounds` with 40 px padding.
+- **No tab switch** after sig load — user navigates Map tab themselves. Polity switches to Map
+  on *selection* (before sig fetch); single-basin doesn't have that natural trigger.
+- **MultiPolygon basins** — Timbuktu L06 basin is MultiPolygon. Shell and MapLibre handle both
+  polygon types without change.
 
 **2026-07-04 (WO8 — MapLibre stack + layer shell)**
 
