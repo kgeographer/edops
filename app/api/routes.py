@@ -1857,6 +1857,39 @@ def basin_preview(lat: float, lon: float, level: int = 8):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/basin/geom", include_in_schema=False)
+def basin_geom(ids: str, level: int = 6):
+    """Return a GeoJSON FeatureCollection for a comma-separated list of hybas_ids."""
+    try:
+        id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ids must be a comma-separated list of integers")
+    if not id_list:
+        raise HTTPException(status_code=422, detail="ids must not be empty")
+
+    basin_table = "basin06" if level == 6 else "basin08"
+    placeholders = ", ".join(["%s"] * len(id_list))
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT hybas_id, ST_AsGeoJSON(geom, 5) AS geom
+                FROM public.{basin_table}
+                WHERE hybas_id IN ({placeholders})
+            """, id_list)
+            features = [
+                {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(row[0])},
+                    "geometry": json.loads(row[1]),
+                }
+                for row in cur.fetchall()
+            ]
+        return {"type": "FeatureCollection", "features": features}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # -----------------------
 # D-PLACE Societies
 # -----------------------

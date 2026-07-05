@@ -94,7 +94,7 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-336 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 130 app incl. `tests/test_area.py` + `tests/test_areas.py` + 126 surface `tests/surface/`).
+355 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 141 app incl. `tests/test_area.py` + `tests/test_areas.py` + 134 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
@@ -135,6 +135,10 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 - **WO11 (single-basin map) complete** — `drawSingleBasin()` via shell; honesty check
   (`hybas_id` match before draw); fit-bounds. 336/336 tests pass.
   Findings in `wo11_findings.md`.
+- **WO12 (example-select standard + buffer map) complete** — example handler standardised;
+  Map-first landing after Get signature; buffer basins + circle via shell; `member_ids`
+  in buffer neighborhood; `GET /api/basin/geom` route; `fitBounds` via `map.once('resize')`
+  after tab switch. 355/355 tests pass. Findings in `wo12_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
