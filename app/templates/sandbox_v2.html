@@ -459,6 +459,32 @@
     ];
   }
 
+  async function drawSingleBasin(lat, lon, sigHybas_id) {
+    try {
+      const r = await fetch(`/api/basin-preview?lat=${lat}&lon=${lon}&level=6`);
+      if (!r.ok) return;
+      const data = await r.json();
+      const feature = data.containing_basin;
+      if (!feature) return;
+
+      // Honesty check: basin-preview must resolve to the same basin as the signature.
+      const mapId = feature.properties?.hybas_id;
+      if (mapId !== sigHybas_id) {
+        console.error(`[v2] Basin mismatch: signature=${sigHybas_id} map=${mapId} — not drawing`);
+        return;
+      }
+
+      shell.add('single-basin',
+        { type: 'geojson', data: feature },
+        [
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.15 } },
+          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } },
+        ]
+      );
+      map.fitBounds(geojsonBbox(feature), { padding: 40 });
+    } catch (_) { /* map draw is optional */ }
+  }
+
   async function drawPolityBoundary(id) {
     try {
       const r = await fetch(`/api/polity/geom?id=${id}`);
@@ -978,6 +1004,10 @@
           throw new Error(body.detail ?? `Server error ${r.status}`);
         }
         payload = await r.json();
+        const nb = payload.neighborhood || {};
+        if (nb.hybas_id != null && currentLat != null && currentLon != null) {
+          drawSingleBasin(currentLat, currentLon, nb.hybas_id);
+        }
       } else if (currentScope === 'buffer') {
         const url = buildBufferUrl();
         if (!url) throw new Error('Buffer scope requires a resolved lat/lon and radius.');

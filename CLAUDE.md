@@ -87,14 +87,14 @@ and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cr
 `scripts/edop/areas/engine.py` — resolver → aggregator → payload. Four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path (not yet HTTP-wired)
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
-- `single_basin_signature(lat, lon, conn, ...)` — single containing basin (not yet HTTP-wired)
+- `single_basin_signature(lat, lon, conn, ...)` — single containing basin; HTTP-wired via `type=single_basin`
 - `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents (not yet HTTP-wired)
 
 Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `resolve_polygon`, `resolve_polity` — all in engine.py.
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-313 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 120 app incl. `tests/test_area.py` + `tests/test_areas.py` + 113 surface `tests/surface/`).
+336 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 130 app incl. `tests/test_area.py` + `tests/test_areas.py` + 126 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
@@ -127,6 +127,14 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   shell (`add`/`remove`/`restyle`/`clear`) established; polity boundary reproduced via shell.
   GeoJSON for low-cardinality scopes; PMTiles deferred to polity choropleth.
   Findings F8.1–F8.3 in `wo8_findings.md`. **313/313 tests pass** (no changes needed).
+- **WO9 (audit) complete** — single-basin confirmed fixture-only; basin-ring weight policy
+  register row closed (per-member design, no aggregate). Findings in `wo9_audit_findings.md`.
+- **WO10 (single-basin live) complete** — `type=single_basin` in `/api/areas`; live frontend
+  branch; Band T via polygon path; stale docstring corrected. 332/332 tests pass.
+  Findings in `wo10_findings.md`.
+- **WO11 (single-basin map) complete** — `drawSingleBasin()` via shell; honesty check
+  (`hybas_id` match before draw); fit-bounds. 336/336 tests pass.
+  Findings in `wo11_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
