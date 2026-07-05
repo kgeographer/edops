@@ -55,7 +55,7 @@
               <option value="">Load an example</option>
               <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
               <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
-              <option value="ring|16.8167,-2.9833|Timbuktu">Timbuktu — basin ring</option>
+              <option value="ring|16.8167,-2.9833|Timbuktu|1000|1100">Timbuktu — basin ring</option>
               <option value="polity|Northern Song|1000|1000|1100">Northern Song (1000–1100 CE)</option>
             </select>
           </div>
@@ -162,6 +162,13 @@
         </div>
       </div>
 
+      <!-- Ring info (ring scope only; shown after load) -->
+      <div id="v2-ring-info" class="text-muted small px-1 mt-2" style="display:none;">
+        <p class="mb-1">The <strong>map</strong> shows the center basin and its first-order
+        adjacent ring. Click a ring member to load its signature in the Signature tab.
+        Click the center to return to the center signature.</p>
+      </div>
+
       <!-- Intro text (visible on load; replaced once signature loads) -->
       <div id="v2-intro" class="text-muted small px-1 mt-1">
         <p><strong>EDOPS Signatures</strong> deliver multi-band environmental profiles for any
@@ -224,7 +231,10 @@
   let currentLat    = null;
   let currentLon    = null;
   let map           = null;
-  let _politySlices = [];     // slices for the currently-selected polity
+  let _politySlices  = [];     // slices for the currently-selected polity
+  let _ringData      = null;   // topology from /api/basin/ring (center feature + ring members)
+  let _ringPopup     = null;   // MapLibre Popup for ring hover affordance
+  let _centerPayload = null;   // center sig payload for ring scope (restored on center click)
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function formatYear(y) {
@@ -273,6 +283,8 @@
     if (scope === POLITY_SCOPE) document.getElementById('scope-extra-polity').style.display = 'block';
     if (scope === DRAW_SCOPE)   document.getElementById('scope-extra-draw').style.display = 'block';
 
+    document.getElementById('v2-ring-info').style.display = (scope === 'ring') ? '' : 'none';
+
     updateSigButton();
   }
 
@@ -304,6 +316,12 @@
     }
     if (scope === 'buffer') {
       document.getElementById('v2-radius').value = parts[3] ?? 100;
+    }
+    if (scope === 'ring' && parts[3] && parts[4]) {
+      document.getElementById('v2-band-T').checked = true;
+      document.getElementById('v2-from-year').value = parts[3];
+      document.getElementById('v2-to-year').value   = parts[4];
+      updateBandT();
     }
     if (scope === POLITY_SCOPE) {
       // Pre-fill Band T if from/to provided
@@ -547,6 +565,117 @@
       );
       map.fitBounds(geojsonBbox(feature), { padding: 40 });
     } catch (_) { /* boundary is optional */ }
+  }
+
+  // ── Ring geometry + click/hover wiring ──────────────────────────────────
+  // Two shell layers: ring-center (darker) + ring-members (lighter).
+  // Center click restores center sig; member click fetches member sig on demand.
+  // Event listeners accumulate if ring is loaded multiple times; benign (removed
+  // layers never fire) but noted for future cleanup.
+  async function drawRingGeometry(ringData) {
+    // Honesty check: confirm topology loaded with expected shape
+    if (!ringData?.center || !Array.isArray(ringData.ring)) {
+      console.error('[v2] Ring topology missing center or ring array — not drawing');
+      return null;
+    }
+
+    shell.add('ring-center',
+      { type: 'geojson', data: ringData.center },
+      [
+        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0.30 } },
+        { type: 'line', paint: { 'line-color': '#1a3d5c', 'line-width': 2.0 } },
+      ]
+    );
+    const memberFC = {
+      type: 'FeatureCollection',
+      features: ringData.ring.map(m => m.feature),
+    };
+    shell.add('ring-members',
+      { type: 'geojson', data: memberFC },
+      [
+        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
+        { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75, 'line-opacity': 0.5 } },
+      ]
+    );
+
+    const memberFillId = _layers['ring-members'].layerIds[0];
+    const centerFillId = _layers['ring-center'].layerIds[0];
+
+    // Ring members: hover shows "View signature" link; click fetches member sig
+    map.on('mousemove', memberFillId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      _ringPopup.setLngLat(e.lngLat)
+        .setHTML('<span style="font-size:0.78rem;">View signature</span>')
+        .addTo(map);
+    });
+    map.on('mouseleave', memberFillId, () => {
+      map.getCanvas().style.cursor = '';
+      _ringPopup.remove();
+    });
+    map.on('click', memberFillId, e => {
+      const hid = e.features[0].properties.hybas_id;
+      const member = ringData.ring.find(m => m.hybas_id === hid);
+      if (member) fetchMemberSig(member.neighbor_lat, member.neighbor_lon);
+    });
+
+    // Center: hover shows "Return to center" link; click restores center sig
+    map.on('mousemove', centerFillId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      _ringPopup.setLngLat(e.lngLat)
+        .setHTML('<span style="font-size:0.78rem;">Return to center</span>')
+        .addTo(map);
+    });
+    map.on('mouseleave', centerFillId, () => {
+      map.getCanvas().style.cursor = '';
+      _ringPopup.remove();
+    });
+    map.on('click', centerFillId, () => renderCenterSig());
+
+    // fitBounds to full ring extent
+    const allFC = {
+      type: 'FeatureCollection',
+      features: [ringData.center, ...ringData.ring.map(m => m.feature)],
+    };
+    return geojsonBbox(allFC);
+  }
+
+  // Fetch a ring member's sig on demand (single_basin call with current Band T settings)
+  async function fetchMemberSig(lat, lon) {
+    const sigTabBtn = document.getElementById('v2-tab-sig-btn');
+    const pane      = document.getElementById('v2-pane-sig');
+    pane.innerHTML = `<div class="d-flex align-items-center gap-2 mt-3 ms-2">
+      <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+      <span class="text-muted" style="font-size:0.85rem;">Loading member signature…</span>
+    </div>`;
+    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')].map(cb => cb.value).join('');
+    const params = new URLSearchParams({ type: 'single_basin', lat, lon, bands, detail: 'true' });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    try {
+      const r = await fetch(`/api/areas?${params}`);
+      if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
+      const memberPayload = await r.json();
+      renderSignature(memberPayload);
+      const tRows = (memberPayload.rows || []).filter(r => r.band === 'T');
+      if (tRows.length) wireTSliders(tRows);
+    } catch (err) {
+      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  // Restore center sig from stored payload (ring scope return-to-center)
+  function renderCenterSig() {
+    if (!_centerPayload) return;
+    renderSignature(_centerPayload);
+    const tRows = (_centerPayload.rows || []).filter(r => r.band === 'T');
+    if (tRows.length) wireTSliders(tRows);
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-sig-btn')).show();
   }
 
   // ── Fixture harness ───────────────────────────────────────────────────────
@@ -1070,9 +1199,17 @@
         if (!r.ok) { const body = await r.json().catch(() => ({})); throw new Error(typeof body.detail === 'string' ? body.detail : `Server error ${r.status}`); }
         payload = await r.json();
       } else if (currentScope === 'ring') {
-        pane.innerHTML = `<p class="text-muted mt-3 ms-2">Basin-ring scope is not yet wired (coming in WO13).</p>`;
-        document.getElementById('v2-intro').style.display = 'none';
-        return;
+        if (currentLat == null || currentLon == null) throw new Error('Ring scope requires a resolved lat/lon.');
+        const [sigR, ringR] = await Promise.all([
+          fetch(buildSingleBasinUrl()),
+          fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`),
+        ]);
+        if (!sigR.ok)  { const b = await sigR.json().catch(()=>({}));  throw new Error(b.detail ?? `Server error ${sigR.status}`); }
+        if (!ringR.ok) { const b = await ringR.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${ringR.status}`); }
+        payload        = await sigR.json();
+        _ringData      = await ringR.json();
+        _centerPayload = payload;
+        pendingBbox    = await drawRingGeometry(_ringData);
       } else if (currentScope === 'draw') {
         pane.innerHTML = `<p class="text-muted mt-3 ms-2">Draw-a-study-area scope is not yet wired.</p>`;
         document.getElementById('v2-intro').style.display = 'none';
@@ -1134,6 +1271,8 @@
   document.getElementById('v2-tab-map-btn').addEventListener('shown.bs.tab', () => {
     map.resize();
   });
+
+  _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
 
   window.v2map = map; // dev: expose for console inspection
 

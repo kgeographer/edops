@@ -96,6 +96,14 @@ class TestScopeGate:
         expect(page.locator("#scope-extra-buffer")).to_be_hidden()
         expect(page.locator("#scope-extra-polity")).to_be_hidden()
         expect(page.locator("#scope-extra-draw")).to_be_hidden()
+        expect(page.locator("#v2-ring-info")).to_be_visible()
+
+    def test_ring_info_hidden_for_other_scopes(self, page: Page, live_server_url):
+        """Ring info div must be hidden when non-ring scopes are active."""
+        goto(page, live_server_url)
+        for scope in ("single", "buffer", "polity", "draw"):
+            select_scope(page, scope)
+            expect(page.locator("#v2-ring-info")).to_be_hidden()
 
     def test_polity_hides_point_section(self, page: Page, live_server_url):
         goto(page, live_server_url)
@@ -166,6 +174,16 @@ class TestExamplePrefill:
         expect(page.locator("#v2-scope-select")).to_have_value("polity")
         expect(page.locator("#v2-polity-input")).to_have_value("Northern Song")
         expect(page.locator("#v2-resolver-year")).to_have_value("1000")
+        expect(page.locator("#v2-band-T")).to_be_checked()
+        expect(page.locator("#v2-from-year")).to_have_value("1000")
+        expect(page.locator("#v2-to-year")).to_have_value("1100")
+        expect(page.locator("#v2-t-year-row")).to_be_visible()
+
+    def test_timbuktu_ring(self, page: Page, live_server_url):
+        goto(page, live_server_url)
+        page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1000|1100")
+        expect(page.locator("#v2-scope-select")).to_have_value("ring")
+        expect(page.locator("#v2-place-input")).to_have_value("Timbuktu")
         expect(page.locator("#v2-band-T")).to_be_checked()
         expect(page.locator("#v2-from-year")).to_have_value("1000")
         expect(page.locator("#v2-to-year")).to_have_value("1100")
@@ -340,7 +358,7 @@ class TestBufferMapLayers:
         assert result == 9, f"Expected 9 buffer basins (Timbuktu 100 km), got {result}"
 
 
-class TestRingParksCleanly:
+class TestRingScope:
 
     def test_ring_sig_btn_enabled(self, page: Page, live_server_url):
         """Selecting ring scope must enable the Get signature button."""
@@ -348,14 +366,109 @@ class TestRingParksCleanly:
         select_scope(page, "ring")
         expect(page.locator("#v2-sig-btn")).to_be_enabled()
 
-    def test_ring_click_shows_placeholder(self, page: Page, live_server_url):
-        """Clicking Get signature with ring scope must show a placeholder, not an error."""
-        goto(page, live_server_url)
-        page.select_option("#v2-example-select", "single|16.8167,-2.9833|Timbuktu")
-        select_scope(page, "ring")
-        page.click("#v2-sig-btn")
-        pane = page.locator("#v2-pane-sig")
-        pane.wait_for(state="visible", timeout=5000)
-        text = pane.inner_text()
-        assert "WO13" in text, f"Expected WO13 placeholder in ring pane, got: {text!r}"
-        assert "Error" not in text, "Ring click should not produce an error"
+
+# ---------------------------------------------------------------------------
+# WO13 — Ring live: center sig + center+ring map layers + clickable members
+# ---------------------------------------------------------------------------
+
+def load_timbuktu_ring(page: Page, base_url: str) -> None:
+    """Select the Timbuktu ring example and click Get signature."""
+    goto(page, base_url)
+    page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1000|1100")
+    page.click("#v2-sig-btn")
+    # Ring lands on Map tab; accordion is in hidden tab pane
+    page.wait_for_selector("#v2-sig-accordion", state="attached", timeout=20000)
+
+
+class TestRingLive:
+
+    @pytest.fixture(autouse=True)
+    def require_db(self, live_server_url):
+        import httpx
+        r = httpx.get(
+            f"{live_server_url}/api/basin/ring?lat=16.8167&lon=-2.9833&level=6",
+            timeout=15,
+        )
+        if r.status_code != 200:
+            pytest.skip("Ring topology endpoint not available")
+
+    def test_ring_lands_on_map_tab(self, page: Page, live_server_url):
+        """After Get signature (ring), Map tab should be active."""
+        load_timbuktu_ring(page, live_server_url)
+        active = page.evaluate(
+            "() => document.getElementById('v2-tab-map-btn').classList.contains('active')"
+        )
+        assert active, "Map tab not active after ring sig load"
+
+    def test_ring_center_source_present(self, page: Page, live_server_url):
+        load_timbuktu_ring(page, live_server_url)
+        sources = page.evaluate("() => Object.keys(window.v2map.getStyle().sources)")
+        assert "src-ring-center" in sources, f"src-ring-center not in sources: {sources}"
+
+    def test_ring_members_source_present(self, page: Page, live_server_url):
+        load_timbuktu_ring(page, live_server_url)
+        sources = page.evaluate("() => Object.keys(window.v2map.getStyle().sources)")
+        assert "src-ring-members" in sources, f"src-ring-members not in sources: {sources}"
+
+    def test_ring_members_nonempty(self, page: Page, live_server_url):
+        load_timbuktu_ring(page, live_server_url)
+        count = page.evaluate(
+            "() => window.v2map.getSource('src-ring-members')._data.features.length"
+        )
+        assert count > 0, "Ring members source has no features"
+
+    def test_ring_center_is_single_feature(self, page: Page, live_server_url):
+        load_timbuktu_ring(page, live_server_url)
+        feat_type = page.evaluate(
+            "() => window.v2map.getSource('src-ring-center')._data.type"
+        )
+        assert feat_type == "Feature", f"Expected Feature, got {feat_type}"
+
+    def test_ring_center_sig_in_accordions(self, page: Page, live_server_url):
+        """Center sig renders — Sig tab reachable and accordion populated."""
+        load_timbuktu_ring(page, live_server_url)
+        page.click("#v2-tab-sig-btn")
+        expect(page.locator("#v2-sig-accordion")).to_be_visible()
+
+    def test_click_ring_member_switches_to_sig_tab(self, page: Page, live_server_url):
+        """Clicking a ring-member basin renders a member sig and shows the Sig pane."""
+        load_timbuktu_ring(page, live_server_url)
+        # Project first ring-member polygon centroid to screen coordinates
+        click_coords = page.evaluate("""() => {
+            const src = window.v2map.getSource('src-ring-members');
+            if (!src?._data?.features?.length) return null;
+            const feat = src._data.features[0];
+            const geom = feat.geometry;
+            const ring = geom.type === 'Polygon' ? geom.coordinates[0]
+                       : geom.coordinates[0][0];
+            const lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+            const lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+            const pt  = window.v2map.project([lng, lat]);
+            const bb  = document.getElementById('v2-map').getBoundingClientRect();
+            return { x: Math.round(bb.left + pt.x), y: Math.round(bb.top + pt.y) };
+        }""")
+        assert click_coords is not None, "Could not project ring member centroid to screen"
+        page.mouse.click(click_coords["x"], click_coords["y"])
+        # Member sig is an async fetch; wait for accordion to appear in the Sig pane
+        page.wait_for_selector("#v2-pane-sig #v2-sig-accordion", state="visible", timeout=20000)
+
+    def test_center_click_restores_center_sig(self, page: Page, live_server_url):
+        """Clicking the center basin returns to the center sig in the Sig pane."""
+        load_timbuktu_ring(page, live_server_url)
+        # Click the center basin
+        center_coords = page.evaluate("""() => {
+            const src = window.v2map.getSource('src-ring-center');
+            if (!src?._data) return null;
+            const geom = src._data.geometry;
+            const ring = geom.type === 'Polygon' ? geom.coordinates[0]
+                       : geom.coordinates[0][0];
+            const lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+            const lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+            const pt  = window.v2map.project([lng, lat]);
+            const bb  = document.getElementById('v2-map').getBoundingClientRect();
+            return { x: Math.round(bb.left + pt.x), y: Math.round(bb.top + pt.y) };
+        }""")
+        assert center_coords is not None, "Could not project center centroid to screen"
+        page.mouse.click(center_coords["x"], center_coords["y"])
+        # Center click calls renderCenterSig → switches to Sig tab
+        page.wait_for_selector("#v2-pane-sig #v2-sig-accordion", state="visible", timeout=10000)

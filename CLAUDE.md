@@ -88,13 +88,13 @@ and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cr
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path (not yet HTTP-wired)
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
 - `single_basin_signature(lat, lon, conn, ...)` — single containing basin; HTTP-wired via `type=single_basin`
-- `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents (not yet HTTP-wired)
+- `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents; HTTP-wired via `type=basin_ring`
 
 Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `resolve_polygon`, `resolve_polity` — all in engine.py.
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-355 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 141 app incl. `tests/test_area.py` + `tests/test_areas.py` + 134 surface `tests/surface/`).
+391 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 202 app incl. `tests/test_area.py` + `tests/test_areas.py` + 109 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
@@ -138,7 +138,12 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 - **WO12 (example-select standard + buffer map) complete** — example handler standardised;
   Map-first landing after Get signature; buffer basins + circle via shell; `member_ids`
   in buffer neighborhood; `GET /api/basin/geom` route; `fitBounds` via `map.once('resize')`
-  after tab switch. 355/355 tests pass. Findings in `wo12_findings.md`.
+  after tab switch. Findings in `wo12_findings.md`.
+- **WO13 (basin-ring live) complete** — ring scope end-to-end: center sig + ring on map
+  (two shell layers, categorically colored) + clickable members (on-demand single_basin fetch)
+  + return-to-center. Parallel fetch: center sig + `/api/basin/ring` topology (~1.1 s total).
+  Band T available for all members. Ring info div in left column. 391/391 tests pass.
+  Findings in `wo13_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`

@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-05 (WO12 complete; 355/355 tests)
+- **Last updated:** 2026-07-05 (WO13 complete; 391/391 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -119,10 +119,16 @@ Get signature; buffer geometry drawn via shell (member basins unclipped + dashed
 `member_ids` added to buffer neighborhood; new `GET /api/basin/geom` route; `FIXTURE_URLS`
 cleaned up; ring and draw get placeholder messages. `fitBounds` refactored to fire via
 `map.once('resize')` after tab switch (was off-centre when map hidden). `geojsonBbox`
-extended for FeatureCollections. 355/355 tests pass.
-Findings in `wo12_findings.md`.
+extended for FeatureCollections. Findings in `wo12_findings.md`.
 
-**Next: WO13** — discuss with Opus.
+**WO13 (basin-ring live) complete** — ring scope end-to-end: center sig in accordions (full
+Band T), center + ring drawn on map (two shell layers, categorically colored), ring members
+clickable for on-demand member sig (~1 s fetch), return-to-center via center basin click.
+Parallel fetch architecture: center sig + ring topology in parallel (~1.1 s total vs 6.7 s
+sequential full-ring). New `GET /api/basin/ring` fast topology route (92 ms). Ring info div
+in left column explains the new interaction. Band T available for all members (per-member
+`type=single_basin` calls use current UI settings). 391/391 tests pass (109 surface + 282
+non-surface). Findings in `wo13_findings.md`.
 
 ---
 
@@ -144,6 +150,7 @@ Findings in `wo12_findings.md`.
 | Single-basin live | `type=single_basin` in `/api/areas`; frontend live; Band T verified via polygon path. | **complete — WO10** |
 | Single-basin map | Containing basin polygon drawn via shell after sig load; honesty check; fit-bounds. | **complete — WO11** |
 | Example-select standard + buffer map | One handler shape for all scopes; Map-first landing; buffer basins + circle via shell; member_ids in payload; /api/basin/geom route. | **complete — WO12** |
+| Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -197,6 +204,16 @@ Append-only; dated. Settled unless explicitly revisited here.
 - **`geojsonBbox` extended** for FeatureCollections — collects coordinates from all features.
 - **`FIXTURE_URLS` cleaned up** — all three entries were dead (live handler branches
   precede the else fallthrough). Ring and draw get explicit placeholder branches.
+
+**2026-07-05 (WO13 — basin-ring live)**
+
+- **`GET /api/basin/ring`** — fast topology route; returns `{center: Feature, ring: [{hybas_id, neighbor_lat, neighbor_lon, feature: Feature}, ...]}`. 92 ms. Used by frontend; `type=basin_ring` on `/api/areas` retained for API completeness only.
+- **Ring frontend: parallel fetch** — center sig (`type=single_basin`) + ring topology (`/api/basin/ring`) fetched in parallel. Total ~1.1 s vs 6.7 s sequential. Center sig stored as `_centerPayload` for return-to-center.
+- **Ring map: two shell layers** — `ring-center` (darker, 0.30 fill opacity) and `ring-members` (lighter, 0.12 fill opacity). Categorical distinction only; no value encoding.
+- **Per-member sig on demand** — clicked member fetches `type=single_basin` at `neighbor_lat/neighbor_lon` with current UI Band T settings. Band T fully available for members.
+- **Return-to-center** — click center basin → `renderCenterSig()` restores `_centerPayload`; switches to Sig tab. No re-fetch.
+- **Hover affordance** — MapLibre Popup (`closeButton:false, closeOnClick:false`); ring members show "View signature", center shows "Return to center". No summary content in hover — link only.
+- **Ring info div** — `#v2-ring-info` shown by `applyScope('ring')`, hidden for all other scopes; persists through sig load; explains clickable-member interaction.
 - **Example handler standard** — one shape for all five scopes; polity's
   slice-fetch-renders-immediately remains codified, not a special case.
 

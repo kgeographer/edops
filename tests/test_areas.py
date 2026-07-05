@@ -129,6 +129,24 @@ class TestValidation:
         )
         assert r.status_code == 400
 
+    def test_basin_ring_missing_lat(self, client):
+        r = client.get("/api/areas?type=basin_ring&lon=-2.9")
+        assert r.status_code == 422
+        assert "lat" in r.json()["detail"]
+
+    def test_basin_ring_missing_lon(self, client):
+        r = client.get("/api/areas?type=basin_ring&lat=16.8")
+        assert r.status_code == 422
+        assert "lon" in r.json()["detail"]
+
+    def test_ring_topology_missing_lat(self, client):
+        r = client.get("/api/basin/ring?lon=-2.9")
+        assert r.status_code == 422
+
+    def test_ring_topology_missing_lon(self, client):
+        r = client.get("/api/basin/ring?lat=16.8")
+        assert r.status_code == 422
+
 
 # ---------------------------------------------------------------------------
 # Payload structure — DB required
@@ -545,3 +563,55 @@ class TestBasinGeomRoute:
     def test_non_integer_ids_returns_422(self, client):
         r = client.get("/api/basin/geom?ids=abc,def&level=6")
         assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# WO13 — /api/basin/ring topology route
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def timbuktu_ring_topology(buf_client):
+    """Fast ring topology for Timbuktu — center Feature + ring members with geometry."""
+    r = buf_client.get("/api/basin/ring?lat=16.8167&lon=-2.9833&level=6")
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+class TestBasinRingTopologyRoute:
+
+    def test_has_center_key(self, timbuktu_ring_topology):
+        assert "center" in timbuktu_ring_topology
+
+    def test_center_is_geojson_feature(self, timbuktu_ring_topology):
+        assert timbuktu_ring_topology["center"]["type"] == "Feature"
+
+    def test_center_hybas_id_is_int(self, timbuktu_ring_topology):
+        hid = timbuktu_ring_topology["center"]["properties"]["hybas_id"]
+        assert isinstance(hid, int), f"Expected int, got {type(hid)}"
+
+    def test_has_ring_key(self, timbuktu_ring_topology):
+        assert "ring" in timbuktu_ring_topology
+
+    def test_ring_is_nonempty_list(self, timbuktu_ring_topology):
+        ring = timbuktu_ring_topology["ring"]
+        assert isinstance(ring, list) and len(ring) > 0
+
+    def test_ring_member_hybas_id_is_int(self, timbuktu_ring_topology):
+        member = timbuktu_ring_topology["ring"][0]
+        assert isinstance(member["hybas_id"], int)
+
+    def test_ring_member_has_neighbor_coords(self, timbuktu_ring_topology):
+        member = timbuktu_ring_topology["ring"][0]
+        assert "neighbor_lat" in member and "neighbor_lon" in member
+        assert isinstance(member["neighbor_lat"], float)
+        assert isinstance(member["neighbor_lon"], float)
+
+    def test_ring_member_feature_is_polygon(self, timbuktu_ring_topology):
+        geom = timbuktu_ring_topology["ring"][0]["feature"]["geometry"]
+        assert geom["type"] in ("Polygon", "MultiPolygon")
+
+    def test_center_and_ring_ids_are_distinct(self, timbuktu_ring_topology):
+        """Center basin must not appear in the ring."""
+        center_id = timbuktu_ring_topology["center"]["properties"]["hybas_id"]
+        ring_ids  = {m["hybas_id"] for m in timbuktu_ring_topology["ring"]}
+        assert center_id not in ring_ids, f"Center {center_id} found in ring {ring_ids}"
