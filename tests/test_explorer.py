@@ -120,6 +120,22 @@ def test_values_no_nodata_sentinel(client):
     assert -9999 not in vals, "-9999 NoData sentinel must be masked to null"
 
 
+@pytest.mark.parametrize("var_key", [
+    "precipitation_annual",
+    "temperature_annual",
+    "cropland_pct",
+])
+def test_values_wo14_vars_have_p10_p90(client, var_key):
+    # WO14 applyBasinVar() uses p10/p90 from meta for domain — confirm all three vars return them.
+    r = client.get("/api/explorer/values", params={"var": var_key, "level": 6, "su": "s"})
+    assert r.status_code == 200, f"{var_key} returned {r.status_code}"
+    meta = r.json()["meta"]
+    assert meta["n_valid"] > 0, f"{var_key}: n_valid=0"
+    assert "p10" in meta and meta["p10"] is not None, f"{var_key}: missing p10"
+    assert "p90" in meta and meta["p90"] is not None, f"{var_key}: missing p90"
+    assert meta["p10"] < meta["p90"], f"{var_key}: p10 >= p90"
+
+
 def test_values_temperature_divide_by_10(client):
     # tmp_dc_smn stored as °C×10 — displayed values should be in plausible °C range
     r = client.get("/api/explorer/values", params={"var": "temperature_min", "level": 6, "su": "s"})

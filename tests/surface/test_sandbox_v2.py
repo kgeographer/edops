@@ -59,6 +59,10 @@ REQUIRED_IDS = [
     "v2-pane-sig",
     "v2-pane-analysis",
     "v2-intro",
+    "v2-intro-text",
+    "v2-choropleth",
+    "v2-basin-var",
+    "v2-basin-legend",
 ]
 
 SCOPE_OPTIONS = [

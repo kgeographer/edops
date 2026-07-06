@@ -233,7 +233,7 @@ class TestRenderer:
 
     def test_intro_hidden_after_render(self, page: Page, live_server_url):
         load_timbuktu_single(page, live_server_url)
-        expect(page.locator("#v2-intro")).to_be_hidden()
+        expect(page.locator("#v2-intro-text")).to_be_hidden()
 
     def test_histogram_widget_present(self, page: Page, live_server_url):
         """area_weighted rows should render SVG histogram widgets."""
@@ -472,3 +472,94 @@ class TestRingLive:
         page.mouse.click(center_coords["x"], center_coords["y"])
         # Center click calls renderCenterSig → switches to Sig tab
         page.wait_for_selector("#v2-pane-sig #v2-sig-accordion", state="visible", timeout=10000)
+
+
+# ---------------------------------------------------------------------------
+# WO14 — Basin choropleth
+# ---------------------------------------------------------------------------
+
+class TestBasinChoropleth:
+    """Variable selector present, paint loop fires, legend renders, no errors."""
+
+    def test_selector_present(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        expect(page.locator("#v2-basin-var")).to_be_visible()
+
+    def test_selector_has_four_live_options(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        opts = page.locator("#v2-basin-var option:not([disabled]):not([value=''])")
+        assert opts.count() == 4
+
+    def test_values_call_on_select(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        with page.expect_request(lambda r: "/api/explorer/values" in r.url and "aridity_index" in r.url):
+            page.select_option("#v2-basin-var", "aridity_index")
+
+    def test_values_call_uses_su_s(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        with page.expect_request(lambda r: "/api/explorer/values" in r.url and "su=s" in r.url):
+            page.select_option("#v2-basin-var", "precipitation_annual")
+
+    def test_legend_renders_after_select(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=15000)
+        bar = page.locator("#v2-basin-legend-bar")
+        assert bar.get_attribute("style") and "background" in (bar.get_attribute("style") or "")
+
+    def test_legend_updates_on_variable_change(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=15000)
+        lo_text_1 = page.locator("#v2-basin-leg-lo").inner_text()
+        page.select_option("#v2-basin-var", "temperature_annual")
+        # Wait until lo label changes (aridity: "dry (...)" → temperature: "cold (...)")
+        page.wait_for_function(
+            f"() => document.getElementById('v2-basin-leg-lo').textContent !== {repr(lo_text_1)}",
+            timeout=15000)
+        lo_text_2 = page.locator("#v2-basin-leg-lo").inner_text()
+        assert lo_text_2 != lo_text_1
+
+    def test_status_shows_basin_count(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+
+    def test_choropleth_available_without_signature(self, page: Page, live_server_url):
+        """Paint fires before any scope is resolved — choropleth is map-global, not sig-gated."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        # No Get Signature click — just select variable
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=15000)
+
+    def test_intro_text_visible_before_sig(self, page: Page, live_server_url):
+        """#v2-intro-text remains visible until Get Signature fires."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        expect(page.locator("#v2-intro-text")).to_be_visible()
+
+    def test_intro_text_hidden_after_sig(self, page: Page, live_server_url):
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-scope-select", "single")
+        page.fill("#v2-place-input", "Timbuktu")
+        page.evaluate("() => { window._coords = {lat: 16.8167, lon: -2.9833}; "
+                      "document.querySelector('#v2-sig-btn').disabled = false; }")
+        page.evaluate("() => { currentLat = 16.8167; currentLon = -2.9833; }")
+        # Trigger via the single-basin example instead (simpler)
+        page.select_option("#v2-example-select", "single|16.8167,-2.9833|Timbuktu")
+        page.click("#v2-sig-btn")
+        page.wait_for_selector("#v2-pane-sig #v2-sig-accordion", state="attached", timeout=20000)
+        expect(page.locator("#v2-intro-text")).to_be_hidden()
+
+    def test_no_console_errors_on_repaint(self, page: Page, live_server_url):
+        errors = []
+        page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=15000)
+        page.select_option("#v2-basin-var", "temperature_annual")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+        assert not errors, f"Console errors on repaint: {errors}"

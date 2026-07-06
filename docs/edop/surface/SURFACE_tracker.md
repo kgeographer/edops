@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-05 (WO13 complete; 391/391 tests)
+- **Last updated:** 2026-07-05 (WO14 complete; 395/395 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -130,6 +130,14 @@ in left column explains the new interaction. Band T available for all members (p
 `type=single_basin` calls use current UI settings). 391/391 tests pass (109 surface + 282
 non-surface). Findings in `wo13_findings.md`.
 
+**WO14 (basin choropleth) complete** — PMTiles basin06 vector source + feature-state paint
+loop for 4 BasinATLAS variables (aridity, precip, temperature, cropland); RDBU colour ramp
+direct-port from cliopatria; LMR/HYDE entries present-but-inert (WO15 enables). Shell
+extended with `{ before }` option for insertion below existing scope layers. `#v2-intro`
+restructured: `#v2-intro-text` hides on sig load, `#v2-choropleth` persists. Legend shows
+p10–p90 domain + ramp. 395/395 tests pass (+4 BS, +11 Playwright, +3 route). Findings in
+`wo14_findings.md`.
+
 ---
 
 ## Roadmap (seed)
@@ -151,6 +159,7 @@ non-surface). Findings in `wo13_findings.md`.
 | Single-basin map | Containing basin polygon drawn via shell after sig load; honesty check; fit-bounds. | **complete — WO11** |
 | Example-select standard + buffer map | One handler shape for all scopes; Map-first landing; buffer basins + circle via shell; member_ids in payload; /api/basin/geom route. | **complete — WO12** |
 | Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
+| Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -204,6 +213,15 @@ Append-only; dated. Settled unless explicitly revisited here.
 - **`geojsonBbox` extended** for FeatureCollections — collects coordinates from all features.
 - **`FIXTURE_URLS` cleaned up** — all three entries were dead (live handler branches
   precede the else fallthrough). Ring and draw get explicit placeholder branches.
+
+**2026-07-05 (WO14 — basin choropleth)**
+
+- **PMTiles source via shell** — `shell.add('basin-choropleth', {type:'vector', url:'pmtiles://...'}, layerSpecs)` works as-claimed; no restructuring of the shell was required for the vector source type.
+- **Shell extended: `{ before }` option** — `shell.add(name, sourceSpec, layerSpecs, { before })` (optional fourth arg) passes `before` to `map.addLayer`. Enables insertion below existing layers. Required to guarantee choropleth renders under scope geometry when loaded lazily (after Get Signature).
+- **Lazy load on first variable select** — `loadBasinLayer()` is not called at map init; it runs at first non-empty variable selection. `_basinLayerLoaded` flag prevents re-registration. Eager init caused PMTiles tile-fetch requests to contend with ring sig API calls in concurrent tests.
+- **`#v2-intro` restructured** — `#v2-intro` is now a container with two residents: `#v2-intro-text` (hidden on sig load) and `#v2-choropleth` (always visible). Choropleth controls persist after any sig load.
+- **4 live variables, LMR/HYDE inert-present** — `aridity_index`, `precipitation_annual`, `temperature_annual` (reverse=true), `cropland_pct` (green, fixed domain). LMR/HYDE as disabled `<option>` entries for WO15 activation without menu restructuring.
+- **Colour ramp** — RDBU_PAL (`interpRdbu`) shared across all 4 vars; reverse flag for temperature; `interpTwo` (custom green) for cropland. Direct port from cliopatria.
 
 **2026-07-05 (WO13 — basin-ring live)**
 
