@@ -80,7 +80,7 @@ SCOPE_OPTIONS = [
 EXAMPLE_VALUES = [
     "single|16.8167,-2.9833|Timbuktu",
     "buffer|16.8167,-2.9833|Timbuktu|100",
-    "ring|16.8167,-2.9833|Timbuktu|1000|1100",
+    "ring|16.8167,-2.9833|Timbuktu|1400|1500",
     "polity|Northern Song|1000|1000|1100",
 ]
 

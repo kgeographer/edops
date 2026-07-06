@@ -55,7 +55,7 @@
               <option value="">Load an example</option>
               <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
               <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
-              <option value="ring|16.8167,-2.9833|Timbuktu|1000|1100">Timbuktu — basin ring</option>
+              <option value="ring|16.8167,-2.9833|Timbuktu|1400|1500">Timbuktu — basin ring</option>
               <option value="polity|Northern Song|1000|1000|1100">Northern Song (1000–1100 CE)</option>
             </select>
           </div>
@@ -357,6 +357,13 @@
     const parts = this.value.split('|');
     const scope = parts[0];
 
+    // Clear any active choropleth paint and reset the selector.
+    clearLMRPaint();
+    const _basinSrcId = _layers['basin-choropleth']?.sourceId;
+    if (_basinSrcId) map.removeFeatureState({ source: _basinSrcId, sourceLayer: 'basin06' });
+    document.getElementById('v2-basin-legend').style.display = 'none';
+    document.getElementById('v2-basin-var').value = '';
+
     // Set scope dropdown and trigger gate
     document.getElementById('v2-scope-select').value = scope;
     applyScope(scope);
@@ -404,7 +411,52 @@
       selectPolity(parts[1], targetYear);
     }
 
-    this.value = ''; // reset dropdown
+    // Draw preview geometry on map immediately for point-scoped examples,
+    // without waiting for Get Signature. Clear prior scope layers first.
+    function _showMapTab() {
+      bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+    }
+    function _fitMap(bbox) {
+      if (!bbox) return;
+      const mapTabBtn = document.getElementById('v2-tab-map-btn');
+      if (mapTabBtn.classList.contains('active')) {
+        map.fitBounds(bbox, { padding: 40 });
+      } else {
+        map.once('resize', () => map.fitBounds(bbox, { padding: 40 }));
+      }
+    }
+    if (POINT_SCOPES.has(scope) && scope !== POLITY_SCOPE) {
+      // Clear any prior scope geometry layers before drawing the new preview.
+      ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members'].forEach(n => shell.remove(n));
+    }
+
+    if (scope === 'single' && currentLat !== null) {
+      _showMapTab();
+      (async () => {
+        const bbox = await drawSingleBasin(currentLat, currentLon, null);
+        _fitMap(bbox);
+      })();
+    } else if (scope === 'buffer' && currentLat !== null) {
+      const radiusKm = parseFloat(document.getElementById('v2-radius').value) || 100;
+      const circle = geodesicCircle(currentLat, currentLon, radiusKm);
+      shell.add('buffer-circle',
+        { type: 'geojson', data: circle },
+        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5, 'line-dasharray': [4, 2] } }]
+      );
+      _showMapTab();
+      _fitMap(geojsonBbox(circle));
+    } else if (scope === 'ring' && currentLat !== null) {
+      _showMapTab();
+      (async () => {
+        const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
+        if (!r.ok) return;
+        _ringData = await r.json();
+        const bbox = await drawRingGeometry(_ringData);
+        _fitMap(bbox);
+      })();
+    }
+
+    // Retain selected example name in dropdown (no reset — shows what's loaded).
   });
 
   // ── Polity search + slice picker ─────────────────────────────────────────
@@ -558,9 +610,9 @@
       const feature = data.containing_basin;
       if (!feature) return null;
 
-      // Honesty check: basin-preview must resolve to the same basin as the signature.
+      // Honesty check: only enforced when a sig hybas_id is provided (skip on preview).
       const mapId = feature.properties?.hybas_id;
-      if (mapId !== sigHybas_id) {
+      if (sigHybas_id !== null && mapId !== sigHybas_id) {
         console.error(`[v2] Basin mismatch: signature=${sigHybas_id} map=${mapId} — not drawing`);
         return null;
       }
@@ -1289,9 +1341,8 @@
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
       document.getElementById('v2-intro-text').style.display = 'none';
-      // fitBounds must fire after map.resize() (triggered by shown.bs.tab), not before.
+      // Queue fitBounds for next time user opens Map tab (map resize fires on shown.bs.tab).
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
-      bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
     } catch (err) {
       console.error('[v2] signature error:', err);
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
