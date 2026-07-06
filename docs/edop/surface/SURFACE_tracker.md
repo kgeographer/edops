@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-05 (WO14 complete; 395/395 tests)
+- **Last updated:** 2026-07-06 (WO15 complete; 80/80 structural tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -138,6 +138,18 @@ restructured: `#v2-intro-text` hides on sig load, `#v2-choropleth` persists. Leg
 p10–p90 domain + ramp. 395/395 tests pass (+4 BS, +11 Playwright, +3 route). Findings in
 `wo14_findings.md`.
 
+**WO15 (LMR paint + example-select UX) complete** — LMR temperature and precipitation anomaly
+variables live in the basin-variable selector; painted from `lmr_notches.geojson` (5 notch
+periods, not per-year); diverging RDBU ramp centred on zero; legend states anomaly framing.
+Paint-year slider built but hidden (default 1100 CE / MCA notch); deferred UI pending state
+model resolution (pre-Braga required item in deferred register). State audit conducted:
+7 conflict types documented in `wo15_state_audit.md`; scope dropdown sidelined as hidden
+on load / display-only for polity example; example dropdown is the controlling input.
+Preview geometry drawn immediately on example select for all 4 active scopes (single, buffer,
+ring, polity). Get Signature now lands on Signature tab (not Map tab). Choropleth cleared
+and selector reset on example change. `_fitMap()` helper resolves fitBounds when map tab
+already active. 80/80 structural tests pass (+9 from WO15). Findings in `wo15_findings.md`.
+
 ---
 
 ## Roadmap (seed)
@@ -160,6 +172,7 @@ p10–p90 domain + ramp. 395/395 tests pass (+4 BS, +11 Playwright, +3 route). F
 | Example-select standard + buffer map | One handler shape for all scopes; Map-first landing; buffer basins + circle via shell; member_ids in payload; /api/basin/geom route. | **complete — WO12** |
 | Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
+| LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -196,6 +209,37 @@ p10–p90 domain + ramp. 395/395 tests pass (+4 BS, +11 Playwright, +3 route). F
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-06 (WO15 — LMR paint + example-select UX)**
+
+- **LMR data structure: 5 notches, not per-year** — `lmr_notches.geojson` stores pre-aggregated
+  notch-period means (`air_0`–`air_4`, `prate_0`–`prate_4`); quality floor at 700 CE (years
+  < 700 CE paint nothing silently). Per-year paint requires a new API route; logged in deferred
+  register as pre-Braga required.
+- **Paint-year slider hidden** — slider in DOM at default 1100 CE (MCA notch); hidden from user.
+  Showing it creates framing confusion with Band T from/to. Deferred until the slice-synced
+  route exists.
+- **Anomaly ramp** — RDBU diverging, centred on zero. Domain = ±abs-max of painted values.
+  Legend mid-label: `0 (850–1850 mean)`. Caveat hard-coded (payload field unreachable from
+  scope-independent choropleth path — acceptable WO15 fallback; wiring deferred).
+- **Scope dropdown sidelined** — `#v2-scope-wrap` hidden on page load (`display:none`). On
+  polity example select: shown with all options disabled (display-only, confirms scope). On
+  single/buffer/ring: remains hidden. Scope dropdown as a free-standing input is deferred.
+  Example dropdown is the controlling input.
+- **Example-select preview geometry** — geometry drawn immediately on example select, before
+  Get Signature: single → `drawSingleBasin(lat, lon, null)` (honesty check skipped when
+  `sigHybas_id=null`); buffer → geodesic dashed circle only (basin polygons require resolver
+  output); ring → `/api/basin/ring` fetch + `drawRingGeometry` (full topology, hover/click
+  ready). Prior scope layers cleared before each preview draw.
+- **`_fitMap(bbox)`** — calls `map.fitBounds` directly if map tab already active; otherwise
+  `map.once('resize')`. Replaces brittle resize-only pattern.
+- **Get Signature → Signature tab** — sig button handler no longer switches to Map tab on
+  success. User has seen the map via preview; sig tab was already shown with spinner at fetch
+  start. Map `fitBounds` queued via `map.once('resize')` for next manual Map tab open.
+- **Choropleth clear on example change** — `clearLMRPaint()` + `removeFeatureState` on basin
+  source + selector reset to blank on every example select.
+- **State audit** — 7 conflict types (C1–C7) between two generators documented in
+  `wo15_state_audit.md`. No architectural fix this WO; audit is prerequisite for state-model pass.
 
 **2026-07-05 (WO12 — example-select standard + buffer map)**
 

@@ -63,6 +63,9 @@ REQUIRED_IDS = [
     "v2-choropleth",
     "v2-basin-var",
     "v2-basin-legend",
+    "v2-lmr-year-control",
+    "v2-lmr-year-slider",
+    "v2-lmr-year-label",
 ]
 
 SCOPE_OPTIONS = [
@@ -77,7 +80,7 @@ SCOPE_OPTIONS = [
 EXAMPLE_VALUES = [
     "single|16.8167,-2.9833|Timbuktu",
     "buffer|16.8167,-2.9833|Timbuktu|100",
-    "ring|16.8167,-2.9833|Timbuktu|1000|1100",
+    "ring|16.8167,-2.9833|Timbuktu|1400|1500",
     "polity|Northern Song|1000|1000|1100",
 ]
 
@@ -315,3 +318,57 @@ class TestBandChecks:
         cb = page.find(id=f"v2-band-{band}")
         assert cb is not None, f"Band {band} checkbox missing"
         assert not cb.has_attr("checked"), f"Band {band} should be unchecked on load"
+
+
+# ---------------------------------------------------------------------------
+# WO15 — LMR choropleth (structural)
+# ---------------------------------------------------------------------------
+
+class TestLMRChoroplethStructure:
+    """
+    Structural tests for the WO15 LMR variable selector entries and
+    paint-year control element.  JS runtime behaviour tested in TestLMRUI.
+    """
+
+    def test_lmr_temp_option_enabled(self, page):
+        """lmr_temp_anomaly must be selectable — not disabled."""
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "lmr_temp_anomaly"})
+        assert opt is not None, "lmr_temp_anomaly option not found"
+        assert not opt.has_attr("disabled"), "lmr_temp_anomaly must not be disabled (WO15 enables it)"
+
+    def test_lmr_precip_option_enabled(self, page):
+        """lmr_precip_anomaly must be selectable — not disabled."""
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "lmr_precip_anomaly"})
+        assert opt is not None, "lmr_precip_anomaly option not found"
+        assert not opt.has_attr("disabled"), "lmr_precip_anomaly must not be disabled (WO15 enables it)"
+
+    def test_hyde_cropland_still_disabled(self, page):
+        """HYDE entries must remain disabled until WO16."""
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "hyde_cropland"})
+        assert opt is not None, "hyde_cropland option not found"
+        assert opt.has_attr("disabled"), "hyde_cropland must remain disabled until WO16"
+
+    def test_lmr_year_control_hidden_on_load(self, page):
+        """Paint-year control must be hidden on page load — shown only for LMR variables."""
+        el = page.find(id="v2-lmr-year-control")
+        assert el is not None, "#v2-lmr-year-control missing"
+        assert "display:none" in (el.get("style") or "").replace(" ", ""), \
+            "#v2-lmr-year-control must have display:none on load"
+
+    def test_lmr_year_slider_range(self, page):
+        """Paint-year slider must span the LMR reliable range: 700–1998 CE."""
+        slider = page.find(id="v2-lmr-year-slider")
+        assert slider is not None, "#v2-lmr-year-slider missing"
+        assert slider.get("min") == "700", "Slider min must be 700 (LMR reliable range start)"
+        assert slider.get("max") == "1998", "Slider max must be 1998 (LMR record end)"
+
+    def test_lmr_optgroup_label(self, page):
+        """LMR option group must carry the v2.1 label, not the WO15 placeholder."""
+        select = page.find(id="v2-basin-var")
+        groups = select.find_all("optgroup")
+        labels = [g.get("label", "") for g in groups]
+        assert any("LMR v2.1" in lbl for lbl in labels), \
+            "LMR optgroup label must include 'LMR v2.1'; found: " + str(labels)
