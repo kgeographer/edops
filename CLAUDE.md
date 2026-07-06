@@ -99,7 +99,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO14 complete; next: WO15 (LMR/HYDE choropleth layers).
+**Surface — current step:** WO15 complete; next: WO16 (HYDE choropleth layers).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -149,6 +149,12 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   with `{ before }` for lazy-load layer ordering; `#v2-intro-text` sub-div hides on sig load
   while `#v2-choropleth` persists. LMR/HYDE entries inert-present for WO15. 395/395 tests pass.
   Findings in `wo14_findings.md`.
+- **WO15 (LMR paint + example-select UX) complete** — LMR temp/precip anomaly live from
+  `lmr_notches.geojson` (5 notches, not per-year; quality floor 700 CE); diverging RDBU ramp
+  centred on zero; paint-year slider hidden (default 1100 CE / MCA notch); state audit conducted
+  (7 conflicts, `wo15_state_audit.md`); scope dropdown sidelined as display-only; preview geometry
+  on example select (single/ring fetch topology; buffer circle-only); Get Signature → Signature tab;
+  choropleth cleared on example change. 80/80 structural tests pass. Findings in `wo15_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
