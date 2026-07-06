@@ -110,8 +110,8 @@
             </div>
           </div>
 
-          <!-- Scope dropdown -->
-          <div class="mb-2">
+          <!-- Scope dropdown — hidden on load; shown by example handler for polity examples -->
+          <div class="mb-2" id="v2-scope-wrap" style="display:none;">
             <select id="v2-scope-select" class="form-select form-select-sm">
               <option value="">Select a scope</option>
               <option value="single">Single basin</option>
@@ -183,7 +183,7 @@
 
         <!-- Basin choropleth controls — hidden pending state-model resolution (WO15 audit) -->
         <div id="v2-choropleth" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" for="v2-basin-var">Basin variable</label>
+          <label class="text-muted small d-block mb-1" for="v2-basin-var">Variable</label>
           <select id="v2-basin-var" class="form-select form-select-sm">
             <option value="">— none —</option>
             <optgroup label="Physiographic (modern normal)">
@@ -360,6 +360,20 @@
     // Set scope dropdown and trigger gate
     document.getElementById('v2-scope-select').value = scope;
     applyScope(scope);
+
+    // Show scope dropdown for polity examples; all options disabled (display-only).
+    const scopeWrap = document.getElementById('v2-scope-wrap');
+    const scopeOpts = document.querySelectorAll('#v2-scope-select option');
+    if (scope === POLITY_SCOPE) {
+      scopeOpts.forEach(o => { o.disabled = true; });
+      scopeWrap.style.display = '';
+    } else {
+      scopeWrap.style.display = 'none';
+    }
+
+    // Show choropleth controls and hide intro text when any example loads.
+    document.getElementById('v2-intro-text').style.display = 'none';
+    document.getElementById('v2-choropleth').style.display = '';
 
     if (POINT_SCOPES.has(scope)) {
       document.getElementById('v2-place-input').value = parts[2]; // name
@@ -1622,19 +1636,18 @@
     lmrYearLabel.textContent = notch ? notch.label : '';
   })();
 
-  // Choropleth change listener — disabled pending state-model resolution (WO15 audit).
-  // document.getElementById('v2-basin-var').addEventListener('change', e => {
-  //   const key = e.target.value;
-  //   if (key.startsWith('lmr_')) {
-  //     const basinSourceId = _layers['basin-choropleth']?.sourceId;
-  //     if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
-  //     document.getElementById('v2-basin-legend').style.display = 'none';
-  //     applyLMRChoropleth(key, parseInt(lmrYearSlider.value));
-  //     return;
-  //   }
-  //   clearLMRPaint();
-  //   applyBasinVar(key);
-  // });
+  document.getElementById('v2-basin-var').addEventListener('change', e => {
+    const key = e.target.value;
+    if (key.startsWith('lmr_')) {
+      const basinSourceId = _layers['basin-choropleth']?.sourceId;
+      if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      applyLMRChoropleth(key, parseInt(lmrYearSlider.value));
+      return;
+    }
+    clearLMRPaint();
+    applyBasinVar(key);
+  });
 
 })();
 </script>
