@@ -201,6 +201,8 @@
             <optgroup label="Land use — HYDE 3.4">
               <option value="hyde_cropland">Cropland fraction</option>
               <option value="hyde_grazing">Grazing fraction</option>
+              <option value="hyde_pasture">Pasture fraction</option>
+              <option value="hyde_rangeland">Rangeland fraction</option>
             </optgroup>
           </select>
           <div id="v2-basin-status" style="font-size:0.75rem; color:#6c757d; min-height:1.2em; margin-top:0.4rem;"></div>
@@ -1672,10 +1674,12 @@
   }
 
   // ── HYDE choropleth (values-API + feature-state on basin06.pmtiles) ─────
-  const HYDE_DB_VAR = { hyde_cropland: 'cropland', hyde_grazing: 'grazing' };
+  const HYDE_DB_VAR = { hyde_cropland: 'cropland', hyde_grazing: 'grazing', hyde_pasture: 'pasture', hyde_rangeland: 'rangeland' };
   const HYDE_RAMPS  = {
-    hyde_cropland: { lo: '#e5f5e0', hi: '#006d2c' },
-    hyde_grazing:  { lo: '#fff7ec', hi: '#7f2704' },
+    hyde_cropland:  { lo: '#e5f5e0', hi: '#006d2c' },
+    hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
+    hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
+    hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
   };
 
   async function applyHydeChoropleth(varKey, year) {

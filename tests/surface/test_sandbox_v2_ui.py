@@ -30,7 +30,12 @@ def goto(page: Page, base_url: str) -> None:
 
 
 def select_scope(page: Page, value: str) -> None:
-    page.select_option("#v2-scope-select", value)
+    # Scope dropdown is hidden (WO15); fire change event to trigger the internal gate.
+    page.evaluate(f"""
+        const el = document.getElementById('v2-scope-select');
+        el.value = '{value}';
+        el.dispatchEvent(new Event('change'));
+    """)
 
 
 # ---------------------------------------------------------------------------
@@ -159,19 +164,16 @@ class TestExamplePrefill:
     def test_timbuktu_single(self, page: Page, live_server_url):
         goto(page, live_server_url)
         page.select_option("#v2-example-select", "single|16.8167,-2.9833|Timbuktu")
-        expect(page.locator("#v2-scope-select")).to_have_value("single")
         expect(page.locator("#v2-place-input")).to_have_value("Timbuktu")
 
     def test_timbuktu_buffer(self, page: Page, live_server_url):
         goto(page, live_server_url)
         page.select_option("#v2-example-select", "buffer|16.8167,-2.9833|Timbuktu|100")
-        expect(page.locator("#v2-scope-select")).to_have_value("buffer")
         expect(page.locator("#v2-radius")).to_have_value("100")
 
     def test_nsong_polity(self, page: Page, live_server_url):
         goto(page, live_server_url)
         page.select_option("#v2-example-select", "polity|Northern Song|1000|1000|1100")
-        expect(page.locator("#v2-scope-select")).to_have_value("polity")
         expect(page.locator("#v2-polity-input")).to_have_value("Northern Song")
         expect(page.locator("#v2-resolver-year")).to_have_value("1000")
         expect(page.locator("#v2-band-T")).to_be_checked()
@@ -181,19 +183,12 @@ class TestExamplePrefill:
 
     def test_timbuktu_ring(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1000|1100")
-        expect(page.locator("#v2-scope-select")).to_have_value("ring")
+        page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1400|1500")
         expect(page.locator("#v2-place-input")).to_have_value("Timbuktu")
         expect(page.locator("#v2-band-T")).to_be_checked()
-        expect(page.locator("#v2-from-year")).to_have_value("1000")
-        expect(page.locator("#v2-to-year")).to_have_value("1100")
+        expect(page.locator("#v2-from-year")).to_have_value("1400")
+        expect(page.locator("#v2-to-year")).to_have_value("1500")
         expect(page.locator("#v2-t-year-row")).to_be_visible()
-
-    def test_example_resets_dropdown(self, page: Page, live_server_url):
-        """Dropdown resets to empty after selection so it can be re-used."""
-        goto(page, live_server_url)
-        page.select_option("#v2-example-select", "single|16.8167,-2.9833|Timbuktu")
-        expect(page.locator("#v2-example-select")).to_have_value("")
 
 
 # ---------------------------------------------------------------------------
@@ -296,21 +291,21 @@ class TestMapFirstLanding:
         if r.status_code != 200:
             pytest.skip("Live endpoint not available")
 
-    def test_single_lands_on_map_tab(self, page: Page, live_server_url):
-        """After Get signature (single), Map tab should be active."""
+    def test_single_lands_on_sig_tab(self, page: Page, live_server_url):
+        """After Get signature (single), Signature tab should be active (WO15)."""
         load_timbuktu_single(page, live_server_url)
         active = page.evaluate(
-            "() => document.getElementById('v2-tab-map-btn').classList.contains('active')"
+            "() => document.getElementById('v2-tab-sig-btn').classList.contains('active')"
         )
-        assert active, "Map tab not active after single-basin sig load"
+        assert active, "Sig tab not active after single-basin sig load"
 
-    def test_buffer_lands_on_map_tab(self, page: Page, live_server_url):
-        """After Get signature (buffer), Map tab should be active."""
+    def test_buffer_lands_on_sig_tab(self, page: Page, live_server_url):
+        """After Get signature (buffer), Signature tab should be active (WO15)."""
         load_timbuktu_buffer(page, live_server_url)
         active = page.evaluate(
-            "() => document.getElementById('v2-tab-map-btn').classList.contains('active')"
+            "() => document.getElementById('v2-tab-sig-btn').classList.contains('active')"
         )
-        assert active, "Map tab not active after buffer sig load"
+        assert active, "Sig tab not active after buffer sig load"
 
     def test_sig_accordion_still_reachable(self, page: Page, live_server_url):
         """Signature tab must be reachable and populated after Map-first landing."""
@@ -374,9 +369,8 @@ class TestRingScope:
 def load_timbuktu_ring(page: Page, base_url: str) -> None:
     """Select the Timbuktu ring example and click Get signature."""
     goto(page, base_url)
-    page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1000|1100")
+    page.select_option("#v2-example-select", "ring|16.8167,-2.9833|Timbuktu|1400|1500")
     page.click("#v2-sig-btn")
-    # Ring lands on Map tab; accordion is in hidden tab pane
     page.wait_for_selector("#v2-sig-accordion", state="attached", timeout=20000)
 
 

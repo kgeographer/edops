@@ -419,10 +419,24 @@ class TestHydeChoroplethStructure:
     def test_hyde_values_route_referenced(self, raw_html):
         assert "/api/hyde/values" in raw_html, "/api/hyde/values route not referenced in page JS"
 
+    def test_hyde_pasture_option_enabled(self, page):
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "hyde_pasture"})
+        assert opt is not None, "hyde_pasture option not found"
+        assert not opt.has_attr("disabled"), "hyde_pasture must be enabled"
+
+    def test_hyde_rangeland_option_enabled(self, page):
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "hyde_rangeland"})
+        assert opt is not None, "hyde_rangeland option not found"
+        assert not opt.has_attr("disabled"), "hyde_rangeland must be enabled"
+
     def test_hyde_db_var_map_present(self, raw_html):
         """HYDE_DB_VAR maps selector keys to DB column names (replaces HYDE_VAR_PATHS)."""
         assert "HYDE_DB_VAR" in raw_html, "HYDE_DB_VAR not found"
         assert "HYDE_VAR_PATHS" not in raw_html, "old HYDE_VAR_PATHS still present"
+        assert "hyde_pasture" in raw_html, "hyde_pasture missing from HYDE_DB_VAR"
+        assert "hyde_rangeland" in raw_html, "hyde_rangeland missing from HYDE_DB_VAR"
 
 
 class TestHydeValuesRoute:
