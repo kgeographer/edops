@@ -63,9 +63,9 @@ results flat. Per-request becomes `SELECT hybas_id, cropland_frac FROM ... WHERE
    per-basin lookups.
 
 4. **Build time** — expected ~128 × 2.67s ≈ 6 min for the insert loop. Report actual.
-   Whether to build all 128 steps (including 10 BCE steps the route doesn't currently serve)
-   or just the 118 CE-era steps is your call — all 128 costs ~6 extra seconds and future-proofs
-   the table; report the decision.
+   Build all 128 steps. `temporal.hyde_times` has 10 BCE steps (step_idx 0–9,
+   year_ce −10000 to −1000); HYDE 3.4 covers 10,000 BCE to 2025 CE, so the arrays are
+   populated. All 128 costs ~6 extra seconds over CE-only and keeps the table complete.
 
 ## Validation (notebook)
 
