@@ -33,6 +33,11 @@ def page(client):
     return BeautifulSoup(r.text, "html.parser")
 
 
+@pytest.fixture(scope="module")
+def raw_html(client):
+    return client.get("/sandbox/lookup2").text
+
+
 # ---------------------------------------------------------------------------
 # Constants (module-level so parametrize can reference them)
 # ---------------------------------------------------------------------------
@@ -344,12 +349,12 @@ class TestLMRChoroplethStructure:
         assert opt is not None, "lmr_precip_anomaly option not found"
         assert not opt.has_attr("disabled"), "lmr_precip_anomaly must not be disabled (WO15 enables it)"
 
-    def test_hyde_cropland_still_disabled(self, page):
-        """HYDE entries must remain disabled until WO16."""
+    def test_hyde_cropland_now_enabled(self, page):
+        """HYDE cropland enabled by WO16 — no longer disabled."""
         select = page.find(id="v2-basin-var")
         opt = select.find("option", {"value": "hyde_cropland"})
         assert opt is not None, "hyde_cropland option not found"
-        assert opt.has_attr("disabled"), "hyde_cropland must remain disabled until WO16"
+        assert not opt.has_attr("disabled"), "hyde_cropland must be enabled (WO16)"
 
     def test_lmr_year_control_hidden_on_load(self, page):
         """Paint-year control must be hidden on page load — shown only for LMR variables."""
@@ -372,3 +377,109 @@ class TestLMRChoroplethStructure:
         labels = [g.get("label", "") for g in groups]
         assert any("LMR v2.1" in lbl for lbl in labels), \
             "LMR optgroup label must include 'LMR v2.1'; found: " + str(labels)
+
+
+# ---------------------------------------------------------------------------
+# WO16 — HYDE choropleth (structural)
+# ---------------------------------------------------------------------------
+
+class TestHydeChoroplethStructure:
+    """
+    Structural tests for the WO16 HYDE variable selector entries.
+    JS runtime behaviour tested in TestHydeUI (Playwright, skip-pending-state-model).
+    """
+
+    def test_hyde_cropland_option_enabled(self, page):
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "hyde_cropland"})
+        assert opt is not None, "hyde_cropland option not found"
+        assert not opt.has_attr("disabled"), "hyde_cropland must be enabled (WO16)"
+
+    def test_hyde_grazing_option_enabled(self, page):
+        select = page.find(id="v2-basin-var")
+        opt = select.find("option", {"value": "hyde_grazing"})
+        assert opt is not None, "hyde_grazing option not found"
+        assert not opt.has_attr("disabled"), "hyde_grazing must be enabled (WO16)"
+
+    def test_hyde_optgroup_label(self, page):
+        """HYDE optgroup label must drop the WO16 placeholder."""
+        select = page.find(id="v2-basin-var")
+        groups = select.find_all("optgroup")
+        labels = [g.get("label", "") for g in groups]
+        assert any("HYDE 3.4" in lbl for lbl in labels), \
+            "HYDE optgroup label must include 'HYDE 3.4'; found: " + str(labels)
+        assert not any("WO16" in lbl for lbl in labels), \
+            "HYDE optgroup must not still carry the (WO16) placeholder"
+
+    def test_hyde_uses_values_api_not_raster(self, raw_html):
+        """WO16a: HYDE must use applyHydeChoropleth (values-API), not applyHydeRaster."""
+        assert "applyHydeChoropleth" in raw_html, "applyHydeChoropleth not found in page JS"
+        assert "applyHydeRaster" not in raw_html, "old raster function still present"
+
+    def test_hyde_values_route_referenced(self, raw_html):
+        assert "/api/hyde/values" in raw_html, "/api/hyde/values route not referenced in page JS"
+
+    def test_hyde_db_var_map_present(self, raw_html):
+        """HYDE_DB_VAR maps selector keys to DB column names (replaces HYDE_VAR_PATHS)."""
+        assert "HYDE_DB_VAR" in raw_html, "HYDE_DB_VAR not found"
+        assert "HYDE_VAR_PATHS" not in raw_html, "old HYDE_VAR_PATHS still present"
+
+
+class TestHydeValuesRoute:
+    """Smoke tests for the /api/hyde/values route (WO16a)."""
+
+    def test_route_returns_200(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000")
+        assert r.status_code == 200
+
+    def test_response_shape(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000")
+        body = r.json()
+        assert "var" in body and "actual_year" in body and "values" in body
+
+    def test_actual_year_snapped(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1050")
+        body = r.json()
+        assert body["actual_year"] == 1000, f"Expected 1000 CE snap, got {body['actual_year']}"
+
+    def test_values_are_fractions(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000")
+        body = r.json()
+        vals = [v for v in body["values"].values() if v is not None]
+        assert all(0.0 <= v <= 1.01 for v in vals), "Values should be fractions 0–1"
+
+    def test_invalid_var_rejected(self, client):
+        r = client.get("/api/hyde/values?var=badvar&year=1000")
+        assert r.status_code == 400
+
+    def test_grazing_returns_values(self, client):
+        r = client.get("/api/hyde/values?var=grazing&year=1000")
+        assert r.status_code == 200
+        assert len(r.json()["values"]) > 1000
+
+    def test_consecutive_steps_differ(self, client):
+        """Adjacent CE century steps must return genuinely different basin values.
+
+        Confirms the slice-repaint mechanism has real temporal signal, not stale data.
+        900→1000 CE and 1000→1100 CE should each change >500 basins by more than 0.1%
+        cropland fraction (observed: ~2385 and ~2648 respectively).
+        """
+        r900  = client.get("/api/hyde/values?var=cropland&year=900").json()["values"]
+        r1000 = client.get("/api/hyde/values?var=cropland&year=1000").json()["values"]
+        r1100 = client.get("/api/hyde/values?var=cropland&year=1100").json()["values"]
+
+        shared = set(r900) & set(r1000) & set(r1100)
+        assert len(shared) > 10000, f"Too few shared basin IDs: {len(shared)}"
+
+        changed_900_1000 = sum(
+            1 for k in shared
+            if abs((r1000[k] or 0) - (r900[k] or 0)) > 0.001
+        )
+        changed_1000_1100 = sum(
+            1 for k in shared
+            if abs((r1100[k] or 0) - (r1000[k] or 0)) > 0.001
+        )
+        assert changed_900_1000 > 500, \
+            f"900→1000 CE: only {changed_900_1000} basins changed >0.1% — values may be stale"
+        assert changed_1000_1100 > 500, \
+            f"1000→1100 CE: only {changed_1000_1100} basins changed >0.1% — values may be stale"

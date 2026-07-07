@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-06 (WO15 complete; 80/80 structural tests)
+- **Last updated:** 2026-07-06 (WO16a complete; 93/93 structural tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -150,6 +150,20 @@ ring, polity). Get Signature now lands on Signature tab (not Map tab). Choroplet
 and selector reset on example change. `_fitMap()` helper resolves fitBounds when map tab
 already active. 80/80 structural tests pass (+9 from WO15). Findings in `wo15_findings.md`.
 
+**WO16a (HYDE basin values — feasibility + implementation) complete** — Architecture review
+established that pre-baked epoch raster tiles (Explorer approach) are wrong for EDOPS: 7-epoch
+bins average 10–30 DB steps each, destroying temporal precision. Correct architecture:
+values-API + feature-state on `basin06.pmtiles` (same pattern as basin choropleth). Feasibility
+notebook (`notebooks/edop/surface/wo16a_hyde_basin_values.ipynb`) confirmed: centroid lookup
+returns 16,040-basin dict in 0.31s, 354 KB — same shape as `/api/explorer/values`. New
+`/api/hyde/values?var=X&year=N` route (centroid lookup; cropland stored as km²/cell, divided
+by `area_km2` for fraction; year floor-snapped via `temporal.hyde_times`). Frontend: raster
+block replaced by `applyHydeChoropleth` using `interpTwo` + feature-state. Slice-change
+reactive repaint: `applySlice` now re-fires active HYDE or LMR paint with `s.fromyear`,
+so slice switches update the choropleth without requiring a new Get Signature. 93/93 structural
+tests pass (+13 from WO16a). Branch: `surf_wo16a` (pending merge to `surface`).
+Findings in `wo16_findings.md`.
+
 ---
 
 ## Roadmap (seed)
@@ -173,6 +187,7 @@ already active. 80/80 structural tests pass (+9 from WO15). Findings in `wo15_fi
 | Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
+| HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** (pending merge) |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -209,6 +224,24 @@ already active. 80/80 structural tests pass (+9 from WO15). Findings in `wo15_fi
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-06 (WO16a — HYDE basin values)**
+
+- **Values-API over epoch rasters** — pre-baked PNG tiles average multiple DB steps (epoch 4
+  averages 10 steps: 100–1000 CE), destroying temporal precision. Correct architecture:
+  geometry from `basin06.pmtiles` (static, already loaded) + `/api/hyde/values` (values per
+  request). Same pattern as basin choropleth and LMR.
+- **`/api/hyde/values?var=X&year=N`** — centroid lookup: basin centroid → containing HYDE cell;
+  year floor-snapped via `WHERE year_ce <= year ORDER BY year_ce DESC LIMIT 1`. Returns
+  `{hybas_id: fraction}` dict (~354 KB, 0.31s). `cropland` stored as km²/cell — divided by
+  `area_km2` for fraction. 357 missing basins (island/coastal) return null (transparent paint).
+- **118 CE-era steps available** — `temporal.hyde_times` has 100-year resolution through ~2010,
+  annual thereafter. Any of these steps addressable via the route.
+- **Slice-reactive repaint** — `applySlice` re-fires active HYDE or LMR paint with `s.fromyear`
+  whenever the slice picker changes. Both temporal choropleth types now track the displayed slice.
+- **Crosswalk deferred** — a pre-computed `temporal.hyde_basin06_weights(hybas_id, cell_id,
+  area_frac)` table would improve accuracy (area-weighted vs centroid) and cover all 16,397
+  basins. Not required for Braga; logged as future accuracy improvement.
 
 **2026-07-06 (WO15 — LMR paint + example-select UX)**
 

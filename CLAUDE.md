@@ -99,7 +99,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO15 complete; next: WO16 (HYDE choropleth layers).
+**Surface — current step:** WO16a complete; next: merge `surf_wo16a` → `surface`, then WO17.
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -155,6 +155,12 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   (7 conflicts, `wo15_state_audit.md`); scope dropdown sidelined as display-only; preview geometry
   on example select (single/ring fetch topology; buffer circle-only); Get Signature → Signature tab;
   choropleth cleared on example change. 80/80 structural tests pass. Findings in `wo15_findings.md`.
+- **WO16a (HYDE basin values — feasibility + implementation) complete** — architecture decision:
+  values-API over pre-baked epoch raster tiles; `lmr_notches.geojson`/`basin06.pmtiles` pattern
+  extended to HYDE; new `/api/hyde/values?var=X&year=N` route (centroid lookup, 0.31s for 16k
+  basins); `applyHydeChoropleth` replaces raster block; slice-change reactive repaint for both
+  HYDE and LMR. Feasibility notebook at `notebooks/edop/surface/wo16a_hyde_basin_values.ipynb`.
+  93/93 structural tests pass. Findings in `wo16_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
