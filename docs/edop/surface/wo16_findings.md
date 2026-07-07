@@ -108,18 +108,49 @@ A materialized `temporal.hyde_basin06_weights(hybas_id, cell_id, area_frac)` tab
 proper area-weighted aggregation and cover all 16,397 basins. Build time ~30–90 min.
 Not required for the Braga milestone; recorded as a future accuracy improvement.
 
-## F16.9 — Next step: UI implementation
+## F16.9 — Implementation: route + frontend
 
-WO16a has established feasibility. The implementation path:
+`/api/hyde/values` added to `app/api/routes.py` after the existing `explorer_hyde_epoch_max`
+route. Centroid lookup, var validated against `_HYDE_SAFE_VARS`, year floor-snapped via
+`temporal.hyde_times`. Returns `{var, year, actual_year, values: {hybas_id: fraction}}`.
 
-1. Add `/api/hyde/values` route to `app/api/routes.py` (centroid lookup, var + year params)
-2. Remove raster block from `sandbox_v2.html`; wire HYDE variables through `applyBasinVar`
-   (or thin wrapper) with year parameter from Band T span
-3. Verify in browser; update tests
-4. Merge `surf_wo16a` → `surface`
+Frontend (`sandbox_v2.html`): the raster block (`HYDE_EPOCHS`, `HYDE_VAR_PATHS`,
+`yearToHydeEpoch`, `applyHydeRaster`, `renderHydeLegend`, `clearHydePaint`) replaced by:
+- `HYDE_DB_VAR` — maps selector key (`hyde_cropland`) to DB column name (`cropland`)
+- `HYDE_RAMPS` — lo/hi hex colors per variable (green for cropland, orange-brown for grazing)
+- `applyHydeChoropleth(varKey, year)` — fetches `/api/hyde/values`, domain-scales to p-max,
+  paints via `interpTwo` + feature-state on existing `basin06.pmtiles` source
+- `renderHydeLegend(varKey, year, domMax)` — legend shows `${actual_year} CE` as mid-label
+- `clearHydePaint()` — removes basin06 feature-state (same source as basin choropleth;
+  mutual exclusion maintained since only one path writes feature-state at a time)
 
-## F16.10 — Test count
+Verified in browser: Northern Song / cropland shows green gradient over China basin grid,
+polity boundary overlaid. Feature-state on `basin06.pmtiles` works identically to the
+BasinATLAS choropleth path.
 
-Structural tests: 83 pass (unchanged from WO15 — no new structural coverage added this
-sub-step; HYDE Playwright tests remain skipped per F15.10 trigger).
-Engine + app suite: 395 pass. Zero FAILs, zero unexplained warnings.
+## F16.10 — Slice-reactive repaint
+
+On polity scope, slice changes now re-fire the active temporal choropleth. Added to end of
+`applySlice(idx, resolverYear)`:
+
+```js
+const activeVar = document.getElementById('v2-basin-var').value;
+if (activeVar.startsWith('hyde_')) applyHydeChoropleth(activeVar, s.fromyear);
+else if (activeVar.startsWith('lmr_')) applyLMRChoropleth(activeVar, s.fromyear);
+```
+
+Uses `s.fromyear` (the slice's start year), not the Band T from/to (which is set to the
+full polity lifespan). For N Song (100-year HYDE steps), slices in 960–999 → 900 CE,
+1000–1099 → 1000 CE, 1100+ → 1100 CE. Adjacent-century transitions produce a real paint
+update; same-century slice switches produce no visual change (correct: same DB step).
+
+Verified: 900→1000 CE changes 2,385 basins by >0.1% fraction; 1000→1100 CE changes 2,648.
+Test added: `TestHydeValuesRoute::test_consecutive_steps_differ`.
+
+## F16.11 — Test count
+
+Structural (`test_sandbox_v2.py`): **93 pass** (+13 from WO16a: `raw_html` fixture;
+3 JS-content tests in `TestHydeChoroplethStructure`; `TestHydeValuesRoute` 7 tests including
+`test_consecutive_steps_differ`).
+Engine + app suite (excl. Playwright): **363 pass, 14 skipped**. Zero FAILs, zero unexplained
+warnings. HYDE Playwright tests remain skipped per F15.10 trigger.

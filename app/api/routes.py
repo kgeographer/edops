@@ -2681,6 +2681,60 @@ def explorer_hyde_epoch_max(var: str, epoch: int):
     return {"var": var, "epoch": epoch, "p99_fraction": round(p99, 4)}
 
 
+@router.get("/hyde/values", include_in_schema=False)
+def hyde_values(var: str, year: int):
+    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
+
+    Year is floor-snapped to the nearest available step in temporal.hyde_times.
+    Centroid lookup: basin centroid → containing HYDE cell (0.31s for 16k basins).
+    cropland/grazing/pasture/rangeland stored as km²/cell — divided by area_km2.
+    357 island/coastal basins with no containing cell are omitted (null in choropleth).
+    Response: {var, year, actual_year, values: {hybas_id: fraction}}
+    """
+    if var not in _HYDE_SAFE_VARS:
+        raise HTTPException(status_code=400, detail=f"var must be one of {_HYDE_SAFE_VARS}")
+
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT step_idx, year_ce
+                FROM temporal.hyde_times
+                WHERE year_ce <= %(year)s
+                ORDER BY year_ce DESC
+                LIMIT 1
+                """,
+                {"year": year},
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=400, detail=f"No HYDE data at or before year {year}")
+            step_idx, actual_year = int(row[0]), int(row[1])
+            pg_idx = step_idx + 1  # PG arrays are 1-based; step_idx is 0-based
+
+            # var is validated against _HYDE_SAFE_VARS (server-controlled set) before use here
+            cur.execute(
+                f"""
+                SELECT b.hybas_id,
+                       h.{var}[%(pg_idx)s] / NULLIF(h.area_km2, 0) AS value
+                FROM public.basin06 b
+                JOIN temporal.hyde_cells h
+                  ON ST_Contains(h.geom, ST_Centroid(b.geom))
+                """,
+                {"pg_idx": pg_idx},
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    values = {
+        str(int(r[0])): round(float(r[1]), 6) if r[1] is not None else None
+        for r in rows
+    }
+    return {"var": var, "year": year, "actual_year": actual_year, "values": values}
+
+
 # -----------------------
 # Cliopatria polity endpoints
 # -----------------------

@@ -695,3 +695,97 @@ class TestLMRUI:
             "document.getElementById('v2-basin-status').textContent.includes('basins')",
             timeout=15000)
         assert not errors, f"Console errors on basin→LMR→basin: {errors}"
+
+
+@pytest.mark.skip(reason="TestHydeUI skip-pending-state-model — same trigger as TestBasinChoropleth/TestLMRUI; written as recorded debt, not invisible gap (WO16)")
+class TestHydeUI:
+    """Runtime tests for HYDE raster overlay paint (WO16).
+
+    Skipped under the same trigger as TestBasinChoropleth and TestLMRUI (choropleth
+    Playwright suite pending state-model resolution, F15.10). Written so HYDE has
+    recorded coverage debt rather than no coverage at all.
+    """
+
+    @pytest.fixture(autouse=True)
+    def require_hyde_tiles(self, live_server_url):
+        import httpx
+        r = httpx.get(
+            f"{live_server_url}/static/explorer/hyde_tiles/cropland/epoch_5/0/0/0.png",
+            timeout=10
+        )
+        if r.status_code != 200:
+            pytest.skip("HYDE tiles not available")
+
+    def test_hyde_raster_source_registered(self, page: Page, live_server_url):
+        """Shell must register a hyde-raster source after selecting a HYDE variable."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_function(
+            "Object.keys(window.v2map.getStyle().sources).some(s => s.includes('hyde-raster'))",
+            timeout=10000)
+        sources = page.evaluate("() => Object.keys(window.v2map.getStyle().sources)")
+        assert any("hyde-raster" in s for s in sources), \
+            f"src-hyde-raster not in map sources: {sources}"
+
+    def test_hyde_legend_visible_after_select(self, page: Page, live_server_url):
+        """Legend must appear after HYDE variable is selected."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=10000)
+
+    def test_hyde_legend_shows_epoch_label(self, page: Page, live_server_url):
+        """Legend mid must show the epoch label for the current paint year."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_selector("#v2-basin-legend", state="visible", timeout=10000)
+        mid_text = page.locator("#v2-basin-leg-mid").inner_text()
+        assert mid_text, "Legend mid label must be non-empty (epoch label expected)"
+
+    def test_hyde_clears_basin_paint(self, page: Page, live_server_url):
+        """Selecting HYDE after a basin variable must clear basin feature-state (no stacked paints)."""
+        errors = []
+        page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_function(
+            "Object.keys(window.v2map.getStyle().sources).some(s => s.includes('hyde-raster'))",
+            timeout=10000)
+        assert not errors, f"Console errors on basin→HYDE: {errors}"
+
+    def test_basin_clears_hyde_paint(self, page: Page, live_server_url):
+        """Selecting a basin variable after HYDE must remove the hyde-raster source."""
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_function(
+            "Object.keys(window.v2map.getStyle().sources).some(s => s.includes('hyde-raster'))",
+            timeout=10000)
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+        sources = page.evaluate("() => Object.keys(window.v2map.getStyle().sources)")
+        assert not any("hyde-raster" in s for s in sources), \
+            "hyde-raster source must be removed after switching to basin variable"
+
+    def test_no_console_errors_basin_hyde_basin(self, page: Page, live_server_url):
+        """Basin → HYDE → basin switch must produce no console errors."""
+        errors = []
+        page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+        page.goto(f"{live_server_url}{PAGE_PATH}")
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+        page.select_option("#v2-basin-var", "hyde_cropland")
+        page.wait_for_function(
+            "Object.keys(window.v2map.getStyle().sources).some(s => s.includes('hyde-raster'))",
+            timeout=10000)
+        page.select_option("#v2-basin-var", "aridity_index")
+        page.wait_for_function(
+            "document.getElementById('v2-basin-status').textContent.includes('basins')",
+            timeout=15000)
+        assert not errors, f"Console errors on basin→HYDE→basin: {errors}"

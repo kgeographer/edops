@@ -198,9 +198,9 @@
               <option value="lmr_temp_anomaly">Temperature anomaly</option>
               <option value="lmr_precip_anomaly">Precipitation anomaly</option>
             </optgroup>
-            <optgroup label="Land use — HYDE 3.4 (WO16)">
-              <option value="hyde_cropland" disabled>Cropland fraction</option>
-              <option value="hyde_grazing" disabled>Grazing fraction</option>
+            <optgroup label="Land use — HYDE 3.4">
+              <option value="hyde_cropland">Cropland fraction</option>
+              <option value="hyde_grazing">Grazing fraction</option>
             </optgroup>
           </select>
           <div id="v2-basin-status" style="font-size:0.75rem; color:#6c757d; min-height:1.2em; margin-top:0.4rem;"></div>
@@ -359,6 +359,7 @@
 
     // Clear any active choropleth paint and reset the selector.
     clearLMRPaint();
+    clearHydePaint();
     const _basinSrcId = _layers['basin-choropleth']?.sourceId;
     if (_basinSrcId) map.removeFeatureState({ source: _basinSrcId, sourceLayer: 'basin06' });
     document.getElementById('v2-basin-legend').style.display = 'none';
@@ -546,6 +547,11 @@
       updateBandT();
     }
     drawPolityBoundary(s.id);
+
+    // Repaint any active temporal choropleth to reflect the new slice year.
+    const activeVar = document.getElementById('v2-basin-var').value;
+    if (activeVar.startsWith('hyde_')) applyHydeChoropleth(activeVar, s.fromyear);
+    else if (activeVar.startsWith('lmr_')) applyLMRChoropleth(activeVar, s.fromyear);
   }
 
   sliceSelect.addEventListener('change', () => {
@@ -1665,6 +1671,60 @@
     if (sourceId) map.removeFeatureState({ source: sourceId });
   }
 
+  // ── HYDE choropleth (values-API + feature-state on basin06.pmtiles) ─────
+  const HYDE_DB_VAR = { hyde_cropland: 'cropland', hyde_grazing: 'grazing' };
+  const HYDE_RAMPS  = {
+    hyde_cropland: { lo: '#e5f5e0', hi: '#006d2c' },
+    hyde_grazing:  { lo: '#fff7ec', hi: '#7f2704' },
+  };
+
+  async function applyHydeChoropleth(varKey, year) {
+    const dbVar = HYDE_DB_VAR[varKey];
+    if (!dbVar) return;
+    loadBasinLayer();
+    const sourceId = _layers['basin-choropleth'].sourceId;
+    const statusEl = document.getElementById('v2-basin-status');
+    statusEl.textContent = 'Loading…';
+    try {
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}`);
+      if (!resp.ok) { statusEl.textContent = 'Error'; return; }
+      const { values, actual_year } = await resp.json();
+      const nums   = Object.values(values).filter(v => v != null && v > 0);
+      const domMax = nums.length ? Math.max(...nums) : 1;
+      const ramp   = HYDE_RAMPS[varKey];
+      map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+      for (const [id, v] of Object.entries(values)) {
+        if (v == null) continue;
+        const t = Math.max(0, Math.min(1, v / domMax));
+        map.setFeatureState({ source: sourceId, sourceLayer: 'basin06', id: Number(id) },
+                            { fc: interpTwo(ramp.lo, ramp.hi, t) });
+      }
+      renderHydeLegend(varKey, actual_year, domMax);
+      statusEl.textContent = `${actual_year} CE · ${nums.length.toLocaleString()} basins`;
+    } catch (e) {
+      statusEl.textContent = 'Error loading HYDE';
+      console.error('applyHydeChoropleth:', e);
+    }
+  }
+
+  function renderHydeLegend(varKey, year, domMax) {
+    const barEl = document.getElementById('v2-basin-legend-bar');
+    const loEl  = document.getElementById('v2-basin-leg-lo');
+    const midEl = document.getElementById('v2-basin-leg-mid');
+    const hiEl  = document.getElementById('v2-basin-leg-hi');
+    const ramp  = HYDE_RAMPS[varKey] || { lo: '#f7f7f7', hi: '#252525' };
+    barEl.style.background = `linear-gradient(to right, ${ramp.lo}, ${ramp.hi})`;
+    loEl.textContent  = '0';
+    midEl.textContent = `${year} CE`;
+    hiEl.textContent  = `${(domMax * 100).toFixed(1)}%`;
+    document.getElementById('v2-basin-legend').style.display = 'block';
+  }
+
+  function clearHydePaint() {
+    const sourceId = _layers['basin-choropleth']?.sourceId;
+    if (sourceId) map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+  }
+
   // Paint-year slider — registered once; wires LMR scrub independent of Band T.
   const lmrYearSlider = document.getElementById('v2-lmr-year-slider');
   const lmrYearLabel  = document.getElementById('v2-lmr-year-label');
@@ -1678,6 +1738,8 @@
     const varKey = document.getElementById('v2-basin-var').value;
     if (varKey.startsWith('lmr_')) {
       applyLMRChoropleth(varKey, parseInt(lmrYearSlider.value));
+    } else if (varKey.startsWith('hyde_')) {
+      applyHydeChoropleth(varKey, parseInt(lmrYearSlider.value));
     }
   });
 
@@ -1692,11 +1754,21 @@
     if (key.startsWith('lmr_')) {
       const basinSourceId = _layers['basin-choropleth']?.sourceId;
       if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
+      clearHydePaint();
       document.getElementById('v2-basin-legend').style.display = 'none';
       applyLMRChoropleth(key, parseInt(lmrYearSlider.value));
       return;
     }
+    if (key.startsWith('hyde_')) {
+      const basinSourceId = _layers['basin-choropleth']?.sourceId;
+      if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
+      clearLMRPaint();
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      applyHydeChoropleth(key, parseInt(lmrYearSlider.value));
+      return;
+    }
     clearLMRPaint();
+    clearHydePaint();
     applyBasinVar(key);
   });
 
