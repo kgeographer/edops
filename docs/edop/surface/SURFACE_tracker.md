@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-06 (WO16a complete; 93/93 structural tests)
+- **Last updated:** 2026-07-07 (WO17 complete; crosswalk built, route swap deferred to WO18)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -161,8 +161,15 @@ by `area_km2` for fraction; year floor-snapped via `temporal.hyde_times`). Front
 block replaced by `applyHydeChoropleth` using `interpTwo` + feature-state. Slice-change
 reactive repaint: `applySlice` now re-fires active HYDE or LMR paint with `s.fromyear`,
 so slice switches update the choropleth without requiring a new Get Signature. 93/93 structural
-tests pass (+13 from WO16a). Branch: `surf_wo16a` (pending merge to `surface`).
-Findings in `wo16_findings.md`.
+tests pass (+13 from WO16a). Findings in `wo16_findings.md`.
+
+**WO17 (area-weighted HYDE crosswalk) complete** — `temporal.hyde_basin06_weights` materialized
+(2.82M rows, 1.2 min build); area-weighted method validated against BasinATLAS `crp_pc_sse`
+(r=0.902 vs centroid 0.689). Route swap blocked: per-request query time 2.67s vs 0.31s centroid
+— the 2.82M-row join to `hyde_cells` for per-step array access is the bottleneck. Crosswalk is
+correct; route swap requires pre-aggregation (WO18). Denominator settled: `frac_full` (÷ sub_area),
+consistent with BasinATLAS. 241 centroid-null basins recovered; 116 genuinely null → transparent.
+Findings in `wo17_findings.md`. Notebook: `wo17_hyde_area_weighted.ipynb`.
 
 ---
 
@@ -187,7 +194,8 @@ Findings in `wo16_findings.md`.
 | Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
-| HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** (pending merge) |
+| HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
+| HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** (route swap is WO18) |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -239,9 +247,24 @@ Append-only; dated. Settled unless explicitly revisited here.
   annual thereafter. Any of these steps addressable via the route.
 - **Slice-reactive repaint** — `applySlice` re-fires active HYDE or LMR paint with `s.fromyear`
   whenever the slice picker changes. Both temporal choropleth types now track the displayed slice.
-- **Crosswalk deferred** — a pre-computed `temporal.hyde_basin06_weights(hybas_id, cell_id,
-  area_frac)` table would improve accuracy (area-weighted vs centroid) and cover all 16,397
-  basins. Not required for Braga; logged as future accuracy improvement.
+- **Crosswalk built in WO17** — `temporal.hyde_basin06_weights` materialized; see WO17 locked decisions below for details. Route swap to use it requires pre-aggregation (WO18).
+
+**2026-07-07 (WO17 — area-weighted HYDE crosswalk)**
+
+- **`temporal.hyde_basin06_weights` schema**: `(hybas_id bigint, cell_id integer, overlap_frac real)`.
+  `overlap_frac = ST_Area(intersection) / ST_Area(cell)` — planar ratio; distortion cancels.
+  Denominator choice deferred to query time (not baked in), enabling both `frac_full` and `frac_covered`.
+- **Denominator: `frac_full` (÷ sub_area)** — empirically identical to `frac_covered` for 95%+ of basins
+  (coverage ratio ≈ 1.0); r values differ by 0.001. `frac_full` is consistent with BasinATLAS.
+- **Route swap blocked**: per-request join = 2.67s vs 0.31s centroid baseline. Bottleneck is
+  2.82M-row join to `hyde_cells` for array access. **WO18** resolves by pre-aggregating all
+  128 steps × 4 vars → `temporal.hyde_basin06_steps (hybas_id, step_idx, cropland_frac, grazing_frac, ...)`.
+  Per-request becomes an indexed point lookup, expected <100ms.
+- **r improvement 0.689 → 0.902** at 2000 CE vs BasinATLAS `crp_pc_sse`. Validates method.
+- **Coverage**: 16,281 of 16,397 basins (241 centroid-nulls recovered; 116 genuinely no-land → transparent).
+- **Unit guard passed**: no fraction exceeds 1.0.
+- **Methods note**: uniform-within-cell distribution assumed (finest structure HYDE 3.4 asserts);
+  within-basin heterogeneity not represented — basin-level summary, same epistemic object as all other EDOPS bands.
 
 **2026-07-06 (WO15 — LMR paint + example-select UX)**
 
