@@ -1436,7 +1436,7 @@
     { key: 'precipitation_annual', su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
     { key: 'temperature_annual',   su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
     { key: 'cropland_pct',         su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
-      palette: { lo: '#e5f5e0', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
+      palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
   ];
 
   let _basinLayerLoaded = false;
@@ -1676,7 +1676,7 @@
   // ── HYDE choropleth (values-API + feature-state on basin06.pmtiles) ─────
   const HYDE_DB_VAR = { hyde_cropland: 'cropland', hyde_grazing: 'grazing', hyde_pasture: 'pasture', hyde_rangeland: 'rangeland' };
   const HYDE_RAMPS  = {
-    hyde_cropland:  { lo: '#e5f5e0', hi: '#006d2c' },
+    hyde_cropland:  { lo: '#ffffff', hi: '#006d2c' },
     hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
     hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
     hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
