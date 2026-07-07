@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-07 (WO17 complete; crosswalk built, route swap deferred to WO18)
+- **Last updated:** 2026-07-07 (WO18 complete; HYDE area-weighted route live, 364/364 tests)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -171,6 +171,14 @@ correct; route swap requires pre-aggregation (WO18). Denominator settled: `frac_
 consistent with BasinATLAS. 241 centroid-null basins recovered; 116 genuinely null → transparent.
 Findings in `wo17_findings.md`. Notebook: `wo17_hyde_area_weighted.ipynb`.
 
+**WO18 (HYDE pre-aggregation + route swap) complete** — `temporal.hyde_basin06_steps`
+materialized (2.08M rows, 9.9 min build; 128 steps × 16,281 basins × 4 vars). Per-request
+0.033s (80× faster than WO17 2.67s; 6× under threshold). `/api/hyde/values` now queries
+pre-aggregated table; centroid join retired. One basin (hybas_id 5060271430) has grazing/rangeland
+frac = 1.0016 due to sub_area/covered_km2 mismatch; clamped to 1.0 in route. Coverage 16,281
+(vs centroid 16,040). Value agreement with WO17 max delta 7.94e-08. 364/364 tests pass.
+Findings in `wo18_findings.md`.
+
 ---
 
 ## Roadmap (seed)
@@ -195,7 +203,8 @@ Findings in `wo17_findings.md`. Notebook: `wo17_hyde_area_weighted.ipynb`.
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
-| HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** (route swap is WO18) |
+| HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
+| HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
 | `/area` input types beyond polity | Raw GeoJSON (user-drawn study area, POST body; arbitrary-boundary analyst-drawer caveat); buffer-fronting / endpoint consolidation; multi-timestep response shape. | surface-driven; deferred until the page pulls for them |
 | Dashboard (true) | Stakeholder-polished. Some ways off. The sandbox is the intermediate that teaches what a dashboard can provide. | future |
 
@@ -248,6 +257,19 @@ Append-only; dated. Settled unless explicitly revisited here.
 - **Slice-reactive repaint** — `applySlice` re-fires active HYDE or LMR paint with `s.fromyear`
   whenever the slice picker changes. Both temporal choropleth types now track the displayed slice.
 - **Crosswalk built in WO17** — `temporal.hyde_basin06_weights` materialized; see WO17 locked decisions below for details. Route swap to use it requires pre-aggregation (WO18).
+
+**2026-07-07 (WO18 — HYDE pre-aggregation + route swap)**
+
+- **`temporal.hyde_basin06_steps`** — 2,083,968 rows (16,281 basins × 128 steps × 4 vars).
+  `frac_full` (÷ `sub_area`) per WO17 decision. Indexes: `(step_idx)`, `(hybas_id, step_idx)`.
+- **`/api/hyde/values` route swap** — centroid join retired; now `SELECT hybas_id, {var}_frac
+  FROM temporal.hyde_basin06_steps WHERE step_idx = N`. Per-request: 0.033s (vs 2.67s WO17,
+  0.31s centroid). Response shape unchanged; frontend requires no change.
+- **Clamp at 1.0** — `min(v, 1.0)` in route dict comprehension. One basin (hybas_id 5060271430)
+  has grazing/rangeland frac = 1.0016 due to `sub_area`/covered_km2 mismatch (0.16%). Table
+  stores the honest arithmetic; physical constraint enforced at display layer.
+- **116 no-land basins** — absent from table (no rows), not NULL rows. Route returns no entry
+  for these basins; frontend treats absence as null → transparent paint.
 
 **2026-07-07 (WO17 — area-weighted HYDE crosswalk)**
 

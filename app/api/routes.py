@@ -2686,9 +2686,10 @@ def hyde_values(var: str, year: int):
     """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
 
     Year is floor-snapped to the nearest available step in temporal.hyde_times.
-    Centroid lookup: basin centroid → containing HYDE cell (0.31s for 16k basins).
-    cropland/grazing/pasture/rangeland stored as km²/cell — divided by area_km2.
-    357 island/coastal basins with no containing cell are omitted (null in choropleth).
+    Values from temporal.hyde_basin06_steps — area-weighted aggregate via crosswalk
+    (temporal.hyde_basin06_weights), ~0.033s for 16k basins (WO18).
+    116 island/coastal basins with no land coverage are omitted (null in choropleth).
+    Fractions clamped to 1.0 (one basin has sub_area < covered_km2 by 0.16%).
     Response: {var, year, actual_year, values: {hybas_id: fraction}}
     """
     if var not in _HYDE_SAFE_VARS:
@@ -2711,25 +2712,19 @@ def hyde_values(var: str, year: int):
             if not row:
                 raise HTTPException(status_code=400, detail=f"No HYDE data at or before year {year}")
             step_idx, actual_year = int(row[0]), int(row[1])
-            pg_idx = step_idx + 1  # PG arrays are 1-based; step_idx is 0-based
 
-            # var is validated against _HYDE_SAFE_VARS (server-controlled set) before use here
+            # var validated against _HYDE_SAFE_VARS; column name is server-controlled
+            col = f"{var}_frac"
             cur.execute(
-                f"""
-                SELECT b.hybas_id,
-                       h.{var}[%(pg_idx)s] / NULLIF(h.area_km2, 0) AS value
-                FROM public.basin06 b
-                JOIN temporal.hyde_cells h
-                  ON ST_Contains(h.geom, ST_Centroid(b.geom))
-                """,
-                {"pg_idx": pg_idx},
+                f"SELECT hybas_id, {col} FROM temporal.hyde_basin06_steps WHERE step_idx = %(s)s",
+                {"s": step_idx},
             )
             rows = cur.fetchall()
     finally:
         conn.close()
 
     values = {
-        str(int(r[0])): round(float(r[1]), 6) if r[1] is not None else None
+        str(int(r[0])): min(round(float(r[1]), 6), 1.0) if r[1] is not None else None
         for r in rows
     }
     return {"var": var, "year": year, "actual_year": actual_year, "values": values}

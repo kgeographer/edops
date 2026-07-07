@@ -99,7 +99,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO17 complete; next: WO18 (pre-aggregation + route swap).
+**Surface — current step:** WO18 complete; next: TBD.
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -163,9 +163,11 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   93/93 structural tests pass. Findings in `wo16_findings.md`.
 - **WO17 (area-weighted HYDE crosswalk) complete** — `temporal.hyde_basin06_weights` materialized
   (2.82M rows, 1.2 min build); area-weighted r=0.902 vs centroid 0.689; route swap blocked by
-  2.67s query time. WO18 = pre-aggregation → `temporal.hyde_basin06_steps` → route swap.
-  Denominator settled: `frac_full` (÷ sub_area). Notebook: `wo17_hyde_area_weighted.ipynb`.
-  Findings in `wo17_findings.md`.
+  2.67s query time. Denominator settled: `frac_full` (÷ sub_area). Findings in `wo17_findings.md`.
+- **WO18 (HYDE pre-aggregation + route swap) complete** — `temporal.hyde_basin06_steps`
+  materialized (2.08M rows, 9.9 min); `/api/hyde/values` now queries pre-aggregated table;
+  per-request 0.033s (80× faster); clamp added for one pathological basin (1.0016 → 1.0).
+  364/364 tests pass. Findings in `wo18_findings.md`.
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`
