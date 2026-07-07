@@ -99,7 +99,7 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO18 complete; next: TBD.
+**Surface — current step:** WO18 complete; post-WO18 tidy done; next: TBD.
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -167,7 +167,11 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 - **WO18 (HYDE pre-aggregation + route swap) complete** — `temporal.hyde_basin06_steps`
   materialized (2.08M rows, 9.9 min); `/api/hyde/values` now queries pre-aggregated table;
   per-request 0.033s (80× faster); clamp added for one pathological basin (1.0016 → 1.0).
-  364/364 tests pass. Findings in `wo18_findings.md`.
+  Findings in `wo18_findings.md`.
+- **Post-WO18 tidy (2026-07-07)** — HYDE pasture + rangeland added to choropleth dropdown;
+  12 stale Playwright tests fixed (WO15 had hidden scope dropdown without updating tests);
+  cropland ramp lo corrected to white. **128 surface + 271 app/engine = 399 tests pass,
+  50 skipped.**
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`

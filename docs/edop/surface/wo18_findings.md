@@ -18,7 +18,7 @@ route swapped; 364/364 tests pass.
 | Per-request query time | **0.033s** (threshold: <200ms; WO17 baseline: 2.67s; speedup: 80×) |
 | Value agreement with WO17 | max \|delta\| = 7.94e-08 (float32 noise floor) |
 | Unit guard | See F18.4 |
-| Tests | **364 passed, 14 skipped** (Playwright); 0 failures |
+| Tests | **364 passed, 14 skipped** (Playwright); 0 failures — *see note below* |
 
 ---
 
@@ -86,6 +86,23 @@ crosswalk.
 The `applyHydeChoropleth` function in `sandbox_v2.html` requires no change. Slice-reactive
 repaint (added in WO16a) continues to work. Coverage improves from 16,040 (centroid) to 16,281
 (area-weighted) — 241 additional basins now paint with values.
+
+---
+
+## Post-WO18 note — Playwright test count was wrong
+
+The "14 skipped" figure in the accept gate was inaccurate. 12 Playwright tests were silently
+**failing** (not skipping) due to WO15 changes that were never reflected in the tests:
+- `select_scope()` called `page.select_option()` on `#v2-scope-select`, which WO15 made
+  hidden (`display:none`) — timed out for all TestScopeGate tests
+- Ring example value was stale (`|1000|1100` → `|1400|1500`)
+- `test_example_resets_dropdown` tested auto-reset behaviour removed in WO15
+- `test_*_lands_on_map_tab` asserted Map tab; WO15 changed landing to Signature tab
+
+Fixed in a post-WO18 commit (2026-07-07): `select_scope()` now fires the `change` event on
+the hidden dropdown element (triggering the IIFE-internal gate handler without requiring
+visibility); stale values and assertions updated or removed. **128 surface tests pass, 36
+skipped (intentionally deferred Playwright classes).**
 
 ---
 

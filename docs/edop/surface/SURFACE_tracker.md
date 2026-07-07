@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-07 (WO18 complete; HYDE area-weighted route live, 364/364 tests)
+- **Last updated:** 2026-07-07 (post-WO18: pasture/rangeland dropdown, Playwright fix, cropland ramp nit; 399 tests pass)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -170,6 +170,12 @@ tests pass (+13 from WO16a). Findings in `wo16_findings.md`.
 correct; route swap requires pre-aggregation (WO18). Denominator settled: `frac_full` (÷ sub_area),
 consistent with BasinATLAS. 241 centroid-null basins recovered; 116 genuinely null → transparent.
 Findings in `wo17_findings.md`. Notebook: `wo17_hyde_area_weighted.ipynb`.
+
+**Post-WO18 (2026-07-07)** — HYDE pasture and rangeland added to choropleth dropdown
+(`HYDE_DB_VAR` + `HYDE_RAMPS` extended; 2 new structural tests). 12 stale Playwright tests
+fixed (WO15 had hidden the scope dropdown and changed tab routing without updating the tests).
+Cropland ramp lo colour corrected to white (0 = no cropland, not pale green) — `kg_nits01`
+branch merged. **128 surface tests pass, 36 skipped; 399 total (app + engine + surface).**
 
 **WO18 (HYDE pre-aggregation + route swap) complete** — `temporal.hyde_basin06_steps`
 materialized (2.08M rows, 9.9 min build; 128 steps × 16,281 basins × 4 vars). Per-request
