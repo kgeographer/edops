@@ -68,9 +68,7 @@ REQUIRED_IDS = [
     "v2-choropleth",
     "v2-basin-var",
     "v2-basin-legend",
-    "v2-lmr-year-control",
-    "v2-lmr-year-slider",
-    "v2-lmr-year-label",
+    # v2-lmr-year-control / slider / label retired by WO19 (notch path removed)
 ]
 
 SCOPE_OPTIONS = [
@@ -356,19 +354,24 @@ class TestLMRChoroplethStructure:
         assert opt is not None, "hyde_cropland option not found"
         assert not opt.has_attr("disabled"), "hyde_cropland must be enabled (WO16)"
 
-    def test_lmr_year_control_hidden_on_load(self, page):
-        """Paint-year control must be hidden on page load — shown only for LMR variables."""
-        el = page.find(id="v2-lmr-year-control")
-        assert el is not None, "#v2-lmr-year-control missing"
-        assert "display:none" in (el.get("style") or "").replace(" ", ""), \
-            "#v2-lmr-year-control must have display:none on load"
-
-    def test_lmr_year_slider_range(self, page):
-        """Paint-year slider must span the LMR reliable range: 700–1998 CE."""
+    def test_lmr_slider_retired(self, page):
+        """WO19: paint-year slider (#v2-lmr-year-slider) must be gone — retired by WO19."""
         slider = page.find(id="v2-lmr-year-slider")
-        assert slider is not None, "#v2-lmr-year-slider missing"
-        assert slider.get("min") == "700", "Slider min must be 700 (LMR reliable range start)"
-        assert slider.get("max") == "1998", "Slider max must be 1998 (LMR record end)"
+        assert slider is None, "#v2-lmr-year-slider still present — should have been retired by WO19"
+
+    def test_lmr_year_control_retired(self, page):
+        """WO19: paint-year control div (#v2-lmr-year-control) must be gone — retired by WO19."""
+        el = page.find(id="v2-lmr-year-control")
+        assert el is None, "#v2-lmr-year-control still present — should have been retired by WO19"
+
+    def test_lmr_notch_path_retired(self, raw_html):
+        """WO19: notch-based property keys (air_0 etc.) must not appear in page JS."""
+        assert "lmrNotchForYear" not in raw_html, "lmrNotchForYear still in page JS"
+        assert "LMR_NOTCHES" not in raw_html, "LMR_NOTCHES still in page JS"
+
+    def test_lmr_values_route_referenced(self, raw_html):
+        """WO19: page JS must reference /api/lmr/values."""
+        assert "/api/lmr/values" in raw_html, "/api/lmr/values not referenced in page JS"
 
     def test_lmr_optgroup_label(self, page):
         """LMR option group must carry the v2.1 label, not the WO15 placeholder."""
@@ -497,3 +500,88 @@ class TestHydeValuesRoute:
             f"900→1000 CE: only {changed_900_1000} basins changed >0.1% — values may be stale"
         assert changed_1000_1100 > 500, \
             f"1000→1100 CE: only {changed_1000_1100} basins changed >0.1% — values may be stale"
+
+
+# ---------------------------------------------------------------------------
+# WO19 — LMR per-span values route
+# ---------------------------------------------------------------------------
+
+class TestLMRValuesRoute:
+    """Smoke tests for the /api/lmr/values route (WO19)."""
+
+    def test_route_returns_200(self, client):
+        r = client.get("/api/lmr/values?var=air&from_year=1000&to_year=1100")
+        assert r.status_code == 200
+
+    def test_response_shape(self, client):
+        r = client.get("/api/lmr/values?var=air&from_year=1000&to_year=1100")
+        body = r.json()
+        assert "var" in body
+        assert "from_year" in body
+        assert "to_year" in body
+        assert "actual_from" in body
+        assert "values" in body
+
+    def test_actual_from_above_floor(self, client):
+        """Span above floor: actual_from == from_year."""
+        r = client.get("/api/lmr/values?var=air&from_year=1000&to_year=1100")
+        body = r.json()
+        assert body["actual_from"] == 1000
+
+    def test_floor_straddle(self, client):
+        """Span straddling 700 CE floor: actual_from must be 700, not from_year."""
+        r = client.get("/api/lmr/values?var=air&from_year=500&to_year=900")
+        body = r.json()
+        assert body["actual_from"] == 700, \
+            f"Expected actual_from=700 for straddle, got {body['actual_from']}"
+        assert len(body["values"]) > 0, "Straddle span should return values"
+
+    def test_floor_entirely_below(self, client):
+        """Span entirely below 700 CE floor: values must be empty."""
+        r = client.get("/api/lmr/values?var=air&from_year=500&to_year=650")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["values"] == {}, \
+            "Below-floor span must return empty values dict, not coerced zeros"
+
+    def test_values_are_floats(self, client):
+        r = client.get("/api/lmr/values?var=air&from_year=1000&to_year=1100")
+        body = r.json()
+        vals = [v for v in body["values"].values() if v is not None]
+        assert len(vals) > 1000, f"Expected >1000 cells, got {len(vals)}"
+        assert all(isinstance(v, float) for v in vals)
+
+    def test_keys_are_latlon_strings(self, client):
+        """Values dict keys must be 'lat,lon' strings, not hybas_ids."""
+        r = client.get("/api/lmr/values?var=air&from_year=1000&to_year=1100")
+        body = r.json()
+        sample_keys = list(body["values"].keys())[:5]
+        for key in sample_keys:
+            parts = key.split(",")
+            assert len(parts) == 2, f"Key '{key}' is not 'lat,lon' format"
+            float(parts[0])  # must be numeric
+            float(parts[1])
+
+    def test_prate_returns_values(self, client):
+        r = client.get("/api/lmr/values?var=prate&from_year=1000&to_year=1100")
+        assert r.status_code == 200
+        assert len(r.json()["values"]) > 1000
+
+    def test_invalid_var_rejected(self, client):
+        r = client.get("/api/lmr/values?var=badvar&from_year=1000&to_year=1100")
+        assert r.status_code == 400
+
+    def test_span_mean_correctness(self, client):
+        """Span mean over a 1-year window must equal the single-year value.
+
+        For from_year == to_year, the mean of one value is that value.
+        Two adjacent single-year calls must produce different results (temporal signal).
+        """
+        r1100 = client.get("/api/lmr/values?var=air&from_year=1100&to_year=1100").json()
+        r1101 = client.get("/api/lmr/values?var=air&from_year=1101&to_year=1101").json()
+        shared = set(r1100["values"]) & set(r1101["values"])
+        assert len(shared) > 1000
+        diffs = [abs((r1101["values"][k] or 0) - (r1100["values"][k] or 0)) for k in shared]
+        changed = sum(1 for d in diffs if d > 0.001)
+        assert changed > 500, \
+            f"Adjacent single-year calls differ on only {changed} cells — values may be stale"
