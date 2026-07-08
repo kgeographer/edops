@@ -215,20 +215,6 @@
             </div>
           </div>
 
-          <!-- LMR paint-year control — visible only when an LMR variable is active -->
-          <div id="v2-lmr-year-control" style="display:none; margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid #dee2e6;">
-            <label class="text-muted small d-block mb-1" for="v2-lmr-year-slider">
-              Paint year
-              <span style="font-size:0.68rem; color:#aaa; font-style:italic;"> — independent of Band T</span>
-            </label>
-            <input id="v2-lmr-year-slider" type="range" class="form-range"
-                   min="700" max="1998" step="1" value="1100">
-            <div class="d-flex justify-content-between" style="font-size:0.7rem; color:#6c757d;">
-              <span>700 CE</span>
-              <span id="v2-lmr-year-label" style="font-weight:600;"></span>
-              <span>1998 CE</span>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -550,10 +536,10 @@
     }
     drawPolityBoundary(s.id);
 
-    // Repaint any active temporal choropleth to reflect the new slice year.
+    // Repaint any active temporal choropleth to reflect the new slice.
     const activeVar = document.getElementById('v2-basin-var').value;
     if (activeVar.startsWith('hyde_')) applyHydeChoropleth(activeVar, s.fromyear);
-    else if (activeVar.startsWith('lmr_')) applyLMRChoropleth(activeVar, s.fromyear);
+    else if (activeVar.startsWith('lmr_')) applyLMRChoropleth(activeVar, s.fromyear, s.toyear);
   }
 
   sliceSelect.addEventListener('change', () => {
@@ -1517,24 +1503,8 @@
   }
 
   // ── LMR choropleth ────────────────────────────────────────────────────────
-  const LMR_NOTCHES = [
-    { index: 0, label: 'Early (700–950 CE)',     y0: 700,  y1: 950  },
-    { index: 1, label: 'MCA (950–1250 CE)',       y0: 950,  y1: 1250 },
-    { index: 2, label: 'Trans. (1250–1450 CE)',   y0: 1250, y1: 1450 },
-    { index: 3, label: 'LIA (1450–1850 CE)',      y0: 1450, y1: 1850 },
-    { index: 4, label: 'Indust. (1850–1998 CE)',  y0: 1850, y1: 1999 },
-  ];
-
-  let _lmrData    = null;   // cached GeoJSON — loaded once; features carry numeric ids
+  let _lmrData    = null;   // cached GeoJSON geometry — loaded once
   let _lmrPainting = false; // concurrency guard
-
-  function lmrNotchForYear(year) {
-    for (const n of LMR_NOTCHES) {
-      if (year >= n.y0 && year < n.y1) return n;
-    }
-    if (year >= 1998) return LMR_NOTCHES[4];
-    return null; // < 700 CE — out of range
-  }
 
   function formatLMRVal(v) {
     if (v === 0) return '0';
@@ -1562,7 +1532,7 @@
       [
         { type: 'fill',
           paint: {
-            'fill-color':         ['coalesce', ['feature-state', 'fc'], 'transparent'],
+            'fill-color':         ['coalesce', ['get', 'fc'], 'transparent'],
             'fill-opacity':       0.75,
             'fill-outline-color': 'rgba(100,100,100,0.12)',
           }
@@ -1588,10 +1558,17 @@
     });
   }
 
-  async function applyLMRChoropleth(varKey, year) {
+  async function applyLMRChoropleth(varKey, fromYear, toYear) {
     if (_lmrPainting) return;
     _lmrPainting = true;
     const statusEl = document.getElementById('v2-basin-status');
+
+    if (!fromYear || !toYear || isNaN(fromYear) || isNaN(toYear)) {
+      statusEl.textContent = 'Set Band T span to paint LMR';
+      _lmrPainting = false;
+      return;
+    }
+
     statusEl.textContent = 'Loading…';
     try {
       await loadLMRData();
@@ -1602,53 +1579,59 @@
       _lmrPainting = false;
       return;
     }
-    showLMRLayer();
 
     const isTemp = varKey === 'lmr_temp_anomaly';
-    const prefix = isTemp ? 'air' : 'prate';
-    const notch  = lmrNotchForYear(year);
+    const apiVar = isTemp ? 'air' : 'prate';
 
-    if (!notch) {
-      statusEl.textContent = `${year} CE is before reliable range (700 CE)`;
-      document.getElementById('v2-basin-legend').style.display = 'none';
-      const sourceId = _layers['lmr-choropleth']?.sourceId;
-      if (sourceId) map.removeFeatureState({ source: sourceId });
+    let values, actualFrom;
+    try {
+      const resp = await fetch(`/api/lmr/values?var=${apiVar}&from_year=${fromYear}&to_year=${toYear}`);
+      if (!resp.ok) { statusEl.textContent = 'Error loading LMR'; _lmrPainting = false; return; }
+      ({ values, actual_from: actualFrom } = await resp.json());
+    } catch (e) {
+      statusEl.textContent = 'Error loading LMR values';
+      console.error('applyLMRChoropleth:', e);
       _lmrPainting = false;
       return;
     }
 
-    const propKey    = `${prefix}_${notch.index}`;
-    const preIndKeys = [0, 1, 2, 3].map(i => `${prefix}_${i}`);
-
-    // Compute each cell's anomaly relative to its own pre-industrial mean (notches 0–3),
-    // centring the diverging scale on zero for both variables.
-    const adjMap = new Map();
-    for (const f of _lmrData.features) {
-      const preVals = preIndKeys.map(k => f.properties[k]).filter(v => v != null);
-      if (!preVals.length) continue;
-      const cellMean = preVals.reduce((a, b) => a + b, 0) / preVals.length;
-      const raw = f.properties[propKey];
-      adjMap.set(f.id, raw != null ? raw - cellMean : null);
+    const nums = Object.values(values).filter(v => v != null);
+    if (!nums.length) {
+      statusEl.textContent = 'No LMR data for this span';
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      _lmrPainting = false;
+      return;
     }
 
-    const vals   = [...adjMap.values()].filter(v => v != null);
-    const sorted = [...vals].sort((a, b) => a - b);
+    const sorted = [...nums].sort((a, b) => a - b);
     const n      = sorted.length;
     const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
     const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
     const absMax = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
 
-    const sourceId = _layers['lmr-choropleth'].sourceId;
-    map.removeFeatureState({ source: sourceId });
-    for (const [id, v] of adjMap) {
-      if (v == null) continue;
-      const t    = Math.max(0, Math.min(1, (v + absMax) / (2 * absMax)));
-      const lmrT = isTemp ? 1 - t : t;
-      map.setFeatureState({ source: sourceId, id }, { fc: interpRdbu(lmrT) });
+    // Bake fill color into each feature's properties (property paint, not feature-state).
+    for (const f of _lmrData.features) {
+      const key = `${f.properties.lat},${f.properties.lon}`;
+      const v   = values[key];
+      if (v == null) {
+        delete f.properties.fc;
+      } else {
+        const t    = Math.max(0, Math.min(1, (v + absMax) / (2 * absMax)));
+        const lmrT = isTemp ? 1 - t : t;
+        f.properties.fc = interpRdbu(lmrT);
+      }
     }
 
+    const sourceId = _layers['lmr-choropleth'].sourceId;
+    map.getSource(sourceId).setData(_lmrData);
+    showLMRLayer();
+
     renderLMRLegend(isTemp, absMax);
-    statusEl.textContent = `${vals.length.toLocaleString()} cells · ${notch.label}`;
+    const effFrom   = actualFrom ?? fromYear;
+    const spanLabel = effFrom !== fromYear
+      ? `${effFrom}–${toYear} CE (floor; requested ${fromYear})`
+      : `${fromYear}–${toYear} CE`;
+    statusEl.textContent = `${n.toLocaleString()} cells · ${spanLabel}`;
     _lmrPainting = false;
   }
 
@@ -1669,8 +1652,6 @@
 
   function clearLMRPaint() {
     hideLMRLayer();
-    const sourceId = _layers['lmr-choropleth']?.sourceId;
-    if (sourceId) map.removeFeatureState({ source: sourceId });
   }
 
   // ── HYDE choropleth (values-API + feature-state on basin06.pmtiles) ─────
@@ -1729,38 +1710,16 @@
     if (sourceId) map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
   }
 
-  // Paint-year slider — registered once; wires LMR scrub independent of Band T.
-  const lmrYearSlider = document.getElementById('v2-lmr-year-slider');
-  const lmrYearLabel  = document.getElementById('v2-lmr-year-label');
-
-  lmrYearSlider.addEventListener('input', () => {
-    const notch = lmrNotchForYear(parseInt(lmrYearSlider.value));
-    lmrYearLabel.textContent = notch ? notch.label : '< 700 CE (out of range)';
-  });
-
-  lmrYearSlider.addEventListener('change', () => {
-    const varKey = document.getElementById('v2-basin-var').value;
-    if (varKey.startsWith('lmr_')) {
-      applyLMRChoropleth(varKey, parseInt(lmrYearSlider.value));
-    } else if (varKey.startsWith('hyde_')) {
-      applyHydeChoropleth(varKey, parseInt(lmrYearSlider.value));
-    }
-  });
-
-  // Initialise label to match the slider's default value (1100 CE → MCA).
-  (function () {
-    const notch = lmrNotchForYear(parseInt(lmrYearSlider.value));
-    lmrYearLabel.textContent = notch ? notch.label : '';
-  })();
-
   document.getElementById('v2-basin-var').addEventListener('change', e => {
-    const key = e.target.value;
+    const key    = e.target.value;
+    const fromYr = parseInt(document.getElementById('v2-from-year').value);
+    const toYr   = parseInt(document.getElementById('v2-to-year').value);
     if (key.startsWith('lmr_')) {
       const basinSourceId = _layers['basin-choropleth']?.sourceId;
       if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
       clearHydePaint();
       document.getElementById('v2-basin-legend').style.display = 'none';
-      applyLMRChoropleth(key, parseInt(lmrYearSlider.value));
+      applyLMRChoropleth(key, fromYr, toYr);
       return;
     }
     if (key.startsWith('hyde_')) {
@@ -1768,7 +1727,7 @@
       if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
       clearLMRPaint();
       document.getElementById('v2-basin-legend').style.display = 'none';
-      applyHydeChoropleth(key, parseInt(lmrYearSlider.value));
+      applyHydeChoropleth(key, fromYr || 1000);
       return;
     }
     clearLMRPaint();

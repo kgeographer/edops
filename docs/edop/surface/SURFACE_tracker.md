@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-07 (post-WO18: pasture/rangeland dropdown, Playwright fix, cropland ramp nit; 399 tests pass)
+- **Last updated:** 2026-07-07 (WO19 complete: /api/lmr/values + honest LMR paint; 408 tests pass)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -171,6 +171,19 @@ correct; route swap requires pre-aggregation (WO18). Denominator settled: `frac_
 consistent with BasinATLAS. 241 centroid-null basins recovered; 116 genuinely null → transparent.
 Findings in `wo17_findings.md`. Notebook: `wo17_hyde_area_weighted.ipynb`.
 
+**WO19 (LMR per-span values route + honest paint) complete** — `/api/lmr/values?var=air|prate&from_year=N&to_year=N`
+delivers span-mean anomalies from annual arrays in `temporal.lmr_climate`. Anomaly baseline confirmed
+(Tardif et al. 2019): departures from CCSM4 model climatology 850–1850 CE; WO15 caveat text confirmed
+correct, unchanged. Quality floor 700 CE; straddle rule: mean over [700, to_year]; absent key →
+transparent (zero never coerced). 0.546s for 16,380 cells — GO (continuous spans can't be pre-aggregated).
+Frontend: `applyLMRChoropleth(varKey, fromYear, toYear)` — fetches route, bakes `fc` color into GeoJSON
+feature properties (`setData`), paint uses `['get', 'fc']`. Retired: `LMR_NOTCHES`, `lmrNotchForYear`,
+hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `applySlice` now passes
+`s.fromyear, s.toyear` for LMR (was reading from Band T fields — slice changes now update paint).
+10 new route tests (`TestLMRValuesRoute`); 4 structural retirement tests; stale slider/notch tests
+replaced. **408 tests pass, 50 skipped.**
+Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
+
 **Post-WO18 (2026-07-07)** — HYDE pasture and rangeland added to choropleth dropdown
 (`HYDE_DB_VAR` + `HYDE_RAMPS` extended; 2 new structural tests). 12 stale Playwright tests
 fixed (WO15 had hidden the scope dropdown and changed tab routing without updating the tests).
@@ -208,6 +221,7 @@ Findings in `wo18_findings.md`.
 | Basin-ring live | Ring scope end-to-end: center sig + ring map (two layers) + clickable members + return-to-center. Parallel fetch; /api/basin/ring topology route. | **complete — WO13** |
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
+| LMR per-span values route + honest paint | `/api/lmr/values` span-mean anomaly route; retire 5-notch/slider; paint coupled to Band T span; slice-reactive repaint passes fromyear/toyear. | **complete — WO19** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
 | HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
 | HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
@@ -294,15 +308,36 @@ Append-only; dated. Settled unless explicitly revisited here.
 - **Methods note**: uniform-within-cell distribution assumed (finest structure HYDE 3.4 asserts);
   within-basin heterogeneity not represented — basin-level summary, same epistemic object as all other EDOPS bands.
 
+**2026-07-07 (WO19 — LMR per-span values route + honest paint)**
+
+- **`/api/lmr/values?var=air|prate&from_year=N&to_year=N`** — returns `{var, from_year, to_year,
+  actual_from, values: {"lat,lon": mean_anomaly}}`. Per-cell mean of the annual LMR ensemble-mean
+  values over the requested span. 0.546s for 16,380 cells (continuous spans can't be pre-aggregated
+  like HYDE's enumerable steps; this is the irreducible cost).
+- **Anomaly baseline confirmed: CCSM4 850–1850 CE** (Tardif et al. 2019) — anomalies are departures
+  from the CCSM4 model simulation's own long-term mean over 850–1850, not an instrumental baseline.
+  WO15 caveat text confirmed correct; unchanged.
+- **Quality floor 700 CE** — `actual_from = max(from_year, 700)`. Span entirely below floor → empty
+  dict. Straddle → mean over [700, to_year]; `actual_from` returned for disclosure. Zero never
+  coerced; absent key → transparent paint.
+- **Property paint** — `applyLMRChoropleth` fetches route, bakes RDBU color into each GeoJSON
+  feature's `fc` property, calls `map.getSource(id).setData(_lmrData)`. Paint expression `['get', 'fc']`.
+  Retired: feature-state path, `LMR_NOTCHES`, `lmrNotchForYear`.
+- **Span coupling** — `applyLMRChoropleth(varKey, fromYear, toYear)` replaces single-year signature.
+  `applySlice` passes `s.fromyear, s.toyear` directly (not the Band T field values, which are set to
+  the full polity lifespan). Slice changes now update LMR paint to reflect the slice's actual window,
+  consistent with HYDE's `s.fromyear` coupling.
+- **Hidden slider + control retired** — `#v2-lmr-year-slider` and `#v2-lmr-year-control` removed from
+  HTML. The slider was a zombie element (display:none since WO15) driving internal state; removing it
+  is invisible to users but eliminates a stale state source.
+- **Join key: lat,lon string** — unique across all 16,380 cells; `{"lat,lon": value}` dict; frontend
+  matches on `f.properties.lat + ',' + f.properties.lon`. No GeoJSON rebuild needed.
+
 **2026-07-06 (WO15 — LMR paint + example-select UX)**
 
-- **LMR data structure: 5 notches, not per-year** — `lmr_notches.geojson` stores pre-aggregated
-  notch-period means (`air_0`–`air_4`, `prate_0`–`prate_4`); quality floor at 700 CE (years
-  < 700 CE paint nothing silently). Per-year paint requires a new API route; logged in deferred
-  register as pre-Braga required.
-- **Paint-year slider hidden** — slider in DOM at default 1100 CE (MCA notch); hidden from user.
-  Showing it creates framing confusion with Band T from/to. Deferred until the slice-synced
-  route exists.
+- **LMR data structure: 5 notches → retired in WO19** — `lmr_notches.geojson` stored pre-aggregated
+  notch-period means; retired. Per-span route (`/api/lmr/values`) now supplies annual span means.
+  Quality floor at 700 CE (years < 700 CE paint nothing) carried forward.
 - **Anomaly ramp** — RDBU diverging, centred on zero. Domain = ±abs-max of painted values.
   Legend mid-label: `0 (850–1850 mean)`. Caveat hard-coded (payload field unreachable from
   scope-independent choropleth path — acceptable WO15 fallback; wiring deferred).

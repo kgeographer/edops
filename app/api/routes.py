@@ -2609,6 +2609,7 @@ _HYDE_EPOCH_RANGES = {
     7: (1910,    2025),
 }
 _HYDE_SAFE_VARS = {"cropland", "grazing", "pasture", "rangeland"}
+_LMR_SAFE_VARS  = {"air", "prate"}
 
 # Sidecar written by precompute_hyde_tiles.py; maps {var: {"epoch_N": p99_fraction}}.
 # Loaded once on first request; guarantees legend values match the baked tile vmax.
@@ -2728,6 +2729,45 @@ def hyde_values(var: str, year: int):
         for r in rows
     }
     return {"var": var, "year": year, "actual_year": actual_year, "values": values}
+
+
+@router.get("/lmr/values", include_in_schema=False)
+def lmr_values(var: str, from_year: int, to_year: int):
+    """Return flat {"lat,lon": mean_anomaly} dict for one LMR variable over a CE span.
+
+    Anomalies are vs the CCSM4 model climatology 850–1850 CE (Tardif et al. 2019).
+    Quality floor at 700 CE: actual_from = max(from_year, 700).
+    Spans entirely below 700 CE return an empty values dict.
+    Straddling spans use [700, to_year]; actual_from reflects the effective start.
+    Response: {var, from_year, to_year, actual_from, values: {"lat,lon": mean_anomaly}}
+    """
+    if var not in _LMR_SAFE_VARS:
+        raise HTTPException(status_code=400, detail=f"var must be one of {_LMR_SAFE_VARS}")
+
+    actual_from = max(from_year, 700)
+    if actual_from > to_year:
+        return {"var": var, "from_year": from_year, "to_year": to_year,
+                "actual_from": actual_from, "values": {}}
+
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            # var validated against _LMR_SAFE_VARS; column name is server-controlled
+            cur.execute(
+                f"""
+                SELECT CONCAT(lat, ',', lon),
+                       (SELECT AVG(v) FROM unnest({var}[%(y1)s:%(y2)s]) AS v) AS mean_val
+                FROM temporal.lmr_climate
+                """,
+                {"y1": actual_from, "y2": to_year},
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    values = {r[0]: round(float(r[1]), 6) if r[1] is not None else None for r in rows}
+    return {"var": var, "from_year": from_year, "to_year": to_year,
+            "actual_from": actual_from, "values": values}
 
 
 # -----------------------
