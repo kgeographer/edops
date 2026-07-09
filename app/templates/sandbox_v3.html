@@ -706,6 +706,7 @@
     _whgSetStatus('', false);
     if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
     shell.clear();
+    _basinLayerLoaded = false;
     document.getElementById('v3-scope-select').value = '';
     applyScope('');
     updateSigButton();
@@ -739,7 +740,7 @@
     e.preventDefault();
     clearResolvedPoint();
   });
-  document.getElementById('v3-reset-btn').addEventListener('click', resetSettlements);
+  // Reset button wired after polities section (delegates to active tab)
 
   // ── Example handler (Settlements tab) ────────────────────────────────────
   document.getElementById('v3-example-select').addEventListener('change', function () {
@@ -754,6 +755,13 @@
     const coords = (parts[1] || '').split(',');
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
+
+    if (currentLat && currentLon) {
+      if (_pointMarker) _pointMarker.remove();
+      _pointMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+        .setLngLat([currentLon, currentLat])
+        .addTo(map);
+    }
 
     if (scope === 'buffer') {
       document.getElementById('v3-radius').value = parts[3] ?? 100;
@@ -1342,6 +1350,231 @@
     }
   }
 
+  // ── Polities tab state machine ───────────────────────────────────────────
+  let _polityName   = null;
+  let _politySlices = [];
+  let _searchTimer  = null;
+
+  function updatePolityButton() {
+    const sliceVal = document.getElementById('v3-slice-select').value;
+    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && sliceVal !== '');
+  }
+
+  function updatePolityBandT() {
+    const tChecked = document.getElementById('v3-polity-band-T').checked;
+    document.getElementById('v3-polity-t-year-row').classList.toggle('d-none', !tChecked);
+  }
+  document.querySelectorAll('.v3-polity-band-chk').forEach(cb => {
+    cb.addEventListener('change', updatePolityBandT);
+  });
+
+  function resetPolities() {
+    _polityName   = null;
+    _politySlices = [];
+    clearTimeout(_searchTimer);
+    document.getElementById('v3-polity-input').value    = '';
+    document.getElementById('v3-polity-dropdown').style.display = 'none';
+    document.getElementById('v3-polity-dropdown').innerHTML     = '';
+    const exSel = document.getElementById('v3-polity-example');
+    exSel.value    = '';
+    exSel.disabled = false;
+    const sliceSel = document.getElementById('v3-slice-select');
+    sliceSel.innerHTML = '<option value="">Select time slice</option>';
+    sliceSel.disabled  = true;
+    document.getElementById('v3-resolver-year').value     = '';
+    document.getElementById('v3-polity-from-year').value  = '';
+    document.getElementById('v3-polity-to-year').value    = '';
+    document.getElementById('v3-polity-t-year-row').classList.add('d-none');
+    // Bands: restore to checked + disabled (cold start)
+    document.querySelectorAll('.v3-polity-band-chk').forEach(cb => {
+      cb.checked  = true;
+      cb.disabled = true;
+    });
+    document.getElementById('v3-polity-sig-btn').disabled = true;
+    shell.clear();
+    _basinLayerLoaded = false;
+    document.getElementById('v3-basin-var').value              = '';
+    document.getElementById('v3-basin-legend').style.display   = 'none';
+    document.getElementById('v3-basin-status').textContent     = '';
+    const sid = _layers['basin-choropleth']?.sourceId;
+    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    hideLMRLayer();
+    document.getElementById('v3-choropleth').style.display  = 'none';
+    document.getElementById('v3-intro-text').style.display  = '';
+    map.flyTo({ center: [10, 20], zoom: 1 });
+  }
+
+  // Polity search
+  const polityInput    = document.getElementById('v3-polity-input');
+  const polityDropdown = document.getElementById('v3-polity-dropdown');
+
+  polityInput.addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    const q = polityInput.value.trim();
+    if (q.length < 2) { polityDropdown.style.display = 'none'; return; }
+    _searchTimer = setTimeout(() => fetchPolitySearch(q), 220);
+  });
+  polityInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') polityDropdown.style.display = 'none';
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#v3-pane-polities')) polityDropdown.style.display = 'none';
+  });
+
+  async function fetchPolitySearch(q) {
+    const r = await fetch(`/api/polity/search?q=${encodeURIComponent(q)}`);
+    const data = await r.json();
+    if (!data.length) { polityDropdown.style.display = 'none'; return; }
+    polityDropdown.innerHTML = data.map(it =>
+      `<div class="v3-polity-item" data-name="${escapeHtml(it.name)}"
+            style="padding:4px 8px;cursor:pointer;">
+        ${escapeHtml(it.name)}
+        <span style="color:#999;font-size:0.72rem;margin-left:4px;">
+          ${formatYear(it.first)}–${formatYear(it.last)} &middot; ${it.slices} slice${it.slices !== 1 ? 's' : ''}
+        </span>
+       </div>`
+    ).join('');
+    polityDropdown.querySelectorAll('.v3-polity-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = '#f0f4ff');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+      el.addEventListener('click', () => {
+        // Lock example; commit to search path
+        document.getElementById('v3-polity-example').disabled = true;
+        selectPolity(el.dataset.name);
+      });
+    });
+    polityDropdown.style.display = 'block';
+  }
+
+  async function selectPolity(name, targetYear = null) {
+    _polityName = name;
+    polityInput.value = name;
+    polityDropdown.style.display = 'none';
+
+    const r = await fetch(`/api/polity/slices?name=${encodeURIComponent(name)}`);
+    if (!r.ok) return;
+    _politySlices = await r.json();
+
+    const sliceSel = document.getElementById('v3-slice-select');
+    sliceSel.innerHTML = _politySlices.map((s, i) =>
+      `<option value="${i}">${formatYear(s.fromyear)} – ${formatYear(s.toyear)}</option>`
+    ).join('');
+    sliceSel.disabled = false;
+
+    // Enable bands
+    document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.disabled = false; });
+
+    // Auto-fill Band T from full polity lifespan
+    const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
+    const polityTo   = Math.max(..._politySlices.map(s => s.toyear));
+    document.getElementById('v3-polity-band-T').checked   = true;
+    document.getElementById('v3-polity-from-year').value  = polityFrom;
+    document.getElementById('v3-polity-to-year').value    = polityTo;
+    document.getElementById('v3-polity-t-year-row').classList.remove('d-none');
+
+    // Auto-select slice containing targetYear, or default to first
+    let idx = 0;
+    if (targetYear !== null) {
+      const found = _politySlices.findIndex(s => s.fromyear <= targetYear && s.toyear >= targetYear);
+      if (found >= 0) idx = found;
+    }
+    sliceSel.value = String(idx);
+    applySlice(idx, targetYear);
+    _showMapTab();
+  }
+
+  async function drawPolityBoundary(id) {
+    try {
+      const r = await fetch(`/api/polity/geom?id=${id}`);
+      if (!r.ok) return;
+      const feature = await r.json();
+      shell.remove('polity-boundary');
+      shell.add('polity-boundary',
+        { type: 'geojson', data: feature },
+        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } }]
+      );
+      _fitMap(geojsonBbox(feature));
+    } catch (_) { /* boundary is optional */ }
+  }
+
+  function applySlice(idx, resolverYear = null) {
+    const s = _politySlices[idx];
+    if (!s) return;
+    document.getElementById('v3-resolver-year').value = resolverYear ?? s.fromyear;
+    drawPolityBoundary(s.id);
+    updatePolityButton();
+    _revealLowerPanel();
+  }
+
+  document.getElementById('v3-slice-select').addEventListener('change', function () {
+    applySlice(parseInt(this.value));
+    _showMapTab();
+  });
+
+  // Polity example handler
+  document.getElementById('v3-polity-example').addEventListener('change', function () {
+    if (!this.value) return;
+    const parts = this.value.split('|');
+    // format: polity|NAME|targetYear|fromYear|toYear
+    const polityName = parts[1];
+    const targetYear = parts[2] ? parseInt(parts[2]) : null;
+    // Lock search path
+    polityInput.disabled = true;
+    selectPolity(polityName, targetYear);
+  });
+
+  // Polity Get Signature
+  document.getElementById('v3-polity-sig-btn').addEventListener('click', async () => {
+    const polityName   = document.getElementById('v3-polity-input').value.trim();
+    const resolverYear = document.getElementById('v3-resolver-year').value;
+    if (!polityName || !resolverYear) return;
+    const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'polity', polity: polityName, year: resolverYear, level: 6, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v3-polity-from-year').value;
+      const ty = document.getElementById('v3-polity-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year',   ty);
+    }
+    const sigTabBtn = document.getElementById('v3-tab-sig-btn');
+    const pane      = document.getElementById('v3-sig-content');
+    const btn       = document.getElementById('v3-polity-sig-btn');
+    sigTabBtn.classList.remove('disabled');
+    pane.innerHTML = spinner('Loading signature…');
+    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+    btn.disabled = true;
+    try {
+      const r = await fetch(`/api/areas?${params}`);
+      if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
+      const payload = await r.json();
+      renderSignature(payload);
+      const tRows = (payload.rows || []).filter(r => r.band === 'T');
+      if (tRows.length) wireTSliders(tRows);
+    } catch (err) {
+      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Tab-switch hard reset ─────────────────────────────────────────────────
+  // hide.bs.tab fires before the animation so the map clears immediately.
+  document.getElementById('v3-tab-settlements-btn').addEventListener('hide.bs.tab', () => {
+    resetSettlements();
+  });
+  document.getElementById('v3-tab-polities-btn').addEventListener('hide.bs.tab', () => {
+    resetPolities();
+  });
+
+  // Reset button: delegates to whichever tab is active
+  document.getElementById('v3-reset-btn').addEventListener('click', () => {
+    const onPolities = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    if (onPolities) resetPolities(); else resetSettlements();
+  });
+
   // ── Choropleth paint ──────────────────────────────────────────────────────
   const RDBU_PAL = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
 
@@ -1581,10 +1814,21 @@
     document.getElementById('v3-basin-legend').style.display = 'block';
   }
 
+  function _activeBandTYears() {
+    const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    return {
+      fromYr: parseInt(onPol
+        ? document.getElementById('v3-polity-from-year').value
+        : document.getElementById('v3-from-year').value),
+      toYr: parseInt(onPol
+        ? document.getElementById('v3-polity-to-year').value
+        : document.getElementById('v3-to-year').value),
+    };
+  }
+
   document.getElementById('v3-basin-var').addEventListener('change', e => {
     const key    = e.target.value;
-    const fromYr = parseInt(document.getElementById('v3-from-year').value);
-    const toYr   = parseInt(document.getElementById('v3-to-year').value);
+    const { fromYr, toYr } = _activeBandTYears();
     if (key.startsWith('lmr_')) {
       const sid = _layers['basin-choropleth']?.sourceId;
       if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
