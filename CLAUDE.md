@@ -3,11 +3,11 @@
 Read this at the start of every session. It describes current project state, not history.
 Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
-**Three-file planning system** — project status and planning context lives in three files
-that must be kept consistent. Always read all three at the start of an active phase session:
-- `CLAUDE.md` (this file) — high-level phase status, architecture, conventions
+**Session startup:** read this file for orientation, then the tracker for the active phase.
+- `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
 - `docs/edop/surface/SURFACE_tracker.md` — authoritative current state, roadmap, locked decisions
-- `docs/design/areas/deferred_items_register.md` — parked items and their triggers (cross-phase; not forked)
+- `docs/design/areas/deferred_items_register.md` — cross-phase parked items
+- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/edop/surface/wo{nn}_findings.md` — per-WO findings
 
 ---
 
@@ -29,177 +29,37 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 ## Research phases
 
-### Phase 1 — Signature development (complete)
-**Goal**: Design and implement EDOPS signature v0.1 → v0.3.
-
-**Products**:
-- EDOPS API (`/api/signature`) delivering Bands A–T for any lat/lon; v0.3 deployed 2026-06-10
-- Codebook `documentation/EDOPS_variable_catalog_v0.3.tsv` (canonical; loaded at startup)
-- **Lookup page** (`sandbox.html`) — point lookup, neighborhood map, full signature
-- API docs: `documentation/API_guide.md`, `documentation/edops_schema.json`, `app/static/api_guide.html`
-
-### Phase 2 — Characterization / CHAR (complete)
-**Goal**: Systematic characterization of the EDOPS signature dataset — distributions,
-spatial structure, bivariate relationships — before any correspondence testing or modeling.
-Comprised two strands: EDA (statistical) and ESDA (spatial).
-
-**Products**:
-- EDA findings `logs/exploration_log.md` (F1.1–F11.6); ESDA findings `logs/esda_findings.md`
-- Codebook `documentation/EDOPS_variable_catalog_v0.3.tsv` (7 CHAR columns added)
-- CHAR report `docs/char/CHAR_report_draft02.docx` (35 pp; gitignored)
-- **Explorer page** (`explorer.html`) — visual CHAR product
-
-### Phase 3 — Areas (complete 2026-06-30)
-**Goal**: Expand EDOPS API to deliver signatures for areal locations — weighted basin-set
-resolver → variable-aware aggregator → endpoint. Closed with WO22 (`/area` endpoint stub).
-
-**Engine** (`scripts/edop/areas/engine.py`): resolver → aggregator → payload. Resolvers:
-buffer, single-basin, basin-ring, polygon/polity. Aggregator: Blocks 1–7 across all
-variable types; Band T (HYDE/LMR/eVolv2k); `_weighted_histogram` in `detail['distribution']`
-across basin/HYDE/LMR substrates, temporally stamped; no collapse. 185 tests PASS.
-
-**Settled background**: `docs/edop/areas/AREAS_tracker.md` (frozen reference). Design
-decisions, WO log, and locked decisions live there — read for background, do not extend.
-Deferred items register is cross-phase: `docs/design/areas/deferred_items_register.md`.
-
-### Surface (active — see SURFACE_tracker.md)
-**Goal**: Build what a person sees and does with the engine. Areas built the engine;
-Surface builds the consumer. First deliverable: a new sandbox page exercising the engine
-end to end. Milestone: Braga demo (2026-09-20). Branch: `surface`.
-
-**Work folders**: `notebooks/edop/surface/`, `docs/edop/surface/`, `output/edop/surface/`
-
-### Phase 4 — Correspondence testing (not started)
-**Goal**: Test the degree to which environmental signatures predict or correlate with
-cultural patterns — using D-PLACE, Seshat, and Cliopatria as external datasets.
+| Phase | Status | Key product |
+|---|---|---|
+| 1 — Signature development | complete | `/api/signature`, `sandbox.html`, variable catalog v0.3 |
+| 2 — Characterization / CHAR | complete | `explorer.html`, EDA/ESDA findings |
+| 3 — Areas | complete 2026-06-30 | `engine.py` — resolver → aggregator → payload; `AREAS_tracker.md` (frozen ref) |
+| **Surface** | **active** | New sandbox page (`sandbox_v3.html`); see `SURFACE_tracker.md` |
+| 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**v0.3 public release complete (2026-06-10).** No known open blockers.
+**Surface is the active track. Branch: `surface`; current WO branch: `surf_wo21`.**
 
-**Surface is the active track. Branch: `surface`.**
-Read `docs/edop/surface/SURFACE_tracker.md` — authoritative goto for current state, roadmap,
-and locked decisions. Consult `docs/design/areas/deferred_items_register.md` (cross-phase).
+- **Goto:** `docs/edop/surface/SURFACE_tracker.md` — authoritative state, roadmap, locked decisions
+- **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
+- **Current step:** WO21 in progress — Settlements tab complete; Polities tab + tab-switch hard reset next
+- **New sandbox page:** `app/templates/sandbox_v3.html` at `/sandbox/lookup3`
+- **Tests:** 499 pass, 50 skipped
+- **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
-**Engine (stable background — Areas complete 2026-06-30):**
-`scripts/edop/areas/engine.py` — resolver → aggregator → payload. Four public entry points:
-- `areal_signature(lat, lon, radius_km, conn, ...)` — buffer path (not yet HTTP-wired)
-- `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity path; served on `GET /api/area`
-- `single_basin_signature(lat, lon, conn, ...)` — single containing basin; HTTP-wired via `type=single_basin`
-- `basin_ring_signature(lat, lon, conn, ...)` — centre + first-order adjacents; HTTP-wired via `type=basin_ring`
+**Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
+- `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
+- `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity; served on `GET /api/area`
+- `single_basin_signature(lat, lon, conn, ...)` — HTTP-wired via `type=single_basin`
+- `basin_ring_signature(lat, lon, conn, ...)` — HTTP-wired via `type=basin_ring`
 
-Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `resolve_polygon`, `resolve_polity` — all in engine.py.
-Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
-`_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
-Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-499 tests PASS, 50 skipped (80 engine `tests/engine/` + app incl. `tests/test_area.py` + `tests/test_areas.py` + 83 surface v3 `tests/surface/test_sandbox_v3.py` + others).
+Two independent temporal axes: `resolver_year` (polity boundary) and Band T span (`from_year`/`to_year`).
 
-**`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
-`pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
-
-**Surface — current step:** WO21 in progress (Settlements track complete; Polities tab + tab-switch hard reset next).
-- SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
-- WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
-  design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
-- Engine row schema: `make_row` no longer emits `row["distribution"]` (was always null; removed)
-- **Step 0 (skeleton) complete** — `app/templates/sandbox_v2.html` at `/sandbox/lookup2`;
-  scope gate + Band T toggle; Level fixed L06; 5-scope dropdown
-- **WO2 (Step 1 rows-renderer) complete** — fixture harness (`/dev/exemplars/` static mount);
-  `renderSignature` → band accordion; `renderLeaf` 6-method dispatch; accept gate passed
-- Field names in fixture: `representative_score`, `representative_raw`, `score_suppressed`
-- **WO3 (Step 2 leaf widgets) complete** — buffer scope live; B1 histogram; B2 coherence badge;
-  B3 range-bar + regime marks; B4 mixture bar. Findings F3.1–F3.4 in `wo3_findings.md`.
-- **WO4 (`/api/areas` + buffer live) complete** — `GET /api/areas?type=buffer` live; two-pass
-  validation; accept-gate equivalence test vs fixture; `tests/test_areas.py` (21 tests).
-  `/api/area` untouched.
-- **WO5 (polity fixture + Band T charts) complete** — Northern Song wired to fixture; Band T
-  accordion: LMR time marginal SVG + slider + value marginal histogram; HYDE epoch table;
-  eVolv2k event list. Findings F5.1–F5.5 in `wo5_findings.md`.
-- **WO6 (polity scope live) complete** — `type=polity` in `/api/areas`; live DB call; equivalence
-  confirmed. Findings F6.1–F6.3 in `wo6_findings.md`.
-- **WO7 (arbitrary polity search) complete** — polity search → `/api/polity/search` → slice picker
-  → live call. Band T auto-fills from full polity lifespan (not slice dates — F7.2). Resolver year
-  threaded through flow. UX: T open/A–E collapsed; map tab on polity change; spinner.
-  Findings F7.1–F7.5 in `wo7_findings.md`.
-- **WO8 (MapLibre stack + layer shell) complete** — Leaflet → MapLibre GL JS on v2 only; layer
-  shell (`add`/`remove`/`restyle`/`clear`) established; polity boundary reproduced via shell.
-  GeoJSON for low-cardinality scopes; PMTiles deferred to polity choropleth.
-  Findings F8.1–F8.3 in `wo8_findings.md`. **313/313 tests pass** (no changes needed).
-- **WO9 (audit) complete** — single-basin confirmed fixture-only; basin-ring weight policy
-  register row closed (per-member design, no aggregate). Findings in `wo9_audit_findings.md`.
-- **WO10 (single-basin live) complete** — `type=single_basin` in `/api/areas`; live frontend
-  branch; Band T via polygon path; stale docstring corrected. 332/332 tests pass.
-  Findings in `wo10_findings.md`.
-- **WO11 (single-basin map) complete** — `drawSingleBasin()` via shell; honesty check
-  (`hybas_id` match before draw); fit-bounds. 336/336 tests pass.
-  Findings in `wo11_findings.md`.
-- **WO12 (example-select standard + buffer map) complete** — example handler standardised;
-  Map-first landing after Get signature; buffer basins + circle via shell; `member_ids`
-  in buffer neighborhood; `GET /api/basin/geom` route; `fitBounds` via `map.once('resize')`
-  after tab switch. Findings in `wo12_findings.md`.
-- **WO13 (basin-ring live) complete** — ring scope end-to-end: center sig + ring on map
-  (two shell layers, categorically colored) + clickable members (on-demand single_basin fetch)
-  + return-to-center. Parallel fetch: center sig + `/api/basin/ring` topology (~1.1 s total).
-  Band T available for all members. Ring info div in left column. 391/391 tests pass.
-  Findings in `wo13_findings.md`.
-- **WO14 (basin choropleth) complete** — PMTiles basin06 vector source + feature-state paint
-  for 4 BasinATLAS vars (aridity, precip, temp, cropland); RDBU ramp; legend; shell extended
-  with `{ before }` for lazy-load layer ordering; `#v2-intro-text` sub-div hides on sig load
-  while `#v2-choropleth` persists. LMR/HYDE entries inert-present for WO15. 395/395 tests pass.
-  Findings in `wo14_findings.md`.
-- **WO15 (LMR paint + example-select UX) complete** — LMR temp/precip anomaly live from
-  `lmr_notches.geojson` (5 notches, not per-year; quality floor 700 CE); diverging RDBU ramp
-  centred on zero; paint-year slider hidden; state audit conducted (7 conflicts, `wo15_state_audit.md`);
-  scope dropdown sidelined as display-only; preview geometry on example select; Get Signature →
-  Signature tab; choropleth cleared on example change. Findings in `wo15_findings.md`.
-- **WO19 (LMR per-span values route + honest paint) complete** — `/api/lmr/values?var=air|prate&from_year=N&to_year=N`
-  delivers span-mean anomalies from annual arrays; anomaly baseline confirmed (Tardif et al. 2019):
-  CCSM4 model climatology 850–1850 CE; WO15 caveat correct unchanged. Floor 700 CE; straddle rule.
-  `applyLMRChoropleth(varKey, fromYear, toYear)` — property paint via `setData`; coupled to Band T span.
-  `applySlice` now passes `s.fromyear, s.toyear` for LMR (slice changes update paint).
-  Retired: `LMR_NOTCHES`, `lmrNotchForYear`, hidden slider + control. 10 new route tests.
-  Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
-- **WO20 (WHG settlement lookup + point-resolver) complete** — opens Arc A (deployability).
-  New `GET /api/whg/suggest` route: `fclasses=P,S`; comma-parsed country hint → `gaz.ccodes` ILIKE
-  → `countries=`; client-side viewport filter after fetch; `cname` from `_CCODES` static dict
-  (`app/data/ccodes.json`, loaded at startup). Candidate list: headword + country name + alt_names
-  (3 inline, "+N more" expands inline). `updateSigButton` now requires resolved lat/lon for point
-  scopes. `_extract_lonlat` fixed (entity format changed). `_fitMap`/`_showMapTab` hoisted to module
-  scope. 8 new route tests; 2 Playwright tests updated. 416 tests pass, 50 skipped.
-  Findings in `wo20_findings.md`.
-- **WO16a (HYDE basin values — feasibility + implementation) complete** — architecture decision:
-  values-API over pre-baked epoch raster tiles; `lmr_notches.geojson`/`basin06.pmtiles` pattern
-  extended to HYDE; new `/api/hyde/values?var=X&year=N` route (centroid lookup, 0.31s for 16k
-  basins); `applyHydeChoropleth` replaces raster block; slice-change reactive repaint for both
-  HYDE and LMR. Feasibility notebook at `notebooks/edop/surface/wo16a_hyde_basin_values.ipynb`.
-  93/93 structural tests pass. Findings in `wo16_findings.md`.
-- **WO17 (area-weighted HYDE crosswalk) complete** — `temporal.hyde_basin06_weights` materialized
-  (2.82M rows, 1.2 min build); area-weighted r=0.902 vs centroid 0.689; route swap blocked by
-  2.67s query time. Denominator settled: `frac_full` (÷ sub_area). Findings in `wo17_findings.md`.
-- **WO18 (HYDE pre-aggregation + route swap) complete** — `temporal.hyde_basin06_steps`
-  materialized (2.08M rows, 9.9 min); `/api/hyde/values` now queries pre-aggregated table;
-  per-request 0.033s (80× faster); clamp added for one pathological basin (1.0016 → 1.0).
-  Findings in `wo18_findings.md`.
-- **Post-WO18 tidy (2026-07-07)** — HYDE pasture + rangeland added to choropleth dropdown;
-  12 stale Playwright tests fixed (WO15 had hidden scope dropdown without updating tests);
-  cropland ramp lo corrected to white.
-- **WO21 (sequenced state management — Settlements track) complete** — `sandbox_v3.html` at
-  `/sandbox/lookup3`; forward-or-reset Settlements state machine: WHG resolve → candidate list →
-  `setResolvedPoint` → scope reveal → `_drawScopePreview` → Get Signature. Stable `_pointMarker`
-  survives scope switches. Scope-select change immediately redraws map preview. `resetSettlements()`
-  returns to cold start + `map.flyTo(world)`. Choropleth variable paint ported (BasinATLAS / LMR /
-  HYDE). 83 structural tests in `tests/surface/test_sandbox_v3.py`. Polities tab HTML present;
-  state machine + tab-switch hard reset not yet wired. **499 tests pass, 50 skipped.**
-  Findings in `wo21_findings.md`.
-- **499 tests pass, 50 skipped.**
-- Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
-- Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
-- State/renderer model: `docs/edop/surface/surface_state-analysis.md`
-
-**Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference; new sandbox page
-demonstrating the areal engine is the deliverable. ~11 weeks from 2026-07-01.
+**`db_utils.read_areas_tsv(path, **kwargs)`** — always use instead of bare `pd.read_csv` for any
+TSV with `hybas_id` or `dominant_hybas_id`; forces Int64.
 
 ---
 
@@ -412,14 +272,10 @@ docs/ hold old drafts and works-in-progress (gitignored)
 
 ## Open / deferred items
 
-- **Explorer L8 choropleth** — deferred; no active pull
-- **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; social diff, basin06
-  overlay, and nav link open; code is Phase 4 Correspondence precursor
+Surface-specific deferred items → `SURFACE_tracker.md` roadmap.
+Cross-phase deferred items → `docs/design/areas/deferred_items_register.md`.
+
+Standing cross-phase notes:
+- **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
-- **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6): Band C silent error
-  for BCE queries; population density in signature; EarthStat/HYDE divergence; LMR proxy
-  bias disclosure — held pending expert review; no fixed date
-- **Areas deferred items** — multi-fixture calibration, `/area` input types beyond polity,
-  per-unit polity rendering, upstream resolver — all in `docs/design/areas/deferred_items_register.md`
-- **Braga milestone (2026-09-20)** — UNED Digital Humanities conference; demo with Pitt
-  colleagues. Deliverable: new sandbox page surfacing the areal engine. ~12 weeks from 2026-06-30.
+- **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
