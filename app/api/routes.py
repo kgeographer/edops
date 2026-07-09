@@ -1958,6 +1958,40 @@ def basin_geom(ids: str, level: int = 6):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/basin/buffer", include_in_schema=False)
+def basin_buffer_geom(lat: float, lon: float, radius_km: float = 100.0, level: int = 6):
+    """Basin geometries intersecting a geodesic buffer — no signature computation."""
+    basin_table = "basin06" if level == 6 else "basin08"
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT hybas_id, ST_AsGeoJSON(geom, 5)
+                FROM public.{basin_table}
+                WHERE ST_Intersects(
+                    geom,
+                    ST_Buffer(
+                        ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+                        %s
+                    )::geometry
+                )
+                """,
+                (lon, lat, radius_km * 1000),
+            )
+            features = [
+                {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(row[0])},
+                    "geometry": json.loads(row[1]),
+                }
+                for row in cur.fetchall()
+            ]
+        return {"type": "FeatureCollection", "features": features}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/basin/ring", include_in_schema=False)
 def basin_ring_geom(lat: float, lon: float, level: int = 6):
     """Fast ring topology: center + ring-member geometry and neighbor coords.

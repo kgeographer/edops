@@ -618,6 +618,47 @@ class TestBasinRingTopologyRoute:
 
 
 # ---------------------------------------------------------------------------
+# WO21 — /api/basin/buffer topology route
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def timbuktu_buffer_topology(buf_client):
+    """Buffer topology for Timbuktu at 200 km — GeoJSON FeatureCollection."""
+    r = buf_client.get("/api/basin/buffer?lat=16.8167&lon=-2.9833&radius_km=200&level=6")
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+class TestBasinBufferGeomRoute:
+
+    def test_is_feature_collection(self, timbuktu_buffer_topology):
+        assert timbuktu_buffer_topology["type"] == "FeatureCollection"
+
+    def test_has_features_list(self, timbuktu_buffer_topology):
+        assert isinstance(timbuktu_buffer_topology["features"], list)
+
+    def test_returns_multiple_basins(self, timbuktu_buffer_topology):
+        assert len(timbuktu_buffer_topology["features"]) > 1
+
+    def test_features_are_geojson(self, timbuktu_buffer_topology):
+        f = timbuktu_buffer_topology["features"][0]
+        assert f["type"] == "Feature"
+        assert f["geometry"]["type"] in ("Polygon", "MultiPolygon")
+
+    def test_hybas_id_is_int(self, timbuktu_buffer_topology):
+        hid = timbuktu_buffer_topology["features"][0]["properties"]["hybas_id"]
+        assert isinstance(hid, int)
+
+    def test_missing_lat_returns_422(self, client):
+        r = client.get("/api/basin/buffer?lon=-2.9&radius_km=100")
+        assert r.status_code == 422
+
+    def test_missing_lon_returns_422(self, client):
+        r = client.get("/api/basin/buffer?lat=16.8&radius_km=100")
+        assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # WO20 — /api/whg/suggest route: validation tests (no live WHG calls)
 # ---------------------------------------------------------------------------
 
