@@ -20,6 +20,11 @@ import re
 
 router = APIRouter(prefix="/api", tags=["api"])
 
+# ISO 3166-1 alpha-2 → country name; loaded once at startup from static file.
+_CCODES: Dict[str, str] = json.loads(
+    (Path(__file__).parent.parent / "data" / "ccodes.json").read_text(encoding="utf-8")
+)
+
 
 # -----------------------
 # WHG API and utility helpers
@@ -75,7 +80,7 @@ def _whg_suggest_first(prefix: str) -> Optional[Dict[str, Any]]:
     return results[0] if results else None
 
 
-def _whg_suggest(prefix: str, limit: int = 5) -> List[Dict[str, Any]]:
+def _whg_suggest(prefix: str, limit: int = 5, fclasses: str = None, countries: str = None) -> List[Dict[str, Any]]:
     """Call WHG suggest endpoint and return up to `limit` results."""
     if not settings.WHG_API_TOKEN:
         raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
@@ -87,6 +92,10 @@ def _whg_suggest(prefix: str, limit: int = 5) -> List[Dict[str, Any]]:
         "type": "place",
         "token": settings.WHG_API_TOKEN,
     }
+    if fclasses:
+        params["fclasses"] = fclasses
+    if countries:
+        params["countries"] = countries
 
     url = "https://whgazetteer.org/suggest/entity?" + urllib.parse.urlencode(params)
     data = _http_get_json(url)
@@ -106,27 +115,28 @@ def _whg_entity(place_id: str) -> Dict[str, Any]:
 
 def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
     """Extract (lon, lat) from a WHG entity response."""
-    geoms = entity.get("geoms") or []
-    if not geoms:
-        return None
-
-    g0 = geoms[0] or {}
-
-    # Preferred: GeoJSON coordinates
-    gj = g0.get("geojson")
-    if isinstance(gj, dict):
-        coords = gj.get("coordinates")
-        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+    # Current format: GeoJSON Feature with geometry.coordinates
+    geom = entity.get("geometry") or {}
+    if geom.get("type") == "Point":
+        coords = geom.get("coordinates") or []
+        if len(coords) >= 2:
             return float(coords[0]), float(coords[1])
 
-    # Fallbacks
-    coords = g0.get("coordinates")
-    if isinstance(coords, (list, tuple)) and len(coords) >= 2:
-        return float(coords[0]), float(coords[1])
-
-    centroid = g0.get("centroid")
-    if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
-        return float(centroid[0]), float(centroid[1])
+    # Legacy format: geoms[0].geojson.coordinates
+    geoms = entity.get("geoms") or []
+    if geoms:
+        g0 = geoms[0] or {}
+        gj = g0.get("geojson")
+        if isinstance(gj, dict):
+            coords = gj.get("coordinates")
+            if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+                return float(coords[0]), float(coords[1])
+        coords = g0.get("coordinates")
+        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            return float(coords[0]), float(coords[1])
+        centroid = g0.get("centroid")
+        if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
+            return float(centroid[0]), float(centroid[1])
 
     return None
 
@@ -763,6 +773,64 @@ def whg_reconcile(q: str, size: int = 10, bounds: str = None):
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"WHG search failed: {e}")
+
+
+@router.get("/whg/suggest")
+def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
+    """Settlement/site lookup via WHG suggest, filtered to fclasses P (populated) and S (site).
+
+    Accepts an optional `country` free-text string (e.g. "Mali", "ital") which is resolved
+    to an ISO-3166-1 alpha-2 code via ILIKE against gaz.ccodes, then passed to WHG as a
+    countries filter. If the country hint doesn't match, the search proceeds without it.
+
+    The frontend passes a comma-parsed country hint: "Timbuktu, Mali" → q="Timbuktu", country="Mali".
+    """
+    q = (q or "").strip()
+    if not q or len(q) < 2:
+        return {"results": []}
+    limit = max(1, min(limit, 20))
+
+    country = (country or "").strip()
+    ccode = None
+    if country:
+        try:
+            conn = db_connect()
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT iso_a2 FROM gaz.ccodes WHERE name ILIKE %s LIMIT 1",
+                    (f"%{country}%",),
+                )
+                row = cur.fetchone()
+                if row:
+                    ccode = row[0]
+            conn.close()
+        except Exception:
+            pass  # country hint is optional; never blocks search
+
+    try:
+        raw = _whg_suggest(q, limit=limit, fclasses="P,S", countries=ccode)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"WHG suggest failed: {e}")
+
+    results = []
+    for r in raw:
+        pt = r.get("repr_point")
+        if not pt or len(pt) < 2:
+            continue
+        ccs = r.get("ccodes") or []
+        results.append({
+            "id": r.get("id"),
+            "name": r.get("name"),
+            "lon": float(pt[0]),
+            "lat": float(pt[1]),
+            "ccodes": ccs,
+            "alt_names": (r.get("alt_names") or [])[:10],
+            "cname": _CCODES.get(ccs[0], "") if ccs else "",
+        })
+
+    return {"results": results}
 
 
 @router.get("/wh-sites", include_in_schema=False)

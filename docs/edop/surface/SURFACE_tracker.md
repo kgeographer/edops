@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-07 (WO19 complete: /api/lmr/values + honest LMR paint; 408 tests pass)
+- **Last updated:** 2026-07-08 (WO20 complete: WHG settlement lookup + point-resolver; 416 tests pass)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -184,6 +184,20 @@ hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `appl
 replaced. **408 tests pass, 50 skipped.**
 Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
 
+**WO20 (WHG settlement lookup + point-resolver) complete** — opens Arc A (deployability).
+Probe (Task 1): suggest endpoint now returns `repr_point` directly; `fclasses=P,S` (Populated
+places + Spots/sites) is the correct point-location filter (server-side via suggest); `_extract_lonlat`
+was broken (entity format changed from `geoms[]` to GeoJSON Feature `geometry`) — fixed; suggest
+has no `bounds=` param (reconcile does), resolved client-side.
+Integration (Task 2): new `GET /api/whg/suggest` route — comma-parsed country hint, `gaz.ccodes`
+ILIKE → ISO code → `countries=` param to WHG; client-side viewport filter after fetch; `fclasses=P,S`
+always passed. Candidate display: headword + country name (not ccode, resolved from `app/data/ccodes.json`
+static dict loaded at startup) + alt_names (3 inline, "+N more" expands inline). `updateSigButton` now
+requires resolved lat/lon for point scopes (`POINT_SCOPES` ∋ buffer, single_basin, basin_ring).
+`_fitMap` / `_showMapTab` hoisted from example-handler closure to module scope. 8 new route tests
+(`TestWhgSuggestRouteValidation`); 2 Playwright tests updated (scope-only → disabled). **416 tests pass, 50 skipped.**
+Findings in `wo20_findings.md`.
+
 **Post-WO18 (2026-07-07)** — HYDE pasture and rangeland added to choropleth dropdown
 (`HYDE_DB_VAR` + `HYDE_RAMPS` extended; 2 new structural tests). 12 stale Playwright tests
 fixed (WO15 had hidden the scope dropdown and changed tab routing without updating the tests).
@@ -222,6 +236,7 @@ Findings in `wo18_findings.md`.
 | Basin choropleth | PMTiles vector source + feature-state paint for 4 BasinATLAS vars; RDBU ramp; legend; `#v2-intro` restructured; shell `before` extension. | **complete — WO14** |
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
 | LMR per-span values route + honest paint | `/api/lmr/values` span-mean anomaly route; retire 5-notch/slider; paint coupled to Band T span; slice-reactive repaint passes fromyear/toyear. | **complete — WO19** |
+| WHG settlement lookup + point-resolver | Probe current WHG API; integrate as point-resolver: search → candidates → candidate selection → single-basin fires → Get Signature enabled. Opens Arc A (deployability). | **complete — WO20** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
 | HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
 | HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
@@ -261,6 +276,24 @@ Findings in `wo18_findings.md`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-08 (WO20 — WHG settlement lookup + point-resolver)**
+
+- **suggest over reconcile** — `suggest/entity?fclasses=P,S` is the right call for the
+  settlement lane: one round-trip, `repr_point` direct, native fclass filtering. Reconcile's
+  bounds param and richer payload belong in a fuller WHG integration (deferred items register).
+- **`fclasses=P,S` always passed** — Populated places + Spots/sites; excludes empires,
+  territories, admin divisions, water bodies at the WHG server. No client-side fclass filter.
+- **Client-side viewport filter** — suggest has no `bounds=` param; after each response,
+  candidates outside `map.getBounds()` are dropped. Falls back to full list if none in view.
+- **Country hint: comma-parse + `gaz.ccodes` ILIKE → `countries=`** — "Timbuktu, Mali" →
+  `q="Timbuktu"`, `country="Mali"` → `countries=ML`. Unrecognised hints silently ignored.
+- **`_CCODES` static dict** — `app/data/ccodes.json` (237 entries, generated from `gaz.ccodes`)
+  loaded at module startup; `cname` resolved in O(1) per result, no DB round-trip.
+- **`updateSigButton` point-scope guard** — `POINT_SCOPES` (buffer, single_basin, basin_ring)
+  require resolved lat/lon in addition to scope selection. Area scopes unaffected.
+- **`_extract_lonlat` fixed** — entity API now returns GeoJSON Feature `geometry.coordinates`;
+  was looking for deprecated `geoms[0].geojson`. Legacy `geoms[]` kept as fallback.
 
 **2026-07-06 (WO16a — HYDE basin values)**
 

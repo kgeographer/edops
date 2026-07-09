@@ -84,7 +84,8 @@ class TestScopeGate:
         expect(page.locator("#scope-extra-buffer")).to_be_hidden()
         expect(page.locator("#scope-extra-polity")).to_be_hidden()
         expect(page.locator("#scope-extra-draw")).to_be_hidden()
-        expect(page.locator("#v2-sig-btn")).to_be_enabled()
+        # WO20: point scopes require a resolved lat/lon; scope alone is not sufficient.
+        expect(page.locator("#v2-sig-btn")).to_be_disabled()
 
     def test_buffer(self, page: Page, live_server_url):
         goto(page, live_server_url)
@@ -355,11 +356,12 @@ class TestBufferMapLayers:
 
 class TestRingScope:
 
-    def test_ring_sig_btn_enabled(self, page: Page, live_server_url):
-        """Selecting ring scope must enable the Get signature button."""
+    def test_ring_scope_requires_point(self, page: Page, live_server_url):
+        """Selecting ring scope without a resolved point keeps Get signature disabled."""
         goto(page, live_server_url)
         select_scope(page, "ring")
-        expect(page.locator("#v2-sig-btn")).to_be_enabled()
+        # WO20: point scopes require a resolved lat/lon; scope alone is not sufficient.
+        expect(page.locator("#v2-sig-btn")).to_be_disabled()
 
 
 # ---------------------------------------------------------------------------

@@ -39,12 +39,23 @@
       <div class="card mb-2">
         <div class="card-body p-2">
 
-          <!-- Place input (point-rooted scopes) -->
+          <!-- Settlement lookup (point-rooted scopes) -->
           <div id="v2-point-section">
-            <div class="input-group input-group-sm mb-2">
+            <div class="small text-muted fw-semibold mb-1">Settlement lookup</div>
+            <div class="input-group input-group-sm mb-1">
               <input type="text" id="v2-place-input" class="form-control"
-                     placeholder="Enter name or lat, lon">
+                     placeholder="Name or lat,lon  (add ', Country' to narrow)">
               <button class="btn btn-outline-primary" id="v2-resolve-btn">Resolve</button>
+            </div>
+            <div id="v2-whg-status" class="text-muted mb-1" style="font-size:0.78rem; display:none;"></div>
+            <div id="v2-whg-candidates" class="list-group list-group-flush mb-1"
+                 style="display:none; font-size:0.8rem; max-height:200px; overflow-y:auto;"></div>
+            <div id="v2-whg-chip" class="d-none align-items-center gap-2 mb-1" style="font-size:0.8rem;">
+              <span class="badge bg-primary text-truncate" id="v2-whg-name" style="max-width:120px;"></span>
+              <span class="text-muted" id="v2-whg-coords"></span>
+              <button class="btn btn-link btn-sm p-0 text-danger ms-auto" id="v2-whg-clear" title="Clear">
+                <i class="bi bi-x-circle"></i>
+              </button>
             </div>
           </div>
 
@@ -334,10 +345,254 @@
     applyScope(this.value);
   });
 
-  // ── Sig button enable logic (Step 0: scope must be selected) ──────────────
+  // ── Sig button enable logic ───────────────────────────────────────────────
   function updateSigButton() {
-    document.getElementById('v2-sig-btn').disabled = !currentScope;
+    const needsPoint = POINT_SCOPES.has(currentScope);
+    const hasPoint   = currentLat !== null && currentLon !== null;
+    document.getElementById('v2-sig-btn').disabled =
+      !currentScope || (needsPoint && !hasPoint);
   }
+
+  // ── Map tab / fitBounds helpers (module-scope so all callers share them) ──
+  function _showMapTab() {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  }
+  function _fitMap(bbox) {
+    if (!bbox) return;
+    const mapTabBtn = document.getElementById('v2-tab-map-btn');
+    if (mapTabBtn.classList.contains('active')) {
+      map.fitBounds(bbox, { padding: 40 });
+    } else {
+      map.once('resize', () => map.fitBounds(bbox, { padding: 40 }));
+    }
+  }
+
+  // ── Settlement lookup (WHG suggest, fclasses P+S) ────────────────────────
+  const CANDIDATE_COLORS = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00',
+                             '#a65628','#f781bf','#66c2a5','#999999','#ffff33'];
+  let _whgMarkers = [];
+  let _whgResults  = [];
+
+  function _whgSetStatus(msg, show = true) {
+    const el = document.getElementById('v2-whg-status');
+    el.textContent = msg;
+    el.style.display = show ? '' : 'none';
+  }
+
+  function _whgClearMarkers() {
+    _whgMarkers.forEach(m => m.remove());
+    _whgMarkers = [];
+  }
+
+  function _whgHideCandidates() {
+    const el = document.getElementById('v2-whg-candidates');
+    el.style.display = 'none';
+    el.innerHTML = '';
+    _whgResults = [];
+    _whgClearMarkers();
+  }
+
+  async function resolveSettlement() {
+    const raw = document.getElementById('v2-place-input').value.trim();
+    if (!raw) return;
+
+    // Direct lat,lon entry
+    const coordMatch = raw.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      setResolvedPoint(parseFloat(coordMatch[1]), parseFloat(coordMatch[2]), raw);
+      return;
+    }
+
+    // Zoom gate
+    if (!map || map.getZoom() < 4) {
+      _whgSetStatus('Zoom in to your study region first, then search.');
+      return;
+    }
+
+    // Comma-parse optional country hint
+    let q = raw, countryParam = '';
+    const commaIdx = raw.indexOf(',');
+    if (commaIdx > 0) {
+      q           = raw.slice(0, commaIdx).trim();
+      countryParam = raw.slice(commaIdx + 1).trim();
+    }
+
+    _whgHideCandidates();
+    _whgSetStatus('Searching WHG…');
+
+    try {
+      let url = `/api/whg/suggest?q=${encodeURIComponent(q)}&limit=8`;
+      if (countryParam) url += `&country=${encodeURIComponent(countryParam)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`WHG search failed (${res.status})`);
+      const data = await res.json();
+      _whgResults = data.results || [];
+      window._whgResults = _whgResults;  // dev: inspect in console
+
+      // Client-side viewport filter — same role as reconcile's bounds param.
+      // Suggest has no bounds support, so we filter after the fact.
+      if (map && _whgResults.length) {
+        const mb = map.getBounds();
+        const inView = _whgResults.filter(r => mb.contains([r.lon, r.lat]));
+        if (inView.length) _whgResults = inView;
+        // If nothing falls in view, show all with no filtering (better than silent empty)
+      }
+
+      if (!_whgResults.length) {
+        _whgSetStatus(`No results for "${escapeHtml(q)}".`);
+        return;
+      }
+      _whgSetStatus('', false);
+      _renderCandidates(_whgResults);
+    } catch (err) {
+      _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
+    }
+  }
+
+  function _renderCandidates(results) {
+    const el = document.getElementById('v2-whg-candidates');
+    el.innerHTML = results.map((r, i) => {
+      const color = CANDIDATE_COLORS[i % CANDIDATE_COLORS.length];
+      const cname = r.cname
+        ? `<span class="text-muted ms-1" style="font-size:0.8rem;">${escapeHtml(r.cname)}</span>`
+        : '';
+      const alts = r.alt_names || [];
+      let altHtml = '';
+      if (alts.length) {
+        const shown = alts.slice(0, 3).map(escapeHtml).join(', ');
+        const rest  = alts.slice(3);
+        altHtml = `<span class="text-muted d-block" style="font-size:0.75rem;">${shown}`;
+        if (rest.length) {
+          altHtml += ` <a href="#" class="whg-more-link text-muted"
+            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.75rem;">+${rest.length} more</a>`;
+        }
+        altHtml += '</span>';
+      }
+      return `<a href="#" class="list-group-item list-group-item-action py-1 px-2 d-flex align-items-start gap-2 whg-cand" data-idx="${i}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;
+                     width:18px;height:18px;border-radius:50%;background:${color};
+                     color:#fff;font-size:10px;font-weight:bold;flex-shrink:0;margin-top:2px;">${i + 1}</span>
+        <span class="flex-grow-1 min-w-0">
+          <span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${altHtml}
+        </span>
+      </a>`;
+    }).join('');
+    el.style.display = '';
+
+    el.querySelectorAll('.whg-more-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        link.replaceWith(document.createTextNode(', ' + link.dataset.more));
+      });
+    });
+
+    el.querySelectorAll('.whg-cand').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const r = _whgResults[parseInt(a.dataset.idx, 10)];
+        if (r) setResolvedPoint(r.lat, r.lon, r.name);
+      });
+    });
+
+    // MapLibre markers (map may not be initialised yet — guard)
+    _whgClearMarkers();
+    if (!map) return;
+    const pts = [];
+    results.forEach((r, i) => {
+      const color = CANDIDATE_COLORS[i % CANDIDATE_COLORS.length];
+      const markerEl = document.createElement('div');
+      markerEl.style.cssText =
+        `width:22px;height:22px;background:${color};border:2px solid #fff;border-radius:50%;` +
+        `color:#fff;font-weight:bold;font-size:11px;display:flex;align-items:center;` +
+        `justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.3);cursor:pointer;`;
+      markerEl.textContent = String(i + 1);
+      markerEl.addEventListener('click', () => setResolvedPoint(r.lat, r.lon, r.name));
+      const marker = new maplibregl.Marker({ element: markerEl })
+        .setLngLat([r.lon, r.lat])
+        .addTo(map);
+      _whgMarkers.push(marker);
+      pts.push([r.lon, r.lat]);
+    });
+
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+    if (pts.length === 1) {
+      map.setCenter(pts[0]);
+      map.setZoom(Math.max(map.getZoom(), 8));
+    } else if (pts.length > 1) {
+      const lons = pts.map(p => p[0]), lats = pts.map(p => p[1]);
+      map.fitBounds(
+        [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
+        { padding: 60, maxZoom: 10 }
+      );
+    }
+  }
+
+  function setResolvedPoint(lat, lon, name) {
+    currentLat = lat;
+    currentLon = lon;
+
+    _whgHideCandidates();
+    _whgSetStatus('', false);
+
+    // Set scope to single if not already a point scope
+    if (!POINT_SCOPES.has(currentScope)) {
+      currentScope = 'single';
+    }
+
+    // Show chip
+    document.getElementById('v2-whg-name').textContent   = name;
+    document.getElementById('v2-whg-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    document.getElementById('v2-whg-chip').classList.replace('d-none', 'd-flex');
+
+    // Expose scope dropdown as lens switcher (single/buffer/ring over the fixed point)
+    const scopeWrap = document.getElementById('v2-scope-wrap');
+    const scopeOpts = document.querySelectorAll('#v2-scope-select option');
+    scopeOpts.forEach(o => { o.disabled = false; });
+    document.getElementById('v2-scope-select').value = currentScope;
+    scopeWrap.style.display = '';
+
+    applyScope(currentScope);
+    updateSigButton();
+
+    // Preview basin on map
+    ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members']
+      .forEach(n => shell.remove(n));
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+    (async () => {
+      const bbox = await drawSingleBasin(lat, lon, null);
+      if (bbox) _fitMap(bbox);
+    })();
+
+    document.getElementById('v2-intro-text').style.display = 'none';
+    document.getElementById('v2-choropleth').style.display = '';
+  }
+
+  function clearResolvedPoint() {
+    currentLat  = null;
+    currentLon  = null;
+    document.getElementById('v2-place-input').value = '';
+    document.getElementById('v2-whg-chip').classList.replace('d-flex', 'd-none');
+    document.getElementById('v2-scope-wrap').style.display = 'none';
+    _whgHideCandidates();
+    _whgSetStatus('', false);
+    ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members']
+      .forEach(n => shell.remove(n));
+    if (POINT_SCOPES.has(currentScope)) {
+      currentScope = '';
+      document.getElementById('v2-scope-select').value = '';
+    }
+    updateSigButton();
+  }
+
+  document.getElementById('v2-resolve-btn').addEventListener('click', resolveSettlement);
+  document.getElementById('v2-place-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') resolveSettlement();
+  });
+  document.getElementById('v2-whg-clear').addEventListener('click', e => {
+    e.preventDefault();
+    clearResolvedPoint();
+  });
 
   // ── Example handler ───────────────────────────────────────────────────────
   document.getElementById('v2-example-select').addEventListener('change', function () {
@@ -377,6 +632,7 @@
       const coords = (parts[1] || '').split(',');
       currentLat = coords[0] ? parseFloat(coords[0]) : null;
       currentLon = coords[1] ? parseFloat(coords[1]) : null;
+      updateSigButton(); // re-check now that lat/lon are set
     }
     if (scope === 'buffer') {
       document.getElementById('v2-radius').value = parts[3] ?? 100;
@@ -402,18 +658,6 @@
 
     // Draw preview geometry on map immediately for point-scoped examples,
     // without waiting for Get Signature. Clear prior scope layers first.
-    function _showMapTab() {
-      bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
-    }
-    function _fitMap(bbox) {
-      if (!bbox) return;
-      const mapTabBtn = document.getElementById('v2-tab-map-btn');
-      if (mapTabBtn.classList.contains('active')) {
-        map.fitBounds(bbox, { padding: 40 });
-      } else {
-        map.once('resize', () => map.fitBounds(bbox, { padding: 40 }));
-      }
-    }
     if (POINT_SCOPES.has(scope) && scope !== POLITY_SCOPE) {
       // Clear any prior scope geometry layers before drawing the new preview.
       ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members'].forEach(n => shell.remove(n));
