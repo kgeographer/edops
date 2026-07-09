@@ -94,12 +94,12 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-395 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 206 app incl. `tests/test_area.py` + `tests/test_areas.py` + 109 surface `tests/surface/`).
+416 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 207 app incl. `tests/test_area.py` + `tests/test_areas.py` + 129 surface `tests/surface/`).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO19 complete; next: TBD.
+**Surface — current step:** WO20 complete; next: TBD (Arc A — left-column redesign WO21 likely).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -161,6 +161,14 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
   `applySlice` now passes `s.fromyear, s.toyear` for LMR (slice changes update paint).
   Retired: `LMR_NOTCHES`, `lmrNotchForYear`, hidden slider + control. 10 new route tests.
   Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
+- **WO20 (WHG settlement lookup + point-resolver) complete** — opens Arc A (deployability).
+  New `GET /api/whg/suggest` route: `fclasses=P,S`; comma-parsed country hint → `gaz.ccodes` ILIKE
+  → `countries=`; client-side viewport filter after fetch; `cname` from `_CCODES` static dict
+  (`app/data/ccodes.json`, loaded at startup). Candidate list: headword + country name + alt_names
+  (3 inline, "+N more" expands inline). `updateSigButton` now requires resolved lat/lon for point
+  scopes. `_extract_lonlat` fixed (entity format changed). `_fitMap`/`_showMapTab` hoisted to module
+  scope. 8 new route tests; 2 Playwright tests updated. 416 tests pass, 50 skipped.
+  Findings in `wo20_findings.md`.
 - **WO16a (HYDE basin values — feasibility + implementation) complete** — architecture decision:
   values-API over pre-baked epoch raster tiles; `lmr_notches.geojson`/`basin06.pmtiles` pattern
   extended to HYDE; new `/api/hyde/values?var=X&year=N` route (centroid lookup, 0.31s for 16k

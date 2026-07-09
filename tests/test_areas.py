@@ -615,3 +615,137 @@ class TestBasinRingTopologyRoute:
         center_id = timbuktu_ring_topology["center"]["properties"]["hybas_id"]
         ring_ids  = {m["hybas_id"] for m in timbuktu_ring_topology["ring"]}
         assert center_id not in ring_ids, f"Center {center_id} found in ring {ring_ids}"
+
+
+# ---------------------------------------------------------------------------
+# WO20 — /api/whg/suggest route: validation tests (no live WHG calls)
+# ---------------------------------------------------------------------------
+
+class TestWhgSuggestRouteValidation:
+    """Input-validation tests for GET /api/whg/suggest.
+    These run without a DB or live WHG connection.
+    """
+
+    def test_missing_q_returns_422(self, client):
+        r = client.get("/api/whg/suggest")
+        assert r.status_code == 422, r.text
+
+    def test_empty_q_returns_empty(self, client):
+        r = client.get("/api/whg/suggest?q=")
+        assert r.status_code == 200
+        assert r.json()["results"] == []
+
+    def test_short_q_returns_empty(self, client):
+        r = client.get("/api/whg/suggest?q=a")
+        assert r.status_code == 200
+        assert r.json()["results"] == []
+
+    def test_response_shape(self, client, monkeypatch):
+        """Route returns {results: [{id, name, lat, lon, ccodes, alt_names, cname}]}."""
+        fake_suggest = [
+            {
+                "id": "place:5424806",
+                "name": "Tombouctou",
+                "repr_point": [-2.9833, 16.8167],
+                "ccodes": ["ML"],
+                "alt_names": ["Timbuktu", "Timbuctoo"],
+            },
+            {
+                "id": "place:9999999",
+                "name": "No coords place",
+                "repr_point": None,
+                "ccodes": [],
+                "alt_names": [],
+            },
+        ]
+
+        import app.api.routes as routes_mod
+        monkeypatch.setattr(routes_mod, "_whg_suggest", lambda *a, **kw: fake_suggest)
+
+        r = client.get("/api/whg/suggest?q=Timbuktu")
+        assert r.status_code == 200
+        data = r.json()
+        assert "results" in data
+        # Only result with repr_point should appear
+        assert len(data["results"]) == 1
+        res = data["results"][0]
+        assert res["id"]     == "place:5424806"
+        assert res["name"]   == "Tombouctou"
+        assert res["lat"]    == pytest.approx(16.8167)
+        assert res["lon"]    == pytest.approx(-2.9833)
+        assert res["ccodes"] == ["ML"]
+        assert "Timbuktu" in res["alt_names"]
+        assert res["cname"]  == "Mali"   # resolved from _CCODES static dict
+
+    def test_no_repr_point_filtered_out(self, client, monkeypatch):
+        """Results without repr_point are excluded from the response."""
+        import app.api.routes as routes_mod
+        monkeypatch.setattr(routes_mod, "_whg_suggest",
+                            lambda *a, **kw: [{"id": "x", "name": "X", "repr_point": None}])
+        r = client.get("/api/whg/suggest?q=test")
+        assert r.status_code == 200
+        assert r.json()["results"] == []
+
+    def test_fclasses_passed_to_suggest(self, client, monkeypatch):
+        """Route always passes fclasses='P,S' to _whg_suggest."""
+        import app.api.routes as routes_mod
+        captured = {}
+
+        def fake(prefix, limit=8, fclasses=None, countries=None):
+            captured["fclasses"] = fclasses
+            return []
+
+        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
+        client.get("/api/whg/suggest?q=Rome")
+        assert captured.get("fclasses") == "P,S"
+
+    def test_country_hint_resolves_to_ccode(self, client, monkeypatch):
+        """A country= param is resolved via gaz.ccodes ILIKE and passed as countries= to WHG."""
+        import app.api.routes as routes_mod
+        captured = {}
+
+        def fake(prefix, limit=8, fclasses=None, countries=None):
+            captured["countries"] = countries
+            return []
+
+        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
+
+        # Patch db_connect so we don't need a live DB
+        class FakeCur:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): self._params = params
+            def fetchone(self): return ("ML",)
+
+        class FakeConn:
+            def cursor(self): return FakeCur()
+            def close(self): pass
+
+        monkeypatch.setattr(routes_mod, "db_connect", lambda: FakeConn())
+        client.get("/api/whg/suggest?q=Timbuktu&country=Mali")
+        assert captured.get("countries") == "ML"
+
+    def test_country_no_match_proceeds_without_filter(self, client, monkeypatch):
+        """Unrecognised country hint does not block the search (countries=None)."""
+        import app.api.routes as routes_mod
+        captured = {}
+
+        def fake(prefix, limit=8, fclasses=None, countries=None):
+            captured["countries"] = countries
+            return []
+
+        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
+
+        class FakeCur:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, *a): pass
+            def fetchone(self): return None
+
+        class FakeConn:
+            def cursor(self): return FakeCur()
+            def close(self): pass
+
+        monkeypatch.setattr(routes_mod, "db_connect", lambda: FakeConn())
+        client.get("/api/whg/suggest?q=Timbuktu&country=xyzzy")
+        assert captured.get("countries") is None
