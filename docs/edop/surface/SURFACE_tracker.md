@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-08 (WO20 complete: WHG settlement lookup + point-resolver; 416 tests pass)
+- **Last updated:** 2026-07-09 (WO21 Settlements track complete; Polities tab next)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -184,6 +184,16 @@ hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `appl
 replaced. **408 tests pass, 50 skipped.**
 Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
 
+**WO21 (sequenced state management — Settlements track complete)** — `sandbox_v3.html` at
+`/sandbox/lookup3`; Settlements tab: full forward-or-reset state machine (WHG resolve →
+candidate list → `setResolvedPoint` → scope reveal → `_drawScopePreview` → Get Signature).
+Stable point marker survives scope switches. Scope-switch redraws preview immediately.
+Reset button (`#v3-reset-btn`) returns tab to cold start + map flyTo world.
+Choropleth variable paint ported (BasinATLAS / LMR / HYDE). 83 structural tests in
+`tests/surface/test_sandbox_v3.py`. Polities tab HTML present but state machine not yet wired.
+Tab-switch hard reset deferred. **499 tests pass, 50 skipped.**
+Findings in `wo21_findings.md`.
+
 **WO20 (WHG settlement lookup + point-resolver) complete** — opens Arc A (deployability).
 Probe (Task 1): suggest endpoint now returns `repr_point` directly; `fclasses=P,S` (Populated
 places + Spots/sites) is the correct point-location filter (server-side via suggest); `_extract_lonlat`
@@ -237,6 +247,7 @@ Findings in `wo18_findings.md`.
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
 | LMR per-span values route + honest paint | `/api/lmr/values` span-mean anomaly route; retire 5-notch/slider; paint coupled to Band T span; slice-reactive repaint passes fromyear/toyear. | **complete — WO19** |
 | WHG settlement lookup + point-resolver | Probe current WHG API; integrate as point-resolver: search → candidates → candidate selection → single-basin fires → Get Signature enabled. Opens Arc A (deployability). | **complete — WO20** |
+| Sequenced state management (sandbox_v3) | Forward-or-reset state machine on new page: Settlements tab complete (resolve/example paths, scope-switch preview, point marker, reset, choropleth). Polities tab + tab-switch hard reset next. | **in progress — WO21** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
 | HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
 | HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
@@ -276,6 +287,18 @@ Findings in `wo18_findings.md`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-09 (WO21 — Sequenced state management, Settlements track)**
+
+- **sandbox_v3 / `/sandbox/lookup3`** — new page (not a patch to v2). v3-prefixed IDs throughout; v2 untouched, all v2 tests green.
+- **Forward-or-reset model** — `setResolvedPoint` is the single transition point into the resolved state; `clearResolvedPoint` reverses it. No mid-path control changes. `resetSettlements()` adds choropleth clear + band reset + map flyTo to `clearResolvedPoint`.
+- **Alternate entry removal on commit** — resolve path hides example row; example path locks resolve field. Both are one-way; reset is the only route back to cold start.
+- **`_drawScopePreview(scope)`** — single dispatch for scope→geometry preview, called from scope-select change, `setResolvedPoint`, and example handler. Buffer preview = dashed circle only (basin polygons are a Get Sig product).
+- **`_pointMarker` separate from shell layers** — stable marker at resolved point, not cleared by scope switches. Cleared by `clearResolvedPoint` / `resetSettlements`.
+- **`updateSigButton` gates on `hasPoint && scope` only** — year fields (Band T) are not a prerequisite for enabling Get Sig. T with empty years simply omits temporal params from the request.
+- **Choropleth is scope-independent** — variable paint "rides alongside" the resolved query per WO21 spec. LMR reads `v3-from-year`/`v3-to-year`; HYDE defaults to 1000 CE when empty. No coupling to sig result.
+- **Map cold-start zoom = 1** — corrected from 2; flyTo zoom 1 on reset.
+- **F21.1 (Bootstrap `d-flex` conflict)** — never mix `d-flex` class with inline `display:none` on the same element; Bootstrap's `!important` wins. Use explicit `style.display = 'flex'` in JS for flex-reveal, `style.display = 'none'` for hide.
 
 **2026-07-08 (WO20 — WHG settlement lookup + point-resolver)**
 

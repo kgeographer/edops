@@ -94,12 +94,12 @@ Resolvers: `resolve_buffer`, `resolve_single_basin`, `resolve_basin_ring`, `reso
 Aggregator: Blocks 1–7 across all variable types; Band T (HYDE/LMR/eVolv2k).
 `_weighted_histogram` in `detail['distribution']` across basin/HYDE/LMR substrates, temporally stamped.
 Two independent temporal axes: `resolver_year` (polity boundary year) and Band T span (`from_year`/`to_year`).
-416 tests PASS (80 engine `tests/engine/test_engine_contract.py` + 207 app incl. `tests/test_area.py` + `tests/test_areas.py` + 129 surface `tests/surface/`).
+499 tests PASS, 50 skipped (80 engine `tests/engine/` + app incl. `tests/test_area.py` + `tests/test_areas.py` + 83 surface v3 `tests/surface/test_sandbox_v3.py` + others).
 
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use this instead of bare
 `pd.read_csv` for any Areas TSV containing `hybas_id` or `dominant_hybas_id`; forces Int64.
 
-**Surface — current step:** WO20 complete; next: TBD (Arc A — left-column redesign WO21 likely).
+**Surface — current step:** WO21 in progress (Settlements track complete; Polities tab + tab-switch hard reset next).
 - SF.1 (sandbox capability-gap analysis) complete — `docs/edop/surface/surface_findings.md`
 - WO1 (exemplar payload inspection) complete — F1.1–F1.13 in `docs/edop/surface/wo1_findings.md`;
   design notes DN1–DN10 in `docs/edop/surface/wo1_design-notes.md`; 3 engine TODOs fixed
@@ -185,7 +185,15 @@ Two independent temporal axes: `resolver_year` (polity boundary year) and Band T
 - **Post-WO18 tidy (2026-07-07)** — HYDE pasture + rangeland added to choropleth dropdown;
   12 stale Playwright tests fixed (WO15 had hidden scope dropdown without updating tests);
   cropland ramp lo corrected to white.
-- **408 surface + app/engine = 408 tests pass, 50 skipped.**
+- **WO21 (sequenced state management — Settlements track) complete** — `sandbox_v3.html` at
+  `/sandbox/lookup3`; forward-or-reset Settlements state machine: WHG resolve → candidate list →
+  `setResolvedPoint` → scope reveal → `_drawScopePreview` → Get Signature. Stable `_pointMarker`
+  survives scope switches. Scope-select change immediately redraws map preview. `resetSettlements()`
+  returns to cold start + `map.flyTo(world)`. Choropleth variable paint ported (BasinATLAS / LMR /
+  HYDE). 83 structural tests in `tests/surface/test_sandbox_v3.py`. Polities tab HTML present;
+  state machine + tab-switch hard reset not yet wired. **499 tests pass, 50 skipped.**
+  Findings in `wo21_findings.md`.
+- **499 tests pass, 50 skipped.**
 - Per-WO branch pattern: `surf_wo{n}` → merge to `surface` at accept gate
 - Build workflow: `docs/edop/surface/surface_workflow_opus.md` — read before each WO
 - State/renderer model: `docs/edop/surface/surface_state-analysis.md`

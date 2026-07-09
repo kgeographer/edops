@@ -711,6 +711,26 @@
     updateSigButton();
   }
 
+  function resetSettlements() {
+    clearResolvedPoint();
+    // Restore lower panel to cold start
+    document.getElementById('v3-basin-var').value = '';
+    document.getElementById('v3-basin-legend').style.display = 'none';
+    document.getElementById('v3-basin-status').textContent   = '';
+    const sid = _layers['basin-choropleth']?.sourceId;
+    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    hideLMRLayer();
+    document.getElementById('v3-choropleth').style.display  = 'none';
+    document.getElementById('v3-intro-text').style.display  = '';
+    map.flyTo({ center: [10, 20], zoom: 1 });
+    // Reset bands to A–E checked, T unchecked
+    ['A','B','C','D','E'].forEach(b => { document.getElementById(`v3-band-${b}`).checked = true; });
+    document.getElementById('v3-band-T').checked = false;
+    document.getElementById('v3-t-year-row').classList.add('d-none');
+    document.getElementById('v3-from-year').value = '';
+    document.getElementById('v3-to-year').value   = '';
+  }
+
   document.getElementById('v3-resolve-btn').addEventListener('click', resolveSettlement);
   document.getElementById('v3-place-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') resolveSettlement();
@@ -719,6 +739,7 @@
     e.preventDefault();
     clearResolvedPoint();
   });
+  document.getElementById('v3-reset-btn').addEventListener('click', resetSettlements);
 
   // ── Example handler (Settlements tab) ────────────────────────────────────
   document.getElementById('v3-example-select').addEventListener('change', function () {
@@ -1321,6 +1342,271 @@
     }
   }
 
+  // ── Choropleth paint ──────────────────────────────────────────────────────
+  const RDBU_PAL = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
+
+  function interpTwo(loHex, hiHex, t) {
+    t = Math.max(0, Math.min(1, t));
+    const loR = parseInt(loHex.slice(1,3),16), loG = parseInt(loHex.slice(3,5),16), loB = parseInt(loHex.slice(5,7),16);
+    const hiR = parseInt(hiHex.slice(1,3),16), hiG = parseInt(hiHex.slice(3,5),16), hiB = parseInt(hiHex.slice(5,7),16);
+    return `rgb(${Math.round(loR+(hiR-loR)*t)},${Math.round(loG+(hiG-loG)*t)},${Math.round(loB+(hiB-loB)*t)})`;
+  }
+  function interpRdbu(t) {
+    t = Math.max(0, Math.min(1, t));
+    const n = RDBU_PAL.length - 1, i = Math.floor(t * n), f = t * n - i;
+    if (i >= n) return RDBU_PAL[n];
+    const a = parseInt(RDBU_PAL[i].slice(1), 16), b = parseInt(RDBU_PAL[i+1].slice(1), 16);
+    return `rgb(${Math.round(((a>>16)&0xff)*(1-f)+((b>>16)&0xff)*f)},${Math.round(((a>>8)&0xff)*(1-f)+((b>>8)&0xff)*f)},${Math.round((a&0xff)*(1-f)+(b&0xff)*f)})`;
+  }
+
+  const BASIN_VARS = [
+    { key: 'aridity_index',       su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
+    { key: 'precipitation_annual',su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
+    { key: 'temperature_annual',  su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
+    { key: 'cropland_pct',        su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
+      palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
+  ];
+
+  let _basinLayerLoaded = false;
+  function loadBasinLayer() {
+    if (_basinLayerLoaded) return;
+    const before = Object.entries(_layers)
+      .filter(([n]) => n !== 'basin-choropleth')
+      .flatMap(([,e]) => e.layerIds)[0];
+    shell.add('basin-choropleth',
+      { type: 'vector', url: 'pmtiles:///static/explorer/basin06.pmtiles' },
+      [
+        { type: 'fill', 'source-layer': 'basin06',
+          paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], 'transparent'], 'fill-opacity': 0.72 } },
+        { type: 'line', 'source-layer': 'basin06',
+          paint: { 'line-color': 'rgba(80,80,80,0.2)', 'line-width': 0.5 } },
+      ],
+      { before }
+    );
+    _basinLayerLoaded = true;
+  }
+
+  async function applyBasinVar(key) {
+    const statusEl = document.getElementById('v3-basin-status');
+    if (!key) {
+      const sid = _layers['basin-choropleth']?.sourceId;
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      document.getElementById('v3-basin-legend').style.display = 'none';
+      statusEl.textContent = '';
+      return;
+    }
+    const varMeta = BASIN_VARS.find(v => v.key === key);
+    if (!varMeta) return;
+    loadBasinLayer();
+    const sid = _layers['basin-choropleth'].sourceId;
+    statusEl.textContent = 'Loading…';
+    try {
+      const resp = await fetch(`/api/explorer/values?var=${key}&level=6&su=${varMeta.su}`);
+      const body = await resp.json();
+      const lo = varMeta.fixedDomain ? varMeta.fixedDomain[0] : (body.meta.p10 ?? body.meta.min);
+      const hi = varMeta.fixedDomain ? varMeta.fixedDomain[1] : (body.meta.p90 ?? body.meta.max);
+      const range = hi - lo || 1;
+      map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      Object.entries(body.values).forEach(([id, v]) => {
+        if (v === null || v <= -9999) return;
+        const t  = Math.max(0, Math.min(1, (v - lo) / range));
+        const fc = varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
+                                   : interpRdbu(varMeta.reverse ? 1 - t : t);
+        map.setFeatureState({ source: sid, sourceLayer: 'basin06', id: Number(id) }, { fc });
+      });
+      renderBasinLegend(varMeta, lo, hi);
+      statusEl.textContent = `${body.meta.n_valid.toLocaleString()} basins`;
+    } catch (e) {
+      statusEl.textContent = 'Error loading variable';
+      console.error('applyBasinVar:', e);
+    }
+  }
+
+  function renderBasinLegend(meta, lo, hi) {
+    const stops = meta.palette
+      ? `${meta.palette.lo} 0%, ${meta.palette.hi} 100%`
+      : (meta.reverse
+          ? [...RDBU_PAL].reverse().map((c, i) => `${c} ${(i/(RDBU_PAL.length-1)*100).toFixed(1)}%`).join(', ')
+          : RDBU_PAL.map((c, i) => `${c} ${(i/(RDBU_PAL.length-1)*100).toFixed(1)}%`).join(', '));
+    document.getElementById('v3-basin-legend-bar').style.background = `linear-gradient(to right, ${stops})`;
+    document.getElementById('v3-basin-leg-lo').textContent  = meta.fixedDomain ? meta.loLabel : `${meta.loLabel} (${lo.toFixed(1)})`;
+    document.getElementById('v3-basin-leg-mid').textContent = meta.fixedDomain ? 'scale shared with HYDE' : '';
+    document.getElementById('v3-basin-leg-hi').textContent  = meta.fixedDomain ? meta.hiLabel : `${meta.hiLabel} (${hi.toFixed(1)})`;
+    document.getElementById('v3-basin-legend').style.display = 'block';
+  }
+
+  // ── LMR choropleth ────────────────────────────────────────────────────────
+  let _lmrData = null, _lmrPainting = false;
+
+  function formatLMRVal(v) {
+    const mag = Math.floor(Math.log10(Math.abs(v) || 1));
+    return mag >= -2 ? Math.abs(v).toFixed(3) : Math.abs(v).toExponential(2);
+  }
+  async function loadLMRData() {
+    if (_lmrData) return;
+    const resp = await fetch('/static/explorer/lmr_notches.geojson');
+    const raw  = await resp.json();
+    raw.features.forEach((f, i) => { f.id = i; });
+    _lmrData = raw;
+  }
+  function ensureLMRShellLayer() {
+    if (_layers['lmr-choropleth']) return;
+    const before = Object.entries(_layers)
+      .filter(([n]) => n !== 'lmr-choropleth' && n !== 'basin-choropleth')
+      .flatMap(([,e]) => e.layerIds)[0];
+    shell.add('lmr-choropleth',
+      { type: 'geojson', data: _lmrData },
+      [{ type: 'fill', paint: { 'fill-color': ['coalesce', ['get', 'fc'], 'transparent'],
+                                'fill-opacity': 0.75, 'fill-outline-color': 'rgba(100,100,100,0.12)' } }],
+      { before }
+    );
+  }
+  function showLMRLayer() {
+    const e = _layers['lmr-choropleth'];
+    if (e) e.layerIds.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible'); });
+  }
+  function hideLMRLayer() {
+    const e = _layers['lmr-choropleth'];
+    if (e) e.layerIds.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none'); });
+  }
+
+  async function applyLMRChoropleth(varKey, fromYear, toYear) {
+    if (_lmrPainting) return;
+    _lmrPainting = true;
+    const statusEl = document.getElementById('v3-basin-status');
+    if (!fromYear || !toYear || isNaN(fromYear) || isNaN(toYear)) {
+      statusEl.textContent = 'Set Band T span to paint LMR';
+      _lmrPainting = false; return;
+    }
+    statusEl.textContent = 'Loading…';
+    try {
+      await loadLMRData();
+      ensureLMRShellLayer();
+    } catch (e) {
+      statusEl.textContent = 'Error loading LMR data';
+      console.error('applyLMRChoropleth:', e);
+      _lmrPainting = false; return;
+    }
+    const isTemp = varKey === 'lmr_temp_anomaly';
+    const apiVar = isTemp ? 'air' : 'prate';
+    let values, actualFrom;
+    try {
+      const resp = await fetch(`/api/lmr/values?var=${apiVar}&from_year=${fromYear}&to_year=${toYear}`);
+      if (!resp.ok) { statusEl.textContent = 'Error loading LMR'; _lmrPainting = false; return; }
+      ({ values, actual_from: actualFrom } = await resp.json());
+    } catch (e) {
+      statusEl.textContent = 'Error loading LMR values';
+      console.error('applyLMRChoropleth:', e); _lmrPainting = false; return;
+    }
+    const nums   = Object.values(values).filter(v => v != null);
+    const sorted = [...nums].sort((a, b) => a - b);
+    const n      = sorted.length;
+    const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
+    const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
+    const absMax = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
+    for (const f of _lmrData.features) {
+      const key = `${f.properties.lat},${f.properties.lon}`;
+      const v   = values[key];
+      if (v == null) { delete f.properties.fc; }
+      else {
+        const t    = Math.max(0, Math.min(1, (v + absMax) / (2 * absMax)));
+        f.properties.fc = interpRdbu(isTemp ? 1 - t : t);
+      }
+    }
+    map.getSource(_layers['lmr-choropleth'].sourceId).setData(_lmrData);
+    showLMRLayer();
+    const effFrom   = actualFrom ?? fromYear;
+    const spanLabel = effFrom !== fromYear
+      ? `${effFrom}–${toYear} CE (floor; requested ${fromYear})`
+      : `${fromYear}–${toYear} CE`;
+    renderLMRLegend(isTemp, absMax);
+    statusEl.textContent = `${n.toLocaleString()} cells · ${spanLabel}`;
+    _lmrPainting = false;
+  }
+
+  function renderLMRLegend(isTemp, absMax) {
+    const gradPal   = isTemp ? [...RDBU_PAL].reverse() : RDBU_PAL;
+    const gradStops = gradPal.map((c, i) => `${c} ${(i/(gradPal.length-1)*100).toFixed(1)}%`).join(', ');
+    document.getElementById('v3-basin-legend-bar').style.background = `linear-gradient(to right, ${gradStops})`;
+    const s = formatLMRVal(absMax);
+    document.getElementById('v3-basin-leg-lo').textContent  = isTemp ? `cold (−${s} K)` : `dry (−${s} mm/day)`;
+    document.getElementById('v3-basin-leg-mid').textContent = '0 (850–1850 mean)';
+    document.getElementById('v3-basin-leg-hi').textContent  = isTemp ? `warm (+${s} K)` : `wet (+${s} mm/day)`;
+    document.getElementById('v3-basin-legend').style.display = 'block';
+  }
+
+  // ── HYDE choropleth ───────────────────────────────────────────────────────
+  const HYDE_DB_VAR = { hyde_cropland:'cropland', hyde_grazing:'grazing', hyde_pasture:'pasture', hyde_rangeland:'rangeland' };
+  const HYDE_RAMPS  = {
+    hyde_cropland:  { lo: '#ffffff', hi: '#006d2c' },
+    hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
+    hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
+    hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
+  };
+
+  async function applyHydeChoropleth(varKey, year) {
+    const dbVar = HYDE_DB_VAR[varKey];
+    if (!dbVar) return;
+    loadBasinLayer();
+    const sid      = _layers['basin-choropleth'].sourceId;
+    const statusEl = document.getElementById('v3-basin-status');
+    statusEl.textContent = 'Loading…';
+    try {
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}`);
+      if (!resp.ok) { statusEl.textContent = 'Error'; return; }
+      const { values, actual_year } = await resp.json();
+      const nums   = Object.values(values).filter(v => v != null && v > 0);
+      const domMax = nums.length ? Math.max(...nums) : 1;
+      const ramp   = HYDE_RAMPS[varKey];
+      map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      for (const [id, v] of Object.entries(values)) {
+        if (v == null) continue;
+        map.setFeatureState({ source: sid, sourceLayer: 'basin06', id: Number(id) },
+                            { fc: interpTwo(ramp.lo, ramp.hi, Math.max(0, Math.min(1, v / domMax))) });
+      }
+      renderHydeLegend(varKey, actual_year, domMax);
+      statusEl.textContent = `${actual_year} CE · ${nums.length.toLocaleString()} basins`;
+    } catch (e) {
+      statusEl.textContent = 'Error loading HYDE';
+      console.error('applyHydeChoropleth:', e);
+    }
+  }
+
+  function renderHydeLegend(varKey, year, domMax) {
+    const ramp = HYDE_RAMPS[varKey] || { lo: '#f7f7f7', hi: '#252525' };
+    document.getElementById('v3-basin-legend-bar').style.background = `linear-gradient(to right, ${ramp.lo}, ${ramp.hi})`;
+    document.getElementById('v3-basin-leg-lo').textContent  = '0';
+    document.getElementById('v3-basin-leg-mid').textContent = `${year} CE`;
+    document.getElementById('v3-basin-leg-hi').textContent  = `${(domMax * 100).toFixed(1)}%`;
+    document.getElementById('v3-basin-legend').style.display = 'block';
+  }
+
+  document.getElementById('v3-basin-var').addEventListener('change', e => {
+    const key    = e.target.value;
+    const fromYr = parseInt(document.getElementById('v3-from-year').value);
+    const toYr   = parseInt(document.getElementById('v3-to-year').value);
+    if (key.startsWith('lmr_')) {
+      const sid = _layers['basin-choropleth']?.sourceId;
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      hideLMRLayer();
+      document.getElementById('v3-basin-legend').style.display = 'none';
+      applyLMRChoropleth(key, fromYr, toYr);
+      return;
+    }
+    if (key.startsWith('hyde_')) {
+      const sid = _layers['basin-choropleth']?.sourceId;
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      hideLMRLayer();
+      document.getElementById('v3-basin-legend').style.display = 'none';
+      applyHydeChoropleth(key, fromYr || 1000);
+      return;
+    }
+    hideLMRLayer();
+    const sid = _layers['basin-choropleth']?.sourceId;
+    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    applyBasinVar(key);
+  });
+
   // ── Map initialization ────────────────────────────────────────────────────
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
@@ -1328,7 +1614,7 @@
   const map = new maplibregl.Map({
     container: 'v3-map',
     center: [10, 20],
-    zoom: 2,
+    zoom: 1,
     attributionControl: true,
     style: {
       version: 8,
