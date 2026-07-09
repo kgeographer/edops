@@ -4,3 +4,5 @@
 - lat, Lon > lat, lon in WHG input
 - Reset button styling
 - 0 on a color ramp need to be white
+- load time for signature of very large polity (e.g. Abbasid (1046 basins)
+- 
