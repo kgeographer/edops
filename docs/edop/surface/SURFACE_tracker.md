@@ -184,14 +184,14 @@ hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `appl
 replaced. **408 tests pass, 50 skipped.**
 Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
 
-**WO21 (sequenced state management — Settlements track complete)** — `sandbox_v3.html` at
-`/sandbox/lookup3`; Settlements tab: full forward-or-reset state machine (WHG resolve →
-candidate list → `setResolvedPoint` → scope reveal → `_drawScopePreview` → Get Signature).
-Stable point marker survives scope switches. Scope-switch redraws preview immediately.
-Reset button (`#v3-reset-btn`) returns tab to cold start + map flyTo world.
-Choropleth variable paint ported (BasinATLAS / LMR / HYDE). 83 structural tests in
-`tests/surface/test_sandbox_v3.py`. Polities tab HTML present but state machine not yet wired.
-Tab-switch hard reset deferred. **499 tests pass, 50 skipped.**
+**WO21 (sequenced state management) complete** — `sandbox_v3.html` at `/sandbox/lookup3`.
+Both tabs wired; all three clears hold. Settlements: WHG resolve + example paths, scope-switch
+preview, stable point marker, choropleth paint (BasinATLAS / LMR / HYDE), Reset button.
+Polities: search/dropdown, `selectPolity`, slice-select, `drawPolityBoundary`, `applySlice`,
+Get Sig; bands disabled at cold start, enabled on polity resolve; T auto-ticked + lifespan span.
+Tab-switch hard reset via `hide.bs.tab`. Buffer scope now shows intersecting basins immediately
+(new `/api/basin/buffer` endpoint). `_activeBandTYears()` reads LMR years from active tab.
+83 structural + 45 Playwright + 7 route tests. **551 tests pass, 50 skipped.**
 Findings in `wo21_findings.md`.
 
 **WO20 (WHG settlement lookup + point-resolver) complete** — opens Arc A (deployability).
@@ -247,7 +247,7 @@ Findings in `wo18_findings.md`.
 | LMR paint + example-select UX | LMR temp/precip anomaly choropleth; 5-notch data structure; diverging ramp; state audit; scope dropdown sidelined; preview geometry on example select. | **complete — WO15** |
 | LMR per-span values route + honest paint | `/api/lmr/values` span-mean anomaly route; retire 5-notch/slider; paint coupled to Band T span; slice-reactive repaint passes fromyear/toyear. | **complete — WO19** |
 | WHG settlement lookup + point-resolver | Probe current WHG API; integrate as point-resolver: search → candidates → candidate selection → single-basin fires → Get Signature enabled. Opens Arc A (deployability). | **complete — WO20** |
-| Sequenced state management (sandbox_v3) | Forward-or-reset state machine on new page: Settlements tab complete (resolve/example paths, scope-switch preview, point marker, reset, choropleth). Polities tab + tab-switch hard reset next. | **in progress — WO21** |
+| Sequenced state management (sandbox_v3) | Forward-or-reset state machine on new page: both tabs, three clears, Playwright suite. Buffer shows intersecting basins immediately. | **complete — WO21** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
 | HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
 | HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
@@ -288,15 +288,19 @@ Findings in `wo18_findings.md`.
 
 Append-only; dated. Settled unless explicitly revisited here.
 
-**2026-07-09 (WO21 — Sequenced state management, Settlements track)**
+**2026-07-09 (WO21 — Sequenced state management, complete)**
 
 - **sandbox_v3 / `/sandbox/lookup3`** — new page (not a patch to v2). v3-prefixed IDs throughout; v2 untouched, all v2 tests green.
 - **Forward-or-reset model** — `setResolvedPoint` is the single transition point into the resolved state; `clearResolvedPoint` reverses it. No mid-path control changes. `resetSettlements()` adds choropleth clear + band reset + map flyTo to `clearResolvedPoint`.
-- **Alternate entry removal on commit** — resolve path hides example row; example path locks resolve field. Both are one-way; reset is the only route back to cold start.
-- **`_drawScopePreview(scope)`** — single dispatch for scope→geometry preview, called from scope-select change, `setResolvedPoint`, and example handler. Buffer preview = dashed circle only (basin polygons are a Get Sig product).
-- **`_pointMarker` separate from shell layers** — stable marker at resolved point, not cleared by scope switches. Cleared by `clearResolvedPoint` / `resetSettlements`.
+- **Alternate entry removal on commit** — resolve path hides example row; example path locks resolve field. Both are one-way; reset is the only route back to cold start. Same pattern on Polities: example locks search input; search locks example dropdown.
+- **`_drawScopePreview(scope)`** — single dispatch for scope→geometry preview. Buffer = dashed circle immediately + async fetch of `/api/basin/buffer` → basin polygons overlaid + `fitBounds` to basin FC.
+- **`/api/basin/buffer`** — new endpoint; PostGIS `ST_Intersects` with geodesic buffer; returns GeoJSON FeatureCollection. Matches `/api/basin/ring` pattern.
+- **`_pointMarker` separate from shell layers** — stable marker at resolved point, not cleared by scope switches. Placed by both WHG resolve path and example handler. Cleared by `clearResolvedPoint` / `resetSettlements`.
 - **`updateSigButton` gates on `hasPoint && scope` only** — year fields (Band T) are not a prerequisite for enabling Get Sig. T with empty years simply omits temporal params from the request.
-- **Choropleth is scope-independent** — variable paint "rides alongside" the resolved query per WO21 spec. LMR reads `v3-from-year`/`v3-to-year`; HYDE defaults to 1000 CE when empty. No coupling to sig result.
+- **Choropleth is scope-independent** — variable paint "rides alongside" the resolved query. `_activeBandTYears()` reads LMR/HYDE year inputs from whichever tab is active (Settlements: `v3-from-year`/`v3-to-year`; Polities: `v3-polity-from-year`/`v3-polity-to-year`).
+- **Tab-switch hard reset via `hide.bs.tab`** — fires before animation; `v3-tab-settlements-btn` hide → `resetSettlements()`; `v3-tab-polities-btn` hide → `resetPolities()`. `shown.bs.tab` was tried first but caused a timing bug.
+- **`_basinLayerLoaded` must reset after `shell.clear()`** — flag stays true after shell clears the source; subsequent `loadBasinLayer()` is a no-op, crashing `applyBasinVar`. Reset in `clearResolvedPoint` and `resetPolities`.
+- **Polities: bands disabled at cold start** — all `.v3-polity-band-chk` disabled + checked; enabled on polity resolve. T auto-ticked; T year row auto-filled from full polity lifespan (`min/max` over all slices, not the selected slice).
 - **Map cold-start zoom = 1** — corrected from 2; flyTo zoom 1 on reset.
 - **F21.1 (Bootstrap `d-flex` conflict)** — never mix `d-flex` class with inline `display:none` on the same element; Bootstrap's `!important` wins. Use explicit `style.display = 'flex'` in JS for flex-reveal, `style.display = 'none'` for hide.
 

@@ -41,13 +41,12 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 ## Current work
 
-**Surface is the active track. Branch: `surface`; current WO branch: `surf_wo21`.**
+**Surface is the active track. Branch: `surface`; merge WO branches back to `surface` on accept.**
 
 - **Goto:** `docs/edop/surface/SURFACE_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO21 in progress — Settlements tab complete; Polities tab + tab-switch hard reset next
-- **New sandbox page:** `app/templates/sandbox_v3.html` at `/sandbox/lookup3`
-- **Tests:** 499 pass, 50 skipped
+- **Current step:** WO21 complete — `sandbox_v3.html` at `/sandbox/lookup3`; both tabs, three clears, Playwright suite. Next WO TBD.
+- **Tests:** 551 pass, 50 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
