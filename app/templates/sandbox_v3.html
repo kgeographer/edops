@@ -463,6 +463,22 @@
         [{ type: 'line', paint: { 'line-color': '#888', 'line-width': 1.2, 'line-dasharray': [4,3] } }]
       );
       _fitMap(geojsonBbox(circle));
+      const br = await fetch(
+        `/api/basin/buffer?lat=${currentLat}&lon=${currentLon}&radius_km=${radiusKm}&level=6`
+      );
+      if (br.ok) {
+        const fc = await br.json();
+        if (fc.features?.length) {
+          shell.add('buffer-basins',
+            { type: 'geojson', data: fc },
+            [
+              { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
+              { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75 } },
+            ]
+          );
+          _fitMap(geojsonBbox(fc));
+        }
+      }
     } else if (scope === 'ring') {
       const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
       if (!r.ok) return;
