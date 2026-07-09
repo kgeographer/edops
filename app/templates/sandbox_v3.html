@@ -405,6 +405,7 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let currentLat    = null;
   let currentLon    = null;
+  let _pointMarker   = null;
   let _ringData      = null;
   let _ringPopup     = null;
   let _centerPayload = null;
@@ -447,9 +448,35 @@
     document.getElementById('v3-buffer-extra').style.display = (scope === 'buffer') ? 'flex' : 'none';
     document.getElementById('v3-ring-info').style.display    = (scope === 'ring')   ? ''     : 'none';
   }
+  async function _drawScopePreview(scope) {
+    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
+      .forEach(n => shell.remove(n));
+    if (currentLat === null) return;
+    if (scope === 'single') {
+      const bbox = await drawSingleBasin(currentLat, currentLon, null);
+      if (bbox) _fitMap(bbox);
+    } else if (scope === 'buffer') {
+      const radiusKm = parseFloat(document.getElementById('v3-radius').value) || 100;
+      const circle   = geodesicCircle(currentLat, currentLon, radiusKm);
+      shell.add('buffer-circle',
+        { type: 'geojson', data: circle },
+        [{ type: 'line', paint: { 'line-color': '#888', 'line-width': 1.2, 'line-dasharray': [4,3] } }]
+      );
+      _fitMap(geojsonBbox(circle));
+    } else if (scope === 'ring') {
+      const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
+      if (!r.ok) return;
+      _ringData = await r.json();
+      const bbox = await drawRingGeometry(_ringData);
+      if (bbox) _fitMap(bbox);
+    }
+    _showMapTab();
+  }
+
   document.getElementById('v3-scope-select').addEventListener('change', function () {
     applyScope(this.value);
     updateSigButton();
+    if (currentLat !== null) _drawScopePreview(this.value);
   });
 
   // ── Get Signature enablement ──────────────────────────────────────────────
@@ -638,6 +665,11 @@
     _whgHideCandidates();
     _whgSetStatus('', false);
 
+    // Place a stable marker at the resolved point (survives scope switches)
+    if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
+    _pointMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+      .setLngLat([lon, lat]).addTo(map);
+
     // Show chip
     document.getElementById('v3-whg-name').textContent   = name;
     document.getElementById('v3-whg-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
@@ -653,14 +685,8 @@
     applyScope(scopeSelect.value);
     updateSigButton();
 
-    // Preview: single basin on map
-    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
-      .forEach(n => shell.remove(n));
-    _showMapTab();
-    (async () => {
-      const bbox = await drawSingleBasin(lat, lon, null);
-      if (bbox) _fitMap(bbox);
-    })();
+    // Preview: draw for current scope (Single default)
+    _drawScopePreview(document.getElementById('v3-scope-select').value || 'single');
 
     _revealLowerPanel();
   }
@@ -678,8 +704,8 @@
     document.getElementById('v3-place-input').disabled       = false;
     _whgHideCandidates();
     _whgSetStatus('', false);
-    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
-      .forEach(n => shell.remove(n));
+    if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
+    shell.clear();
     document.getElementById('v3-scope-select').value = '';
     applyScope('');
     updateSigButton();
@@ -724,34 +750,7 @@
     applyScope(scope);
     updateSigButton();
 
-    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
-      .forEach(n => shell.remove(n));
-
-    if (scope === 'single' && currentLat !== null) {
-      _showMapTab();
-      (async () => {
-        const bbox = await drawSingleBasin(currentLat, currentLon, null);
-        if (bbox) _fitMap(bbox);
-      })();
-    } else if (scope === 'buffer' && currentLat !== null) {
-      const radiusKm = parseFloat(document.getElementById('v3-radius').value) || 100;
-      const circle   = geodesicCircle(currentLat, currentLon, radiusKm);
-      shell.add('buffer-circle',
-        { type: 'geojson', data: circle },
-        [{ type: 'line', paint: { 'line-color': '#888', 'line-width': 1.2, 'line-dasharray': [4,3] } }]
-      );
-      _showMapTab();
-      _fitMap(geojsonBbox(circle));
-    } else if (scope === 'ring' && currentLat !== null) {
-      _showMapTab();
-      (async () => {
-        const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
-        if (!r.ok) return;
-        _ringData = await r.json();
-        const bbox = await drawRingGeometry(_ringData);
-        if (bbox) _fitMap(bbox);
-      })();
-    }
+    _drawScopePreview(scope);
 
     _revealLowerPanel();
   });
