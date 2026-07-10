@@ -85,6 +85,10 @@ absence of `hyde_basin08_steps` as the cause.
 
 **Root cause: per-request `PERCENT_RANK()` over the full basin table (F22.8).**
 
+**After fix (F22.9):** Pre-materialized `public.basin08_scores` + `attach_values` fast path:
+Buffer L06 (no T): 1.17s / Buffer L08 (no T): **0.90s** — L08 is now *faster* than L06
+because the indexed lookup beats L06's live PERCENT_RANK computation entirely.
+
 ---
 
 ## F22.6 — Explorer L8 toggle: current wiring state
