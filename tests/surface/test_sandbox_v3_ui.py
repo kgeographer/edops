@@ -375,3 +375,61 @@ class TestV3PolitiesExampleReveal:
         page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
         # Disabled synchronously before the async fetch
         expect(page.locator("#v3-polity-input")).to_be_disabled()
+
+    def test_polity_level_enabled_after_resolve(self, page: Page, live_server_url):
+        """Level select is disabled at cold start and enabled after polity resolves (WO22)."""
+        goto(page, live_server_url)
+        click_polities_tab(page)
+        expect(page.locator("#v3-polity-level")).to_be_disabled()
+        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.wait_for_function(
+            "document.getElementById('v3-slice-select').options.length > 1",
+            timeout=10000,
+        )
+        expect(page.locator("#v3-polity-level")).to_be_enabled()
+
+
+# ---------------------------------------------------------------------------
+# WO22 — Level select (Settlements tab)
+# ---------------------------------------------------------------------------
+
+class TestV3LevelSelect:
+    """Level select cold-start state and enable/disable lifecycle (WO22)."""
+
+    def test_level_select_disabled_on_load(self, page: Page, live_server_url):
+        """Level select disabled at cold start — no place resolved yet."""
+        goto(page, live_server_url)
+        expect(page.locator("#v3-level")).to_be_disabled()
+
+    def test_level_select_default_l06(self, page: Page, live_server_url):
+        goto(page, live_server_url)
+        expect(page.locator("#v3-level")).to_have_value("6")
+
+    def test_level_select_enabled_after_example(self, page: Page, live_server_url):
+        """Level select becomes interactive and is set to L06 when an example loads."""
+        goto(page, live_server_url)
+        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        expect(page.locator("#v3-level")).to_be_enabled()
+        expect(page.locator("#v3-level")).to_have_value("6")
+
+    def test_polity_level_disabled_on_load(self, page: Page, live_server_url):
+        goto(page, live_server_url)
+        click_polities_tab(page)
+        expect(page.locator("#v3-polity-level")).to_be_disabled()
+
+    def test_reset_returns_level_to_l06_and_disabled(self, page: Page, live_server_url):
+        """Reset restores level to L06 and disables the select."""
+        goto(page, live_server_url)
+        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        page.select_option("#v3-level", "8")
+        page.click("#v3-reset-btn")
+        expect(page.locator("#v3-level")).to_have_value("6")
+        expect(page.locator("#v3-level")).to_be_disabled()
+
+    def test_polity_reset_disables_level(self, page: Page, live_server_url):
+        """Reset on Polities tab disables and resets polity level select."""
+        goto(page, live_server_url)
+        click_polities_tab(page)
+        page.click("#v3-reset-btn")
+        expect(page.locator("#v3-polity-level")).to_be_disabled()
+        expect(page.locator("#v3-polity-level")).to_have_value("6")

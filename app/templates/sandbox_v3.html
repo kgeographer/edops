@@ -18,6 +18,13 @@
     .param-row label { font-size: 0.8rem; color: #666; }
     /* Card flush to nav-tabs strip */
     .fork-card { border-top-left-radius: 0; }
+    @keyframes v3-flash-yellow {
+      0%   { background: transparent; }
+      15%  { background: #fff3cd; border-radius: 4px; }
+      85%  { background: #fff3cd; border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    .v3-band-t-flash { animation: v3-flash-yellow 2s ease forwards; }
   </style>
 </head>
 <body>
@@ -122,8 +129,9 @@
                 <div style="flex:0 0 auto;">
                   <label class="form-label mb-0" style="font-size:0.9rem;">Level</label>
                   <select class="form-select form-select-sm mt-1" id="v3-level"
-                          disabled style="width:68px;">
+                          style="width:68px;" disabled>
                     <option value="6">06</option>
+                    <option value="8">08</option>
                   </select>
                 </div>
                 <div style="flex:1 1 auto;">
@@ -222,6 +230,7 @@
                   <select class="form-select form-select-sm mt-1" id="v3-polity-level"
                           disabled style="width:68px;">
                     <option value="6">06</option>
+                    <option value="8">08</option>
                   </select>
                 </div>
                 <div style="flex:1 1 auto;">
@@ -409,6 +418,95 @@
   let _ringData      = null;
   let _ringPopup     = null;
   let _centerPayload = null;
+  let _sigMemberIds    = null;  // Set<number> of hybas_ids in current scope
+  let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
+
+  // ── Level helpers ─────────────────────────────────────────────────────────
+  function _activeLevel() {
+    const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    return parseInt(document.getElementById(onPol ? 'v3-polity-level' : 'v3-level').value || '6');
+  }
+  function _basinSourceLayer() {
+    const lv = _basinLayerLevel ?? _activeLevel();
+    return `basin0${lv}`;
+  }
+  function _onLevelChange() {
+    _basinLayerLevel = null;  // force loadBasinLayer to reload at new level
+    const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    if (!onPol) {
+      const scope = document.getElementById('v3-scope-select').value;
+      if (scope && currentLat != null) _drawScopePreview(scope);  // redraw geometry at new level
+    }
+    _silentResig();  // re-derive _sigMemberIds at new level, repaint choropleth
+  }
+
+  async function _silentResig() {
+    const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    const lv = _activeLevel();
+    try {
+      if (onPol) {
+        const polityName   = document.getElementById('v3-polity-input').value.trim();
+        const resolverYear = document.getElementById('v3-resolver-year').value;
+        if (!polityName || !resolverYear) return;
+        const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('');
+        const params = new URLSearchParams({ type: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true' });
+        if (bands.includes('T')) {
+          const fy = document.getElementById('v3-polity-from-year').value;
+          const ty = document.getElementById('v3-polity-to-year').value;
+          if (fy) params.set('from_year', fy);
+          if (ty) params.set('to_year', ty);
+        }
+        const r = await fetch(`/api/areas?${params}`);
+        if (!r.ok) return;
+        const nb = (await r.json()).neighborhood || {};
+        _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
+      } else {
+        const scope = document.getElementById('v3-scope-select').value;
+        if (!scope || currentLat == null) return;
+        if (scope === 'single') {
+          if (lv === 8) {
+            const [sigR, ringR] = await Promise.all([
+              fetch(buildSingleBasinUrl()),
+              fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=8`),
+            ]);
+            if (!sigR.ok) return;
+            const nb = (await sigR.json()).neighborhood || {};
+            const ringIds = ringR.ok ? ((await ringR.json()).ring || []).map(m => Number(m.hybas_id)) : [];
+            _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
+          } else {
+            const r = await fetch(buildSingleBasinUrl());
+            if (!r.ok) return;
+            const nb = (await r.json()).neighborhood || {};
+            _sigMemberIds = nb.hybas_id != null ? new Set([Number(nb.hybas_id)]) : null;
+          }
+        } else if (scope === 'buffer') {
+          const r = await fetch(buildBufferUrl());
+          if (!r.ok) return;
+          const nb = (await r.json()).neighborhood || {};
+          _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
+        } else if (scope === 'ring') {
+          const [sigR, ringR] = await Promise.all([
+            fetch(buildSingleBasinUrl()),
+            fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=${lv}`),
+          ]);
+          if (!sigR.ok || !ringR.ok) return;
+          const nb = (await sigR.json()).neighborhood || {};
+          const rd = await ringR.json();
+          const ringIds = (rd.ring || []).map(m => Number(m.hybas_id));
+          _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
+        }
+      }
+      _repaintChoropleth();
+    } catch (_) {}
+  }
+
+  function _repaintChoropleth() {
+    const key = document.getElementById('v3-basin-var').value;
+    if (!key || key.startsWith('lmr_')) return;
+    const { fromYr } = _activeBandTYears();
+    if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
+    else applyBasinVar(key);
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function formatYear(y) {
@@ -452,8 +550,9 @@
     ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
       .forEach(n => shell.remove(n));
     if (currentLat === null) return;
+    const lv = _activeLevel();
     if (scope === 'single') {
-      const bbox = await drawSingleBasin(currentLat, currentLon, null);
+      const bbox = await drawSingleBasin(currentLat, currentLon, null, lv);
       if (bbox) _fitMap(bbox);
     } else if (scope === 'buffer') {
       const radiusKm = parseFloat(document.getElementById('v3-radius').value) || 100;
@@ -464,7 +563,7 @@
       );
       _fitMap(geojsonBbox(circle));
       const br = await fetch(
-        `/api/basin/buffer?lat=${currentLat}&lon=${currentLon}&radius_km=${radiusKm}&level=6`
+        `/api/basin/buffer?lat=${currentLat}&lon=${currentLon}&radius_km=${radiusKm}&level=${lv}`
       );
       if (br.ok) {
         const fc = await br.json();
@@ -480,7 +579,7 @@
         }
       }
     } else if (scope === 'ring') {
-      const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
+      const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=${lv}`);
       if (!r.ok) return;
       _ringData = await r.json();
       const bbox = await drawRingGeometry(_ringData);
@@ -698,6 +797,7 @@
     const scopeSelect = document.getElementById('v3-scope-select');
     if (!scopeSelect.value) scopeSelect.value = 'single';
     document.getElementById('v3-scope-wrap').style.display = '';
+    document.getElementById('v3-level').disabled = false;
     applyScope(scopeSelect.value);
     updateSigButton();
 
@@ -718,24 +818,30 @@
     document.getElementById('v3-example-select').disabled   = false;
     document.getElementById('v3-resolve-btn').disabled       = false;
     document.getElementById('v3-place-input').disabled       = false;
+    document.getElementById('v3-level').disabled             = true;
     _whgHideCandidates();
     _whgSetStatus('', false);
     if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
     shell.clear();
     _basinLayerLoaded = false;
+    _sigMemberIds = null;
     document.getElementById('v3-scope-select').value = '';
     applyScope('');
     updateSigButton();
   }
 
   function resetSettlements() {
+    const _sl = _basinSourceLayer();  // capture before any state reset
     clearResolvedPoint();
     // Restore lower panel to cold start
+    document.getElementById('v3-level').value    = '6';
+    document.getElementById('v3-level').disabled = true;
+    _basinLayerLevel = null;
     document.getElementById('v3-basin-var').value = '';
     document.getElementById('v3-basin-legend').style.display = 'none';
     document.getElementById('v3-basin-status').textContent   = '';
     const sid = _layers['basin-choropleth']?.sourceId;
-    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    if (sid) map.removeFeatureState({ source: sid, sourceLayer: _sl });
     hideLMRLayer();
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
@@ -791,6 +897,8 @@
 
     const scopeSelect = document.getElementById('v3-scope-select');
     scopeSelect.value = scope;
+    document.getElementById('v3-level').value    = '6';  // examples always at L06
+    document.getElementById('v3-level').disabled = false;
     document.getElementById('v3-scope-wrap').style.display = '';
     applyScope(scope);
     updateSigButton();
@@ -845,9 +953,9 @@
     ];
   }
 
-  async function drawSingleBasin(lat, lon, sigHybas_id) {
+  async function drawSingleBasin(lat, lon, sigHybas_id, level = 6) {
     try {
-      const r = await fetch(`/api/basin-preview?lat=${lat}&lon=${lon}&level=6`);
+      const r = await fetch(`/api/basin-preview?lat=${lat}&lon=${lon}&level=${level}`);
       if (!r.ok) return null;
       const data    = await r.json();
       const feature = data.containing_basin;
@@ -881,9 +989,9 @@
     return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } };
   }
 
-  async function drawBufferGeometry(lat, lon, radiusKm, memberIds) {
+  async function drawBufferGeometry(lat, lon, radiusKm, memberIds, level = 6) {
     try {
-      const r = await fetch(`/api/basin/geom?ids=${memberIds.join(',')}&level=6`);
+      const r = await fetch(`/api/basin/geom?ids=${memberIds.join(',')}&level=${level}`);
       if (!r.ok) return null;
       const fc          = await r.json();
       const returnedIds = new Set(fc.features.map(f => f.properties.hybas_id));
@@ -954,7 +1062,7 @@
     sigTabBtn.classList.remove('disabled');
     bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     const bands = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'single_basin', lat, lon, bands, detail: 'true' });
+    const params = new URLSearchParams({ type: 'single_basin', lat, lon, level: _activeLevel(), bands, detail: 'true' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -985,7 +1093,7 @@
   function buildSingleBasinUrl() {
     if (currentLat == null || currentLon == null) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'single_basin', lat: currentLat, lon: currentLon, bands, detail: 'true' });
+    const params = new URLSearchParams({ type: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -999,7 +1107,7 @@
     const radius_km = parseFloat(document.getElementById('v3-radius').value);
     if (currentLat == null || currentLon == null || isNaN(radius_km)) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'buffer', lat: currentLat, lon: currentLon, radius_km, bands, detail: 'true' });
+    const params = new URLSearchParams({ type: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -1025,15 +1133,33 @@
     try {
       let payload, pendingBbox = null;
 
+      const lv = _activeLevel();
       if (scope === 'single') {
         const url = buildSingleBasinUrl();
         if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
-        const r = await fetch(url);
-        if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
-        payload = await r.json();
-        const nb = payload.neighborhood || {};
-        if (nb.hybas_id != null && currentLat != null) {
-          pendingBbox = await drawSingleBasin(currentLat, currentLon, nb.hybas_id);
+        if (lv === 8) {
+          // Parallel: sig + ring neighbors — extends paint context at L08
+          const [r, ringR] = await Promise.all([
+            fetch(url),
+            fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=8`),
+          ]);
+          if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
+          payload = await r.json();
+          const nb = payload.neighborhood || {};
+          const ringIds = ringR.ok ? ((await ringR.json()).ring || []).map(m => Number(m.hybas_id)) : [];
+          _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
+          if (nb.hybas_id != null && currentLat != null) {
+            pendingBbox = await drawSingleBasin(currentLat, currentLon, nb.hybas_id, lv);
+          }
+        } else {
+          const r = await fetch(url);
+          if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
+          payload = await r.json();
+          const nb = payload.neighborhood || {};
+          _sigMemberIds = nb.hybas_id != null ? new Set([Number(nb.hybas_id)]) : null;
+          if (nb.hybas_id != null && currentLat != null) {
+            pendingBbox = await drawSingleBasin(currentLat, currentLon, nb.hybas_id, lv);
+          }
         }
 
       } else if (scope === 'buffer') {
@@ -1043,21 +1169,25 @@
         if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
         payload = await r.json();
         const nb = payload.neighborhood || {};
+        _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
         if (nb.member_ids?.length && currentLat != null) {
-          pendingBbox = await drawBufferGeometry(currentLat, currentLon, nb.radius_km, nb.member_ids);
+          pendingBbox = await drawBufferGeometry(currentLat, currentLon, nb.radius_km, nb.member_ids, lv);
         }
 
       } else if (scope === 'ring') {
         if (currentLat == null) throw new Error('Ring scope requires a resolved lat/lon.');
         const [sigR, ringR] = await Promise.all([
           fetch(buildSingleBasinUrl()),
-          fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`),
+          fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=${lv}`),
         ]);
         if (!sigR.ok)  { const b = await sigR.json().catch(()=>({}));  throw new Error(b.detail ?? `Server error ${sigR.status}`); }
         if (!ringR.ok) { const b = await ringR.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${ringR.status}`); }
         payload        = await sigR.json();
         _ringData      = await ringR.json();
         _centerPayload = payload;
+        const centerNb = payload.neighborhood || {};
+        const ringIds  = (_ringData.ring || []).map(m => Number(m.hybas_id));
+        _sigMemberIds  = new Set([Number(centerNb.hybas_id), ...ringIds].filter(Boolean));
         pendingBbox    = await drawRingGeometry(_ringData);
 
       } else {
@@ -1068,6 +1198,8 @@
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
+
+      _repaintChoropleth();
 
     } catch (err) {
       console.error('[v3] signature error:', err);
@@ -1407,13 +1539,17 @@
       cb.disabled = true;
     });
     document.getElementById('v3-polity-sig-btn').disabled = true;
+    const polityLvlSel = document.getElementById('v3-polity-level');
+    polityLvlSel.value    = '6';
+    polityLvlSel.disabled = true;
     shell.clear();
     _basinLayerLoaded = false;
+    _basinLayerLevel  = null;
+    _sigMemberIds     = null;
     document.getElementById('v3-basin-var').value              = '';
     document.getElementById('v3-basin-legend').style.display   = 'none';
     document.getElementById('v3-basin-status').textContent     = '';
-    const sid = _layers['basin-choropleth']?.sourceId;
-    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    // source already removed by shell.clear() — removeFeatureState is a no-op
     hideLMRLayer();
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
@@ -1477,8 +1613,9 @@
     ).join('');
     sliceSel.disabled = false;
 
-    // Enable bands
+    // Enable bands and level select
     document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.disabled = false; });
+    document.getElementById('v3-polity-level').disabled = false;
 
     // Auto-fill Band T from full polity lifespan
     const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
@@ -1544,10 +1681,11 @@
     const polityName   = document.getElementById('v3-polity-input').value.trim();
     const resolverYear = document.getElementById('v3-resolver-year').value;
     if (!polityName || !resolverYear) return;
+    const lv    = parseInt(document.getElementById('v3-polity-level').value || '6');
     const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')]
       .map(cb => cb.value).join('');
     const params = new URLSearchParams({
-      type: 'polity', polity: polityName, year: resolverYear, level: 6, bands, detail: 'true',
+      type: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true',
     });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-polity-from-year').value;
@@ -1566,9 +1704,14 @@
       const r = await fetch(`/api/areas?${params}`);
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const payload = await r.json();
+      const nb = payload.neighborhood || {};
+      _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
       renderSignature(payload);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
+
+      _repaintChoropleth();
+
     } catch (err) {
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     } finally {
@@ -1590,6 +1733,10 @@
     const onPolities = document.getElementById('v3-tab-polities-btn').classList.contains('active');
     if (onPolities) resetPolities(); else resetSettlements();
   });
+
+  // Level-select change listeners — reload choropleth at new level
+  document.getElementById('v3-level').addEventListener('change', _onLevelChange);
+  document.getElementById('v3-polity-level').addEventListener('change', _onLevelChange);
 
   // ── Choropleth paint ──────────────────────────────────────────────────────
   const RDBU_PAL = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
@@ -1618,53 +1765,66 @@
 
   let _basinLayerLoaded = false;
   function loadBasinLayer() {
-    if (_basinLayerLoaded) return;
+    const level = _activeLevel();
+    if (_basinLayerLoaded && _basinLayerLevel === level) return;
     const before = Object.entries(_layers)
       .filter(([n]) => n !== 'basin-choropleth')
       .flatMap(([,e]) => e.layerIds)[0];
+    shell.remove('basin-choropleth');
+    const sl = `basin0${level}`;
     shell.add('basin-choropleth',
-      { type: 'vector', url: 'pmtiles:///static/explorer/basin06.pmtiles' },
+      { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` },
       [
-        { type: 'fill', 'source-layer': 'basin06',
+        { type: 'fill', 'source-layer': sl,
           paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], 'transparent'], 'fill-opacity': 0.72 } },
-        { type: 'line', 'source-layer': 'basin06',
+        { type: 'line', 'source-layer': sl,
           paint: { 'line-color': 'rgba(80,80,80,0.2)', 'line-width': 0.5 } },
       ],
       { before }
     );
     _basinLayerLoaded = true;
+    _basinLayerLevel  = level;
   }
 
   async function applyBasinVar(key) {
     const statusEl = document.getElementById('v3-basin-status');
+    const sl = _basinSourceLayer();
     if (!key) {
       const sid = _layers['basin-choropleth']?.sourceId;
-      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });
       document.getElementById('v3-basin-legend').style.display = 'none';
       statusEl.textContent = '';
       return;
     }
     const varMeta = BASIN_VARS.find(v => v.key === key);
     if (!varMeta) return;
+    const level = _activeLevel();
+    if (level === 8 && !_sigMemberIds?.size) {
+      statusEl.textContent = 'Get a signature first to use L08 choropleth';
+      return;
+    }
     loadBasinLayer();
     const sid = _layers['basin-choropleth'].sourceId;
     statusEl.textContent = 'Loading…';
     try {
-      const resp = await fetch(`/api/explorer/values?var=${key}&level=6&su=${varMeta.su}`);
+      const resp = await fetch(`/api/explorer/values?var=${key}&level=${level}&su=${varMeta.su}`);
       const body = await resp.json();
       const lo = varMeta.fixedDomain ? varMeta.fixedDomain[0] : (body.meta.p10 ?? body.meta.min);
       const hi = varMeta.fixedDomain ? varMeta.fixedDomain[1] : (body.meta.p90 ?? body.meta.max);
       const range = hi - lo || 1;
-      map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      map.removeFeatureState({ source: sid, sourceLayer: sl });
       Object.entries(body.values).forEach(([id, v]) => {
         if (v === null || v <= -9999) return;
+        const numId = Number(id);
+        if (level === 8 && _sigMemberIds && !_sigMemberIds.has(numId)) return;
         const t  = Math.max(0, Math.min(1, (v - lo) / range));
         const fc = varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
                                    : interpRdbu(varMeta.reverse ? 1 - t : t);
-        map.setFeatureState({ source: sid, sourceLayer: 'basin06', id: Number(id) }, { fc });
+        map.setFeatureState({ source: sid, sourceLayer: sl, id: numId }, { fc });
       });
       renderBasinLegend(varMeta, lo, hi);
-      statusEl.textContent = `${body.meta.n_valid.toLocaleString()} basins`;
+      const painted = level === 8 ? (_sigMemberIds?.size ?? 0) : body.meta.n_valid;
+      statusEl.textContent = `${painted.toLocaleString()} basins`;
     } catch (e) {
       statusEl.textContent = 'Error loading variable';
       console.error('applyBasinVar:', e);
@@ -1686,6 +1846,24 @@
 
   // ── LMR choropleth ────────────────────────────────────────────────────────
   let _lmrData = null, _lmrPainting = false;
+
+  function _flashBandT() {
+    const onPol   = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    const tEl     = document.getElementById(onPol ? 'v3-polity-band-T' : 'v3-band-T');
+    const flashEl = tEl?.closest('.form-check');
+    if (!flashEl) return;
+    flashEl.classList.remove('v3-band-t-flash');
+    void flashEl.offsetWidth;  // force reflow so re-triggering animation works
+    flashEl.classList.add('v3-band-t-flash');
+    setTimeout(() => flashEl.classList.remove('v3-band-t-flash'), 2000);
+  }
+  function _bandTNudge(msg) {
+    const statusEl = document.getElementById('v3-basin-status');
+    statusEl.innerHTML =
+      `<div class="alert alert-warning py-1 px-2 mb-0" style="font-size:0.82rem;">${msg}</div>`;
+    _flashBandT();
+    setTimeout(() => { if (statusEl.querySelector('.alert')) statusEl.innerHTML = ''; }, 8000);
+  }
 
   function formatLMRVal(v) {
     const mag = Math.floor(Math.log10(Math.abs(v) || 1));
@@ -1724,7 +1902,7 @@
     _lmrPainting = true;
     const statusEl = document.getElementById('v3-basin-status');
     if (!fromYear || !toYear || isNaN(fromYear) || isNaN(toYear)) {
-      statusEl.textContent = 'Set Band T span to paint LMR';
+      _bandTNudge('LMR requires a time span — check <strong>T</strong> and enter a year range');
       _lmrPainting = false; return;
     }
     statusEl.textContent = 'Loading…';
@@ -1796,25 +1974,35 @@
   async function applyHydeChoropleth(varKey, year) {
     const dbVar = HYDE_DB_VAR[varKey];
     if (!dbVar) return;
+    const level = _activeLevel();
+    if (level === 8 && !_sigMemberIds?.size) {
+      document.getElementById('v3-basin-status').textContent = 'Get a signature first to use L08 choropleth';
+      return;
+    }
     loadBasinLayer();
+    const sl       = _basinSourceLayer();
     const sid      = _layers['basin-choropleth'].sourceId;
     const statusEl = document.getElementById('v3-basin-status');
     statusEl.textContent = 'Loading…';
     try {
-      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}`);
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}&level=${level}`);
       if (!resp.ok) { statusEl.textContent = 'Error'; return; }
       const { values, actual_year } = await resp.json();
       const nums   = Object.values(values).filter(v => v != null && v > 0);
       const domMax = nums.length ? Math.max(...nums) : 1;
       const ramp   = HYDE_RAMPS[varKey];
-      map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      map.removeFeatureState({ source: sid, sourceLayer: sl });
+      let painted = 0;
       for (const [id, v] of Object.entries(values)) {
         if (v == null) continue;
-        map.setFeatureState({ source: sid, sourceLayer: 'basin06', id: Number(id) },
+        const numId = Number(id);
+        if (level === 8 && _sigMemberIds && !_sigMemberIds.has(numId)) continue;
+        map.setFeatureState({ source: sid, sourceLayer: sl, id: numId },
                             { fc: interpTwo(ramp.lo, ramp.hi, Math.max(0, Math.min(1, v / domMax))) });
+        painted++;
       }
       renderHydeLegend(varKey, actual_year, domMax);
-      statusEl.textContent = `${actual_year} CE · ${nums.length.toLocaleString()} basins`;
+      statusEl.textContent = `${actual_year} CE · ${painted.toLocaleString()} basins`;
     } catch (e) {
       statusEl.textContent = 'Error loading HYDE';
       console.error('applyHydeChoropleth:', e);
@@ -1844,10 +2032,11 @@
 
   document.getElementById('v3-basin-var').addEventListener('change', e => {
     const key    = e.target.value;
+    const sl     = _basinSourceLayer();
     const { fromYr, toYr } = _activeBandTYears();
     if (key.startsWith('lmr_')) {
       const sid = _layers['basin-choropleth']?.sourceId;
-      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
       applyLMRChoropleth(key, fromYr, toYr);
@@ -1855,15 +2044,16 @@
     }
     if (key.startsWith('hyde_')) {
       const sid = _layers['basin-choropleth']?.sourceId;
-      if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+      if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
+      if (!fromYr || isNaN(fromYr)) _flashBandT();
       applyHydeChoropleth(key, fromYr || 1000);
       return;
     }
     hideLMRLayer();
     const sid = _layers['basin-choropleth']?.sourceId;
-    if (sid) map.removeFeatureState({ source: sid, sourceLayer: 'basin06' });
+    if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });
     applyBasinVar(key);
   });
 

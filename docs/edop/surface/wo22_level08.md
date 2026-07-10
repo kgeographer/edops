@@ -44,7 +44,9 @@ actual numbers against the L06 baselines already on record:
 pre-aggregation extended / not affordable without further work — with the numbers. This is the
 review gate. Karl decides how far Stage 2 goes based on it.
 
-## Stage 2 — Wire to the Level select (where Stage 1 says viable)
+## A Stage 2a was inserted (and completed) after the fact; see SURFACE_tracker.md
+
+## Stage 2b — Wire to the Level select (where Stage 1 says viable)
 
 Only after the Stage 1 review. Then assess and wire:
 

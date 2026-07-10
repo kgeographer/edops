@@ -275,3 +275,87 @@ class TestLowerPanel:
     def test_ring_info_hidden(self, page):
         el = page.find(id="v3-ring-info")
         assert "none" in (el.get("style") or ""), "#v3-ring-info must be display:none on load"
+
+
+# ---------------------------------------------------------------------------
+# WO22 — Level select (L06/L08)
+# ---------------------------------------------------------------------------
+
+class TestLevelSelect:
+    """Level select controls are present and have correct cold-start state (WO22)."""
+
+    def test_settlements_level_has_l06_option(self, page):
+        el = page.find(id="v3-level")
+        assert el is not None
+        opts = [o.get("value") for o in el.find_all("option")]
+        assert "6" in opts, "#v3-level must have L06 option"
+
+    def test_settlements_level_has_l08_option(self, page):
+        el = page.find(id="v3-level")
+        opts = [o.get("value") for o in el.find_all("option")]
+        assert "8" in opts, "#v3-level must have L08 option"
+
+    def test_settlements_level_disabled_on_load(self, page):
+        """Level select disabled until a place is resolved — enables in setResolvedPoint/example handler."""
+        el = page.find(id="v3-level")
+        assert el.has_attr("disabled"), "#v3-level must be disabled at cold start"
+
+    def test_polity_level_has_l06_option(self, page):
+        el = page.find(id="v3-polity-level")
+        assert el is not None
+        opts = [o.get("value") for o in el.find_all("option")]
+        assert "6" in opts, "#v3-polity-level must have L06 option"
+
+    def test_polity_level_has_l08_option(self, page):
+        el = page.find(id="v3-polity-level")
+        opts = [o.get("value") for o in el.find_all("option")]
+        assert "8" in opts, "#v3-polity-level must have L08 option"
+
+    def test_polity_level_disabled_on_load(self, page):
+        """Polity level disabled until a polity is resolved (same gate as band checkboxes)."""
+        el = page.find(id="v3-polity-level")
+        assert el.has_attr("disabled"), "#v3-polity-level must be disabled at cold start"
+
+
+# ---------------------------------------------------------------------------
+# WO22 — /api/hyde/values level parameter (route contract)
+# ---------------------------------------------------------------------------
+
+class TestHydeValuesLevel:
+    """Route accepts level param and dispatches to correct table (WO22)."""
+
+    def test_l06_returns_200(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=6")
+        assert r.status_code == 200
+
+    def test_l08_returns_200(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=8")
+        assert r.status_code == 200
+
+    def test_l08_response_shape(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=8")
+        body = r.json()
+        assert "var" in body and "actual_year" in body and "values" in body
+
+    def test_l08_basin_count(self, client):
+        """L08 returns ~189k basins (190,675 total minus ~825 no-land basins)."""
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=8")
+        n = len(r.json()["values"])
+        assert n > 180_000, f"Expected >180k L08 basins, got {n}"
+
+    def test_l08_values_are_fractions(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=8")
+        vals = [v for v in r.json()["values"].values() if v is not None]
+        assert all(0.0 <= v <= 1.01 for v in vals)
+
+    def test_invalid_level_rejected(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1000&level=9")
+        assert r.status_code == 400
+        assert "level" in r.json()["detail"].lower()
+
+    def test_l06_and_l08_key_sets_differ(self, client):
+        """L06 and L08 return distinct hybas_id sets — confirms different tables."""
+        l06_keys = set(client.get("/api/hyde/values?var=cropland&year=1000&level=6").json()["values"].keys())
+        l08_keys = set(client.get("/api/hyde/values?var=cropland&year=1000&level=8").json()["values"].keys())
+        assert l06_keys != l08_keys, "L06 and L08 must return different hybas_id sets"
+        assert len(l08_keys) > len(l06_keys), "L08 should have more basins than L06"
