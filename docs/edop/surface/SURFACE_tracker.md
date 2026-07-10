@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-09 (WO21 Settlements track complete; Polities tab next)
+- **Last updated:** 2026-07-10 (WO22 Stage 2a complete; Stage 2b UI wiring next)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -183,6 +183,23 @@ hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `appl
 10 new route tests (`TestLMRValuesRoute`); 4 structural retirement tests; stale slider/notch tests
 replaced. **408 tests pass, 50 skipped.**
 Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
+
+**WO22 (L08 viability + Level-select wiring) — Stage 2a complete, Stage 2b next**
+
+Stage 1 (viability notebook) complete. Key findings in `docs/edop/surface/wo22_findings.md`:
+LMR level-agnostic; choropleth values API already handles L08; selective-paint design locked
+(global tileset, scope-member paint only); PERCENT_RANK bottleneck identified and fixed.
+
+Stage 2a builds complete (branch `surf_wo22`):
+- `basin08.pmtiles` generated + at `app/static/explorer/basin08.pmtiles`
+- `public.basin08_scores` built (42 vars, 190k basins); `attach_values` fast path wired
+- Buffer L08 Bands A-E: 0.90s (was 18s; faster than L06's 1.17s)
+- 551 tests pass, 50 skipped
+
+**Stage 2b (next):** Wire `#v3-level` / `#v3-polity-level` selects in `sandbox_v3.html`.
+Add L08 option; thread `level` through signature call + choropleth source swap
+(`basin08.pmtiles` + scoped feature-state paint for member IDs only).
+See `docs/edop/surface/wo22_level08.md` Stage 2 spec and `wo22_findings.md` F22.7.
 
 **WO21 (sequenced state management) complete** — `sandbox_v3.html` at `/sandbox/lookup3`.
 Both tabs wired; all three clears hold. Settlements: WHG resolve + example paths, scope-switch
