@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-10 (phase open — tracker initiated)
+- **Last updated:** 2026-07-11
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -55,11 +55,10 @@ Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle.
 
-**No work orders open.**
+**WO1 complete.** Findings in `docs/edop/demo/wo1_findings.md`; notebook in
+`notebooks/edop/demo/wo1_within_polity_variance.ipynb`; merged to `demo` 2026-07-11.
 
-**Immediate first step:** within-polity-variance ranking notebook (WO1) —
-ranks all Cliopatria polities by internal spread for a chosen variable, producing the
-hero-shot candidate list that drives Track 1 feature priority.
+**WO2 TBD** — Karl taking WO1 findings to Opus to plan next step.
 
 ---
 
@@ -67,7 +66,7 @@ hero-shot candidate list that drives Track 1 feature priority.
 
 | Item | What | Status |
 |---|---|---|
-| Within-polity-variance ranking notebook | Rank all Cliopatria polities by internal spread per variable; produce hero-shot candidate shortlist | **next** |
+| Within-polity-variance ranking notebook | Rank all Cliopatria polities by internal spread per variable; produce hero-shot candidate shortlist | **complete** |
 | Continuous time slider | Replace polity-slice dropdown with no-steps slider + year readout; decouple time control from digitization breakpoints | pending |
 | Money shot curation | Identify 2–3 polity/variable/history triples for demo; requires notebook output | pending |
 | L06 ↔ L08 scale compare (MAUP demo) | Side-by-side view at two scales; Track 1 feature after hero shots confirmed | pending |
@@ -102,6 +101,14 @@ hero-shot candidate list that drives Track 1 feature priority.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-11**
+
+- **Band T tracks the active polity slice** — `applySlice()` writes `s.fromyear`/`s.toyear`
+  to the Band T inputs and repaints the choropleth on every slice change. Aggregating over
+  the full polity lifespan discards exactly the temporal signal the LMR layer is meant to
+  show. The two-axis independence principle is preserved: users can still manually override
+  Band T after slice selection.
 
 **2026-07-10 (phase open)**
 
