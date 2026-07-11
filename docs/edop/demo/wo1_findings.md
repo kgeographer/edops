@@ -210,12 +210,14 @@ curated examples alongside N Song (Songhai, Qin, Tibetan Empire, Inca at minimum
 let Karl scrub and screenshot triptychs without any new feature work. Low-effort, high demo
 value.
 
-**On precipitation and elevation spread:**
-Precipitation spread rankings largely replicate aridity (both are moisture-balance variables,
-highly correlated). Less additional signal; not worth a separate hero-shot investigation.
-Elevation is more distinct — measures terrain-control stories (coastal lowland to highland
-frontier, vertical ecology) rather than climate-gradient stories. Worth a separate look, but
-as a different investigative frame from aridity.
+**On precipitation and elevation spread (amended by WO1a F1a.1):**
+Spearman ρ values from Cell 9 (n=1,012 polities):
+- aridity ↔ precipitation: ρ = +0.827 — near-redundant; precipitation is not a separate hero-shot axis
+- aridity ↔ elevation: ρ = +0.456 — genuinely distinct; different story class (terrain control, vertical ecology)
+- precipitation ↔ elevation: ρ = +0.452
+
+Precipitation as an independent hero-shot axis is closed. Elevation is a future pass, framed
+differently: terrain and altitude stories, not climate-gradient stories.
 
 **On Band T variables — the key open question:**
 WO1 uses BasinATLAS modern climate data painted onto historical extents. This measures

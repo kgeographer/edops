@@ -55,10 +55,11 @@ Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle.
 
-**WO1 complete.** Findings in `docs/edop/demo/wo1_findings.md`; notebook in
+**WO1 + WO1a complete.** Findings in `docs/edop/demo/wo1_findings.md` and
+`docs/edop/demo/wo1a_findings.md`; notebook in
 `notebooks/edop/demo/wo1_within_polity_variance.ipynb`; merged to `demo` 2026-07-11.
 
-**WO2 TBD** — Karl taking WO1 findings to Opus to plan next step.
+**WO2 TBD** — hero-shot shortlist confirmed; next step TBD with Opus.
 
 ---
 
@@ -66,7 +67,7 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 
 | Item | What | Status |
 |---|---|---|
-| Within-polity-variance ranking notebook | Rank all Cliopatria polities by internal spread per variable; produce hero-shot candidate shortlist | **complete** |
+| Within-polity-variance ranking notebook (WO1 + WO1a) | Rank polities by spread; trajectory + size-confound validation; membership spot-check; hero-shot shortlist confirmed | **complete** |
 | Continuous time slider | Replace polity-slice dropdown with no-steps slider + year readout; decouple time control from digitization breakpoints | pending |
 | Money shot curation | Identify 2–3 polity/variable/history triples for demo; requires notebook output | pending |
 | L06 ↔ L08 scale compare (MAUP demo) | Side-by-side view at two scales; Track 1 feature after hero shots confirmed | pending |
