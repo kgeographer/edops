@@ -131,6 +131,136 @@ Buffer and polity at L08 are slow by this mechanism regardless of Band T or HYDE
 
 ---
 
+---
+
+## F22.9 — Pre-materialized L08 percentile scores (`public.basin08_scores`)
+
+`public.basin08_scores`: 190,675 rows × 42 continuous-variable score columns. Each column stores
+`PERCENT_RANK() * 100` computed once over the full L08 basin population, matching the three scoring
+cases in `attach_values` (clean / nodata two-pass / zero-aware partitioned scoring). Build ~10–15 min
+(one full-table sort per variable; one-time cost).
+
+`attach_values` fast path (branch on `table = 'public.basin08'`): `SELECT hybas_id, {alias_cols}
+FROM public.basin08_scores WHERE hybas_id IN (...)` replaces the full-table PERCENT_RANK window
+function. Index on `hybas_id`.
+
+**Result:** Buffer L08, Bands A–E: **0.90 s** — faster than L06's 1.17 s, because the indexed
+JOIN beats L06's live PERCENT_RANK computation entirely. L08 buffer/polity signatures are no longer
+the bottleneck.
+
+---
+
+## F22.10 — HYDE L08 tables: build outcomes
+
+| Table | Rows | Build time | Per-request query |
+|---|---|---|---|
+| `temporal.hyde_basin08_weights` | 4,306,122 | 56 s | — (build artifact) |
+| `temporal.hyde_basin08_steps` | 24,300,800 | 22.5 min (1350 s) | 0.402 s |
+
+189,850 basins with HYDE data (vs 190,675 total; 825 no-land basins absent). Per-request 0.402 s
+is 12× slower than L06's 0.033 s, reflecting the larger table; well within the acceptable
+threshold for a choropleth load. Schema identical to L06 steps table (`hybas_id`, `step_idx`,
+`cropland_frac`, `grazing_frac`, `pasture_frac`, `rangeland_frac`). `/api/hyde/values` dispatches
+on `level` param to the correct table.
+
+---
+
+## F22.11 — `#v3-level` disable-at-cold-start design
+
+Settlements level select disabled at cold start (parallel to `#v3-polity-level`) — the control
+has no visible effect until a place is resolved, and enabling it before then produces a confusing
+"I changed this but nothing happened" experience. Enabled in `setResolvedPoint()` and the example
+handler; disabled in `clearResolvedPoint()` and `resetSettlements()`. Reset also resets the value
+to `'6'`.
+
+Structural test `test_settlements_level_disabled_on_load` documents the contract; Playwright tests
+cover the enable-on-example and disable-on-reset lifecycle.
+
+---
+
+## F22.12 — `_onLevelChange()`: silent resig, no tab switch
+
+Level change must not navigate away from the Map tab (user is there to see the geometry change).
+Solution: `_onLevelChange()` calls `_drawScopePreview(scope)` (redraws basin outline at new level)
+and `_silentResig()` (background re-fetch of scope membership at new level without touching the
+spinner or any tab). `_silentResig()` calls `_repaintChoropleth()` on success.
+
+`_basinLayerLevel` state variable tracks which level the `basin-choropleth` PMTiles source is
+currently loaded at. Set to `null` on level change, forcing `loadBasinLayer()` to tear down and
+reload at the new level. Null = force reload.
+
+`_repaintChoropleth()` is a shared helper called both after Get Sig success and after
+`_silentResig()` — ensures choropleth stays in sync whenever membership or level changes.
+
+---
+
+## F22.13 — Single-basin L08: auto-extend to ring for choropleth
+
+A single L08 basin is typically a small sub-catchment; painting one basin on a global tileset
+provides no local context. Auto-extend: at L08, `_sigMemberIds` includes the center basin + all
+ring neighbors (parallel fetch of sig + `/api/basin/ring`). At L06, single-basin sets
+`_sigMemberIds = {hybas_id}` only (one basin is a meaningful geographic unit at L06).
+
+This is purely a choropleth paint decision — the signature in the Sig tab is still the center basin's
+signature only. The extended `_sigMemberIds` controls which basins receive paint color; it does not
+change what is computed.
+
+---
+
+## F22.14 — LMR longitude convention mismatch (bug fix)
+
+`temporal.lmr_climate` stores lon in 0–360° convention (from the LMR source data). `lmr_notches.geojson`
+(the client-side paint target) uses -180–180° convention. The join key in `/api/lmr/values` was
+`CONCAT(lat, ',', lon)`, which produced keys like `"70,200"` for a point at lon = -160°. The GeoJSON
+property equivalent was `${f.properties.lat},${f.properties.lon}` → `"70,-160"`. Keys never matched
+for Western Hemisphere cells (lon > 180° in DB).
+
+Effect: silent no-paint for all Western Hemisphere cells. Only Eastern Hemisphere cells (0°–180° lon)
+painted — appearing as a vertical band covering Eurasia/Africa but not the Americas.
+
+Fix in SQL CONCAT: `CASE WHEN lon > 180 THEN lon - 360 ELSE lon END`. 16,380 cells now paint correctly.
+
+---
+
+## F22.15 — Band T nudge: LMR alert + flash; HYDE flash-only
+
+When a time-dependent choropleth variable is selected without a Band T span set:
+
+**LMR** (hard failure — no span = no data): `_bandTNudge(msg)` shows a Bootstrap `alert-warning`
+in the `#v3-basin-status` div (font-size 0.82rem, `py-1 px-2`) and calls `_flashBandT()`. Alert
+auto-dismisses after 8 s. Message: *"LMR requires a time span — check T and enter a year range."*
+
+**HYDE** (soft default — falls back to 1000 CE and paints successfully): `_flashBandT()` only.
+Showing an alert is wrong because `applyHydeChoropleth` immediately overwrites the status div with
+`'Loading…'`; the alert would vanish in < 100 ms. The T checkbox flash is sufficient to orient the
+user without a racing alert.
+
+`_flashBandT()`: adds CSS class `v3-band-t-flash` to the T checkbox's `.form-check` container;
+removes after 2 s. Animation: `@keyframes v3-flash-yellow` — transparent → #fff3cd (Bootstrap
+warning yellow) → transparent over 2 s. Reflow forced (`void el.offsetWidth`) so re-triggering
+the animation works without removing and re-adding the element.
+
+---
+
+## Stage 2 — Accept gate
+
+| Consumer | L08 result | Notes |
+|---|---|---|
+| Areal signature (buffer/polity) | **0.90 s** (L08) vs 1.17 s (L06) | `basin08_scores` fast path |
+| Areal signature (single-basin) | Fast at any level | One-row ranked lookup |
+| Choropleth values (BasinATLAS) | 0.465 s, 3 MB | Selective paint; only ~100 basins touched |
+| HYDE steps (L08) | 0.402 s/request | 24.3M-row table; 22.5 min one-time build |
+| LMR | Level-agnostic | Grid-based; no basin join |
+| `basin08.pmtiles` | ✓ built, 76 MB | At `app/static/explorer/basin08.pmtiles` |
+| Level select wired | ✓ | Both Settlements + Polities; disable/enable lifecycle |
+| Tests | 571 pass, 50 skipped | Zero failures; WO22 adds 20 structural + 7 Playwright |
+
+Level-select wiring closes SURFACE's last surfacing gap: the engine and API have supported `&level=`
+throughout; sandbox_v3 now exposes it operably. The L06↔L08 compare (MAUP demo asset) is a future
+Demo-phase concern.
+
+---
+
 ## Stage 2a — Prerequisites (spec)
 
 Two one-time build tasks. No dependencies on each other; can run in parallel.

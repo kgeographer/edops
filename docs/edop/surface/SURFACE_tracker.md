@@ -5,7 +5,7 @@ locked decisions. If any other Surface document disagrees with this one about *w
 stand*, this one wins.
 
 - **Location:** `docs/edop/surface/SURFACE_tracker.md`
-- **Last updated:** 2026-07-10 (WO22 Stage 2a complete; Stage 2b UI wiring next)
+- **Last updated:** 2026-07-10 (WO22 complete — Level-select fully wired; surf_wo22 open for merge)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -184,22 +184,23 @@ hidden `#v2-lmr-year-slider` / `#v2-lmr-year-control`, feature-state path. `appl
 replaced. **408 tests pass, 50 skipped.**
 Findings in `wo19_findings.md`. Notebook: `wo19_lmr_honest_paint.ipynb`.
 
-**WO22 (L08 viability + Level-select wiring) — Stage 2a complete, Stage 2b next**
+**WO22 (L08 viability + Level-select wiring) complete** — branch `surf_wo22`; open for merge.
+Full findings in `docs/edop/surface/wo22_findings.md` (F22.1–F22.15). **571 tests pass, 50 skipped.**
 
-Stage 1 (viability notebook) complete. Key findings in `docs/edop/surface/wo22_findings.md`:
-LMR level-agnostic; choropleth values API already handles L08; selective-paint design locked
-(global tileset, scope-member paint only); PERCENT_RANK bottleneck identified and fixed.
+Stage 1: LMR level-agnostic (F22.4); selective-paint design locked (F22.7); PERCENT_RANK
+bottleneck at L08 identified (F22.8) and resolved via `public.basin08_scores` (F22.9).
 
-Stage 2a builds complete (branch `surf_wo22`):
-- `basin08.pmtiles` generated + at `app/static/explorer/basin08.pmtiles`
-- `public.basin08_scores` built (42 vars, 190k basins); `attach_values` fast path wired
-- Buffer L08 Bands A-E: 0.90s (was 18s; faster than L06's 1.17s)
-- 551 tests pass, 50 skipped
+Stage 2a builds: `basin08.pmtiles` generated; `temporal.hyde_basin08_weights` (4.3M rows, 56s)
+and `temporal.hyde_basin08_steps` (24.3M rows, 22.5 min, 0.402s/request) built; `attach_values`
+fast path wired — Buffer L08 Bands A–E now 0.90s (faster than L06's 1.17s).
 
-**Stage 2b (next):** Wire `#v3-level` / `#v3-polity-level` selects in `sandbox_v3.html`.
-Add L08 option; thread `level` through signature call + choropleth source swap
-(`basin08.pmtiles` + scoped feature-state paint for member IDs only).
-See `docs/edop/surface/wo22_level08.md` Stage 2 spec and `wo22_findings.md` F22.7.
+Stage 2b wiring: `#v3-level` fully wired in `sandbox_v3.html` — disabled at cold start, enables
+on `setResolvedPoint()` / example; level change redraws scope geometry + silent-refetches
+`_sigMemberIds` + repaints choropleth; single-basin L08 auto-extends to ring for choropleth
+context; `/api/hyde/values` now level-aware (dispatches to `hyde_basin06_steps` or `hyde_basin08_steps`);
+LMR longitude convention fixed (DB stored 0–360°, GeoJSON expected -180–180°; fix in SQL CONCAT);
+Band T nudge: Bootstrap alert-warning + T checkbox flash for LMR (hard failure); flash-only for
+HYDE (defaults to 1000 CE, paints successfully).
 
 **WO21 (sequenced state management) complete** — `sandbox_v3.html` at `/sandbox/lookup3`.
 Both tabs wired; all three clears hold. Settlements: WHG resolve + example paths, scope-switch
@@ -265,6 +266,7 @@ Findings in `wo18_findings.md`.
 | LMR per-span values route + honest paint | `/api/lmr/values` span-mean anomaly route; retire 5-notch/slider; paint coupled to Band T span; slice-reactive repaint passes fromyear/toyear. | **complete — WO19** |
 | WHG settlement lookup + point-resolver | Probe current WHG API; integrate as point-resolver: search → candidates → candidate selection → single-basin fires → Get Signature enabled. Opens Arc A (deployability). | **complete — WO20** |
 | Sequenced state management (sandbox_v3) | Forward-or-reset state machine on new page: both tabs, three clears, Playwright suite. Buffer shows intersecting basins immediately. | **complete — WO21** |
+| L08 viability + Level-select wiring | Stage 1: characterize L08 per consumer (choropleth, HYDE, LMR, sig aggregation, tileset). Stage 2: wire `#v3-level` in sandbox_v3; build L08 prerequisite tables; thread level through all paint paths. | **complete — WO22** |
 | HYDE choropleth (values-API) | Architecture review → values-API over epoch rasters; feasibility notebook; `/api/hyde/values` route; `applyHydeChoropleth`; slice-reactive repaint for HYDE + LMR. | **complete — WO16a** |
 | HYDE area-weighted crosswalk | Proof that area-weighted aggregation is correct (r=0.902); crosswalk materialized; route swap blocked by 2.67s query time. Pre-aggregation required. | **complete — WO17** |
 | HYDE pre-aggregation + route swap | `hyde_basin06_steps` built; `/api/hyde/values` swapped; 0.033s per-request; 364/364 tests. | **complete — WO18** |
@@ -304,6 +306,22 @@ Findings in `wo18_findings.md`.
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-10 (WO22 — L08 viability + Level-select wiring, complete)**
+
+- **Fresh wire, not a port** — v1's Level select (sandbox.html) uses Leaflet + static JSON fixtures; v3's architecture (MapLibre + feature-state + PMTiles + pre-aggregated steps) differs enough that a clean fresh wire was the right call. No v1 code read into v3.
+- **`#v3-level` disabled at cold start** — enabled in `setResolvedPoint()` and example handler; disabled in `clearResolvedPoint()` and `resetSettlements()`. Consistent with `#v3-polity-level` pattern. Test `test_settlements_level_disabled_on_load` documents this.
+- **Level change does not trigger tab switch** — `_onLevelChange()` calls `_drawScopePreview(scope)` (redraws geometry at new level) and `_silentResig()` (background re-fetch of membership + repaint). No `bootstrap.Tab.show()`.
+- **`_silentResig()`** — silent background re-fetch at new level; does not touch spinner or tabs; calls `_repaintChoropleth()` on success.
+- **`_basinLayerLevel` state** — tracks which level the `basin-choropleth` source is loaded at; set to `null` on level change to force `loadBasinLayer()` to reload at the new level; null = force reload.
+- **Single-basin L08 auto-extends to ring** — one L08 basin is too small for meaningful choropleth context; `_sigMemberIds` at L08 includes ring neighbors (parallel fetch: sig + `/api/basin/ring`). L06 single-basin sets `_sigMemberIds = {hybas_id}` only.
+- **Selective paint at L08** — global `basin08.pmtiles` tileset; only `_sigMemberIds` members receive variable colors; all others remain transparent. Performance: only ~100s of feature-state calls, not 190k.
+- **`/api/hyde/values` level param** — `level: int = 6` added; validated (6 or 8 → 400 otherwise); dispatches to `temporal.hyde_basin06_steps` or `temporal.hyde_basin08_steps`.
+- **`temporal.hyde_basin08_weights`** — 4,306,122 rows; 56s build. Schema identical to L06 crosswalk.
+- **`temporal.hyde_basin08_steps`** — 24,300,800 rows (189,850 basins × 128 steps × 4 vars); 22.5 min build; 0.402s per-request (vs L06's 0.033s — acceptable; much larger table).
+- **`public.basin08_scores`** — pre-materialized PERCENT_RANK for 42 continuous vars across 190,675 L08 basins. `attach_values` fast-path: indexed JOIN replaces full-table window function per request. Result: Buffer L08 (Bands A–E) 0.90s — faster than L06's 1.17s.
+- **LMR longitude convention fix** — `temporal.lmr_climate` stores lon in 0–360°; `lmr_notches.geojson` (paint target) uses -180–180°. Western Hemisphere cells (lon > 180° in DB) never matched the GeoJSON key → silent no-paint. Fix: `CASE WHEN lon > 180 THEN lon - 360 ELSE lon END` in the `CONCAT` key expression in `/api/lmr/values`.
+- **Band T nudge** — two helpers: `_bandTNudge(msg)` (Bootstrap `alert-warning` in status div + T checkbox flash, 8s auto-dismiss) for LMR hard failure; `_flashBandT()` (T checkbox flash only, 2s) for HYDE default-year case where the status line is immediately overwritten by "Loading…".
 
 **2026-07-09 (WO21 — Sequenced state management, complete)**
 
