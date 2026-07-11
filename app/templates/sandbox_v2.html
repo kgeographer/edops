@@ -1,0 +1,1985 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EDOPS Sandbox v2</title>
+  <link rel="stylesheet" href="/static/css/site.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" crossorigin="">
+  <style>
+    body { font-size: 1rem; }
+    #left-col { position: sticky; top: 1rem; }
+    #v2-band-checks .form-check { margin-bottom: 0; }
+    #v2-band-checks .form-check-label { font-size: 0.8rem; }
+    .param-row label { font-size: 0.8rem; color: #666; }
+    .scope-extra { display: none; }
+  </style>
+</head>
+<body>
+
+<header class="mb-2">
+  <h4 class="d-flex align-items-center justify-content-between py-2 border-bottom">
+    <span>
+      <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height:48px;" class="me-2"></a>
+      <a href="/edops" class="text-decoration-none text-reset">EDOPS</a>
+      <span class="mx-1 text-muted">Sandbox v2</span>
+    </span>
+    <span class="badge bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">EDOPS v0.3</span>
+  </h4>
+</header>
+
+<div class="container-fluid px-3">
+  <div class="row g-3">
+
+    <!-- ===================== LEFT COLUMN ===================== -->
+    <div class="col-md-4" id="left-col">
+
+      <div class="card mb-2">
+        <div class="card-body p-2">
+
+          <!-- Settlement lookup (point-rooted scopes) -->
+          <div id="v2-point-section">
+            <div class="small text-muted fw-semibold mb-1">Settlement lookup</div>
+            <div class="input-group input-group-sm mb-1">
+              <input type="text" id="v2-place-input" class="form-control"
+                     placeholder="Name or lat,lon  (add ', Country' to narrow)">
+              <button class="btn btn-outline-primary" id="v2-resolve-btn">Resolve</button>
+            </div>
+            <div id="v2-whg-status" class="text-muted mb-1" style="font-size:0.78rem; display:none;"></div>
+            <div id="v2-whg-candidates" class="list-group list-group-flush mb-1"
+                 style="display:none; font-size:0.8rem; max-height:200px; overflow-y:auto;"></div>
+            <div id="v2-whg-chip" class="d-none align-items-center gap-2 mb-1" style="font-size:0.8rem;">
+              <span class="badge bg-primary text-truncate" id="v2-whg-name" style="max-width:120px;"></span>
+              <span class="text-muted" id="v2-whg-coords"></span>
+              <button class="btn btn-link btn-sm p-0 text-danger ms-auto" id="v2-whg-clear" title="Clear">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- OR examples -->
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
+            <select id="v2-example-select" class="form-select form-select-sm text-muted">
+              <option value="">Load an example</option>
+              <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
+              <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
+              <option value="ring|16.8167,-2.9833|Timbuktu|1400|1500">Timbuktu — basin ring</option>
+              <option value="polity|Northern Song|1000|1000|1100">Northern Song (1000–1100 CE)</option>
+            </select>
+          </div>
+
+          <!-- Level (fixed L06) + Signature Bands -->
+          <div class="d-flex gap-2 align-items-start mb-2">
+            <div style="flex: 0 0 auto;">
+              <label class="form-label mb-0" style="font-size: 0.9rem;">Level</label>
+              <div class="badge bg-secondary mt-1" style="font-size: 0.85rem;">06</div>
+            </div>
+            <div style="flex: 1 1 auto;">
+              <label class="form-label mb-0" style="font-size: 0.9rem;">Signature Bands</label>
+              <div id="v2-band-checks" class="d-flex flex-wrap gap-2 mt-1 ps-1"
+                   style="background-color: aliceblue; padding: 4px; border-radius: 4px;">
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-A" value="A" checked>
+                  <label class="form-check-label" for="v2-band-A" title="Physiographic">A</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-B" value="B" checked>
+                  <label class="form-check-label" for="v2-band-B" title="Hydroclimatic">B</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-C" value="C" checked>
+                  <label class="form-check-label" for="v2-band-C" title="Bioclimatic">C</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-D" value="D" checked>
+                  <label class="form-check-label" for="v2-band-D" title="Anthropocene">D</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-E" value="E" checked>
+                  <label class="form-check-label" for="v2-band-E" title="Coastality">E</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input v2-band-chk" type="checkbox" id="v2-band-T" value="T">
+                  <label class="form-check-label" for="v2-band-T" title="Temporal">T</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Band T year range (shown when T checked) -->
+          <div id="v2-t-year-row" class="d-none mb-2">
+            <div class="d-flex gap-1 align-items-center">
+              <label class="text-muted" style="font-size: 0.8rem; white-space: nowrap;">Band T:</label>
+              <input type="number" id="v2-from-year" class="form-control form-control-sm"
+                     style="width: 80px;" placeholder="from" min="-10000" max="2023">
+              <span class="text-muted small">–</span>
+              <input type="number" id="v2-to-year" class="form-control form-control-sm"
+                     style="width: 80px;" placeholder="to" min="-10000" max="2023">
+            </div>
+          </div>
+
+          <!-- Scope dropdown — hidden on load; shown by example handler for polity examples -->
+          <div class="mb-2" id="v2-scope-wrap" style="display:none;">
+            <select id="v2-scope-select" class="form-select form-select-sm">
+              <option value="">Select a scope</option>
+              <option value="single">Single basin</option>
+              <option value="buffer">Buffer</option>
+              <option value="ring">Basin ring</option>
+              <option value="polity">Polity</option>
+              <option value="draw">Draw a study area</option>
+            </select>
+          </div>
+
+          <!-- Scope-specific extras (shown/hidden by scope gate) -->
+
+          <!-- Buffer: radius -->
+          <div id="scope-extra-buffer" class="scope-extra mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <label class="text-muted small" style="white-space: nowrap;">Radius (km)</label>
+              <input type="number" id="v2-radius" class="form-control form-control-sm"
+                     style="width: 90px;" value="100" min="1" max="2000">
+            </div>
+          </div>
+
+          <!-- Polity: search + slice picker -->
+          <div id="scope-extra-polity" class="scope-extra mb-2">
+            <div style="position:relative;" id="v2-polity-search-wrap">
+              <input type="text" id="v2-polity-input" class="form-control form-control-sm"
+                     placeholder="Search polities…" autocomplete="off">
+              <div id="v2-polity-dropdown"
+                   style="display:none;position:absolute;top:100%;left:0;right:0;
+                          background:#fff;border:1px solid #dee2e6;border-radius:4px;
+                          z-index:1050;max-height:180px;overflow-y:auto;font-size:0.8rem;"></div>
+            </div>
+            <div id="v2-slice-row" class="mt-1" style="display:none;">
+              <select id="v2-slice-select" class="form-select form-select-sm"></select>
+            </div>
+            <input type="hidden" id="v2-resolver-year" value="">
+          </div>
+
+          <!-- Draw: placeholder -->
+          <div id="scope-extra-draw" class="scope-extra mb-2">
+            <p class="text-muted small mb-0">Draw a rectangle on the map to define the study area.</p>
+          </div>
+
+          <!-- Get signature -->
+          <button class="btn btn-success btn-sm w-100" id="v2-sig-btn" disabled>
+            Get signature
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Ring info (ring scope only; shown after load) -->
+      <div id="v2-ring-info" class="text-muted small px-1 mt-2" style="display:none;">
+        <p class="mb-1">The <strong>map</strong> shows the center basin and its first-order
+        adjacent ring. Click a ring member to load its signature in the Signature tab.
+        Click the center to return to the center signature.</p>
+      </div>
+
+      <!-- Left-column lower panel: intro text + persistent choropleth controls -->
+      <div id="v2-intro" class="px-1 mt-1">
+
+        <!-- Intro text: hidden after first sig load -->
+        <div id="v2-intro-text" class="text-muted small">
+          <p><strong>EDOPS Signatures</strong> deliver multi-band environmental profiles for any
+          point or area on Earth, drawn from global datasets covering hydrology, climate, terrain,
+          ecoregion, and historical land use.</p>
+          <p>Select a scope, enter a location, choose bands, and click
+          <strong>Get signature</strong>.</p>
+        </div>
+
+        <!-- Basin choropleth controls — hidden pending state-model resolution (WO15 audit) -->
+        <div id="v2-choropleth" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" for="v2-basin-var">Variable</label>
+          <select id="v2-basin-var" class="form-select form-select-sm">
+            <option value="">— none —</option>
+            <optgroup label="Physiographic (modern normal)">
+              <option value="aridity_index">Aridity index</option>
+              <option value="precipitation_annual">Annual precipitation</option>
+              <option value="temperature_annual">Mean annual temperature</option>
+            </optgroup>
+            <optgroup label="Land use — BasinATLAS">
+              <option value="cropland_pct">Cropland extent %</option>
+            </optgroup>
+            <optgroup label="Paleoclimate — LMR v2.1">
+              <option value="lmr_temp_anomaly">Temperature anomaly</option>
+              <option value="lmr_precip_anomaly">Precipitation anomaly</option>
+            </optgroup>
+            <optgroup label="Land use — HYDE 3.4">
+              <option value="hyde_cropland">Cropland fraction</option>
+              <option value="hyde_grazing">Grazing fraction</option>
+              <option value="hyde_pasture">Pasture fraction</option>
+              <option value="hyde_rangeland">Rangeland fraction</option>
+            </optgroup>
+          </select>
+          <div id="v2-basin-status" style="font-size:0.75rem; color:#6c757d; min-height:1.2em; margin-top:0.4rem;"></div>
+          <div id="v2-basin-legend" style="display:none; margin-top:0.75rem;">
+            <div id="v2-basin-legend-bar" style="height:12px; border-radius:2px; margin-bottom:0.25rem;"></div>
+            <div class="d-flex justify-content-between" style="font-size:0.7rem; color:#6c757d;">
+              <span id="v2-basin-leg-lo"></span>
+              <span id="v2-basin-leg-mid"></span>
+              <span id="v2-basin-leg-hi"></span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div><!-- /left col -->
+
+    <!-- ===================== RIGHT COLUMN ===================== -->
+    <div class="col-md-8">
+
+      <ul class="nav nav-tabs mb-2" id="v2TabList" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="v2-tab-map-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-map" type="button" role="tab">Map</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v2-tab-sig-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-sig" type="button" role="tab">Signature</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v2-tab-analysis-btn" data-bs-toggle="tab"
+                  data-bs-target="#v2-pane-analysis" type="button" role="tab">Analysis</button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+
+        <!-- Map pane -->
+        <div class="tab-pane fade show active" id="v2-pane-map" role="tabpanel">
+          <div id="v2-map" style="height: 500px; border-radius: 6px;"></div>
+        </div>
+
+        <!-- Signature pane -->
+        <div class="tab-pane fade" id="v2-pane-sig" role="tabpanel">
+          <p class="text-muted mt-3">Run <strong>Get signature</strong> to see the environmental profile.</p>
+        </div>
+
+        <!-- Analysis pane -->
+        <div class="tab-pane fade" id="v2-pane-analysis" role="tabpanel">
+          <p class="text-muted mt-3">Run <strong>Get signature</strong> to populate analysis.</p>
+        </div>
+
+      </div>
+    </div><!-- /right col -->
+
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js" crossorigin=""></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
+<script>
+(() => {
+  // ── State ─────────────────────────────────────────────────────────────────
+  let currentScope  = '';
+  let currentLat    = null;
+  let currentLon    = null;
+  let map           = null;
+  let _politySlices  = [];     // slices for the currently-selected polity
+  let _ringData      = null;   // topology from /api/basin/ring (center feature + ring members)
+  let _ringPopup     = null;   // MapLibre Popup for ring hover affordance
+  let _centerPayload = null;   // center sig payload for ring scope (restored on center click)
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function formatYear(y) {
+    if (y === null || y === undefined) return '?';
+    return y < 0 ? `${Math.abs(y)} BCE` : `${y} CE`;
+  }
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function humanizeKey(k) {
+    return k.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function fmtNum(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    return String(v);
+  }
+
+  // ── Band T toggle ─────────────────────────────────────────────────────────
+  function updateBandT() {
+    const tChecked = document.getElementById('v2-band-T').checked;
+    document.getElementById('v2-t-year-row').classList.toggle('d-none', !tChecked);
+  }
+
+  document.querySelectorAll('.v2-band-chk').forEach(cb => {
+    cb.addEventListener('change', updateBandT);
+  });
+
+  // ── Scope gate ────────────────────────────────────────────────────────────
+  const POINT_SCOPES = new Set(['single', 'buffer', 'ring']);
+  const POLITY_SCOPE = 'polity';
+  const DRAW_SCOPE   = 'draw';
+
+  function applyScope(scope) {
+    currentScope = scope;
+
+    // Point input: visible for point-rooted scopes
+    document.getElementById('v2-point-section').style.display =
+      POINT_SCOPES.has(scope) ? '' : 'none';
+
+    // Scope extras: show only the matching one
+    document.querySelectorAll('.scope-extra').forEach(el => {
+      el.style.display = 'none';
+    });
+    if (scope === 'buffer')     document.getElementById('scope-extra-buffer').style.display = 'block';
+    if (scope === POLITY_SCOPE) document.getElementById('scope-extra-polity').style.display = 'block';
+    if (scope === DRAW_SCOPE)   document.getElementById('scope-extra-draw').style.display = 'block';
+
+    document.getElementById('v2-ring-info').style.display = (scope === 'ring') ? '' : 'none';
+
+    updateSigButton();
+  }
+
+  document.getElementById('v2-scope-select').addEventListener('change', function () {
+    applyScope(this.value);
+  });
+
+  // ── Sig button enable logic ───────────────────────────────────────────────
+  function updateSigButton() {
+    const needsPoint = POINT_SCOPES.has(currentScope);
+    const hasPoint   = currentLat !== null && currentLon !== null;
+    document.getElementById('v2-sig-btn').disabled =
+      !currentScope || (needsPoint && !hasPoint);
+  }
+
+  // ── Map tab / fitBounds helpers (module-scope so all callers share them) ──
+  function _showMapTab() {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  }
+  function _fitMap(bbox) {
+    if (!bbox) return;
+    const mapTabBtn = document.getElementById('v2-tab-map-btn');
+    if (mapTabBtn.classList.contains('active')) {
+      map.fitBounds(bbox, { padding: 40 });
+    } else {
+      map.once('resize', () => map.fitBounds(bbox, { padding: 40 }));
+    }
+  }
+
+  // ── Settlement lookup (WHG suggest, fclasses P+S) ────────────────────────
+  const CANDIDATE_COLORS = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00',
+                             '#a65628','#f781bf','#66c2a5','#999999','#ffff33'];
+  let _whgMarkers = [];
+  let _whgResults  = [];
+
+  function _whgSetStatus(msg, show = true) {
+    const el = document.getElementById('v2-whg-status');
+    el.textContent = msg;
+    el.style.display = show ? '' : 'none';
+  }
+
+  function _whgClearMarkers() {
+    _whgMarkers.forEach(m => m.remove());
+    _whgMarkers = [];
+  }
+
+  function _whgHideCandidates() {
+    const el = document.getElementById('v2-whg-candidates');
+    el.style.display = 'none';
+    el.innerHTML = '';
+    _whgResults = [];
+    _whgClearMarkers();
+  }
+
+  async function resolveSettlement() {
+    const raw = document.getElementById('v2-place-input').value.trim();
+    if (!raw) return;
+
+    // Direct lat,lon entry
+    const coordMatch = raw.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      setResolvedPoint(parseFloat(coordMatch[1]), parseFloat(coordMatch[2]), raw);
+      return;
+    }
+
+    // Zoom gate
+    if (!map || map.getZoom() < 4) {
+      _whgSetStatus('Zoom in to your study region first, then search.');
+      return;
+    }
+
+    // Comma-parse optional country hint
+    let q = raw, countryParam = '';
+    const commaIdx = raw.indexOf(',');
+    if (commaIdx > 0) {
+      q           = raw.slice(0, commaIdx).trim();
+      countryParam = raw.slice(commaIdx + 1).trim();
+    }
+
+    _whgHideCandidates();
+    _whgSetStatus('Searching WHG…');
+
+    try {
+      let url = `/api/whg/suggest?q=${encodeURIComponent(q)}&limit=8`;
+      if (countryParam) url += `&country=${encodeURIComponent(countryParam)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`WHG search failed (${res.status})`);
+      const data = await res.json();
+      _whgResults = data.results || [];
+      window._whgResults = _whgResults;  // dev: inspect in console
+
+      // Client-side viewport filter — same role as reconcile's bounds param.
+      // Suggest has no bounds support, so we filter after the fact.
+      if (map && _whgResults.length) {
+        const mb = map.getBounds();
+        const inView = _whgResults.filter(r => mb.contains([r.lon, r.lat]));
+        if (inView.length) _whgResults = inView;
+        // If nothing falls in view, show all with no filtering (better than silent empty)
+      }
+
+      if (!_whgResults.length) {
+        _whgSetStatus(`No results for "${escapeHtml(q)}".`);
+        return;
+      }
+      _whgSetStatus('', false);
+      _renderCandidates(_whgResults);
+    } catch (err) {
+      _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
+    }
+  }
+
+  function _renderCandidates(results) {
+    const el = document.getElementById('v2-whg-candidates');
+    el.innerHTML = results.map((r, i) => {
+      const color = CANDIDATE_COLORS[i % CANDIDATE_COLORS.length];
+      const cname = r.cname
+        ? `<span class="text-muted ms-1" style="font-size:0.8rem;">${escapeHtml(r.cname)}</span>`
+        : '';
+      const alts = r.alt_names || [];
+      let altHtml = '';
+      if (alts.length) {
+        const shown = alts.slice(0, 3).map(escapeHtml).join(', ');
+        const rest  = alts.slice(3);
+        altHtml = `<span class="text-muted d-block" style="font-size:0.75rem;">${shown}`;
+        if (rest.length) {
+          altHtml += ` <a href="#" class="whg-more-link text-muted"
+            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.75rem;">+${rest.length} more</a>`;
+        }
+        altHtml += '</span>';
+      }
+      return `<a href="#" class="list-group-item list-group-item-action py-1 px-2 d-flex align-items-start gap-2 whg-cand" data-idx="${i}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;
+                     width:18px;height:18px;border-radius:50%;background:${color};
+                     color:#fff;font-size:10px;font-weight:bold;flex-shrink:0;margin-top:2px;">${i + 1}</span>
+        <span class="flex-grow-1 min-w-0">
+          <span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${altHtml}
+        </span>
+      </a>`;
+    }).join('');
+    el.style.display = '';
+
+    el.querySelectorAll('.whg-more-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        link.replaceWith(document.createTextNode(', ' + link.dataset.more));
+      });
+    });
+
+    el.querySelectorAll('.whg-cand').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const r = _whgResults[parseInt(a.dataset.idx, 10)];
+        if (r) setResolvedPoint(r.lat, r.lon, r.name);
+      });
+    });
+
+    // MapLibre markers (map may not be initialised yet — guard)
+    _whgClearMarkers();
+    if (!map) return;
+    const pts = [];
+    results.forEach((r, i) => {
+      const color = CANDIDATE_COLORS[i % CANDIDATE_COLORS.length];
+      const markerEl = document.createElement('div');
+      markerEl.style.cssText =
+        `width:22px;height:22px;background:${color};border:2px solid #fff;border-radius:50%;` +
+        `color:#fff;font-weight:bold;font-size:11px;display:flex;align-items:center;` +
+        `justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.3);cursor:pointer;`;
+      markerEl.textContent = String(i + 1);
+      markerEl.addEventListener('click', () => setResolvedPoint(r.lat, r.lon, r.name));
+      const marker = new maplibregl.Marker({ element: markerEl })
+        .setLngLat([r.lon, r.lat])
+        .addTo(map);
+      _whgMarkers.push(marker);
+      pts.push([r.lon, r.lat]);
+    });
+
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+    if (pts.length === 1) {
+      map.setCenter(pts[0]);
+      map.setZoom(Math.max(map.getZoom(), 8));
+    } else if (pts.length > 1) {
+      const lons = pts.map(p => p[0]), lats = pts.map(p => p[1]);
+      map.fitBounds(
+        [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
+        { padding: 60, maxZoom: 10 }
+      );
+    }
+  }
+
+  function setResolvedPoint(lat, lon, name) {
+    currentLat = lat;
+    currentLon = lon;
+
+    _whgHideCandidates();
+    _whgSetStatus('', false);
+
+    // Set scope to single if not already a point scope
+    if (!POINT_SCOPES.has(currentScope)) {
+      currentScope = 'single';
+    }
+
+    // Show chip
+    document.getElementById('v2-whg-name').textContent   = name;
+    document.getElementById('v2-whg-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    document.getElementById('v2-whg-chip').classList.replace('d-none', 'd-flex');
+
+    // Expose scope dropdown as lens switcher (single/buffer/ring over the fixed point)
+    const scopeWrap = document.getElementById('v2-scope-wrap');
+    const scopeOpts = document.querySelectorAll('#v2-scope-select option');
+    scopeOpts.forEach(o => { o.disabled = false; });
+    document.getElementById('v2-scope-select').value = currentScope;
+    scopeWrap.style.display = '';
+
+    applyScope(currentScope);
+    updateSigButton();
+
+    // Preview basin on map
+    ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members']
+      .forEach(n => shell.remove(n));
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+    (async () => {
+      const bbox = await drawSingleBasin(lat, lon, null);
+      if (bbox) _fitMap(bbox);
+    })();
+
+    document.getElementById('v2-intro-text').style.display = 'none';
+    document.getElementById('v2-choropleth').style.display = '';
+  }
+
+  function clearResolvedPoint() {
+    currentLat  = null;
+    currentLon  = null;
+    document.getElementById('v2-place-input').value = '';
+    document.getElementById('v2-whg-chip').classList.replace('d-flex', 'd-none');
+    document.getElementById('v2-scope-wrap').style.display = 'none';
+    _whgHideCandidates();
+    _whgSetStatus('', false);
+    ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members']
+      .forEach(n => shell.remove(n));
+    if (POINT_SCOPES.has(currentScope)) {
+      currentScope = '';
+      document.getElementById('v2-scope-select').value = '';
+    }
+    updateSigButton();
+  }
+
+  document.getElementById('v2-resolve-btn').addEventListener('click', resolveSettlement);
+  document.getElementById('v2-place-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') resolveSettlement();
+  });
+  document.getElementById('v2-whg-clear').addEventListener('click', e => {
+    e.preventDefault();
+    clearResolvedPoint();
+  });
+
+  // ── Example handler ───────────────────────────────────────────────────────
+  document.getElementById('v2-example-select').addEventListener('change', function () {
+    if (!this.value) return;
+    const parts = this.value.split('|');
+    const scope = parts[0];
+
+    // Clear any active choropleth paint and reset the selector.
+    clearLMRPaint();
+    clearHydePaint();
+    const _basinSrcId = _layers['basin-choropleth']?.sourceId;
+    if (_basinSrcId) map.removeFeatureState({ source: _basinSrcId, sourceLayer: 'basin06' });
+    document.getElementById('v2-basin-legend').style.display = 'none';
+    document.getElementById('v2-basin-var').value = '';
+
+    // Set scope dropdown and trigger gate
+    document.getElementById('v2-scope-select').value = scope;
+    applyScope(scope);
+
+    // Show scope dropdown for polity examples; all options disabled (display-only).
+    const scopeWrap = document.getElementById('v2-scope-wrap');
+    const scopeOpts = document.querySelectorAll('#v2-scope-select option');
+    if (scope === POLITY_SCOPE) {
+      scopeOpts.forEach(o => { o.disabled = true; });
+      scopeWrap.style.display = '';
+    } else {
+      scopeWrap.style.display = 'none';
+    }
+
+    // Show choropleth controls and hide intro text when any example loads.
+    document.getElementById('v2-intro-text').style.display = 'none';
+    document.getElementById('v2-choropleth').style.display = '';
+
+    if (POINT_SCOPES.has(scope)) {
+      document.getElementById('v2-place-input').value = parts[2]; // name
+      // parts[1] is "lat,lon" — store for live API calls
+      const coords = (parts[1] || '').split(',');
+      currentLat = coords[0] ? parseFloat(coords[0]) : null;
+      currentLon = coords[1] ? parseFloat(coords[1]) : null;
+      updateSigButton(); // re-check now that lat/lon are set
+    }
+    if (scope === 'buffer') {
+      document.getElementById('v2-radius').value = parts[3] ?? 100;
+    }
+    if (scope === 'ring' && parts[3] && parts[4]) {
+      document.getElementById('v2-band-T').checked = true;
+      document.getElementById('v2-from-year').value = parts[3];
+      document.getElementById('v2-to-year').value   = parts[4];
+      updateBandT();
+    }
+    if (scope === POLITY_SCOPE) {
+      // Pre-fill Band T if from/to provided
+      if (parts[3] && parts[4]) {
+        document.getElementById('v2-band-T').checked = true;
+        document.getElementById('v2-from-year').value = parts[3];
+        document.getElementById('v2-to-year').value   = parts[4];
+        updateBandT();
+      }
+      // Trigger full search → slice flow (routes through same path as manual search)
+      const targetYear = parts[2] ? parseInt(parts[2]) : null;
+      selectPolity(parts[1], targetYear);
+    }
+
+    // Draw preview geometry on map immediately for point-scoped examples,
+    // without waiting for Get Signature. Clear prior scope layers first.
+    if (POINT_SCOPES.has(scope) && scope !== POLITY_SCOPE) {
+      // Clear any prior scope geometry layers before drawing the new preview.
+      ['single-basin', 'buffer-basins', 'buffer-circle', 'ring-center', 'ring-members'].forEach(n => shell.remove(n));
+    }
+
+    if (scope === 'single' && currentLat !== null) {
+      _showMapTab();
+      (async () => {
+        const bbox = await drawSingleBasin(currentLat, currentLon, null);
+        _fitMap(bbox);
+      })();
+    } else if (scope === 'buffer' && currentLat !== null) {
+      const radiusKm = parseFloat(document.getElementById('v2-radius').value) || 100;
+      const circle = geodesicCircle(currentLat, currentLon, radiusKm);
+      shell.add('buffer-circle',
+        { type: 'geojson', data: circle },
+        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5, 'line-dasharray': [4, 2] } }]
+      );
+      _showMapTab();
+      _fitMap(geojsonBbox(circle));
+    } else if (scope === 'ring' && currentLat !== null) {
+      _showMapTab();
+      (async () => {
+        const r = await fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`);
+        if (!r.ok) return;
+        _ringData = await r.json();
+        const bbox = await drawRingGeometry(_ringData);
+        _fitMap(bbox);
+      })();
+    }
+
+    // Retain selected example name in dropdown (no reset — shows what's loaded).
+  });
+
+  // ── Polity search + slice picker ─────────────────────────────────────────
+  let _searchTimer = null;
+
+  const polityInput    = document.getElementById('v2-polity-input');
+  const polityDropdown = document.getElementById('v2-polity-dropdown');
+  const sliceRow       = document.getElementById('v2-slice-row');
+  const sliceSelect    = document.getElementById('v2-slice-select');
+
+  polityInput.addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    const q = polityInput.value.trim();
+    if (q.length < 2) { polityDropdown.style.display = 'none'; return; }
+    _searchTimer = setTimeout(() => fetchPolitySearch(q), 220);
+  });
+
+  polityInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') polityDropdown.style.display = 'none';
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#v2-polity-search-wrap')) polityDropdown.style.display = 'none';
+  });
+
+  async function fetchPolitySearch(q) {
+    const r = await fetch(`/api/polity/search?q=${encodeURIComponent(q)}`);
+    const data = await r.json();
+    if (!data.length) { polityDropdown.style.display = 'none'; return; }
+    polityDropdown.innerHTML = data.map(it =>
+      `<div class="v2-polity-item" data-name="${escapeHtml(it.name)}"
+            style="padding:4px 8px;cursor:pointer;">
+        ${escapeHtml(it.name)}
+        <span style="color:#999;font-size:0.72rem;margin-left:4px;">
+          ${formatYear(it.first)}–${formatYear(it.last)} &middot; ${it.slices} slice${it.slices !== 1 ? 's' : ''}
+        </span>
+       </div>`
+    ).join('');
+    polityDropdown.querySelectorAll('.v2-polity-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = '#f0f4ff');
+      el.addEventListener('mouseleave', () => el.style.background = '');
+      el.addEventListener('click', () => selectPolity(el.dataset.name));
+    });
+    polityDropdown.style.display = 'block';
+  }
+
+  async function selectPolity(name, targetYear = null) {
+    polityInput.value = name;
+    polityDropdown.style.display = 'none';
+
+    const r = await fetch(`/api/polity/slices?name=${encodeURIComponent(name)}`);
+    if (!r.ok) return;
+    _politySlices = await r.json();
+
+    sliceSelect.innerHTML = _politySlices.map((s, i) =>
+      `<option value="${i}">${formatYear(s.fromyear)} – ${formatYear(s.toyear)}</option>`
+    ).join('');
+
+    // Auto-select the slice containing targetYear, or default to first
+    let idx = 0;
+    if (targetYear !== null) {
+      const found = _politySlices.findIndex(s => s.fromyear <= targetYear && s.toyear >= targetYear);
+      if (found >= 0) idx = found;
+    }
+    sliceSelect.value = idx;
+    sliceRow.style.display = '';
+    applySlice(idx, targetYear);
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  }
+
+  function applySlice(idx, resolverYear = null) {
+    const s = _politySlices[idx];
+    if (!s) return;
+    document.getElementById('v2-resolver-year').value = resolverYear ?? s.fromyear;
+    // Auto-enable Band T with the slice's timespan unless already set by the user
+    const tCb = document.getElementById('v2-band-T');
+    const fyEl = document.getElementById('v2-from-year');
+    const tyEl = document.getElementById('v2-to-year');
+    if (!tCb.checked || !fyEl.value) {
+      // Use the full polity lifespan for Band T, not the individual slice's dates.
+      // A single slice may span only 1 year and miss all HYDE time steps and eVolv2k events.
+      const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
+      const polityTo   = Math.max(..._politySlices.map(s => s.toyear));
+      tCb.checked  = true;
+      fyEl.value   = polityFrom;
+      tyEl.value   = polityTo;
+      updateBandT();
+    }
+    drawPolityBoundary(s.id);
+
+    // Repaint any active temporal choropleth to reflect the new slice.
+    const activeVar = document.getElementById('v2-basin-var').value;
+    if (activeVar.startsWith('hyde_')) applyHydeChoropleth(activeVar, s.fromyear);
+    else if (activeVar.startsWith('lmr_')) applyLMRChoropleth(activeVar, s.fromyear, s.toyear);
+  }
+
+  sliceSelect.addEventListener('change', () => {
+    applySlice(parseInt(sliceSelect.value));
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-map-btn')).show();
+  });
+
+  // ── Layer shell ──────────────────────────────────────────────────────────────
+  // Each named layer = one MapLibre source + one or more MapLibre layer specs.
+  // Callers never touch map.addSource / map.addLayer directly.
+  const _layers = {};  // name → { sourceId, layerIds[] }
+
+  const shell = {
+    add(name, sourceSpec, layerSpecs, { before } = {}) {
+      this.remove(name);                    // swap stale version if re-adding
+      const sourceId = `src-${name}`;
+      map.addSource(sourceId, sourceSpec);
+      const layerIds = layerSpecs.map((spec, i) => {
+        const id = `lyr-${name}-${spec.type}-${i}`;
+        map.addLayer({ ...spec, id, source: sourceId }, before);
+        return id;
+      });
+      _layers[name] = { sourceId, layerIds };
+    },
+    remove(name) {
+      const entry = _layers[name];
+      if (!entry) return;
+      entry.layerIds.forEach(id => { if (map.getLayer(id))   map.removeLayer(id); });
+      if (map.getSource(entry.sourceId)) map.removeSource(entry.sourceId);
+      delete _layers[name];
+    },
+    restyle(name, layerId, paint) {
+      Object.entries(paint).forEach(([prop, val]) => map.setPaintProperty(layerId, prop, val));
+    },
+    clear() { Object.keys(_layers).forEach(n => this.remove(n)); },
+  };
+
+  // Compute [west, south, east, north] from any GeoJSON geometry/feature.
+  function geojsonBbox(geojson) {
+    const pts = [];
+    function collect(c) {
+      if (typeof c[0] === 'number') pts.push(c);
+      else c.forEach(collect);
+    }
+    if (geojson.type === 'FeatureCollection') {
+      geojson.features.forEach(f => collect(f.geometry.coordinates));
+    } else {
+      collect((geojson.geometry || geojson).coordinates);
+    }
+    return [
+      Math.min(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1])),
+      Math.max(...pts.map(p => p[0])), Math.max(...pts.map(p => p[1])),
+    ];
+  }
+
+  // Draw functions return the bbox [w,s,e,n] for the caller to fitBounds after tab resize.
+  async function drawSingleBasin(lat, lon, sigHybas_id) {
+    try {
+      const r = await fetch(`/api/basin-preview?lat=${lat}&lon=${lon}&level=6`);
+      if (!r.ok) return null;
+      const data = await r.json();
+      const feature = data.containing_basin;
+      if (!feature) return null;
+
+      // Honesty check: only enforced when a sig hybas_id is provided (skip on preview).
+      const mapId = feature.properties?.hybas_id;
+      if (sigHybas_id !== null && mapId !== sigHybas_id) {
+        console.error(`[v2] Basin mismatch: signature=${sigHybas_id} map=${mapId} — not drawing`);
+        return null;
+      }
+
+      shell.add('single-basin',
+        { type: 'geojson', data: feature },
+        [
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.15 } },
+          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } },
+        ]
+      );
+      return geojsonBbox(feature);
+    } catch (_) { return null; }
+  }
+
+  // Build a geodesic circle polygon (WGS84) from a centre + radius in km.
+  function geodesicCircle(lat, lon, radiusKm, steps = 64) {
+    const R = 6371, d = radiusKm / R;
+    const lat1 = lat * Math.PI / 180, lon1 = lon * Math.PI / 180;
+    const coords = [];
+    for (let i = 0; i <= steps; i++) {
+      const b = (2 * Math.PI * i) / steps;
+      const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(b));
+      const lon2 = lon1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+      coords.push([lon2 * 180 / Math.PI, lat2 * 180 / Math.PI]);
+    }
+    return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } };
+  }
+
+  async function drawBufferGeometry(lat, lon, radiusKm, memberIds) {
+    try {
+      const ids = memberIds.join(',');
+      const r = await fetch(`/api/basin/geom?ids=${ids}&level=6`);
+      if (!r.ok) return;
+      const fc = await r.json();
+
+      // Honesty check: returned basin set must equal the signature's member set.
+      const returnedIds = new Set(fc.features.map(f => f.properties.hybas_id));
+      const expectedIds = new Set(memberIds);
+      const ok = returnedIds.size === expectedIds.size && [...expectedIds].every(id => returnedIds.has(id));
+      if (!ok) {
+        console.error('[v2] Buffer basin mismatch — sig member_ids:', [...expectedIds], 'map returned:', [...returnedIds]);
+        return;
+      }
+
+      shell.add('buffer-basins',
+        { type: 'geojson', data: fc },
+        [
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.15 } },
+          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75, 'line-opacity': 0.5 } },
+        ]
+      );
+      const circle = geodesicCircle(lat, lon, radiusKm);
+      shell.add('buffer-circle',
+        { type: 'geojson', data: circle },
+        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5, 'line-dasharray': [4, 2] } }]
+      );
+      return geojsonBbox(fc);
+    } catch (_) { return null; }
+  }
+
+  async function drawPolityBoundary(id) {
+    try {
+      const r = await fetch(`/api/polity/geom?id=${id}`);
+      if (!r.ok) return;
+      const feature = await r.json();
+      shell.add('polity-boundary',
+        { type: 'geojson', data: feature },
+        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } }]
+      );
+      map.fitBounds(geojsonBbox(feature), { padding: 40 });
+    } catch (_) { /* boundary is optional */ }
+  }
+
+  // ── Ring geometry + click/hover wiring ──────────────────────────────────
+  // Two shell layers: ring-center (darker) + ring-members (lighter).
+  // Center click restores center sig; member click fetches member sig on demand.
+  // Event listeners accumulate if ring is loaded multiple times; benign (removed
+  // layers never fire) but noted for future cleanup.
+  async function drawRingGeometry(ringData) {
+    // Honesty check: confirm topology loaded with expected shape
+    if (!ringData?.center || !Array.isArray(ringData.ring)) {
+      console.error('[v2] Ring topology missing center or ring array — not drawing');
+      return null;
+    }
+
+    shell.add('ring-center',
+      { type: 'geojson', data: ringData.center },
+      [
+        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0.30 } },
+        { type: 'line', paint: { 'line-color': '#1a3d5c', 'line-width': 2.0 } },
+      ]
+    );
+    const memberFC = {
+      type: 'FeatureCollection',
+      features: ringData.ring.map(m => m.feature),
+    };
+    shell.add('ring-members',
+      { type: 'geojson', data: memberFC },
+      [
+        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
+        { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75, 'line-opacity': 0.5 } },
+      ]
+    );
+
+    const memberFillId = _layers['ring-members'].layerIds[0];
+    const centerFillId = _layers['ring-center'].layerIds[0];
+
+    // Ring members: hover shows "View signature" link; click fetches member sig
+    map.on('mousemove', memberFillId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      _ringPopup.setLngLat(e.lngLat)
+        .setHTML('<span style="font-size:0.78rem;">View signature</span>')
+        .addTo(map);
+    });
+    map.on('mouseleave', memberFillId, () => {
+      map.getCanvas().style.cursor = '';
+      _ringPopup.remove();
+    });
+    map.on('click', memberFillId, e => {
+      const hid = e.features[0].properties.hybas_id;
+      const member = ringData.ring.find(m => m.hybas_id === hid);
+      if (member) fetchMemberSig(member.neighbor_lat, member.neighbor_lon);
+    });
+
+    // Center: hover shows "Return to center" link; click restores center sig
+    map.on('mousemove', centerFillId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      _ringPopup.setLngLat(e.lngLat)
+        .setHTML('<span style="font-size:0.78rem;">Return to center</span>')
+        .addTo(map);
+    });
+    map.on('mouseleave', centerFillId, () => {
+      map.getCanvas().style.cursor = '';
+      _ringPopup.remove();
+    });
+    map.on('click', centerFillId, () => renderCenterSig());
+
+    // fitBounds to full ring extent
+    const allFC = {
+      type: 'FeatureCollection',
+      features: [ringData.center, ...ringData.ring.map(m => m.feature)],
+    };
+    return geojsonBbox(allFC);
+  }
+
+  // Fetch a ring member's sig on demand (single_basin call with current Band T settings)
+  async function fetchMemberSig(lat, lon) {
+    const sigTabBtn = document.getElementById('v2-tab-sig-btn');
+    const pane      = document.getElementById('v2-pane-sig');
+    pane.innerHTML = `<div class="d-flex align-items-center gap-2 mt-3 ms-2">
+      <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+      <span class="text-muted" style="font-size:0.85rem;">Loading member signature…</span>
+    </div>`;
+    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')].map(cb => cb.value).join('');
+    const params = new URLSearchParams({ type: 'single_basin', lat, lon, bands, detail: 'true' });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    try {
+      const r = await fetch(`/api/areas?${params}`);
+      if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
+      const memberPayload = await r.json();
+      renderSignature(memberPayload);
+      const tRows = (memberPayload.rows || []).filter(r => r.band === 'T');
+      if (tRows.length) wireTSliders(tRows);
+    } catch (err) {
+      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  // Restore center sig from stored payload (ring scope return-to-center)
+  function renderCenterSig() {
+    if (!_centerPayload) return;
+    renderSignature(_centerPayload);
+    const tRows = (_centerPayload.rows || []).filter(r => r.band === 'T');
+    if (tRows.length) wireTSliders(tRows);
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v2-tab-sig-btn')).show();
+  }
+
+  // ── Fixture harness ───────────────────────────────────────────────────────
+  // Swap a FIXTURE_URLS value for the live route URL when that scope is wired.
+  // Fixture harness retained for dev inspection; all live scopes have explicit handler branches.
+  const FIXTURE_URLS = {};
+
+  async function loadFixture(scope) {
+    const url = FIXTURE_URLS[scope];
+    if (!url) throw new Error(`No fixture registered for scope "${scope}"`);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Fixture fetch failed (${r.status}): ${url}`);
+    return r.json();
+  }
+
+  // ── Mixture bar widget (B4) ──────────────────────────────────────────────
+  // Used by class_mixture rows. classes=null in fixture — only modal label + share available.
+  function renderMixtureBar(det) {
+    const share = det.modal_share;
+    if (share == null) return '';
+
+    const W = 160, BAR_H = 8, LABEL_H = 12;
+    const fillW = Math.round(share * W);
+    const pct   = (share * 100).toFixed(0);
+
+    let inner = `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#e9ecef" rx="2"/>`;
+    inner    += `<rect x="0" y="0" width="${fillW}" height="${BAR_H}" fill="#5b8dc4" opacity="0.55" rx="2"/>`;
+    inner    += `<text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999">${pct}%</text>`;
+
+    return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
+  }
+
+  // ── Range-bar widget (B3) ────────────────────────────────────────────────
+  // Used by distribution_only rows. Note: two_regime is signalled by regimes !== null,
+  // not by a modality field (fixture shows modality=null even for bimodal rows).
+  function renderRangeBar(det) {
+    const p10 = det.p10, p90 = det.p90;
+    if (p10 == null || p90 == null) return '';
+
+    const W = 160, BAR_H = 8, LABEL_H = 12;
+    const span = p90 - p10;
+
+    let inner = `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#e9ecef" rx="2"/>`;
+    inner    += `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#5b8dc4" opacity="0.45" rx="2"/>`;
+
+    // Regime-center marks — weight-proportional width, clamped to bar bounds
+    if (det.regimes && span > 0) {
+      for (const r of det.regimes) {
+        const pos = ((r.center - p10) / span) * W;
+        const mW  = Math.max(3, Math.round(r.weight * 14));
+        const x   = Math.max(0, Math.min(W - mW, pos - mW / 2));
+        inner += `<rect x="${x.toFixed(1)}" y="0" width="${mW}" height="${BAR_H}" fill="#2c5f8a" rx="1"/>`;
+      }
+    }
+
+    inner += `<text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999">${escapeHtml(p10.toFixed(1))}</text>`;
+    inner += `<text x="${W - 1}" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999" text-anchor="end">${escapeHtml(p90.toFixed(1))}</text>`;
+
+    return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
+  }
+
+  // ── Histogram widget (B1) ────────────────────────────────────────────────
+  // Used by area_weighted rows; triggered by method, not a null-check (DN9).
+  function renderHistogram(dist) {
+    const bins    = dist.bins;
+    const weights = dist.weights;
+    if (!bins || !weights || weights.length === 0) return '';
+
+    const W = 160, BAR_H = 36, LABEL_H = 12;
+    const maxW = Math.max(...weights);
+    if (maxW === 0) return '';
+
+    const barW = W / weights.length;
+    let bars = '';
+    for (let i = 0; i < weights.length; i++) {
+      if (weights[i] === 0) continue;
+      const h = Math.max(1, Math.round((weights[i] / maxW) * BAR_H));
+      bars += `<rect x="${(i * barW).toFixed(1)}" y="${BAR_H - h}"
+                     width="${(barW - 0.8).toFixed(1)}" height="${h}"
+                     fill="#5b8dc4" opacity="0.75"/>`;
+    }
+
+    const lo = bins[0].toFixed(1);
+    const hi = bins[bins.length - 1].toFixed(1);
+
+    // Temporal stamp — rendered only when fields are non-null (null for buffer/atemporal)
+    const parts = [];
+    if (dist.resolver_year != null) parts.push(`boundary ${dist.resolver_year}`);
+    if (dist.band_t_from != null && dist.band_t_to != null)
+      parts.push(`${dist.band_t_from}–${dist.band_t_to} CE`);
+    const stamp = parts.length
+      ? `<div style="font-size:0.65rem;color:#888;margin-top:1px;">${escapeHtml(parts.join(' · '))}</div>`
+      : '';
+
+    return `<div style="margin-top:3px;">
+      <svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">
+        <g>${bars}</g>
+        <text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999">${escapeHtml(lo)}</text>
+        <text x="${W - 1}" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999"
+              text-anchor="end">${escapeHtml(hi)}</text>
+      </svg>${stamp}</div>`;
+  }
+
+  // ── Band T — time marginal SVG ────────────────────────────────────────────
+  // rows: T rows for one variable, sorted by year; each has representative_raw
+  // and detail.distribution.{p10, p90, bins, weights}
+  function renderTimeMarginal(rows) {
+    if (!rows || rows.length < 2) return '';
+    const W = 260, CH = 56, LH = 14;
+
+    const p10s  = rows.map(r => r.detail?.distribution?.p10 ?? r.representative_raw);
+    const p90s  = rows.map(r => r.detail?.distribution?.p90 ?? r.representative_raw);
+    const means = rows.map(r => r.representative_raw);
+
+    const yMin = Math.min(...p10s), yMax = Math.max(...p90s);
+    const yPad = Math.max((yMax - yMin) * 0.08, 0.05);
+    const y0 = yMin - yPad, y1 = yMax + yPad;
+
+    const n  = rows.length;
+    const xS = i => (i / (n - 1)) * W;
+    const yS = v => CH - ((v - y0) / (y1 - y0)) * CH;
+
+    const topPts = rows.map((_, i) => `${xS(i).toFixed(1)},${yS(p90s[i]).toFixed(1)}`).join(' ');
+    const botPts = [...rows].map((_, i) => `${xS(n-1-i).toFixed(1)},${yS(p10s[n-1-i]).toFixed(1)}`).join(' ');
+    const meanPts = rows.map((_, i) => `${xS(i).toFixed(1)},${yS(means[i]).toFixed(1)}`).join(' ');
+
+    let zeroLine = '';
+    if (y0 < 0 && y1 > 0) {
+      const zy = yS(0).toFixed(1);
+      zeroLine = `<line x1="0" y1="${zy}" x2="${W}" y2="${zy}" stroke="#ddd" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+    }
+
+    const xLo = rows[0].year, xHi = rows[n-1].year;
+    const yLoLbl = yMin.toFixed(2), yHiLbl = yMax.toFixed(2);
+
+    return `<svg width="${W}" height="${CH + LH}" style="display:block;">
+      <rect width="${W}" height="${CH}" fill="#f8f9fa" rx="2"/>
+      ${zeroLine}
+      <polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>
+      <polyline points="${meanPts}" fill="none" stroke="#2c5f8a" stroke-width="1.3" stroke-linejoin="round"/>
+      <text x="1" y="9" font-size="9" fill="#aaa">${yHiLbl}</text>
+      <text x="1" y="${CH - 2}" font-size="9" fill="#aaa">${yLoLbl}</text>
+      <text x="1" y="${CH + LH - 1}" font-size="9" fill="#aaa">${xLo}</text>
+      <text x="${W - 1}" y="${CH + LH - 1}" font-size="9" fill="#aaa" text-anchor="end">${xHi}</text>
+    </svg>`;
+  }
+
+  // ── Band T — full accordion body ──────────────────────────────────────────
+  const LMR_VARS       = ['lmr_pdsi', 'lmr_air', 'lmr_prate'];
+  const HYDE_VARS      = ['hyde_cropland', 'hyde_grazing', 'hyde_pasture', 'hyde_rangeland'];
+  const LMR_LABELS     = { lmr_pdsi: 'PDSI (drought index)', lmr_air: 'Temperature anomaly', lmr_prate: 'Precipitation' };
+  const HYDE_LABELS    = { hyde_cropland: 'Cropland', hyde_grazing: 'Grazing', hyde_pasture: 'Pasture', hyde_rangeland: 'Rangeland' };
+  const VSSI_THRESHOLD = 5; // Tg S — events below this rarely have detectible hemispheric climate impact
+
+  function renderTBand(rows) {
+    const byVar = {};
+    for (const r of rows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
+
+    const lmrRows0 = byVar[LMR_VARS.find(v => byVar[v])];
+    const spanStr  = lmrRows0 ? `${lmrRows0[0].year}–${lmrRows0[lmrRows0.length-1].year} CE` : '';
+    const nLmr     = lmrRows0?.[0]?.n_units ?? '';
+
+    let html = `<div class="px-2 py-2">`;
+
+    // LMR
+    if (LMR_VARS.some(v => byVar[v])) {
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-bottom:6px;">
+        LMR climate &mdash; ${nLmr} cells &middot; ${spanStr}
+      </div>`;
+
+      for (const v of LMR_VARS) {
+        const vRows = byVar[v];
+        if (!vRows) continue;
+        const midRow   = vRows[Math.floor(vRows.length / 2)];
+        const sliderId = `v2-t-sl-${v}`;
+        const yrLblId  = `v2-t-yr-${v}`;
+        const histId   = `v2-t-hs-${v}`;
+
+        html += `<div class="mb-3">
+          <div style="font-size:0.78rem;color:#555;margin-bottom:2px;">${LMR_LABELS[v] || v}</div>
+          ${renderTimeMarginal(vRows)}
+          <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
+            <span class="text-muted">Year</span>
+            <input type="range" id="${sliderId}"
+                   min="${vRows[0].year}" max="${vRows[vRows.length-1].year}"
+                   step="1" value="${midRow.year}"
+                   style="width:160px;height:14px;">
+            <span id="${yrLblId}" style="color:#555;min-width:34px;">${midRow.year}</span>
+          </div>
+          <div id="${histId}">${renderHistogram(midRow.detail?.distribution || {})}</div>
+        </div>`;
+      }
+    }
+
+    // HYDE
+    const hydePresent = HYDE_VARS.filter(v => byVar[v]);
+    if (hydePresent.length) {
+      const epochRows = byVar[hydePresent[0]];
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
+        <table class="table table-sm mb-2" style="font-size:0.78rem;">
+          <thead><tr><th></th>`;
+      for (const r of epochRows) html += `<th class="text-muted">${r.epoch_year ?? r.year} CE</th>`;
+      html += `</tr></thead><tbody>`;
+      for (const v of hydePresent) {
+        html += `<tr><td>${HYDE_LABELS[v] || v}</td>`;
+        for (const r of byVar[v]) {
+          const val = r.representative_raw != null ? fmtNum(r.representative_raw) : '—';
+          const u   = r.units ? ` <span class="text-muted">${escapeHtml(r.units)}</span>` : '';
+          html += `<td>${val}${u}</td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+    }
+
+    // eVolv2k
+    if (byVar['evolv2k_vssi']) {
+      const allEvolv  = byVar['evolv2k_vssi'];
+      const sigEvolv  = allEvolv.filter(r => (r.representative_raw ?? 0) >= VSSI_THRESHOLD);
+      const minorEvolv = allEvolv.filter(r => (r.representative_raw ?? 0) < VSSI_THRESHOLD);
+      const shown     = sigEvolv.length > 0 ? sigEvolv : allEvolv; // show all if none meet threshold
+      const showToggle = minorEvolv.length > 0 && sigEvolv.length > 0;
+      const toggleLink = showToggle
+        ? ` <a href="#" style="font-weight:normal;font-size:0.7rem;"
+               onclick="(function(el){var tb=document.getElementById('v2-evolv-minor');var hidden=tb.style.display==='none';tb.style.display=hidden?'':'none';el.textContent=hidden?'show fewer':'show all ${allEvolv.length}'})(this);return false"
+            >show all ${allEvolv.length}</a>`
+        : '';
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">
+        eVolv2k volcanic events — ${shown.length}${showToggle ? ` &ge; ${VSSI_THRESHOLD} Tg S` : ''}${toggleLink}
+      </div>
+        <table class="table table-sm mb-0" style="font-size:0.78rem;">
+          <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead>
+          <tbody>`;
+      for (const r of shown) {
+        html += `<tr><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
+      }
+      html += `</tbody>`;
+      if (showToggle) {
+        html += `<tbody id="v2-evolv-minor" style="display:none;">`;
+        for (const r of minorEvolv) {
+          html += `<tr style="color:#999;"><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
+        }
+        html += `</tbody>`;
+      }
+      html += `</table>`;
+    }
+
+    return html + `</div>`;
+  }
+
+  // ── Band T sliders — wired after innerHTML is set ─────────────────────────
+  function wireTSliders(tRows) {
+    const byVar = {};
+    for (const r of tRows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
+
+    document.querySelectorAll('input[id^="v2-t-sl-"]').forEach(el => {
+      const variable = el.id.slice('v2-t-sl-'.length);
+      const vRows  = byVar[variable] || [];
+      const yrLbl  = document.getElementById(`v2-t-yr-${variable}`);
+      const histDiv = document.getElementById(`v2-t-hs-${variable}`);
+      if (!vRows.length || !histDiv) return;
+
+      el.addEventListener('input', () => {
+        const year = parseInt(el.value);
+        if (yrLbl) yrLbl.textContent = year;
+        const row = vRows.find(r => r.year === year);
+        if (row?.detail?.distribution) histDiv.innerHTML = renderHistogram(row.detail.distribution);
+      });
+    });
+  }
+
+  // ── Signature renderer ────────────────────────────────────────────────────
+  const BAND_ORDER  = ['A','B','C','D','E','T'];
+  const BAND_LABELS = {
+    A: 'Physiographic', B: 'Hydroclimatic', C: 'Bioclimatic',
+    D: 'Anthropocene',  E: 'Coastality',    T: 'Temporal',
+  };
+
+  function renderSignature(payload) {
+    const pane = document.getElementById('v2-pane-sig');
+
+    // Header from neighborhood block
+    const nb = payload.neighborhood || {};
+    let heading = nb.hybas_id
+      ? `Basin ${nb.hybas_id}`
+      : `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}`;
+    if (nb.level) heading += ` · L${String(nb.level).padStart(2,'0')}`;
+
+    // Group rows by band
+    const byBand = {};
+    for (const row of payload.rows || []) {
+      (byBand[row.band] = byBand[row.band] || []).push(row);
+    }
+
+    let html = `
+      <div class="d-flex justify-content-between align-items-baseline mb-2">
+        <h5 class="mb-0">${escapeHtml(heading)}</h5>
+        <span class="text-muted small">n=${nb.n_units ?? 1}</span>
+      </div>
+      <div class="accordion accordion-flush" id="v2-sig-accordion">`;
+
+    for (const band of BAND_ORDER) {
+      const rows = byBand[band];
+      if (!rows) continue;
+      const paneId = `v2-acc-${band}`;
+      html += `
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button py-1 px-2 ${band !== 'T' ? 'collapsed' : ''}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#${paneId}">
+              <span style="font-size:0.85rem;">Band ${band} — ${BAND_LABELS[band]}</span>
+              <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${rows.length}</span>
+            </button>
+          </h2>
+          <div id="${paneId}" class="accordion-collapse collapse${band === 'T' ? ' show' : ''}">
+            <div class="accordion-body p-0">
+              ${band === 'T'
+                ? renderTBand(rows)
+                : `<table class="table table-sm mb-0" style="font-size:0.8rem;">
+                     <tbody>${rows.map(renderRow).join('')}</tbody>
+                   </table>`}
+            </div>
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+    pane.innerHTML = html;
+  }
+
+  function renderRow(row) {
+    return `<tr>
+      <td class="text-muted ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}</td>
+      <td>${renderLeaf(row)}</td>
+    </tr>`;
+  }
+
+  function renderLeaf(row) {
+    const score = row.representative_score;
+    const raw   = row.representative_raw;
+    const det   = row.detail || {};
+
+    switch (row.method) {
+
+      case 'area_weighted': {
+        const s = score !== null && score !== undefined
+          ? `${score.toFixed(1)}<span class="text-muted ms-1" style="font-size:0.75rem;">pct</span>`
+          : '—';
+        let coh = '';
+        if (row.coherence === 'concentrated') {
+          coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
+        } else if (row.coherence === 'spread') {
+          coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
+        }
+        // coherence === null → no badge (coherence doesn't apply)
+        const hist = renderHistogram(det.distribution || {});
+        return `<div>${s}${coh}</div>${hist}`;
+      }
+
+      case 'dominant_basin': {
+        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const b = det.dominant_hybas_id
+          ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>`
+          : '';
+        return `${s}${r}${b}`;
+      }
+
+      case 'class_mixture': {
+        // representative_raw is a string label — never format as number (DN7)
+        const lbl = raw !== null ? escapeHtml(String(raw)) : '—';
+        const bar = renderMixtureBar(det);
+        return `<div>${lbl}</div><div style="margin-top:3px;">${bar}</div>`;
+      }
+
+      case 'flag_fraction': {
+        // raw is 0–1 fraction; detail is empty (DN10)
+        return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
+      }
+
+      case 'distribution_only': {
+        const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
+          ? `<div>${score.toFixed(1)}<span class="text-muted ms-1" style="font-size:0.75rem;">pct</span></div>`
+          : '';
+        const bar    = renderRangeBar(det);
+        const caveat = row.score_suppressed
+          ? `<div style="font-size:0.72rem;color:#888;margin-top:1px;">score suppressed — bimodal</div>`
+          : '';
+        return `${scoreHtml}<div style="margin-top:3px;">${bar}</div>${caveat}`;
+      }
+
+      case 'extreme': {
+        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const b = det.dominant_hybas_id
+          ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>`
+          : '';
+        return `${s}${r}${b}`;
+      }
+
+      default:
+        return `<span class="text-muted" style="font-size:0.72rem;">[${escapeHtml(row.method)}]</span>`;
+    }
+  }
+
+  // ── Build live URL for polity scope ──────────────────────────────────────
+  function buildPolityUrl() {
+    const polityName  = document.getElementById('v2-polity-input').value.trim();
+    const resolverYear = document.getElementById('v2-resolver-year').value;
+    if (!polityName || !resolverYear) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'polity', polity: polityName, year: resolverYear, level: 6, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
+  // ── Build live URL for single-basin scope ────────────────────────────────
+  function buildSingleBasinUrl() {
+    const lat = currentLat;
+    const lon = currentLon;
+    if (lat == null || lon == null) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'single_basin', lat, lon, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
+  // ── Build live URL for buffer scope ──────────────────────────────────────
+  function buildBufferUrl() {
+    const lat       = currentLat;
+    const lon       = currentLon;
+    const radius_km = parseFloat(document.getElementById('v2-radius').value);
+    if (lat == null || lon == null || isNaN(radius_km)) return null;
+
+    const bands = [...document.querySelectorAll('.v2-band-chk:checked')]
+      .map(cb => cb.value).join('');
+    const params = new URLSearchParams({
+      type: 'buffer', lat, lon, radius_km, bands, detail: 'true',
+    });
+    if (bands.includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (fy) params.set('from_year', fy);
+      if (ty) params.set('to_year', ty);
+    }
+    return `/api/areas?${params}`;
+  }
+
+  // ── Sig button click ──────────────────────────────────────────────────────
+  document.getElementById('v2-sig-btn').addEventListener('click', async () => {
+    if (!currentScope) return;
+    const sigTabBtn = document.getElementById('v2-tab-sig-btn');
+    const pane      = document.getElementById('v2-pane-sig');
+
+    // Client-side Band T guard — fast-fail before any fetch
+    if ([...document.querySelectorAll('.v2-band-chk:checked')].map(cb => cb.value).includes('T')) {
+      const fy = document.getElementById('v2-from-year').value;
+      const ty = document.getElementById('v2-to-year').value;
+      if (!fy || !ty) {
+        pane.innerHTML = `<p class="text-warning mt-3 ms-2">Band T requires a timespan — fill in <em>from</em> and <em>to</em> years.</p>`;
+        sigTabBtn.classList.remove('disabled');
+        bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+        return;
+      }
+    }
+
+    // Show spinner and switch to Signature tab immediately so the user sees activity.
+    const sigBtn = document.getElementById('v2-sig-btn');
+    sigBtn.disabled = true;
+    pane.innerHTML = `<div class="d-flex align-items-center gap-2 mt-3 ms-2">
+      <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+      <span class="text-muted" style="font-size:0.85rem;">Loading signature…</span>
+    </div>`;
+    sigTabBtn.classList.remove('disabled');
+    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+
+    try {
+      let payload;
+      let pendingBbox = null;
+      if (currentScope === 'single') {
+        const url = buildSingleBasinUrl();
+        if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
+        const r = await fetch(url);
+        if (!r.ok) { const body = await r.json().catch(() => ({})); throw new Error(body.detail ?? `Server error ${r.status}`); }
+        payload = await r.json();
+        const nb = payload.neighborhood || {};
+        if (nb.hybas_id != null && currentLat != null && currentLon != null) {
+          pendingBbox = await drawSingleBasin(currentLat, currentLon, nb.hybas_id);
+        }
+      } else if (currentScope === 'buffer') {
+        const url = buildBufferUrl();
+        if (!url) throw new Error('Buffer scope requires a resolved lat/lon and radius.');
+        const r = await fetch(url);
+        if (!r.ok) { const body = await r.json().catch(() => ({})); throw new Error(body.detail ?? `Server error ${r.status}`); }
+        payload = await r.json();
+        const nb = payload.neighborhood || {};
+        if (nb.member_ids?.length && currentLat != null && currentLon != null) {
+          pendingBbox = await drawBufferGeometry(currentLat, currentLon, nb.radius_km, nb.member_ids);
+        }
+      } else if (currentScope === 'polity') {
+        const url = buildPolityUrl();
+        if (!url) throw new Error('Polity scope requires a name and boundary year.');
+        const r = await fetch(url);
+        if (!r.ok) { const body = await r.json().catch(() => ({})); throw new Error(typeof body.detail === 'string' ? body.detail : `Server error ${r.status}`); }
+        payload = await r.json();
+      } else if (currentScope === 'ring') {
+        if (currentLat == null || currentLon == null) throw new Error('Ring scope requires a resolved lat/lon.');
+        const [sigR, ringR] = await Promise.all([
+          fetch(buildSingleBasinUrl()),
+          fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=6`),
+        ]);
+        if (!sigR.ok)  { const b = await sigR.json().catch(()=>({}));  throw new Error(b.detail ?? `Server error ${sigR.status}`); }
+        if (!ringR.ok) { const b = await ringR.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${ringR.status}`); }
+        payload        = await sigR.json();
+        _ringData      = await ringR.json();
+        _centerPayload = payload;
+        pendingBbox    = await drawRingGeometry(_ringData);
+      } else if (currentScope === 'draw') {
+        pane.innerHTML = `<p class="text-muted mt-3 ms-2">Draw-a-study-area scope is not yet wired.</p>`;
+        document.getElementById('v2-intro-text').style.display = 'none';
+        return;
+      } else {
+        throw new Error(`Unknown scope: ${currentScope}`);
+      }
+      renderSignature(payload);
+      const tRows = (payload.rows || []).filter(r => r.band === 'T');
+      if (tRows.length) wireTSliders(tRows);
+      document.getElementById('v2-intro-text').style.display = 'none';
+      // Queue fitBounds for next time user opens Map tab (map resize fires on shown.bs.tab).
+      if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
+    } catch (err) {
+      console.error('[v2] signature error:', err);
+      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+    } finally {
+      sigBtn.disabled = false;
+    }
+  });
+
+  // ── Map initialization ────────────────────────────────────────────────────
+  // Register PMTiles protocol before map creation so pmtiles:// URLs resolve.
+  const _pmProtocol = new pmtiles.Protocol();
+  maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
+
+  map = new maplibregl.Map({
+    container: 'v2-map',
+    center: [10, 20],   // [lng, lat]
+    zoom: 2,
+    attributionControl: true,
+    style: {
+      version: 8,
+      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+      sources: {
+        hillshade: {
+          type: 'raster',
+          tiles: ['https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg'],
+          tileSize: 256, maxzoom: 12,
+          attribution: 'Hillshade: &copy; OpenStreetMap US',
+        },
+        osm: {
+          type: 'raster',
+          tiles: [
+            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256, maxzoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        },
+      },
+      layers: [
+        { id: 'hillshade-layer', type: 'raster', source: 'hillshade',
+          paint: { 'raster-opacity': 1.0 } },
+        { id: 'osm-layer',       type: 'raster', source: 'osm',
+          paint: { 'raster-opacity': 0.5 } },
+      ],
+    },
+  });
+
+  document.getElementById('v2-tab-map-btn').addEventListener('shown.bs.tab', () => {
+    map.resize();
+  });
+
+  _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
+
+  window.v2map = map; // dev: expose for console inspection
+
+  // ── Basin choropleth ──────────────────────────────────────────────────────
+  const RDBU_PAL = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
+
+  function interpTwo(loHex, hiHex, t) {
+    t = Math.max(0, Math.min(1, t));
+    const loR = parseInt(loHex.slice(1,3),16), loG = parseInt(loHex.slice(3,5),16), loB = parseInt(loHex.slice(5,7),16);
+    const hiR = parseInt(hiHex.slice(1,3),16), hiG = parseInt(hiHex.slice(3,5),16), hiB = parseInt(hiHex.slice(5,7),16);
+    return `rgb(${Math.round(loR+(hiR-loR)*t)},${Math.round(loG+(hiG-loG)*t)},${Math.round(loB+(hiB-loB)*t)})`;
+  }
+
+  function interpRdbu(t) {
+    t = Math.max(0, Math.min(1, t));
+    const n = RDBU_PAL.length - 1;
+    const i = Math.floor(t * n);
+    const f = t * n - i;
+    if (i >= n) return RDBU_PAL[n];
+    const a = parseInt(RDBU_PAL[i].slice(1), 16);
+    const b = parseInt(RDBU_PAL[i + 1].slice(1), 16);
+    const r  = Math.round(((a >> 16) & 0xff) * (1 - f) + ((b >> 16) & 0xff) * f);
+    const g  = Math.round(((a >> 8)  & 0xff) * (1 - f) + ((b >> 8)  & 0xff) * f);
+    const bl = Math.round(( a        & 0xff) * (1 - f) + ( b        & 0xff) * f);
+    return `rgb(${r},${g},${bl})`;
+  }
+
+  const BASIN_VARS = [
+    { key: 'aridity_index',        su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
+    { key: 'precipitation_annual', su: 's', reverse: false, loLabel: 'dry',  hiLabel: 'wet'  },
+    { key: 'temperature_annual',   su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
+    { key: 'cropland_pct',         su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
+      palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
+  ];
+
+  let _basinLayerLoaded = false;
+
+  function loadBasinLayer() {
+    if (_basinLayerLoaded) return;
+    // Insert below the bottom-most scope layer so scope geometry always draws on top.
+    const scopeLayerIds = Object.entries(_layers)
+      .filter(([name]) => name !== 'basin-choropleth')
+      .flatMap(([, entry]) => entry.layerIds);
+    const before = scopeLayerIds.length > 0 ? scopeLayerIds[0] : undefined;
+    shell.add('basin-choropleth',
+      { type: 'vector', url: 'pmtiles:///static/explorer/basin06.pmtiles' },
+      [
+        { type: 'fill', 'source-layer': 'basin06',
+          paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], 'transparent'], 'fill-opacity': 0.72 } },
+        { type: 'line', 'source-layer': 'basin06',
+          paint: { 'line-color': 'rgba(80,80,80,0.2)', 'line-width': 0.5 } },
+      ],
+      { before }
+    );
+    _basinLayerLoaded = true;
+  }
+
+  async function applyBasinVar(key) {
+    if (!key) {
+      const sourceId = _layers['basin-choropleth']?.sourceId;
+      if (sourceId) map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      document.getElementById('v2-basin-status').textContent = '';
+      return;
+    }
+    const varMeta = BASIN_VARS.find(v => v.key === key);
+    if (!varMeta) return;
+    loadBasinLayer();   // lazy load — no-op after first call
+    const sourceId = _layers['basin-choropleth'].sourceId;
+    const statusEl = document.getElementById('v2-basin-status');
+    statusEl.textContent = 'Loading…';
+    try {
+      const resp = await fetch(`/api/explorer/values?var=${key}&level=6&su=${varMeta.su}`);
+      const body = await resp.json();
+      const vals  = body.values;
+      const stats = body.meta;
+      const lo = varMeta.fixedDomain ? varMeta.fixedDomain[0] : (stats.p10 ?? stats.min);
+      const hi = varMeta.fixedDomain ? varMeta.fixedDomain[1] : (stats.p90 ?? stats.max);
+      const range = hi - lo || 1;
+      map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+      Object.entries(vals).forEach(([id, v]) => {
+        if (v === null || v <= -9999) return;
+        const t  = Math.max(0, Math.min(1, (v - lo) / range));
+        const fc = varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
+                                   : interpRdbu(varMeta.reverse ? 1 - t : t);
+        map.setFeatureState({ source: sourceId, sourceLayer: 'basin06', id: Number(id) }, { fc });
+      });
+      renderBasinLegend(varMeta, lo, hi);
+      statusEl.textContent = `${stats.n_valid.toLocaleString()} basins`;
+    } catch (e) {
+      statusEl.textContent = 'Error loading variable';
+      console.error('applyBasinVar:', e);
+    }
+  }
+
+  function renderBasinLegend(meta, lo, hi) {
+    const barEl = document.getElementById('v2-basin-legend-bar');
+    const loEl  = document.getElementById('v2-basin-leg-lo');
+    const midEl = document.getElementById('v2-basin-leg-mid');
+    const hiEl  = document.getElementById('v2-basin-leg-hi');
+    const stops = meta.palette
+      ? `${meta.palette.lo} 0%, ${meta.palette.hi} 100%`
+      : (meta.reverse
+          ? [...RDBU_PAL].reverse().map((c, i) => `${c} ${(i / (RDBU_PAL.length - 1) * 100).toFixed(1)}%`).join(', ')
+          : RDBU_PAL.map((c, i) => `${c} ${(i / (RDBU_PAL.length - 1) * 100).toFixed(1)}%`).join(', '));
+    barEl.style.background = `linear-gradient(to right, ${stops})`;
+    loEl.textContent  = meta.fixedDomain ? meta.loLabel : `${meta.loLabel} (${lo.toFixed(1)})`;
+    midEl.textContent = meta.fixedDomain ? 'scale shared with HYDE' : '';
+    hiEl.textContent  = meta.fixedDomain ? meta.hiLabel : `${meta.hiLabel} (${hi.toFixed(1)})`;
+    document.getElementById('v2-basin-legend').style.display = 'block';
+  }
+
+  // ── LMR choropleth ────────────────────────────────────────────────────────
+  let _lmrData    = null;   // cached GeoJSON geometry — loaded once
+  let _lmrPainting = false; // concurrency guard
+
+  function formatLMRVal(v) {
+    if (v === 0) return '0';
+    const mag = Math.floor(Math.log10(Math.abs(v)));
+    return mag >= -2 ? Math.abs(v).toFixed(3) : Math.abs(v).toExponential(2);
+  }
+
+  async function loadLMRData() {
+    if (_lmrData) return;
+    const resp = await fetch('/static/explorer/lmr_notches.geojson');
+    const raw  = await resp.json();
+    raw.features.forEach((f, i) => { f.id = i; });
+    _lmrData = raw;
+  }
+
+  function ensureLMRShellLayer() {
+    if (_layers['lmr-choropleth']) return;
+    // Insert below scope geometry — same ordering rule as basin-choropleth.
+    const scopeLayerIds = Object.entries(_layers)
+      .filter(([name]) => name !== 'lmr-choropleth' && name !== 'basin-choropleth')
+      .flatMap(([, entry]) => entry.layerIds);
+    const before = scopeLayerIds.length > 0 ? scopeLayerIds[0] : undefined;
+    shell.add('lmr-choropleth',
+      { type: 'geojson', data: _lmrData },
+      [
+        { type: 'fill',
+          paint: {
+            'fill-color':         ['coalesce', ['get', 'fc'], 'transparent'],
+            'fill-opacity':       0.75,
+            'fill-outline-color': 'rgba(100,100,100,0.12)',
+          }
+        },
+      ],
+      { before }
+    );
+  }
+
+  function showLMRLayer() {
+    const entry = _layers['lmr-choropleth'];
+    if (!entry) return;
+    entry.layerIds.forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible');
+    });
+  }
+
+  function hideLMRLayer() {
+    const entry = _layers['lmr-choropleth'];
+    if (!entry) return;
+    entry.layerIds.forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+    });
+  }
+
+  async function applyLMRChoropleth(varKey, fromYear, toYear) {
+    if (_lmrPainting) return;
+    _lmrPainting = true;
+    const statusEl = document.getElementById('v2-basin-status');
+
+    if (!fromYear || !toYear || isNaN(fromYear) || isNaN(toYear)) {
+      statusEl.textContent = 'Set Band T span to paint LMR';
+      _lmrPainting = false;
+      return;
+    }
+
+    statusEl.textContent = 'Loading…';
+    try {
+      await loadLMRData();
+      ensureLMRShellLayer();
+    } catch (e) {
+      statusEl.textContent = 'Error loading LMR data';
+      console.error('applyLMRChoropleth:', e);
+      _lmrPainting = false;
+      return;
+    }
+
+    const isTemp = varKey === 'lmr_temp_anomaly';
+    const apiVar = isTemp ? 'air' : 'prate';
+
+    let values, actualFrom;
+    try {
+      const resp = await fetch(`/api/lmr/values?var=${apiVar}&from_year=${fromYear}&to_year=${toYear}`);
+      if (!resp.ok) { statusEl.textContent = 'Error loading LMR'; _lmrPainting = false; return; }
+      ({ values, actual_from: actualFrom } = await resp.json());
+    } catch (e) {
+      statusEl.textContent = 'Error loading LMR values';
+      console.error('applyLMRChoropleth:', e);
+      _lmrPainting = false;
+      return;
+    }
+
+    const nums = Object.values(values).filter(v => v != null);
+    if (!nums.length) {
+      statusEl.textContent = 'No LMR data for this span';
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      _lmrPainting = false;
+      return;
+    }
+
+    const sorted = [...nums].sort((a, b) => a - b);
+    const n      = sorted.length;
+    const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
+    const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
+    const absMax = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
+
+    // Bake fill color into each feature's properties (property paint, not feature-state).
+    for (const f of _lmrData.features) {
+      const key = `${f.properties.lat},${f.properties.lon}`;
+      const v   = values[key];
+      if (v == null) {
+        delete f.properties.fc;
+      } else {
+        const t    = Math.max(0, Math.min(1, (v + absMax) / (2 * absMax)));
+        const lmrT = isTemp ? 1 - t : t;
+        f.properties.fc = interpRdbu(lmrT);
+      }
+    }
+
+    const sourceId = _layers['lmr-choropleth'].sourceId;
+    map.getSource(sourceId).setData(_lmrData);
+    showLMRLayer();
+
+    renderLMRLegend(isTemp, absMax);
+    const effFrom   = actualFrom ?? fromYear;
+    const spanLabel = effFrom !== fromYear
+      ? `${effFrom}–${toYear} CE (floor; requested ${fromYear})`
+      : `${fromYear}–${toYear} CE`;
+    statusEl.textContent = `${n.toLocaleString()} cells · ${spanLabel}`;
+    _lmrPainting = false;
+  }
+
+  function renderLMRLegend(isTemp, absMax) {
+    const barEl = document.getElementById('v2-basin-legend-bar');
+    const loEl  = document.getElementById('v2-basin-leg-lo');
+    const midEl = document.getElementById('v2-basin-leg-mid');
+    const hiEl  = document.getElementById('v2-basin-leg-hi');
+    const gradPal   = isTemp ? [...RDBU_PAL].reverse() : RDBU_PAL;
+    const gradStops = gradPal.map((c, i) => `${c} ${(i / (gradPal.length - 1) * 100).toFixed(1)}%`).join(', ');
+    barEl.style.background = `linear-gradient(to right, ${gradStops})`;
+    const s = formatLMRVal(absMax);
+    loEl.textContent  = isTemp ? `cold (−${s} K)` : `dry (−${s} mm/day)`;
+    midEl.textContent = '0 (850–1850 mean)';
+    hiEl.textContent  = isTemp ? `warm (+${s} K)` : `wet (+${s} mm/day)`;
+    document.getElementById('v2-basin-legend').style.display = 'block';
+  }
+
+  function clearLMRPaint() {
+    hideLMRLayer();
+  }
+
+  // ── HYDE choropleth (values-API + feature-state on basin06.pmtiles) ─────
+  const HYDE_DB_VAR = { hyde_cropland: 'cropland', hyde_grazing: 'grazing', hyde_pasture: 'pasture', hyde_rangeland: 'rangeland' };
+  const HYDE_RAMPS  = {
+    hyde_cropland:  { lo: '#ffffff', hi: '#006d2c' },
+    hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
+    hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
+    hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
+  };
+
+  async function applyHydeChoropleth(varKey, year) {
+    const dbVar = HYDE_DB_VAR[varKey];
+    if (!dbVar) return;
+    loadBasinLayer();
+    const sourceId = _layers['basin-choropleth'].sourceId;
+    const statusEl = document.getElementById('v2-basin-status');
+    statusEl.textContent = 'Loading…';
+    try {
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}`);
+      if (!resp.ok) { statusEl.textContent = 'Error'; return; }
+      const { values, actual_year } = await resp.json();
+      const nums   = Object.values(values).filter(v => v != null && v > 0);
+      const domMax = nums.length ? Math.max(...nums) : 1;
+      const ramp   = HYDE_RAMPS[varKey];
+      map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+      for (const [id, v] of Object.entries(values)) {
+        if (v == null) continue;
+        const t = Math.max(0, Math.min(1, v / domMax));
+        map.setFeatureState({ source: sourceId, sourceLayer: 'basin06', id: Number(id) },
+                            { fc: interpTwo(ramp.lo, ramp.hi, t) });
+      }
+      renderHydeLegend(varKey, actual_year, domMax);
+      statusEl.textContent = `${actual_year} CE · ${nums.length.toLocaleString()} basins`;
+    } catch (e) {
+      statusEl.textContent = 'Error loading HYDE';
+      console.error('applyHydeChoropleth:', e);
+    }
+  }
+
+  function renderHydeLegend(varKey, year, domMax) {
+    const barEl = document.getElementById('v2-basin-legend-bar');
+    const loEl  = document.getElementById('v2-basin-leg-lo');
+    const midEl = document.getElementById('v2-basin-leg-mid');
+    const hiEl  = document.getElementById('v2-basin-leg-hi');
+    const ramp  = HYDE_RAMPS[varKey] || { lo: '#f7f7f7', hi: '#252525' };
+    barEl.style.background = `linear-gradient(to right, ${ramp.lo}, ${ramp.hi})`;
+    loEl.textContent  = '0';
+    midEl.textContent = `${year} CE`;
+    hiEl.textContent  = `${(domMax * 100).toFixed(1)}%`;
+    document.getElementById('v2-basin-legend').style.display = 'block';
+  }
+
+  function clearHydePaint() {
+    const sourceId = _layers['basin-choropleth']?.sourceId;
+    if (sourceId) map.removeFeatureState({ source: sourceId, sourceLayer: 'basin06' });
+  }
+
+  document.getElementById('v2-basin-var').addEventListener('change', e => {
+    const key    = e.target.value;
+    const fromYr = parseInt(document.getElementById('v2-from-year').value);
+    const toYr   = parseInt(document.getElementById('v2-to-year').value);
+    if (key.startsWith('lmr_')) {
+      const basinSourceId = _layers['basin-choropleth']?.sourceId;
+      if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
+      clearHydePaint();
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      applyLMRChoropleth(key, fromYr, toYr);
+      return;
+    }
+    if (key.startsWith('hyde_')) {
+      const basinSourceId = _layers['basin-choropleth']?.sourceId;
+      if (basinSourceId) map.removeFeatureState({ source: basinSourceId, sourceLayer: 'basin06' });
+      clearLMRPaint();
+      document.getElementById('v2-basin-legend').style.display = 'none';
+      applyHydeChoropleth(key, fromYr || 1000);
+      return;
+    }
+    clearLMRPaint();
+    clearHydePaint();
+    applyBasinVar(key);
+  });
+
+})();
+</script>
+</body>
+</html>

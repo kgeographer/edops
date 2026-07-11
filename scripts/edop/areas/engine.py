@@ -22,8 +22,23 @@ Dispatch (WO3):
                       caller skips derived rows before invoking
 """
 
+import math
+import warnings
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+
+# psycopg3 connections work fine with pd.read_sql; suppress the SQLAlchemy nag
+warnings.filterwarnings(
+    'ignore',
+    message='pandas only supports SQLAlchemy connectable',
+    category=UserWarning,
+)
+
+
+_N_HIST_BINS             = 20
+_LOW_RES_CELL_THRESHOLD  = 5    # w_eff below which histogram is flagged low_resolution
+_LOW_RES_BASIN_THRESHOLD = 3    # n_units below which basin histogram is flagged
 
 
 def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
@@ -77,6 +92,100 @@ def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
     return df
 
 
+def resolve_polygon(geom_wkt, level, conn, epsilon=0.0):
+    """
+    Polygon resolver: WKT geometry → weighted basin set.
+
+    weight = overlap_area / polity_area (geography-accurate; same convention as
+    resolve_buffer's overlap/buffer_area). basin_in_polity_fraction = overlap_area
+    / basin_area — records how much of each basin falls inside the polygon; used
+    for the marginal-exposure diagnostic. Basins below epsilon are dropped.
+
+    Parameters
+    ----------
+    geom_wkt : str   — WKT polygon (SRID 4326)
+    level    : str   — '06' or '08'
+    conn     : psycopg3 connection
+    epsilon  : float — minimum weight threshold (fraction of polygon area)
+
+    Returns
+    -------
+    DataFrame with columns [hybas_id (int64), weight,
+                             basin_in_polity_fraction, overlap_area_km2],
+    ordered by weight DESC.
+    """
+    table = f'public.basin{level}'
+    sql = f"""
+    WITH polity AS (
+        SELECT  ST_GeomFromText(%s, 4326)                           AS geom,
+                ST_Area(ST_GeomFromText(%s, 4326)::geography)       AS area_m2
+    ),
+    intersections AS (
+        SELECT  b.hybas_id,
+                ST_Area(ST_Intersection(b.geom, p.geom)::geography) AS overlap_m2,
+                ST_Area(b.geog)                                       AS basin_area_m2
+        FROM    {table} b, polity p
+        WHERE   ST_Intersects(b.geom, p.geom)
+    )
+    SELECT  i.hybas_id,
+            i.overlap_m2 / p.area_m2                AS weight,
+            i.overlap_m2 / i.basin_area_m2          AS basin_in_polity_fraction,
+            ROUND((i.overlap_m2 / 1e6)::numeric, 2) AS overlap_area_km2
+    FROM    intersections i, polity p
+    WHERE   i.overlap_m2 / p.area_m2 >= {epsilon}
+    ORDER BY weight DESC
+    """
+    cur  = conn.execute(sql, (geom_wkt, geom_wkt))
+    cols = [d[0] for d in cur.description]
+    df   = pd.DataFrame(cur.fetchall(), columns=cols)
+    df['hybas_id'] = df['hybas_id'].astype('int64')
+    return df
+
+
+def resolve_polity(polity_name, year, level, conn, epsilon=0.0):
+    """
+    Polity resolver: Cliopatria name + year → (geom_wkt, basin_set, polity_meta).
+
+    Looks up the Cliopatria row where name = polity_name AND fromyear ≤ year ≤ toyear,
+    extracts the geometry, and delegates basin resolution to resolve_polygon.
+
+    Raises ValueError if no row matches. If multiple rows match (shouldn't happen —
+    phases don't overlap), picks the narrowest temporal span.
+
+    Parameters
+    ----------
+    polity_name : str  — exact Cliopatria name (gaz.clio_polities.name)
+    year        : int  — year CE; must fall within fromyear..toyear of some row
+    level       : int  — 6 or 8
+    conn        : psycopg3 connection
+    epsilon     : float — passed through to resolve_polygon
+
+    Returns
+    -------
+    (geom_wkt: str, basin_set: DataFrame, polity_meta: dict)
+    polity_meta keys: id, name, fromyear, toyear, year
+    """
+    sql = """
+    SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
+    FROM gaz.clio_polities
+    WHERE name = %s AND fromyear <= %s AND toyear >= %s
+    """
+    rows = conn.execute(sql, (polity_name, year, year)).fetchall()
+    if len(rows) == 0:
+        raise ValueError(f'No polity found: name={polity_name!r}, year={year}')
+    if len(rows) > 1:
+        rows = sorted(rows, key=lambda r: r[3] - r[2])  # narrowest span wins
+    r = rows[0]
+    polity_meta = {
+        'id': int(r[0]), 'name': r[1],
+        'fromyear': int(r[2]), 'toyear': int(r[3]), 'year': year,
+    }
+    geom_wkt  = r[4]
+    level_str = f'{level:02d}'
+    basin_set = resolve_polygon(geom_wkt, level_str, conn, epsilon=epsilon)
+    return geom_wkt, basin_set, polity_meta
+
+
 def weighted_quantile(scores, weights, q):
     """
     Weighted quantile via sorted cumulative weights + linear interpolation.
@@ -99,6 +208,59 @@ def weighted_quantile(scores, weights, q):
     cumw = np.cumsum(sw)
     cumw /= cumw[-1]
     return float(np.interp(q, cumw, sv))
+
+
+def _weighted_histogram(values, raw_weights, unit_type, n_bins=_N_HIST_BINS):
+    """
+    Weighted histogram for the distribution detail block.
+
+    values      : array-like float — per-unit scores (basin) or native values (cells)
+    raw_weights : array-like float — fractional coverage (cells: overlap/area;
+                  basins: area-weight). Normalized internally.
+    unit_type   : 'basin' | 'hyde_cell' | 'lmr_cell'
+    n_bins      : fixed count; keeps payload bounded regardless of unit count
+
+    Temporal stamp fields (resolver_year, band_t_from, band_t_to) are added by
+    the caller after this returns so the function stays substrate-agnostic.
+
+    Returns None if no valid units.
+    """
+    v = np.asarray(values,      dtype=float)
+    w = np.asarray(raw_weights, dtype=float)
+    mask = np.isfinite(v) & np.isfinite(w) & (w > 0)
+    v, w = v[mask], w[mask]
+    if len(v) == 0:
+        return None
+
+    w_eff  = float(w.sum())
+    w_norm = w / w_eff
+    n      = int(len(v))
+    mean_  = float(np.dot(v, w_norm))
+
+    vmin, vmax = float(v.min()), float(v.max())
+    edges = (np.linspace(vmin - 0.5, vmin + 0.5, n_bins + 1)
+             if vmax == vmin else np.linspace(vmin, vmax, n_bins + 1))
+
+    bin_idx = np.clip(np.digitize(v, edges[1:-1]), 0, n_bins - 1)
+    bin_w   = np.zeros(n_bins)
+    for i, ww in zip(bin_idx, w_norm):
+        bin_w[i] += ww
+
+    low_res = (w_eff < _LOW_RES_CELL_THRESHOLD) if unit_type != 'basin' \
+              else (n < _LOW_RES_BASIN_THRESHOLD)
+
+    return {
+        'bins':           [round(float(e), 4) for e in edges],
+        'weights':        [round(float(ww), 6) for ww in bin_w],
+        'n_units':        n,
+        'unit_type':      unit_type,
+        'low_resolution': low_res,
+        'min':            round(vmin, 4),
+        'max':            round(vmax, 4),
+        'p10':            round(weighted_quantile(v, w, 0.1), 4),
+        'p90':            round(weighted_quantile(v, w, 0.9), 4),
+        'mean':           round(mean_, 4),
+    }
 
 
 def diff_output(actual, reference, float_tol=0.01, id_col='hybas_id', label=''):
@@ -279,7 +441,12 @@ def load_catalog(level=6, codebook_path=None):
                 if not ak or ak in _SKIP_API_KEYS:
                     return
                 if not is_derived and not col:
-                    return  # sourced row with no db column (e.g. reservoir_vol)
+                    # Upstream-only coalesce: sourced row has no _s column but _u exists.
+                    # Use the upstream column so the variable still appears in the payload.
+                    if su == 's' and col_u:
+                        col = col_u
+                    else:
+                        return
                 # Flags first (endorheic: type='string' but raw-integer B4 input).
                 # rarity_rank → categorical: the method is chosen specifically for
                 # class-membership variables (no intrinsic ordering); covers integer-
@@ -465,64 +632,88 @@ def attach_values(basin_set, meta_df, conn, table, view,
     raw_df = raw_all[keep_cols].copy()
 
     # ── Step 2: position scores for continuous variables ──────────────────────
-    n_nodata_map = {}
-    for api_key, row in cont_vars.iterrows():
-        zf = _parse_zf(row.get('zero_fraction'))
-        is_zero_aware = zf is not None and zf >= zero_fraction_threshold
-        if is_zero_aware:
-            n_nodata_map[api_key] = 0
-        else:
-            n = conn.execute(
-                f"SELECT count(*) FROM {table} "
-                f"WHERE {row['db_col']} = -9999 OR {row['db_col']} IS NULL"
-            ).fetchone()[0]
-            n_nodata_map[api_key] = int(n)
-
-    clean_set    = {k for k, n in n_nodata_map.items() if n == 0}
-    affected_set = set(n_nodata_map) - clean_set
-
-    # Monolithic query for clean vars (no nodata in basin table)
-    select_parts = ['hybas_id']
-    alias_map    = {}
-    for api_key, row in cont_vars.iterrows():
-        if api_key not in clean_set:
-            continue
-        alias = f'pos_{api_key}'
-        zf    = _parse_zf(row.get('zero_fraction'))
-        select_parts.append(
-            f"{rank_expr(row['db_col'], row['position_method'], zf, zero_fraction_threshold)} AS {alias}"
-        )
-        alias_map[alias] = api_key
-
-    clean_sql = (
-        f"WITH ranked AS (SELECT {', '.join(select_parts)} FROM {table}) "
-        f"SELECT * FROM ranked WHERE hybas_id IN ({ids_clause})"
-    )
-    pos_clean = (pd.read_sql(clean_sql, conn)
-                   .set_index('hybas_id')
-                   .rename(columns=alias_map))
-    pos_clean.index = pos_clean.index.astype('int64')
-
-    # Two-pass queries for vars with nodata in the basin table
-    nodata_frames = []
-    for api_key in sorted(affected_set):
-        row   = cont_vars.loc[api_key]
-        alias = f'pos_{api_key}'
-        sql   = two_pass_sql(row['db_col'], alias, row['position_method'],
-                             table, ids_clause)
-        df = (pd.read_sql(sql, conn)
+    if table == 'public.basin08':
+        # Fast path: pre-materialized scores (avoids per-request PERCENT_RANK
+        # over 190k rows; build_basin08_scores.py populates this table once).
+        avail_cols = {row[0] for row in conn.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'basin08_scores' "
+            "AND column_name != 'hybas_id'"
+        ).fetchall()}
+        fetch_cols = [k for k in cont_vars.index if k in avail_cols]
+        if fetch_cols:
+            col_str = ', '.join(f'"{k}"' for k in fetch_cols)
+            pos_df = (
+                pd.read_sql(
+                    f"SELECT hybas_id, {col_str} FROM public.basin08_scores "
+                    f"WHERE hybas_id IN ({ids_clause})",
+                    conn,
+                )
                 .set_index('hybas_id')
-                .rename(columns={alias: api_key}))
-        df.index = df.index.astype('int64')
-        nodata_frames.append(df)
-
-    if nodata_frames:
-        pos_nodata = pd.concat(nodata_frames, axis=1)
+            )
+            pos_df.index = pos_df.index.astype('int64')
+        else:
+            pos_df = pd.DataFrame(index=basin_set.index)
+        pos_df = pos_df.reindex(columns=cont_vars.index)
     else:
-        pos_nodata = pd.DataFrame(index=pos_clean.index)
+        n_nodata_map = {}
+        for api_key, row in cont_vars.iterrows():
+            zf = _parse_zf(row.get('zero_fraction'))
+            is_zero_aware = zf is not None and zf >= zero_fraction_threshold
+            if is_zero_aware:
+                n_nodata_map[api_key] = 0
+            else:
+                n = conn.execute(
+                    f"SELECT count(*) FROM {table} "
+                    f"WHERE {row['db_col']} = -9999 OR {row['db_col']} IS NULL"
+                ).fetchone()[0]
+                n_nodata_map[api_key] = int(n)
 
-    pos_df = (pd.concat([pos_clean, pos_nodata], axis=1)
-                .reindex(columns=cont_vars.index))
+        clean_set    = {k for k, n in n_nodata_map.items() if n == 0}
+        affected_set = set(n_nodata_map) - clean_set
+
+        # Monolithic query for clean vars (no nodata in basin table)
+        select_parts = ['hybas_id']
+        alias_map    = {}
+        for api_key, row in cont_vars.iterrows():
+            if api_key not in clean_set:
+                continue
+            alias = f'pos_{api_key}'
+            zf    = _parse_zf(row.get('zero_fraction'))
+            select_parts.append(
+                f"{rank_expr(row['db_col'], row['position_method'], zf, zero_fraction_threshold)} AS {alias}"
+            )
+            alias_map[alias] = api_key
+
+        clean_sql = (
+            f"WITH ranked AS (SELECT {', '.join(select_parts)} FROM {table}) "
+            f"SELECT * FROM ranked WHERE hybas_id IN ({ids_clause})"
+        )
+        pos_clean = (pd.read_sql(clean_sql, conn)
+                       .set_index('hybas_id')
+                       .rename(columns=alias_map))
+        pos_clean.index = pos_clean.index.astype('int64')
+
+        # Two-pass queries for vars with nodata in the basin table
+        nodata_frames = []
+        for api_key in sorted(affected_set):
+            row   = cont_vars.loc[api_key]
+            alias = f'pos_{api_key}'
+            sql   = two_pass_sql(row['db_col'], alias, row['position_method'],
+                                 table, ids_clause)
+            df = (pd.read_sql(sql, conn)
+                    .set_index('hybas_id')
+                    .rename(columns={alias: api_key}))
+            df.index = df.index.astype('int64')
+            nodata_frames.append(df)
+
+        if nodata_frames:
+            pos_nodata = pd.concat(nodata_frames, axis=1)
+        else:
+            pos_nodata = pd.DataFrame(index=pos_clean.index)
+
+        pos_df = (pd.concat([pos_clean, pos_nodata], axis=1)
+                    .reindex(columns=cont_vars.index))
 
     # ── Step 3: categorical class labels (from view) and IDs (from raw table) ─
     class_label_rows = {}
@@ -575,7 +766,7 @@ def make_row(
     representative_score, representative_raw, coverage, status,
     # quality flags (Pin 1, 4)
     coherence=None, modality=None, score_suppressed=False,
-    distribution=None, weight_at_zero=None,
+    weight_at_zero=None,
     caveat=None,          # Pin 2: list of caveat keys; empty list = no caveats
     # temporal fields (B7 only; None on basin-path rows)
     year=None, epoch_year=None,
@@ -611,7 +802,6 @@ def make_row(
         # quality flags
         'coherence':           coherence,
         'modality':            modality,
-        'distribution':        distribution,
         'weight_at_zero':      weight_at_zero,
         'caveat':              caveat if caveat is not None else [],
         # temporal (None on non-B7 rows; serializer omits None fields as needed)
@@ -676,23 +866,33 @@ _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
 def _agg_hyde_b7(df, var_col, buf_area_m2):
-    """Area-weighted mean + distribution detail for one HYDE variable."""
+    """Fractional-overlap-weighted mean + distribution for one HYDE variable.
+
+    Weight = overlap_m2 / cell_area_m2 (fraction of each cell inside query area).
+    Cells that are 10% inside contribute weight 0.1 regardless of their absolute size,
+    so unequal cell areas (which vary with latitude) don't bias the mean.
+    Coverage is reported as sum(overlap_m2) / buf_area_m2 (physical coverage).
+    w_eff = sum of fractional coverages; honest effective-cell-count for detail block.
+    """
     valid = df[df[var_col].notna()].copy()
     if len(valid) == 0:
         return {'representative_raw': None, 'p10': None, 'p90': None,
-                'sd': None, 'n_units': 0, 'coverage': 0.0, 'status': 'no_data'}
-    tot_w  = float(valid['overlap_m2'].sum())
-    w      = (valid['overlap_m2'] / tot_w).values
+                'sd': None, 'n_units': 0, 'w_eff': 0.0,
+                'coverage': 0.0, 'status': 'no_data', 'histogram': None}
+    frac   = (valid['overlap_m2'] / (valid['area_km2'] * 1e6)).values
+    w      = frac / frac.sum()
     v      = valid[var_col].values.astype(float)
     mean_  = float(np.dot(v, w))
     return {
         'representative_raw': mean_,
-        'p10':     weighted_quantile(v, w, 0.1),
-        'p90':     weighted_quantile(v, w, 0.9),
-        'sd':      float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
-        'n_units': len(valid),
-        'coverage': tot_w / buf_area_m2,
-        'status':  'ok',
+        'p10':      weighted_quantile(v, w, 0.1),
+        'p90':      weighted_quantile(v, w, 0.9),
+        'sd':       float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
+        'n_units':  len(valid),
+        'w_eff':    round(float(frac.sum()), 2),
+        'coverage': float(valid['overlap_m2'].sum()) / buf_area_m2,
+        'status':   'ok',
+        'histogram': _weighted_histogram(v, frac, unit_type='hyde_cell'),
     }
 
 
@@ -707,36 +907,46 @@ def _agg_lmr_b7(overlap_m2, values, buf_area_m2):
     }
 
 
-def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
+def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
+                     geom_wkt=None, resolver_year=None):
     """
     Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
-    eVolv2k (global_forcing) for a lat/lon buffer over a year span.
+    eVolv2k (global_forcing) for a query area over a year span.
 
     Promoted from step3b_band_t.ipynb Cell 13; wired to make_row instead of _row.
-    No behavior change to the numeric outputs — same SQL, same aggregation math.
 
-    New behaviors vs. notebook aggregate_band_t:
+    Changes vs. notebook aggregate_band_t:
     - lmr_caveat applied to every LMR row (missing from notebook's aggregate path)
     - hyde_caveat applied to HYDE rows where epoch_year == 1950
     - status uses Pin 1 vocabulary (no_data instead of no_events when eVolv2k absent)
     - coverage_weight renamed to coverage; p10/p90/sd moved to detail sub-block
+    - WO15: HYDE and LMR weights changed from overlap_m2/sum(overlap_m2) to
+      overlap_m2/cell_area_m2 (fractional coverage of each cell's own area), so cells
+      at different latitudes are not biased by their absolute size. HYDE detail block
+      gains w_eff (sum of fractional coverages; honest effective cell count).
 
     Parameters
     ----------
-    lat, lon    : float — WGS-84 coordinates of the buffer centre
-    radius_km   : float — buffer radius in km
+    lat, lon    : float — WGS-84 coordinates (buffer centre, or point within polygon)
+    radius_km   : float — buffer radius in km; ignored when geom_wkt is provided
     from_year   : int   — start of span (CE)
     to_year     : int   — end of span (CE)
     conn        : psycopg3 connection
+    geom_wkt    : str or None — WKT polygon to use instead of a circular buffer;
+                  when provided, lat/lon/radius_km are not used for geometry
 
     Returns
     -------
     list of make_row dicts — pass to assemble_payload for the top-level payload
     """
-    radius_m     = radius_km * 1000.0
-    pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
-    buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
-    buf_geom_sql = f"({buf_geog_sql})::geometry"
+    if geom_wkt is not None:
+        buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
+        buf_geog_sql = f"({buf_geom_sql})::geography"
+    else:
+        radius_m     = radius_km * 1000.0
+        pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
+        buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
+        buf_geom_sql = f"({buf_geog_sql})::geometry"
 
     buf_area_m2 = float(
         conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
@@ -780,6 +990,13 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
             agg = _agg_hyde_b7(grp, var, buf_area_m2)
+            hist_h = agg['histogram']
+            if hist_h is not None:
+                hist_h.update({
+                    'resolver_year': resolver_year,
+                    'band_t_from':   from_year,
+                    'band_t_to':     to_year,
+                })
             rows.append(make_row(
                 variable=f'hyde_{var}', band='T',
                 method='grid_areal_distribution',
@@ -787,14 +1004,15 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
                 representative_score=None,
                 representative_raw=agg['representative_raw'],
                 coverage=agg['coverage'], status=agg['status'],
-                distribution='reported',
                 caveat=caveat,
                 year=yr, epoch_year=yr, units=units,
                 detail={
-                    'p10':  agg['p10'],
-                    'p90':  agg['p90'],
-                    'sd':   agg['sd'],
-                    'unit': 'km2_per_cell',
+                    'p10':          agg['p10'],
+                    'p90':          agg['p90'],
+                    'sd':           agg['sd'],
+                    'w_eff':        agg['w_eff'],
+                    'unit':         'km2_per_cell',
+                    'distribution': hist_h,
                 },
             ))
 
@@ -822,7 +1040,8 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
             FROM temporal.lmr_climate lc
         )
         SELECT f.pdsi_slice, f.air_slice, f.prate_slice,
-               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2
+               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2,
+               ST_Area(f.fp::geography)                                 AS cell_area_m2
         FROM footprints f, buf
         WHERE ST_Intersects(f.fp, buf.buf_geom)
         ORDER BY overlap_m2 DESC
@@ -830,7 +1049,9 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
         lmr_ts = pd.read_sql(lmr_sql, conn)
 
         ov      = lmr_ts['overlap_m2'].values.astype(float)
-        w_lmr   = ov / ov.sum()
+        ca      = lmr_ts['cell_area_m2'].values.astype(float)
+        frac_l  = ov / ca
+        w_lmr   = frac_l / frac_l.sum()
         cov_lmr = float(ov.sum() / buf_area_m2)
         n_fp    = len(lmr_ts)
         years_l = list(range(lmr_from, lmr_to + 1))
@@ -845,16 +1066,24 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn):
                 ('air',   air_mat,   'K anomaly'),
                 ('prate', prate_mat, 'mm/day anomaly'),
             ]:
+                col_vals = mat[:, i]
+                hist_l   = _weighted_histogram(col_vals, frac_l, unit_type='lmr_cell')
+                if hist_l is not None:
+                    hist_l.update({
+                        'resolver_year': resolver_year,
+                        'band_t_from':   from_year,
+                        'band_t_to':     to_year,
+                    })
                 rows.append(make_row(
                     variable=f'lmr_{api_name}', band='T',
-                    method='grid_areal_collapsed',
+                    method='grid_areal_distribution',
                     unit_type='lmr_cell', n_units=n_fp,
                     representative_score=None,
-                    representative_raw=float(np.dot(mat[:, i], w_lmr)),
+                    representative_raw=float(np.dot(col_vals, w_lmr)),
                     coverage=cov_lmr, status='ok',
-                    distribution='collapsed_subresolution',
                     caveat=['lmr_caveat'],
                     year=year, epoch_year=None, units=units,
+                    detail={'distribution': hist_l},
                 ))
 
     # ── eVolv2k ───────────────────────────────────────────────────────────────
@@ -1590,7 +1819,8 @@ def apply_modality(rows, basin_set, matrix_df,
 def aggregate_b1(basin_set, matrix_df, meta_df,
                  spread_threshold=_SPREAD_THRESHOLD,
                  zero_fraction_threshold=0.20,
-                 zero_coverage_threshold=0.90) -> list:
+                 zero_coverage_threshold=0.90,
+                 resolver_year=None) -> list:
     """
     Block 1: area-weighted coherence aggregation for continental-gradient and
     scale-dependent continuous variables.
@@ -1686,8 +1916,15 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         else:
             status_val = 'ok'
             coherence  = 'spread'
-            rep_score  = None
+            rep_score  = wmean
 
+        hist_b = _weighted_histogram(scores, wts, unit_type='basin')
+        if hist_b is not None:
+            hist_b.update({
+                'resolver_year': resolver_year,
+                'band_t_from':   None,
+                'band_t_to':     None,
+            })
         rows.append(make_row(
             variable=api_key, band=band,
             method='area_weighted',
@@ -1699,10 +1936,11 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             coherence=coherence,
             weight_at_zero=weight_at_zero,
             detail={
-                'spread': spread,
-                'p10':    p10,
-                'p90':    p90,
-                'unit':   'percentile',
+                'spread':       spread,
+                'p10':          p10,
+                'p90':          p90,
+                'unit':         'percentile',
+                'distribution': hist_b,
             },
         ))
 
@@ -1710,6 +1948,79 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
 
 
 # ── WO11b: assembly ───────────────────────────────────────────────────────────
+
+def _areal_signature_from_basin_set(
+    basin_set, level, conn,
+    *,
+    neighborhood,
+    shortfall,
+    geom_wkt=None,
+    lat=None,
+    lon=None,
+    radius_km=None,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+    run_modality=True,
+    resolver_year=None,
+):
+    """
+    Shared aggregation pipeline for any resolver that produces a weighted basin set.
+
+    Callers handle their own resolver step and neighborhood dict, then delegate
+    here. The B1–B6 + Band T path is identical across all neighborhood types.
+
+    For Band T: pass geom_wkt when the query area is a fixed polygon (basin or
+    polity). Pass lat/lon/radius_km when it is a circular buffer.
+    """
+    if level not in _CATALOG_CACHE:
+        _CATALOG_CACHE[level] = load_catalog(level=level)
+    meta_df = _CATALOG_CACHE[level]
+    table   = _LEVEL_TABLE[level]
+    view    = _LEVEL_VIEW[level]
+
+    # ── 2. Attach values ─────────────────────────────────────────────────────
+    matrix_df, class_id_df, raw_df = attach_values(
+        basin_set, meta_df, conn, table, view,
+    )
+
+    # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
+    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df, resolver_year=resolver_year)
+    b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
+    b4_rows = aggregate_b4(basin_set, raw_df)
+    b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
+
+    # ── 4. B6 modality post-pass (B1 + B5 distribution rows only) ────────────
+    if run_modality:
+        apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
+
+    basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    # ── 5. Band T path (gated on span presence) ───────────────────────────────
+    want_t    = (bands is None or 'T' in bands)
+    have_span = from_year is not None and to_year is not None
+    run_t     = want_t and have_span
+
+    t_rows = aggregate_band_t(
+        lat, lon, radius_km, from_year, to_year, conn,
+        geom_wkt=geom_wkt, resolver_year=resolver_year,
+    ) if run_t else []
+
+    all_rows = basin_rows + t_rows
+
+    # ── 6. Assemble payload ───────────────────────────────────────────────────
+    active_bands = bands if bands is not None else _BASIN_BANDS + (['T'] if run_t else [])
+    temporal     = {'from_year': from_year, 'to_year': to_year} if run_t else None
+
+    return assemble_payload(
+        all_rows, neighborhood, shortfall,
+        bands=active_bands,
+        temporal=temporal,
+        include_detail=include_detail,
+    )
+
 
 _CATALOG_CACHE = {}   # level (int) → meta_df; populated lazily on first call
 
@@ -1758,67 +2069,370 @@ def areal_signature(
     dict — assemble_payload output:
         {neighborhood, shortfall, bands, temporal, caveats, rows}
     """
-    # Build-once catalog, lazy per level
-    if level not in _CATALOG_CACHE:
-        _CATALOG_CACHE[level] = load_catalog(level=level)
-    meta_df = _CATALOG_CACHE[level]
-
-    table     = _LEVEL_TABLE[level]
-    view      = _LEVEL_VIEW[level]
-    level_str = f'{level:02d}'
-
     # ── 1. Resolve buffer ────────────────────────────────────────────────────
+    level_str = f'{level:02d}'
     basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
-    shortfall = round(1.0 - float(basin_set['weight'].sum()), 6)
+    shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     neighborhood = {
-        'type':      'buffer',
+        'type':       'buffer',
+        'lat':        lat,
+        'lon':        lon,
+        'radius_km':  radius_km,
+        'level':      level,
+        'n_units':    len(basin_set),
+        'unit_type':  'basin',
+        'member_ids': basin_set['hybas_id'].tolist(),
+    }
+
+    return _areal_signature_from_basin_set(
+        basin_set, level, conn,
+        neighborhood=neighborhood,
+        shortfall=shortfall,
+        lat=lat, lon=lon, radius_km=radius_km,
+        bands=bands,
+        from_year=from_year,
+        to_year=to_year,
+        include_detail=include_detail,
+    )
+
+
+# ── WO14: single-basin resolver + entry point ─────────────────────────────────
+
+def resolve_single_basin(lat, lon, level, conn):
+    """
+    Single-basin resolver: point → {hybas_id: 1.0}.
+
+    Reuses the same ST_Contains / geom lookup the live /signature path uses,
+    so the returned hybas_id is guaranteed to match v0.3's containing basin.
+    Returns a one-row DataFrame with weight=1.0.
+    Shortfall is 0 by definition — the query is the basin itself.
+    """
+    table = _LEVEL_TABLE[level]
+    sql = f"""
+    SELECT hybas_id
+    FROM {table}
+    WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
+    """
+    df = pd.read_sql(sql, conn)
+    df['hybas_id'] = df['hybas_id'].astype('int64')
+    df['weight']   = 1.0
+    return df
+
+
+def single_basin_signature(
+    lat, lon,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Areal signature for the single containing basin at a point.
+
+    The resolver returns {hybas_id: 1.0}; every downstream block runs unchanged.
+    Shortfall is 0.0 — the query is the basin, so no geographic absence is possible.
+
+    Band T is supported: the basin polygon WKT is retrieved and passed through
+    _areal_signature_from_basin_set to aggregate_band_t(geom_wkt=...), the same
+    polygon path used by the polity resolver. Pass from_year + to_year to request
+    Band T rows.
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — band letters; None = A–E only
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool
+
+    Returns
+    -------
+    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
+    """
+    table = _LEVEL_TABLE[level]
+
+    # ── 1. Resolve single basin ───────────────────────────────────────────────
+    basin_set = resolve_single_basin(lat, lon, level, conn)
+    shortfall = 0.0
+    hybas_id  = int(basin_set['hybas_id'].iloc[0])
+
+    basin_geom_wkt = conn.execute(
+        f"SELECT ST_AsText(geom) FROM {table} WHERE hybas_id = {hybas_id}"
+    ).fetchone()[0]
+
+    neighborhood = {
+        'type':      'basin',
         'lat':       lat,
         'lon':       lon,
-        'radius_km': radius_km,
         'level':     level,
-        'n_units':   len(basin_set),
+        'hybas_id':  hybas_id,
+        'n_units':   1,
         'unit_type': 'basin',
     }
 
-    # ── 2. Attach values ─────────────────────────────────────────────────────
-    matrix_df, class_id_df, raw_df = attach_values(
-        basin_set, meta_df, conn, table, view,
-    )
-
-    # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
-    b1_rows = aggregate_b1(basin_set, matrix_df, meta_df)
-    b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
-    b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
-    b4_rows = aggregate_b4(basin_set, raw_df)
-    b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
-
-    # ── 4. B6 modality post-pass (distribution-bearing rows only) ────────────
-    # apply_modality mutates dicts in place; pass B1+B5 only so B2/B3/B4 rows
-    # are not stamped with modality (those blocks have no distribution spread)
-    apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
-
-    basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
-
-    # ── 5. Band T path (gated on span presence) ───────────────────────────────
-    want_t  = (bands is None or 'T' in bands)
-    have_span = from_year is not None and to_year is not None
-    run_t   = want_t and have_span
-
-    t_rows = aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn) if run_t else []
-
-    all_rows = basin_rows + t_rows
-
-    # ── 6. Assemble payload ───────────────────────────────────────────────────
-    active_bands = (
-        bands if bands is not None
-        else _BASIN_BANDS + (['T'] if run_t else [])
-    )
-    temporal = {'from_year': from_year, 'to_year': to_year} if run_t else None
-
-    return assemble_payload(
-        all_rows, neighborhood, shortfall,
-        bands=active_bands,
-        temporal=temporal,
+    return _areal_signature_from_basin_set(
+        basin_set, level, conn,
+        neighborhood=neighborhood,
+        shortfall=shortfall,
+        geom_wkt=basin_geom_wkt,
+        bands=bands,
+        from_year=from_year,
+        to_year=to_year,
         include_detail=include_detail,
     )
+
+
+# ── WO17: basin-ring resolver + entry point ───────────────────────────────────
+
+def _bearing(lat1, lon1, lat2, lon2):
+    """Great-circle bearing from (lat1,lon1) to (lat2,lon2), 0=N clockwise, [0,360)."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dl = math.radians(lon2 - lon1)
+    x = math.sin(dl) * math.cos(phi2)
+    y = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dl)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def resolve_basin_ring(lat, lon, level, conn):
+    """
+    Basin-ring resolver: point → (center_df, ring_gdf).
+
+    center_df : one-row DataFrame — hybas_id (int64), weight=1.0
+    ring_gdf  : GeoDataFrame — one row per first-order adjacent basin:
+                  hybas_id, sub_area_km2, shared_km,
+                  neighbor_lat, neighbor_lon  (ST_PointOnSurface — guaranteed inside polygon),
+                  border_mid_lat, border_mid_lon  (shared-edge midpoint),
+                  border_bearing  (° to shared-edge midpoint, 0=N clockwise),
+                  centroid_bearing  (° to neighbor interior point — diagnostic),
+                  geometry  (neighbor polygon, SRID 4326)
+
+    Shortfall = 0 by construction (ring is whole basins; no clipping).
+    Coastal centres have fewer land neighbours — not special-cased, just noted.
+
+    border_bearing is the operationally useful direction: where the crossing happens.
+    centroid_bearing is retained for diagnostic comparison.
+
+    Note (WO17): 486/16,397 L06 basins have centroids outside their own polygon.
+    neighbor_lat/lon use ST_PointOnSurface so that single_basin_signature called on
+    any ring neighbour always resolves to that neighbour's hybas_id, not an adjacent one.
+
+    Parameters
+    ----------
+    lat, lon : float — WGS-84 query point
+    level    : int   — 6 or 8
+    conn     : psycopg3 connection
+
+    Returns
+    -------
+    (center_df, ring_gdf)
+    """
+    table = _LEVEL_TABLE[level]
+
+    row = conn.execute(f"""
+        SELECT hybas_id,
+               ST_Y(ST_Centroid(geom)) AS clat,
+               ST_X(ST_Centroid(geom)) AS clon
+        FROM {table}
+        WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
+    """).fetchone()
+    center_id  = int(row[0])
+    center_lat = float(row[1])
+    center_lon = float(row[2])
+
+    center_df = pd.DataFrame({'hybas_id': [center_id], 'weight': [1.0]})
+    center_df['hybas_id'] = center_df['hybas_id'].astype('int64')
+
+    ring_sql = f"""
+    WITH center AS (
+        SELECT geom FROM {table} WHERE hybas_id = {center_id}
+    )
+    SELECT
+        b.hybas_id,
+        b.sub_area                                                    AS sub_area_km2,
+        b.geom,
+        ST_Y(ST_PointOnSurface(b.geom))                               AS neighbor_lat,
+        ST_X(ST_PointOnSurface(b.geom))                               AS neighbor_lon,
+        ST_Y(ST_Centroid(ST_Intersection(b.geom, c.geom)))            AS border_mid_lat,
+        ST_X(ST_Centroid(ST_Intersection(b.geom, c.geom)))            AS border_mid_lon,
+        CASE
+            WHEN ST_Dimension(ST_Intersection(b.geom, c.geom)) = 1
+            THEN ROUND(
+                (ST_Length(ST_Intersection(b.geom, c.geom)::geography) / 1000.0)::numeric, 2
+            )
+            ELSE 0.0
+        END AS shared_km
+    FROM {table} b, center c
+    WHERE ST_Touches(b.geom, c.geom)
+    ORDER BY b.sub_area DESC
+    """
+    ring_gdf = gpd.read_postgis(ring_sql, conn, geom_col='geom').rename_geometry('geometry')
+    ring_gdf['hybas_id'] = ring_gdf['hybas_id'].astype('int64')
+
+    ring_gdf['border_bearing'] = ring_gdf.apply(
+        lambda r: _bearing(center_lat, center_lon, r['border_mid_lat'], r['border_mid_lon']),
+        axis=1,
+    )
+    ring_gdf['centroid_bearing'] = ring_gdf.apply(
+        lambda r: _bearing(center_lat, center_lon, r['neighbor_lat'], r['neighbor_lon']),
+        axis=1,
+    )
+
+    return center_df, ring_gdf
+
+
+def basin_ring_signature(
+    lat, lon,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+):
+    """
+    Areal signature for a basin-ring neighbourhood: centre + first-order adjacents.
+
+    Unlike buffer/polygon entry points, there is no meaningful aggregate across the
+    ring — the per-neighbour comparison is the payload. Returns a centre signature
+    and one signature per ring member, along with the ring geometry metadata
+    (bearing, shared border length).
+
+    Parameters
+    ----------
+    lat, lon       : float — WGS-84 query point
+    conn           : psycopg3 connection
+    level          : int   — 6 or 8
+    bands          : list[str] or None — passed to each single_basin_signature call
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool
+
+    Returns
+    -------
+    dict — {type, lat, lon, level, center, ring}
+      center : single_basin_signature payload for the containing basin
+      ring   : list of dicts, one per adjacent basin, each containing:
+                 hybas_id, sub_area_km2, shared_km,
+                 border_bearing, centroid_bearing,
+                 neighbor_lat, neighbor_lon,
+                 signature  (single_basin_signature payload)
+    """
+    center_df, ring_gdf = resolve_basin_ring(lat, lon, level, conn)
+
+    center_sig = single_basin_signature(
+        lat, lon, conn,
+        level=level,
+        bands=bands,
+        from_year=from_year,
+        to_year=to_year,
+        include_detail=include_detail,
+    )
+
+    ring_members = []
+    for _, nb in ring_gdf.iterrows():
+        nb_lat = float(nb['neighbor_lat'])
+        nb_lon = float(nb['neighbor_lon'])
+        nb_sig = single_basin_signature(
+            nb_lat, nb_lon, conn,
+            level=level,
+            bands=bands,
+            from_year=from_year,
+            to_year=to_year,
+            include_detail=include_detail,
+        )
+        ring_members.append({
+            'hybas_id':         int(nb['hybas_id']),
+            'sub_area_km2':     float(nb['sub_area_km2']),
+            'shared_km':        float(nb['shared_km']),
+            'border_bearing':   round(float(nb['border_bearing']),   1),
+            'centroid_bearing': round(float(nb['centroid_bearing']), 1),
+            'neighbor_lat':     nb_lat,
+            'neighbor_lon':     nb_lon,
+            'signature':        nb_sig,
+        })
+
+    return {
+        'type':  'basin_ring',
+        'lat':   lat,
+        'lon':   lon,
+        'level': level,
+        'center': center_sig,
+        'ring':   ring_members,
+    }
+
+
+# ── WO20: polygon resolver + polity entry point ───────────────────────────────
+
+def areal_signature_polygon(
+    geom_wkt,
+    conn,
+    level=6,
+    bands=None,
+    from_year=None,
+    to_year=None,
+    include_detail=False,
+    resolver_year=None,
+):
+    """
+    Full areal signature for a polygon geometry.
+
+    The aggregation pipeline is identical to areal_signature (buffer); only the
+    resolver differs. resolve_polygon returns basin_in_polity_fraction per basin;
+    the marginal-exposure diagnostic is computed here and added to the neighborhood
+    block so downstream consumers can assess boundary leverage without a second
+    query.
+
+    Parameters
+    ----------
+    geom_wkt       : str  — WKT polygon (SRID 4326)
+    conn           : psycopg3 connection
+    level          : int  — 6 or 8
+    bands          : list[str] or None — None = A–E (+ T if span given)
+    from_year      : int or None — Band T span start (CE)
+    to_year        : int or None — Band T span end (CE)
+    include_detail : bool
+
+    Returns
+    -------
+    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
+    neighborhood['marginal_exposure'] = {lt_50pct, lt_20pct}: sum of weights for
+    basins where basin_in_polity_fraction < 0.5 / < 0.2 (describe, don't decide).
+    """
+    level_str = f'{level:02d}'
+    basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
+
+    bif = basin_set['basin_in_polity_fraction']
+    me_lt50 = float(basin_set.loc[bif < 0.5, 'weight'].sum())
+    me_lt20 = float(basin_set.loc[bif < 0.2, 'weight'].sum())
+
+    neighborhood = {
+        'type':              'polygon',
+        'level':             level,
+        'n_units':           len(basin_set),
+        'unit_type':         'basin',
+        'marginal_exposure': {
+            'lt_50pct': round(me_lt50, 6),
+            'lt_20pct': round(me_lt20, 6),
+        },
+    }
+
+    payload = _areal_signature_from_basin_set(
+        basin_set, level, conn,
+        neighborhood=neighborhood,
+        shortfall=shortfall,
+        geom_wkt=geom_wkt,
+        bands=bands,
+        from_year=from_year,
+        to_year=to_year,
+        include_detail=include_detail,
+        run_modality=False,
+        resolver_year=resolver_year,
+    )
+    payload['modality_post_pass'] = 'skipped — not calibrated for polygon scale'
+    return payload

@@ -13,11 +13,17 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.settings import settings
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
 from pathlib import Path
 import re
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+# ISO 3166-1 alpha-2 → country name; loaded once at startup from static file.
+_CCODES: Dict[str, str] = json.loads(
+    (Path(__file__).parent.parent / "data" / "ccodes.json").read_text(encoding="utf-8")
+)
 
 
 # -----------------------
@@ -74,7 +80,7 @@ def _whg_suggest_first(prefix: str) -> Optional[Dict[str, Any]]:
     return results[0] if results else None
 
 
-def _whg_suggest(prefix: str, limit: int = 5) -> List[Dict[str, Any]]:
+def _whg_suggest(prefix: str, limit: int = 5, fclasses: str = None, countries: str = None) -> List[Dict[str, Any]]:
     """Call WHG suggest endpoint and return up to `limit` results."""
     if not settings.WHG_API_TOKEN:
         raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
@@ -86,6 +92,10 @@ def _whg_suggest(prefix: str, limit: int = 5) -> List[Dict[str, Any]]:
         "type": "place",
         "token": settings.WHG_API_TOKEN,
     }
+    if fclasses:
+        params["fclasses"] = fclasses
+    if countries:
+        params["countries"] = countries
 
     url = "https://whgazetteer.org/suggest/entity?" + urllib.parse.urlencode(params)
     data = _http_get_json(url)
@@ -105,27 +115,28 @@ def _whg_entity(place_id: str) -> Dict[str, Any]:
 
 def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
     """Extract (lon, lat) from a WHG entity response."""
-    geoms = entity.get("geoms") or []
-    if not geoms:
-        return None
-
-    g0 = geoms[0] or {}
-
-    # Preferred: GeoJSON coordinates
-    gj = g0.get("geojson")
-    if isinstance(gj, dict):
-        coords = gj.get("coordinates")
-        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+    # Current format: GeoJSON Feature with geometry.coordinates
+    geom = entity.get("geometry") or {}
+    if geom.get("type") == "Point":
+        coords = geom.get("coordinates") or []
+        if len(coords) >= 2:
             return float(coords[0]), float(coords[1])
 
-    # Fallbacks
-    coords = g0.get("coordinates")
-    if isinstance(coords, (list, tuple)) and len(coords) >= 2:
-        return float(coords[0]), float(coords[1])
-
-    centroid = g0.get("centroid")
-    if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
-        return float(centroid[0]), float(centroid[1])
+    # Legacy format: geoms[0].geojson.coordinates
+    geoms = entity.get("geoms") or []
+    if geoms:
+        g0 = geoms[0] or {}
+        gj = g0.get("geojson")
+        if isinstance(gj, dict):
+            coords = gj.get("coordinates")
+            if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+                return float(coords[0]), float(coords[1])
+        coords = g0.get("coordinates")
+        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            return float(coords[0]), float(coords[1])
+        centroid = g0.get("centroid")
+        if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
+            return float(centroid[0]), float(centroid[1])
 
     return None
 
@@ -762,6 +773,64 @@ def whg_reconcile(q: str, size: int = 10, bounds: str = None):
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"WHG search failed: {e}")
+
+
+@router.get("/whg/suggest")
+def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
+    """Settlement/site lookup via WHG suggest, filtered to fclasses P (populated) and S (site).
+
+    Accepts an optional `country` free-text string (e.g. "Mali", "ital") which is resolved
+    to an ISO-3166-1 alpha-2 code via ILIKE against gaz.ccodes, then passed to WHG as a
+    countries filter. If the country hint doesn't match, the search proceeds without it.
+
+    The frontend passes a comma-parsed country hint: "Timbuktu, Mali" → q="Timbuktu", country="Mali".
+    """
+    q = (q or "").strip()
+    if not q or len(q) < 2:
+        return {"results": []}
+    limit = max(1, min(limit, 20))
+
+    country = (country or "").strip()
+    ccode = None
+    if country:
+        try:
+            conn = db_connect()
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT iso_a2 FROM gaz.ccodes WHERE name ILIKE %s LIMIT 1",
+                    (f"%{country}%",),
+                )
+                row = cur.fetchone()
+                if row:
+                    ccode = row[0]
+            conn.close()
+        except Exception:
+            pass  # country hint is optional; never blocks search
+
+    try:
+        raw = _whg_suggest(q, limit=limit, fclasses="P,S", countries=ccode)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"WHG suggest failed: {e}")
+
+    results = []
+    for r in raw:
+        pt = r.get("repr_point")
+        if not pt or len(pt) < 2:
+            continue
+        ccs = r.get("ccodes") or []
+        results.append({
+            "id": r.get("id"),
+            "name": r.get("name"),
+            "lon": float(pt[0]),
+            "lat": float(pt[1]),
+            "ccodes": ccs,
+            "alt_names": (r.get("alt_names") or [])[:10],
+            "cname": _CCODES.get(ccs[0], "") if ccs else "",
+        })
+
+    return {"results": results}
 
 
 @router.get("/wh-sites", include_in_schema=False)
@@ -1856,6 +1925,124 @@ def basin_preview(lat: float, lon: float, level: int = 8):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/basin/geom", include_in_schema=False)
+def basin_geom(ids: str, level: int = 6):
+    """Return a GeoJSON FeatureCollection for a comma-separated list of hybas_ids."""
+    try:
+        id_list = [int(x.strip()) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ids must be a comma-separated list of integers")
+    if not id_list:
+        raise HTTPException(status_code=422, detail="ids must not be empty")
+
+    basin_table = "basin06" if level == 6 else "basin08"
+    placeholders = ", ".join(["%s"] * len(id_list))
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT hybas_id, ST_AsGeoJSON(geom, 5) AS geom
+                FROM public.{basin_table}
+                WHERE hybas_id IN ({placeholders})
+            """, id_list)
+            features = [
+                {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(row[0])},
+                    "geometry": json.loads(row[1]),
+                }
+                for row in cur.fetchall()
+            ]
+        return {"type": "FeatureCollection", "features": features}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/basin/buffer", include_in_schema=False)
+def basin_buffer_geom(lat: float, lon: float, radius_km: float = 100.0, level: int = 6):
+    """Basin geometries intersecting a geodesic buffer — no signature computation."""
+    basin_table = "basin06" if level == 6 else "basin08"
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT hybas_id, ST_AsGeoJSON(geom, 5)
+                FROM public.{basin_table}
+                WHERE ST_Intersects(
+                    geom,
+                    ST_Buffer(
+                        ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+                        %s
+                    )::geometry
+                )
+                """,
+                (lon, lat, radius_km * 1000),
+            )
+            features = [
+                {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(row[0])},
+                    "geometry": json.loads(row[1]),
+                }
+                for row in cur.fetchall()
+            ]
+        return {"type": "FeatureCollection", "features": features}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/basin/ring", include_in_schema=False)
+def basin_ring_geom(lat: float, lon: float, level: int = 6):
+    """Fast ring topology: center + ring-member geometry and neighbor coords.
+
+    Returns center and ring as GeoJSON features — no signature computation.
+    neighbor_lat/lon on each ring member is ST_PointOnSurface, safe to pass
+    directly to type=single_basin for per-member signature fetches.
+    """
+    basin_table = "basin06" if level == 6 else "basin08"
+    try:
+        conn = db_connect()
+        center_df, ring_gdf = resolve_basin_ring(lat, lon, level, conn)
+        center_id = int(center_df["hybas_id"].iloc[0])
+
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT ST_AsGeoJSON(geom, 5) FROM public.{basin_table} WHERE hybas_id = %s",
+                (center_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Basin {center_id} not found")
+            center_geom = json.loads(row[0])
+
+        center_feature = {
+            "type": "Feature",
+            "properties": {"hybas_id": center_id},
+            "geometry": center_geom,
+        }
+
+        ring_members = [
+            {
+                "hybas_id": int(r["hybas_id"]),
+                "neighbor_lat": float(r["neighbor_lat"]),
+                "neighbor_lon": float(r["neighbor_lon"]),
+                "feature": {
+                    "type": "Feature",
+                    "properties": {"hybas_id": int(r["hybas_id"])},
+                    "geometry": r.geometry.__geo_interface__,
+                },
+            }
+            for _, r in ring_gdf.iterrows()
+        ]
+
+        return {"center": center_feature, "ring": ring_members}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # -----------------------
 # D-PLACE Societies
 # -----------------------
@@ -2524,6 +2711,7 @@ _HYDE_EPOCH_RANGES = {
     7: (1910,    2025),
 }
 _HYDE_SAFE_VARS = {"cropland", "grazing", "pasture", "rangeland"}
+_LMR_SAFE_VARS  = {"air", "prate"}
 
 # Sidecar written by precompute_hyde_tiles.py; maps {var: {"epoch_N": p99_fraction}}.
 # Loaded once on first request; guarantees legend values match the baked tile vmax.
@@ -2594,6 +2782,98 @@ def explorer_hyde_epoch_max(var: str, epoch: int):
 
     p99 = float(row[0]) if row and row[0] is not None else 1.0
     return {"var": var, "epoch": epoch, "p99_fraction": round(p99, 4)}
+
+
+@router.get("/hyde/values", include_in_schema=False)
+def hyde_values(var: str, year: int, level: int = 6):
+    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
+
+    Year is floor-snapped to the nearest available step in temporal.hyde_times.
+    level=6: temporal.hyde_basin06_steps (~0.033s, 16k basins, WO18).
+    level=8: temporal.hyde_basin08_steps (~0.38s, 190k basins, WO22).
+    Basins with no land coverage are omitted (transparent in choropleth).
+    Fractions clamped to 1.0 (sub_area/covered_km2 mismatch on a small number of basins).
+    Response: {var, year, actual_year, values: {hybas_id: fraction}}
+    """
+    if var not in _HYDE_SAFE_VARS:
+        raise HTTPException(status_code=400, detail=f"var must be one of {_HYDE_SAFE_VARS}")
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+
+    steps_table = f"temporal.hyde_basin0{level}_steps"
+
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT step_idx, year_ce
+                FROM temporal.hyde_times
+                WHERE year_ce <= %(year)s
+                ORDER BY year_ce DESC
+                LIMIT 1
+                """,
+                {"year": year},
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=400, detail=f"No HYDE data at or before year {year}")
+            step_idx, actual_year = int(row[0]), int(row[1])
+
+            # var validated against _HYDE_SAFE_VARS; column name is server-controlled
+            col = f"{var}_frac"
+            cur.execute(
+                f"SELECT hybas_id, {col} FROM {steps_table} WHERE step_idx = %(s)s",
+                {"s": step_idx},
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    values = {
+        str(int(r[0])): min(round(float(r[1]), 6), 1.0) if r[1] is not None else None
+        for r in rows
+    }
+    return {"var": var, "year": year, "actual_year": actual_year, "values": values}
+
+
+@router.get("/lmr/values", include_in_schema=False)
+def lmr_values(var: str, from_year: int, to_year: int):
+    """Return flat {"lat,lon": mean_anomaly} dict for one LMR variable over a CE span.
+
+    Anomalies are vs the CCSM4 model climatology 850–1850 CE (Tardif et al. 2019).
+    Quality floor at 700 CE: actual_from = max(from_year, 700).
+    Spans entirely below 700 CE return an empty values dict.
+    Straddling spans use [700, to_year]; actual_from reflects the effective start.
+    Response: {var, from_year, to_year, actual_from, values: {"lat,lon": mean_anomaly}}
+    """
+    if var not in _LMR_SAFE_VARS:
+        raise HTTPException(status_code=400, detail=f"var must be one of {_LMR_SAFE_VARS}")
+
+    actual_from = max(from_year, 700)
+    if actual_from > to_year:
+        return {"var": var, "from_year": from_year, "to_year": to_year,
+                "actual_from": actual_from, "values": {}}
+
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            # var validated against _LMR_SAFE_VARS; column name is server-controlled
+            cur.execute(
+                f"""
+                SELECT CONCAT(lat, ',', CASE WHEN lon > 180 THEN lon - 360 ELSE lon END),
+                       (SELECT AVG(v) FROM unnest({var}[%(y1)s:%(y2)s]) AS v) AS mean_val
+                FROM temporal.lmr_climate
+                """,
+                {"y1": actual_from, "y2": to_year},
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    values = {r[0]: round(float(r[1]), 6) if r[1] is not None else None for r in rows}
+    return {"var": var, "from_year": from_year, "to_year": to_year,
+            "actual_from": actual_from, "values": values}
 
 
 # -----------------------
@@ -2869,3 +3149,291 @@ def polity_geom(id: int):
         },
         "geometry": r[7],
     }
+
+
+# -----------------------
+# /area endpoint — areal signature for a named polity
+# -----------------------
+
+@router.get("/area")
+def area(
+    polity: str,
+    year: int,
+    level: int = 6,
+    bands: str = "ABCDET",
+    from_year: Optional[int] = None,
+    to_year: Optional[int] = None,
+    detail: bool = False,
+):
+    """Return an areal environmental signature for a named Cliopatria polity.
+
+    Parameters
+    ----------
+    polity     : Cliopatria polity name (exact match, e.g. "Northern Song")
+    year       : resolver year — selects the polity boundary active at this year CE
+    level      : basin hierarchy level — 6 or 8 (default 6)
+    bands      : which bands to compute (default ABCDET)
+    from_year  : Band T span start (CE); required only when T is in bands
+    to_year    : Band T span end (CE); required only when T is in bands
+    detail     : if true, include per-variable histogram objects in the response
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
+
+    requested = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    try:
+        conn = db_connect()
+
+        # Lightweight polity lookup — no basin resolution yet
+        sql_lookup = """
+            SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
+            FROM gaz.clio_polities
+            WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
+        """
+        rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
+
+        if not rows:
+            # Check whether the name exists at any other period (nice-to-have 404 detail)
+            alt_rows = conn.execute(
+                "SELECT fromyear, toyear FROM gaz.clio_polities "
+                "WHERE NOT is_component AND name = %s ORDER BY fromyear",
+                (polity,),
+            ).fetchall()
+            if alt_rows:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "message": f"Polity '{polity}' not active at year {year}",
+                        "available_periods": [
+                            {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
+                        ],
+                    },
+                )
+            raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
+
+        # Multiple matches: pick narrowest temporal span (mirrors resolve_polity)
+        if len(rows) > 1:
+            rows = sorted(rows, key=lambda r: r[3] - r[2])
+        polity_id, polity_name, fromyear, toyear, geom_wkt = (
+            rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
+        )
+
+        band_t_from = from_year if "T" in requested else None
+        band_t_to   = to_year   if "T" in requested else None
+
+        payload = areal_signature_polygon(
+            geom_wkt,
+            conn,
+            level=level,
+            bands=sorted(requested),
+            from_year=band_t_from,
+            to_year=band_t_to,
+            include_detail=detail,
+            resolver_year=year,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+    payload["resolver"] = {
+        "type":      "polity",
+        "polity":    polity_name,
+        "polity_id": int(polity_id),
+        "fromyear":  int(fromyear),
+        "toyear":    int(toyear),
+        "year":      year,
+    }
+    if "T" in requested and band_t_from is not None:
+        payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+    return payload
+
+
+# -----------------------
+# /areas endpoint — type-dispatched areal signature (v2 sandbox)
+# -----------------------
+
+@router.get("/areas")
+def areas(
+    type: str,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    radius_km: Optional[float] = None,
+    polity: Optional[str] = None,
+    year: Optional[int] = None,
+    level: int = 6,
+    bands: str = "ABCDE",
+    from_year: Optional[int] = None,
+    to_year: Optional[int] = None,
+    detail: bool = False,
+):
+    """Areal signature dispatcher for the v2 sandbox.
+
+    Parameters
+    ----------
+    type       : resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring'
+    lat, lon   : WGS-84 query point (required for buffer, single_basin, basin_ring)
+    radius_km  : buffer radius in km (required for buffer)
+    polity     : Cliopatria polity name (required for polity)
+    year       : resolver year — boundary slice CE (required for polity)
+    level      : basin hierarchy level — 6 or 8 (default 6)
+    bands      : band letters to compute (default ABCDE; add T for temporal)
+    from_year  : Band T span start CE (required when T in bands)
+    to_year    : Band T span end CE (required when T in bands)
+    detail     : include per-variable histogram objects in the response
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
+
+    requested = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    # Pass 1 — type-params
+    if type == "buffer":
+        missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=buffer requires: {', '.join(missing)}",
+            )
+    elif type == "single_basin":
+        missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=single_basin requires: {', '.join(missing)}",
+            )
+    elif type == "polity":
+        missing = [p for p, v in [("polity", polity), ("year", year)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=polity requires: {', '.join(missing)}",
+            )
+    elif type == "basin_ring":
+        missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=f"type=basin_ring requires: {', '.join(missing)}",
+            )
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported type '{type}'. Supported: buffer, single_basin, polity, basin_ring",
+        )
+
+    # Pass 2 — Band T span (cross-cutting)
+    if "T" in requested:
+        if from_year is None or to_year is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Band T requires a timespan (from_year, to_year)",
+            )
+
+    band_t_from = from_year if "T" in requested else None
+    band_t_to   = to_year   if "T" in requested else None
+
+    try:
+        conn = db_connect()
+
+        if type == "buffer":
+            payload = areal_signature(
+                lat, lon, radius_km,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        elif type == "single_basin":
+            payload = single_basin_signature(
+                lat, lon,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        elif type == "basin_ring":
+            payload = basin_ring_signature(
+                lat, lon,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+            )
+
+        else:  # polity
+            sql_lookup = """
+                SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
+                FROM gaz.clio_polities
+                WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
+            """
+            rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
+
+            if not rows:
+                alt_rows = conn.execute(
+                    "SELECT fromyear, toyear FROM gaz.clio_polities "
+                    "WHERE NOT is_component AND name = %s ORDER BY fromyear",
+                    (polity,),
+                ).fetchall()
+                if alt_rows:
+                    raise HTTPException(
+                        status_code=404,
+                        detail={
+                            "message": f"Polity '{polity}' not active at year {year}",
+                            "available_periods": [
+                                {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
+                            ],
+                        },
+                    )
+                raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
+
+            if len(rows) > 1:
+                rows = sorted(rows, key=lambda r: r[3] - r[2])
+            polity_id, polity_name, fromyear, toyear, geom_wkt = (
+                rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
+            )
+
+            payload = areal_signature_polygon(
+                geom_wkt,
+                conn,
+                level=level,
+                bands=sorted(requested),
+                from_year=band_t_from,
+                to_year=band_t_to,
+                include_detail=detail,
+                resolver_year=year,
+            )
+            payload["resolver"] = {
+                "type":      "polity",
+                "polity":    polity_name,
+                "polity_id": int(polity_id),
+                "fromyear":  int(fromyear),
+                "toyear":    int(toyear),
+                "year":      year,
+            }
+            if "T" in requested and band_t_from is not None:
+                payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+    return payload

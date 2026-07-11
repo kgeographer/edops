@@ -32,3 +32,11 @@ app.mount(
     StaticFiles(directory="documentation"),
     name="documentation"
 )
+
+# Dev harness: serve exemplar fixtures at /dev/exemplars/ for the fixture-based renderer.
+# output/ is gitignored and absent on the server; the mount silently skips if the dir
+# does not exist so startup is unaffected in non-dev environments.
+try:
+    app.mount("/dev/exemplars", StaticFiles(directory="output/edop/surface/exemplars"), name="dev_exemplars")
+except RuntimeError:
+    pass

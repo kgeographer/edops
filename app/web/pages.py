@@ -1,17 +1,3 @@
-# from fastapi import APIRouter, Request
-# from fastapi.templating import Jinja2Templates
-#
-# router = APIRouter()
-# templates = Jinja2Templates(directory="app/templates")
-#
-#
-# @router.get("/")
-# def index(request: Request):
-#     return templates.TemplateResponse(
-#         "index.html",
-#         {"request": request}
-#     )
-
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
@@ -22,18 +8,22 @@ TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 print("TEMPLATES_DIR =", TEMPLATES_DIR)
 
+def _render(request: Request, name: str):
+    return templates.TemplateResponse(request, name)
+
+
 @router.get("/")
 def index(request: Request):
     host = request.headers.get("host", "")
     if "edops" in host:
-        return templates.TemplateResponse("edops.html", {"request": request})
+        return _render(request, "edops.html")
     if "workbench" in host:
-        return templates.TemplateResponse("workbench.html", {"request": request})
-    return templates.TemplateResponse("index.html", {"request": request})
+        return _render(request, "workbench.html")
+    return _render(request, "index.html")
 
 @router.get("/about")
 def about(request: Request):
-    return templates.TemplateResponse("about.html", {"request": request})
+    return _render(request, "about.html")
 
 @router.get("/edop")
 def edop_redirect():
@@ -47,20 +37,28 @@ def sandbox_redirect():
 
 @router.get("/sandbox/lookup")
 def sandbox_lookup(request: Request):
-    return templates.TemplateResponse("sandbox.html", {"request": request})
+    return _render(request, "sandbox.html")
 
 @router.get("/sandbox/explorer")
 def sandbox_explorer(request: Request):
-    return templates.TemplateResponse("explorer.html", {"request": request})
+    return _render(request, "explorer.html")
 
 @router.get("/edops")
 def edops(request: Request):
-    return templates.TemplateResponse("edops.html", {"request": request})
+    return _render(request, "edops.html")
 
 @router.get("/polities")
 def polities(request: Request):
-    return templates.TemplateResponse("cliopatria.html", {"request": request})
+    return _render(request, "cliopatria.html")
 
 @router.get("/workbench")
 def workbench(request: Request):
-    return templates.TemplateResponse("workbench.html", {"request": request})
+    return _render(request, "workbench.html")
+
+@router.get("/sandbox/lookup2")
+def sandbox_v2(request: Request):
+    return _render(request, "sandbox_v2.html")
+
+@router.get("/sandbox/lookup3")
+def sandbox_v3(request: Request):
+    return _render(request, "sandbox_v3.html")
