@@ -87,15 +87,19 @@ Coherent environmental story; less familiar to Western audiences (a virtue for B
 the Tibetan Empire reasoning). **Elevate to Tier 1 candidate for visual inspection.**
 
 **Qin Dynasty confirmed (-750 to -222 CE):**
-spread_delta=40.79, median_delta=14.48 — strong on both. Median moves dryward → wetter as
-Qin unification expands from the Wei River valley into subtropical south. Already on WO1
-Tier 1; now confirmed by the median test.
+spread_delta=40.79, median_delta=14.48 — strong on both. Median drifts from arid northwest
+(Wei River valley, ~42nd percentile) toward wetter southeast (~57th) as Qin unification
+expands. Already on WO1 Tier 1; now confirmed by the median test.
 
 **N Song (rank 8 on median_delta, within strong-both 87):**
 spread_delta=14.48, median_delta=30.63, monotone on both. In the strong-both set but
 below the displayed top-25 by spread_delta (cutoff at 20.3). Confirmed by the median test.
 
-**Candidates to remove from the shortlist shortlist considerations:**
+**Numerical note:** N Song spread_delta and Qin median_delta are both 14.48. These compute
+different quantities (spread_last − spread_first vs median_last − median_first) for
+different polities on different basin sets. Coincidence; no data issue.
+
+**Candidates removed from shortlist considerations:**
 Median-drift top-20 contains several modern/colonial artifacts (French Fifth Republic,
 German Africa, Vichy France, Free French) that reflect unusual geometry or political
 fragmentation rather than coherent environmental expansion. These are not hero-shot
@@ -156,10 +160,39 @@ slightly from `spread_ovlp`. This is acceptable for a screening check.
 
 ---
 
-## Open / next steps
+## F1a.6 — N Song triptych: three states from six slices
 
-- Run Cell 11 (fractional-overlap spot-check) — expected 2–5 min
-- Update F1a.5 with Cell 11 results
-- Amend `wo1_findings.md` F1.8 with ρ values from F1a.1
-- Finalise 4–5 polity example list once Cell 11 confirms or revises shortlist
-- **Pagan Kingdom** is the key new candidate to inspect visually (WO2 candidate map)
+The per-slice table (F1a.3) reveals that N Song's six Cliopatria slices collapse to three
+distinct environmental states:
+
+| Slice(s) | n_basins | aridity_spread | aridity_median |
+|---|---|---|---|
+| 961, 962–969 | 125 | 35.2 | 46.1 |
+| 970–979 | 184 | 45.5 | 56.6 |
+| 980–989, 990–1017, 1018–1027 | 335–336 | 49.7 | 76.7 |
+
+Three transitions: founding extent → first expansion (~970, adding 59 basins southward) →
+maximum extent (~980, adding 151 more). The last three slices are environmentally identical
+(n_basins=335/336, values equal to one decimal place).
+
+**Presentation unit.** The natural unit for a static exhibit is a triptych: "961", "970",
+"980" — the first slice showing each unique state. Three frames tell the whole story without
+visual redundancy.
+
+**Slider argument, made concrete.** Three of the six current dropdown entries do nothing
+visible — selecting 990, 1017, or 1018 shows the same choropleth as 980. With a
+continuous slider anchored to physical time rather than digitization breakpoints, the user
+could scrub through the segment without three dead steps. The redundant entries are not a
+fault in the data; they reflect the granularity of Cliopatria's digitization. The slider
+replaces the segmentation artifact with the actual boundary year.
+
+**Operational note for WO2:** when scripting the polity maps, only three renders are needed
+for N Song. Use `resolver_year` values 961, 970, 980 and label them accordingly.
+
+---
+
+## Status
+
+WO1a complete (Cells 9–11 run; all accept-gate criteria met). Findings integrated into
+`wo1_findings.md` F1.8. Pagan Kingdom elevated to Tier 1 candidate. Centroid-in screening
+rule vindicated. Shortlist confirmed; visual inspection (WO2 candidate maps) is next.
