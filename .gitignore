@@ -45,6 +45,8 @@ docs/edop/*
 !docs/edop/engine/**
 !docs/edop/surface/
 !docs/edop/surface/**
+!docs/edop/demo/
+!docs/edop/demo/**
 
 # Office temp/lock files
 ~$*

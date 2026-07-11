@@ -502,10 +502,11 @@
 
   function _repaintChoropleth() {
     const key = document.getElementById('v3-basin-var').value;
-    if (!key || key.startsWith('lmr_')) return;
-    const { fromYr } = _activeBandTYears();
-    if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
-    else applyBasinVar(key);
+    if (!key) return;
+    const { fromYr, toYr } = _activeBandTYears();
+    if (key.startsWith('lmr_'))       applyLMRChoropleth(key, fromYr, toYr);
+    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
+    else                              applyBasinVar(key);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -1521,6 +1522,7 @@
     _politySlices = [];
     clearTimeout(_searchTimer);
     document.getElementById('v3-polity-input').value    = '';
+    document.getElementById('v3-polity-input').disabled = false;
     document.getElementById('v3-polity-dropdown').style.display = 'none';
     document.getElementById('v3-polity-dropdown').innerHTML     = '';
     const exSel = document.getElementById('v3-polity-example');
@@ -1617,12 +1619,8 @@
     document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.disabled = false; });
     document.getElementById('v3-polity-level').disabled = false;
 
-    // Auto-fill Band T from full polity lifespan
-    const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
-    const polityTo   = Math.max(..._politySlices.map(s => s.toyear));
+    // Enable Band T; year values set per-slice by applySlice()
     document.getElementById('v3-polity-band-T').checked   = true;
-    document.getElementById('v3-polity-from-year').value  = polityFrom;
-    document.getElementById('v3-polity-to-year').value    = polityTo;
     document.getElementById('v3-polity-t-year-row').classList.remove('d-none');
 
     // Auto-select slice containing targetYear, or default to first
@@ -1653,10 +1651,13 @@
   function applySlice(idx, resolverYear = null) {
     const s = _politySlices[idx];
     if (!s) return;
-    document.getElementById('v3-resolver-year').value = resolverYear ?? s.fromyear;
+    document.getElementById('v3-resolver-year').value       = resolverYear ?? s.fromyear;
+    document.getElementById('v3-polity-from-year').value   = s.fromyear;
+    document.getElementById('v3-polity-to-year').value     = s.toyear;
     drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
+    _repaintChoropleth();
   }
 
   document.getElementById('v3-slice-select').addEventListener('change', function () {
