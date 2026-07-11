@@ -632,64 +632,88 @@ def attach_values(basin_set, meta_df, conn, table, view,
     raw_df = raw_all[keep_cols].copy()
 
     # ── Step 2: position scores for continuous variables ──────────────────────
-    n_nodata_map = {}
-    for api_key, row in cont_vars.iterrows():
-        zf = _parse_zf(row.get('zero_fraction'))
-        is_zero_aware = zf is not None and zf >= zero_fraction_threshold
-        if is_zero_aware:
-            n_nodata_map[api_key] = 0
-        else:
-            n = conn.execute(
-                f"SELECT count(*) FROM {table} "
-                f"WHERE {row['db_col']} = -9999 OR {row['db_col']} IS NULL"
-            ).fetchone()[0]
-            n_nodata_map[api_key] = int(n)
-
-    clean_set    = {k for k, n in n_nodata_map.items() if n == 0}
-    affected_set = set(n_nodata_map) - clean_set
-
-    # Monolithic query for clean vars (no nodata in basin table)
-    select_parts = ['hybas_id']
-    alias_map    = {}
-    for api_key, row in cont_vars.iterrows():
-        if api_key not in clean_set:
-            continue
-        alias = f'pos_{api_key}'
-        zf    = _parse_zf(row.get('zero_fraction'))
-        select_parts.append(
-            f"{rank_expr(row['db_col'], row['position_method'], zf, zero_fraction_threshold)} AS {alias}"
-        )
-        alias_map[alias] = api_key
-
-    clean_sql = (
-        f"WITH ranked AS (SELECT {', '.join(select_parts)} FROM {table}) "
-        f"SELECT * FROM ranked WHERE hybas_id IN ({ids_clause})"
-    )
-    pos_clean = (pd.read_sql(clean_sql, conn)
-                   .set_index('hybas_id')
-                   .rename(columns=alias_map))
-    pos_clean.index = pos_clean.index.astype('int64')
-
-    # Two-pass queries for vars with nodata in the basin table
-    nodata_frames = []
-    for api_key in sorted(affected_set):
-        row   = cont_vars.loc[api_key]
-        alias = f'pos_{api_key}'
-        sql   = two_pass_sql(row['db_col'], alias, row['position_method'],
-                             table, ids_clause)
-        df = (pd.read_sql(sql, conn)
+    if table == 'public.basin08':
+        # Fast path: pre-materialized scores (avoids per-request PERCENT_RANK
+        # over 190k rows; build_basin08_scores.py populates this table once).
+        avail_cols = {row[0] for row in conn.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'basin08_scores' "
+            "AND column_name != 'hybas_id'"
+        ).fetchall()}
+        fetch_cols = [k for k in cont_vars.index if k in avail_cols]
+        if fetch_cols:
+            col_str = ', '.join(f'"{k}"' for k in fetch_cols)
+            pos_df = (
+                pd.read_sql(
+                    f"SELECT hybas_id, {col_str} FROM public.basin08_scores "
+                    f"WHERE hybas_id IN ({ids_clause})",
+                    conn,
+                )
                 .set_index('hybas_id')
-                .rename(columns={alias: api_key}))
-        df.index = df.index.astype('int64')
-        nodata_frames.append(df)
-
-    if nodata_frames:
-        pos_nodata = pd.concat(nodata_frames, axis=1)
+            )
+            pos_df.index = pos_df.index.astype('int64')
+        else:
+            pos_df = pd.DataFrame(index=basin_set.index)
+        pos_df = pos_df.reindex(columns=cont_vars.index)
     else:
-        pos_nodata = pd.DataFrame(index=pos_clean.index)
+        n_nodata_map = {}
+        for api_key, row in cont_vars.iterrows():
+            zf = _parse_zf(row.get('zero_fraction'))
+            is_zero_aware = zf is not None and zf >= zero_fraction_threshold
+            if is_zero_aware:
+                n_nodata_map[api_key] = 0
+            else:
+                n = conn.execute(
+                    f"SELECT count(*) FROM {table} "
+                    f"WHERE {row['db_col']} = -9999 OR {row['db_col']} IS NULL"
+                ).fetchone()[0]
+                n_nodata_map[api_key] = int(n)
 
-    pos_df = (pd.concat([pos_clean, pos_nodata], axis=1)
-                .reindex(columns=cont_vars.index))
+        clean_set    = {k for k, n in n_nodata_map.items() if n == 0}
+        affected_set = set(n_nodata_map) - clean_set
+
+        # Monolithic query for clean vars (no nodata in basin table)
+        select_parts = ['hybas_id']
+        alias_map    = {}
+        for api_key, row in cont_vars.iterrows():
+            if api_key not in clean_set:
+                continue
+            alias = f'pos_{api_key}'
+            zf    = _parse_zf(row.get('zero_fraction'))
+            select_parts.append(
+                f"{rank_expr(row['db_col'], row['position_method'], zf, zero_fraction_threshold)} AS {alias}"
+            )
+            alias_map[alias] = api_key
+
+        clean_sql = (
+            f"WITH ranked AS (SELECT {', '.join(select_parts)} FROM {table}) "
+            f"SELECT * FROM ranked WHERE hybas_id IN ({ids_clause})"
+        )
+        pos_clean = (pd.read_sql(clean_sql, conn)
+                       .set_index('hybas_id')
+                       .rename(columns=alias_map))
+        pos_clean.index = pos_clean.index.astype('int64')
+
+        # Two-pass queries for vars with nodata in the basin table
+        nodata_frames = []
+        for api_key in sorted(affected_set):
+            row   = cont_vars.loc[api_key]
+            alias = f'pos_{api_key}'
+            sql   = two_pass_sql(row['db_col'], alias, row['position_method'],
+                                 table, ids_clause)
+            df = (pd.read_sql(sql, conn)
+                    .set_index('hybas_id')
+                    .rename(columns={alias: api_key}))
+            df.index = df.index.astype('int64')
+            nodata_frames.append(df)
+
+        if nodata_frames:
+            pos_nodata = pd.concat(nodata_frames, axis=1)
+        else:
+            pos_nodata = pd.DataFrame(index=pos_clean.index)
+
+        pos_df = (pd.concat([pos_clean, pos_nodata], axis=1)
+                    .reindex(columns=cont_vars.index))
 
     # ── Step 3: categorical class labels (from view) and IDs (from raw table) ─
     class_label_rows = {}

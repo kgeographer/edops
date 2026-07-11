@@ -2785,18 +2785,22 @@ def explorer_hyde_epoch_max(var: str, epoch: int):
 
 
 @router.get("/hyde/values", include_in_schema=False)
-def hyde_values(var: str, year: int):
+def hyde_values(var: str, year: int, level: int = 6):
     """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
 
     Year is floor-snapped to the nearest available step in temporal.hyde_times.
-    Values from temporal.hyde_basin06_steps — area-weighted aggregate via crosswalk
-    (temporal.hyde_basin06_weights), ~0.033s for 16k basins (WO18).
-    116 island/coastal basins with no land coverage are omitted (null in choropleth).
-    Fractions clamped to 1.0 (one basin has sub_area < covered_km2 by 0.16%).
+    level=6: temporal.hyde_basin06_steps (~0.033s, 16k basins, WO18).
+    level=8: temporal.hyde_basin08_steps (~0.38s, 190k basins, WO22).
+    Basins with no land coverage are omitted (transparent in choropleth).
+    Fractions clamped to 1.0 (sub_area/covered_km2 mismatch on a small number of basins).
     Response: {var, year, actual_year, values: {hybas_id: fraction}}
     """
     if var not in _HYDE_SAFE_VARS:
         raise HTTPException(status_code=400, detail=f"var must be one of {_HYDE_SAFE_VARS}")
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+
+    steps_table = f"temporal.hyde_basin0{level}_steps"
 
     conn = db_connect()
     try:
@@ -2819,7 +2823,7 @@ def hyde_values(var: str, year: int):
             # var validated against _HYDE_SAFE_VARS; column name is server-controlled
             col = f"{var}_frac"
             cur.execute(
-                f"SELECT hybas_id, {col} FROM temporal.hyde_basin06_steps WHERE step_idx = %(s)s",
+                f"SELECT hybas_id, {col} FROM {steps_table} WHERE step_idx = %(s)s",
                 {"s": step_idx},
             )
             rows = cur.fetchall()
@@ -2857,7 +2861,7 @@ def lmr_values(var: str, from_year: int, to_year: int):
             # var validated against _LMR_SAFE_VARS; column name is server-controlled
             cur.execute(
                 f"""
-                SELECT CONCAT(lat, ',', lon),
+                SELECT CONCAT(lat, ',', CASE WHEN lon > 180 THEN lon - 360 ELSE lon END),
                        (SELECT AVG(v) FROM unnest({var}[%(y1)s:%(y2)s]) AS v) AS mean_val
                 FROM temporal.lmr_climate
                 """,
