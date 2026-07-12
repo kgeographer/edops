@@ -165,5 +165,84 @@ is smaller than its historical maximum.
 
 ## Status
 
-Step 1 complete. All eight diagnosis items answered. Findings gate the build.
-Step 2 may begin: 2a (slider + VCR), 2b (hide Band T inputs + fix label), 2c (coverage guards).
+Step 1 complete. All eight diagnosis items answered.
+
+---
+
+# WO2 findings — Step 2 build
+
+---
+
+## S1 — No-detents slider: label snaps, handle does not
+
+The WO spec said "draggable, no detents." Implementation separates two concerns:
+- **Label**: updates on every `input` event (drag) to nearest slice — gives live feedback
+- **Data**: commits on `change` event (release) to nearest slice
+- **Handle position**: never moved programmatically after initial load — stays where user released
+
+This means the handle position does not snap to slice positions; users feel smooth drag.
+VCR buttons (`⏮ ◀ ▶ ▶|`) do move the handle (they set `slider.value` explicitly before
+calling `applySlice`), giving crisp single-step movement.
+
+`_polityCurrentIdx` tracks the committed slice index; `updatePolityButton()` gates on
+`_polityCurrentIdx >= 0` (not on the old select value).
+
+---
+
+## S2 — Hidden select retained for test compatibility
+
+`#v3-slice-select` is kept in the DOM as `class="d-none"` and is still populated with
+slice options and enabled/disabled correctly. Playwright tests that reference it by ID
+(`select_option`, `is_disabled`) continue to work without modification. The hidden select
+is not user-facing.
+
+---
+
+## S3 — Band T year row: permanently hidden on Polities tab
+
+`v3-polity-t-year-row` starts `d-none` and is never revealed. The reveal logic that
+previously fired on Band T checkbox click (`updatePolityBandT`) is removed entirely.
+Hidden inputs still hold values written by `applySlice()` and read by the sig button
+and `_activeBandTYears()`. The DOM element approach allows full test coverage without
+exposing the controls to users.
+
+---
+
+## S4 — Coverage guard: two tiers
+
+**Polity-level** (`selectPolity`): `hasLMR = slices.some(s => s.toyear >= 700)`. If all
+slices are BCE, LMR options in `#v3-basin-var` are disabled immediately on polity load
+with the message "LMR data begins 700 CE — this polity predates the record."
+
+**Slice-level** (`applyLMRChoropleth`): fires when a straddle polity (e.g. Tibetan
+Empire, hasLMR=true) is on a sub-700 CE slice. `/api/lmr/values` returns `n=0`;
+the guard message is "LMR data begins 700 CE — this slice (FROM–TO) predates the record."
+
+The two guards are independent and additive. A straddle polity starts with LMR enabled
+(polity guard passes), then shows the slice guard when scrubbed below the floor.
+
+---
+
+## S5 — HYDE in signature: nearest-year fallback (engine fix)
+
+**Finding:** `aggregate_band_t` used `WHERE year_ce BETWEEN from_year AND to_year`.
+HYDE's centennial cadence means any narrow polity slice (e.g. 961–961, –318 to –316)
+has zero matching epochs. Band T was therefore absent or HYDE-free for the majority of
+polity slices, regardless of HYDE's actual historical coverage.
+
+Confirmed via Maurya Empire screenshot: 318–316 BCE slice returned Bands A–E only.
+
+**Fix:** `epochs` CTE split into `in_span` + fallback. When `in_span` is empty, the
+nearest HYDE step is selected with `ORDER BY ABS(year_ce - mid) LIMIT 1`. Fallback rows
+carry `hyde_nearest_year` caveat. `renderTBand` marks fallback epochs `~YEAR CE` and
+adds a footnote.
+
+**Invariant preserved:** wide spans that already straddled exact HYDE steps are unchanged
+(fallback's `WHERE NOT EXISTS (SELECT 1 FROM in_span)` prevents duplication).
+
+---
+
+## Status
+
+WO2 complete. 4 commits on `wo2`. 580 tests pass, 50 skipped.
+Accept gate: Karl browser review → merge `wo2 → demo`.

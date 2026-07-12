@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-11
+- **Last updated:** 2026-07-12
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,7 +50,7 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**571 tests pass, 50 skipped.**
+**580 tests pass, 50 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle.
@@ -59,8 +59,10 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 `docs/edop/demo/wo1a_findings.md`; notebook in
 `notebooks/edop/demo/wo1_within_polity_variance.ipynb`; merged to `demo` 2026-07-11.
 
-**WO2 Step 1 complete** — diagnosis finished; findings in `docs/edop/demo/wo2_findings.md`.
-Step 2 (slider + VCR, hide Band T inputs on Polities tab, coverage guards) is next.
+**WO2 complete** — slice slider + VCR, Band T inputs hidden on Polities tab, coverage
+guards (BCE + below-floor), HYDE nearest-year fallback (Band T always present in
+signature), polity examples added, Polities tab now default. Findings in
+`docs/edop/demo/wo2_findings.md`. **Pending:** Karl browser accept gate → merge `wo2 → demo`.
 
 ---
 
@@ -69,7 +71,7 @@ Step 2 (slider + VCR, hide Band T inputs on Polities tab, coverage guards) is ne
 | Item | What | Status |
 |---|---|---|
 | Within-polity-variance ranking notebook (WO1 + WO1a) | Rank polities by spread; trajectory + size-confound validation; membership spot-check; hero-shot shortlist confirmed | **complete** |
-| Continuous time slider | Replace polity-slice dropdown with no-steps slider + year readout; decouple time control from digitization breakpoints | pending |
+| Continuous time slider + signature fixes (WO2) | Slider + VCR, Band T inputs hidden, coverage guards, HYDE nearest-year fallback, polity examples | **complete — pending accept gate** |
 | Money shot curation | Identify 2–3 polity/variable/history triples for demo; requires notebook output | pending |
 | L06 ↔ L08 scale compare (MAUP demo) | Side-by-side view at two scales; Track 1 feature after hero shots confirmed | pending |
 | Analysis tab port/review | Content exists in v1; port/expand only if it carries a demo point | pending Track-2 pull |
