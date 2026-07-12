@@ -102,9 +102,10 @@
                 <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
                 <select id="v3-example-select" class="form-select form-select-sm text-muted">
                   <option value="">Load an example</option>
-                  <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
-                  <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
-                  <option value="ring|16.8167,-2.9833|Timbuktu|1400|1500">Timbuktu — basin ring</option>
+                  <option value="16.8167,-2.9833|Timbuktu|1475|1525">Timbuktu, Mali (1475–1525 CE)</option>
+                  <option value="34.7975,114.3074|Kaifeng|965|990">Kaifeng, China (965–990 CE)</option>
+                  <option value="41.6938,44.8015|Tbilisi|1150|1250">Tbilisi, Georgia (1150–1250 CE)</option>
+                  <option value="35.6870,-105.9378|Santa Fe|900|1000">Santa Fe, NM (900–1000 CE)</option>
                 </select>
               </div>
 
@@ -880,17 +881,16 @@
   // ── Example handler (Settlements tab) ────────────────────────────────────
   document.getElementById('v3-example-select').addEventListener('change', function () {
     if (!this.value) return;
-    const parts = this.value.split('|');
-    const scope = parts[0];
+    // format: lat,lon|name|from_year|to_year
+    const parts    = this.value.split('|');
+    const coords   = (parts[0] || '').split(',');
+    const fromYear = parts[2];
+    const toYear   = parts[3];
 
-    // Resolve field locks — example path is committed
-    document.getElementById('v3-place-input').disabled  = true;
-    document.getElementById('v3-resolve-btn').disabled  = true;
-
-    const coords = (parts[1] || '').split(',');
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
 
+    // Place marker
     if (currentLat && currentLon) {
       if (_pointMarker) _pointMarker.remove();
       _pointMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -898,26 +898,23 @@
         .addTo(map);
     }
 
-    if (scope === 'buffer') {
-      document.getElementById('v3-radius').value = parts[3] ?? 100;
-    }
-    if (scope === 'ring' && parts[3] && parts[4]) {
-      document.getElementById('v3-band-T').checked = true;
-      document.getElementById('v3-from-year').value = parts[3];
-      document.getElementById('v3-to-year').value   = parts[4];
-      updateBandT();
-    }
+    // Enable Band T and set the time span
+    document.getElementById('v3-band-T').checked     = true;
+    document.getElementById('v3-from-year').value    = fromYear ?? '';
+    document.getElementById('v3-to-year').value      = toYear   ?? '';
+    updateBandT();
 
-    const scopeSelect = document.getElementById('v3-scope-select');
-    scopeSelect.value = scope;
-    document.getElementById('v3-level').value    = '6';  // examples always at L06
-    document.getElementById('v3-level').disabled = false;
+    // Lock resolve path; set scope to single; enable level
+    document.getElementById('v3-place-input').disabled = true;
+    document.getElementById('v3-resolve-btn').disabled = true;
+    document.getElementById('v3-scope-select').value   = 'single';
+    document.getElementById('v3-level').value          = '6';
+    document.getElementById('v3-level').disabled       = false;
     document.getElementById('v3-scope-wrap').style.display = '';
-    applyScope(scope);
+    applyScope('single');
     updateSigButton();
 
-    _drawScopePreview(scope);
-
+    _drawScopePreview('single');
     _revealLowerPanel();
   });
 
@@ -2192,7 +2189,7 @@
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
 
-  const map = new maplibregl.Map({
+  const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
     center: [10, 20],
     zoom: 1,
