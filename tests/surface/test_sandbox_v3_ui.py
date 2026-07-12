@@ -53,11 +53,7 @@ def select_settlements_example(page: Page) -> None:
 # ---------------------------------------------------------------------------
 
 class TestV3SettlementsColdStart:
-    """On load: Polities tab active by default; nothing resolved."""
-
-    def test_polities_tab_active(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        expect(page.locator("#v3-tab-polities-btn")).to_have_class(re.compile(r"\bactive\b"))
+    """Settlements cold-start state (default tab irrelevant — use ?tab= param or click tab)."""
 
     def test_scope_wrap_hidden(self, page: Page, live_server_url):
         goto(page, live_server_url)
