@@ -216,6 +216,7 @@
                   <option value="polity|Tibetan Empire">Tibetan Empire (623–849 CE)</option>
                   <option value="polity|Tang Dynasty">Tang Dynasty (618–907 CE)</option>
                   <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
+                  <option value="polity|Qin">Qin (750–222 BCE) — no LMR</option>
                 </select>
               </div>
 
@@ -1521,9 +1522,26 @@
     document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
   }
 
+  function _setLMRAvailability(available, reason) {
+    const varSel = document.getElementById('v3-basin-var');
+    ['lmr_temp_anomaly', 'lmr_precip_anomaly'].forEach(val => {
+      const opt = varSel.querySelector(`option[value="${val}"]`);
+      if (opt) opt.disabled = !available;
+    });
+    if (!available) {
+      if (['lmr_temp_anomaly', 'lmr_precip_anomaly'].includes(varSel.value)) {
+        varSel.value = '';
+        hideLMRLayer();
+        document.getElementById('v3-basin-legend').style.display = 'none';
+      }
+      if (reason) document.getElementById('v3-basin-status').textContent = reason;
+    }
+  }
+
   function resetPolities() {
     _polityName   = null;
     _politySlices = [];
+    _setLMRAvailability(true, null);
     clearTimeout(_searchTimer);
     document.getElementById('v3-polity-input').value    = '';
     document.getElementById('v3-polity-input').disabled = false;
@@ -1619,6 +1637,10 @@
     const r = await fetch(`/api/polity/slices?name=${encodeURIComponent(name)}`);
     if (!r.ok) return;
     _politySlices = await r.json();
+
+    const hasLMR = _politySlices.some(s => s.toyear >= 700);
+    _setLMRAvailability(hasLMR,
+      hasLMR ? null : 'LMR data begins 700 CE — this polity predates the record');
 
     // Keep hidden select populated for test compat
     const sliceSel = document.getElementById('v3-slice-select');
@@ -2023,6 +2045,14 @@
     const nums   = Object.values(values).filter(v => v != null);
     const sorted = [...nums].sort((a, b) => a - b);
     const n      = sorted.length;
+    if (n === 0) {
+      hideLMRLayer();
+      document.getElementById('v3-basin-legend').style.display = 'none';
+      const floor = actualFrom ?? 700;
+      statusEl.textContent = `LMR data begins ${floor} CE — this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates the record`;
+      _lmrPainting = false;
+      return;
+    }
     const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
     const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
     const absMax = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
