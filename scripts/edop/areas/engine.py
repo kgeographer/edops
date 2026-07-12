@@ -759,6 +759,9 @@ CAVEAT_TEXTS = {
         "HYDE 3.4 cadence-transition artifact: 1950 is the last centennial/decadal "
         "epoch before annual data begins; value may not reflect real land-use change."
     ),
+    'hyde_nearest_year': (
+        "No HYDE 3.4 epoch falls within this span; nearest available step shown."
+    ),
 }
 
 def make_row(
@@ -957,12 +960,27 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     # ── HYDE ──────────────────────────────────────────────────────────────────
     # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
     # extracts the correct array element without re-scanning hyde_cells.
+    # Nearest-year fallback: if no HYDE step falls within the span (common for
+    # narrow polity slices between centennial epochs), use the closest epoch so
+    # that some HYDE context always appears in the signature.
+    mid = (from_year + to_year) // 2
     hyde_sql = f"""
     WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
-    epochs AS (
+    in_span AS (
         SELECT step_idx, year_ce
         FROM temporal.hyde_times
         WHERE year_ce BETWEEN {from_year} AND {to_year}
+    ),
+    epochs AS (
+        SELECT step_idx, year_ce, false AS is_nearest FROM in_span
+        UNION ALL
+        SELECT step_idx, year_ce, true AS is_nearest
+        FROM (
+            SELECT step_idx, year_ce
+            FROM temporal.hyde_times
+            ORDER BY ABS(year_ce - {mid}) LIMIT 1
+        ) nearest_fallback
+        WHERE NOT EXISTS (SELECT 1 FROM in_span)
     ),
     cell_overlaps AS (
         SELECT area_km2,
@@ -972,7 +990,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
         WHERE ST_Intersects(hc.geom, buf.buf_geom)
     )
     SELECT
-        e.year_ce, e.step_idx,
+        e.year_ce, e.step_idx, e.is_nearest,
         co.area_km2, co.overlap_m2,
         co.cropland [e.step_idx + 1] AS cropland,
         co.grazing  [e.step_idx + 1] AS grazing,
@@ -987,6 +1005,8 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     for year_ce, grp in hyde_ts.groupby('year_ce', sort=True):
         yr     = int(year_ce)
         caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
+        if bool(grp['is_nearest'].iloc[0]):
+            caveat.append('hyde_nearest_year')
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
             agg = _agg_hyde_b7(grp, var, buf_area_m2)

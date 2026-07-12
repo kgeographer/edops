@@ -58,13 +58,13 @@ class TestForkTabs:
         el = page.find(id="v3-tab-polities-btn")
         assert el is not None, "#v3-tab-polities-btn missing"
 
-    def test_settlements_tab_active_on_load(self, page):
-        el = page.find(id="v3-tab-settlements-btn")
-        assert "active" in el.get("class", []), "Settlements tab must be active on load"
-
-    def test_polities_tab_not_active_on_load(self, page):
+    def test_polities_tab_active_on_load(self, page):
         el = page.find(id="v3-tab-polities-btn")
-        assert "active" not in el.get("class", []), "Polities tab must not be active on load"
+        assert "active" in el.get("class", []), "Polities tab must be active on load"
+
+    def test_settlements_tab_not_active_on_load(self, page):
+        el = page.find(id="v3-tab-settlements-btn")
+        assert "active" not in el.get("class", []), "Settlements tab must not be active on load"
 
     def test_reset_button_present(self, page):
         el = page.find(id="v3-reset-btn")
@@ -120,6 +120,13 @@ POLITIES_REQUIRED_IDS = [
     "v3-polity-dropdown",
     "v3-polity-example-row",
     "v3-polity-example",
+    "v3-slice-control",
+    "v3-slice-slider",
+    "v3-slice-label",
+    "v3-btn-first",
+    "v3-btn-prev",
+    "v3-btn-play",
+    "v3-btn-next",
     "v3-slice-select",
     "v3-resolver-year",
     "v3-polity-band-checks",

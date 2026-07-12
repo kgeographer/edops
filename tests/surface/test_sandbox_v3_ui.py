@@ -43,6 +43,7 @@ def click_settlements_tab(page: Page) -> None:
 
 
 def select_settlements_example(page: Page, value: str) -> None:
+    click_settlements_tab(page)
     page.select_option("#v3-example-select", value)
 
 
@@ -51,11 +52,11 @@ def select_settlements_example(page: Page, value: str) -> None:
 # ---------------------------------------------------------------------------
 
 class TestV3SettlementsColdStart:
-    """On load: Settlements tab active, nothing resolved."""
+    """On load: Polities tab active by default; nothing resolved."""
 
-    def test_settlements_tab_active(self, page: Page, live_server_url):
+    def test_polities_tab_active(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        expect(page.locator("#v3-tab-settlements-btn")).to_have_class(re.compile(r"\bactive\b"))
+        expect(page.locator("#v3-tab-polities-btn")).to_have_class(re.compile(r"\bactive\b"))
 
     def test_scope_wrap_hidden(self, page: Page, live_server_url):
         goto(page, live_server_url)
@@ -83,6 +84,7 @@ class TestV3SettlementsColdStart:
 
     def test_example_row_visible(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         expect(page.locator("#v3-example-row")).to_be_visible()
 
     def test_t_year_row_hidden(self, page: Page, live_server_url):
@@ -198,12 +200,14 @@ class TestV3BandTToggle:
 
     def test_check_shows_year_row(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         expect(page.locator("#v3-t-year-row")).to_be_hidden()
         page.check("#v3-band-T")
         expect(page.locator("#v3-t-year-row")).to_be_visible()
 
     def test_uncheck_hides_year_row(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         page.check("#v3-band-T")
         page.uncheck("#v3-band-T")
         expect(page.locator("#v3-t-year-row")).to_be_hidden()
@@ -336,7 +340,7 @@ class TestV3PolitiesExampleReveal:
     def _load_nsong(self, page: Page, live_server_url: str) -> None:
         goto(page, live_server_url)
         click_polities_tab(page)
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         # Wait for async slices fetch to complete
         page.wait_for_function(
             "document.getElementById('v3-slice-select').options.length > 1",
@@ -357,22 +361,34 @@ class TestV3PolitiesExampleReveal:
         self._load_nsong(page, live_server_url)
         expect(page.locator("#v3-polity-band-T")).to_be_checked()
 
-    def test_t_year_row_visible(self, page: Page, live_server_url):
+    def test_t_year_row_hidden(self, page: Page, live_server_url):
+        """Year row stays hidden on Polities tab — span is the slice's own span."""
         self._load_nsong(page, live_server_url)
-        expect(page.locator("#v3-polity-t-year-row")).to_be_visible()
+        expect(page.locator("#v3-polity-t-year-row")).to_be_hidden()
+
+    def test_slice_control_visible(self, page: Page, live_server_url):
+        """Slider control div is revealed after polity loads."""
+        self._load_nsong(page, live_server_url)
+        expect(page.locator("#v3-slice-control")).to_be_visible()
+
+    def test_slice_label_populated(self, page: Page, live_server_url):
+        """Slice label shows ordinal and year span after polity loads."""
+        self._load_nsong(page, live_server_url)
+        label = page.locator("#v3-slice-label").text_content()
+        assert "Slice" in label and "of" in label
 
     def test_t_span_filled_from_polity_lifespan(self, page: Page, live_server_url):
-        """Band T span is a valid non-empty range drawn from DB slice extents."""
+        """Band T span mirrors the active slice (zero-width slices are valid)."""
         self._load_nsong(page, live_server_url)
         from_yr = int(page.locator("#v3-polity-from-year").input_value())
         to_yr   = int(page.locator("#v3-polity-to-year").input_value())
-        assert from_yr < to_yr
+        assert from_yr <= to_yr
 
     def test_search_input_locked(self, page: Page, live_server_url):
         """Example path removes the alternate entry: search input is disabled."""
         goto(page, live_server_url)
         click_polities_tab(page)
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         # Disabled synchronously before the async fetch
         expect(page.locator("#v3-polity-input")).to_be_disabled()
 
@@ -381,7 +397,7 @@ class TestV3PolitiesExampleReveal:
         goto(page, live_server_url)
         click_polities_tab(page)
         expect(page.locator("#v3-polity-level")).to_be_disabled()
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         page.wait_for_function(
             "document.getElementById('v3-slice-select').options.length > 1",
             timeout=10000,
