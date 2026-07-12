@@ -1351,11 +1351,15 @@
 
     const hydePresent = HYDE_VARS.filter(v => byVar[v]);
     if (hydePresent.length) {
-      const epochRows = byVar[hydePresent[0]];
+      const epochRows    = byVar[hydePresent[0]];
+      const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
       html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
-        <table class="table table-sm mb-2" style="font-size:0.78rem;">
+        <table class="table table-sm mb-1" style="font-size:0.78rem;">
           <thead><tr><th></th>`;
-      for (const r of epochRows) html += `<th class="text-muted">${r.epoch_year ?? r.year} CE</th>`;
+      for (const r of epochRows) {
+        const near = r.caveat?.includes('hyde_nearest_year');
+        html += `<th class="text-muted">${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
+      }
       html += `</tr></thead><tbody>`;
       for (const v of hydePresent) {
         html += `<tr><td>${HYDE_LABELS[v] || v}</td>`;
@@ -1365,6 +1369,8 @@
         html += `</tr>`;
       }
       html += `</tbody></table>`;
+      if (hasNearest)
+        html += `<p class="text-muted mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
     }
 
     if (byVar['evolv2k_vssi']) {
