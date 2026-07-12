@@ -59,7 +59,8 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 `docs/edop/demo/wo1a_findings.md`; notebook in
 `notebooks/edop/demo/wo1_within_polity_variance.ipynb`; merged to `demo` 2026-07-11.
 
-**WO2 TBD** — hero-shot shortlist confirmed; next step TBD with Opus.
+**WO2 Step 1 complete** — diagnosis finished; findings in `docs/edop/demo/wo2_findings.md`.
+Step 2 (slider + VCR, hide Band T inputs on Polities tab, coverage guards) is next.
 
 ---
 
@@ -82,8 +83,12 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 
 - **`sandbox.html` (Lookup) and `explorer.html` (Explorer) are public, all-green, untouched.**
   Do not edit them. DEMO work is additive on `sandbox_v3.html`.
-- **Two temporal axes remain independent** — `resolver_year` (polity boundary) and Band T span
-  (`from_year`/`to_year`). Do not collapse them into one control.
+- **Two temporal axes: independent on Settlements, slice-determined on Polities.**
+  On the Settlements tab a point has no span of its own; `resolver_year` and Band T span are
+  genuinely independent user choices. On the Polities tab, `resolver_year` and Band T span are
+  the same fact — delivered by the active slice. Band T inputs on the Polities tab are read-only
+  plumbing that mirrors the slice; they are not exposed to the user. (Scoping correction locked
+  2026-07-11; original "do not collapse" principle holds for the Settlements tab.)
 - **Expose only what a demo or slide uses** — the discipline is demand-driven, not
   "the control is sitting there empty."
 - **Track 3 legibility is last** — prerequisite is feature-freeze. Do not write "here's what
@@ -104,6 +109,13 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 Append-only; dated. Settled unless explicitly revisited here.
 
 **2026-07-11**
+
+- **Two-axis scoping: independent on Settlements, slice-determined on Polities** — the
+  "two axes remain independent" standing constraint applies to the Settlements tab only. On
+  the Polities tab, `resolver_year` and the Band T span are the same fact (delivered by the
+  active Cliopatria slice); they cannot be set independently without mispairing a border with
+  a value it did not hold. Band T inputs on the Polities tab are hidden — read-only plumbing
+  that `applySlice()` writes and the API reads; the user never sees them.
 
 - **Band T tracks the active polity slice** — `applySlice()` writes `s.fromyear`/`s.toyear`
   to the Band T inputs and repaints the choropleth on every slice change. Aggregating over

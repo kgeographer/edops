@@ -215,12 +215,19 @@
                 </select>
               </div>
 
-              <!-- Time slice — visible but disabled at cold start -->
-              <div class="mb-2">
-                <select id="v3-slice-select" class="form-select form-select-sm" disabled>
-                  <option value="">Select time slice</option>
-                </select>
+              <!-- Time slice control — slider + VCR (replaces dropdown) -->
+              <div id="v3-slice-control" class="d-none mb-2">
+                <div class="d-flex gap-1 align-items-center mb-1">
+                  <button id="v3-btn-first" class="btn btn-sm btn-outline-secondary" disabled title="First slice"><i class="bi bi-skip-start-fill"></i></button>
+                  <button id="v3-btn-prev"  class="btn btn-sm btn-outline-secondary" disabled title="Previous slice"><i class="bi bi-chevron-left"></i></button>
+                  <button id="v3-btn-play"  class="btn btn-sm btn-outline-secondary" disabled title="Play through slices"><i class="bi bi-play-fill"></i></button>
+                  <button id="v3-btn-next"  class="btn btn-sm btn-outline-secondary" disabled title="Next slice"><i class="bi bi-chevron-right"></i></button>
+                </div>
+                <input id="v3-slice-slider" type="range" class="form-range mb-1" disabled style="width:100%;">
+                <div id="v3-slice-label" style="font-size:0.78rem; color:#6c757d; min-height:1.1em;"></div>
               </div>
+              <!-- Hidden sync element kept for test compat; not a user control -->
+              <select id="v3-slice-select" class="d-none" disabled></select>
               <input type="hidden" id="v3-resolver-year" value="">
 
               <!-- Level + Signature Bands (T pre-checked; all disabled at cold start) -->
@@ -1500,22 +1507,15 @@
   }
 
   // ── Polities tab state machine ───────────────────────────────────────────
-  let _polityName   = null;
-  let _politySlices = [];
-  let _searchTimer  = null;
+  let _polityName       = null;
+  let _politySlices     = [];
+  let _polityCurrentIdx = -1;
+  let _polityPlayTimer  = null;
+  let _searchTimer      = null;
 
   function updatePolityButton() {
-    const sliceVal = document.getElementById('v3-slice-select').value;
-    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && sliceVal !== '');
+    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
   }
-
-  function updatePolityBandT() {
-    const tChecked = document.getElementById('v3-polity-band-T').checked;
-    document.getElementById('v3-polity-t-year-row').classList.toggle('d-none', !tChecked);
-  }
-  document.querySelectorAll('.v3-polity-band-chk').forEach(cb => {
-    cb.addEventListener('change', updatePolityBandT);
-  });
 
   function resetPolities() {
     _polityName   = null;
@@ -1528,6 +1528,13 @@
     const exSel = document.getElementById('v3-polity-example');
     exSel.value    = '';
     exSel.disabled = false;
+    _polityCurrentIdx = -1;
+    stopPolityPlay();
+    document.getElementById('v3-slice-control').classList.add('d-none');
+    document.getElementById('v3-slice-slider').disabled = true;
+    document.getElementById('v3-slice-label').textContent = '';
+    ['v3-btn-first','v3-btn-prev','v3-btn-play','v3-btn-next'].forEach(id =>
+      document.getElementById(id).disabled = true);
     const sliceSel = document.getElementById('v3-slice-select');
     sliceSel.innerHTML = '<option value="">Select time slice</option>';
     sliceSel.disabled  = true;
@@ -1609,6 +1616,7 @@
     if (!r.ok) return;
     _politySlices = await r.json();
 
+    // Keep hidden select populated for test compat
     const sliceSel = document.getElementById('v3-slice-select');
     sliceSel.innerHTML = _politySlices.map((s, i) =>
       `<option value="${i}">${formatYear(s.fromyear)} – ${formatYear(s.toyear)}</option>`
@@ -1619,9 +1627,11 @@
     document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.disabled = false; });
     document.getElementById('v3-polity-level').disabled = false;
 
-    // Enable Band T; year values set per-slice by applySlice()
-    document.getElementById('v3-polity-band-T').checked   = true;
-    document.getElementById('v3-polity-t-year-row').classList.remove('d-none');
+    // Enable Band T (year row stays hidden — span is the slice's own span on Polities tab)
+    document.getElementById('v3-polity-band-T').checked = true;
+
+    // Init slider control
+    initSliceControl();
 
     // Auto-select slice containing targetYear, or default to first
     let idx = 0;
@@ -1629,7 +1639,7 @@
       const found = _politySlices.findIndex(s => s.fromyear <= targetYear && s.toyear >= targetYear);
       if (found >= 0) idx = found;
     }
-    sliceSel.value = String(idx);
+    document.getElementById('v3-slice-slider').value = _politySlices[idx].fromyear;
     applySlice(idx, targetYear);
     _showMapTab();
   }
@@ -1651,19 +1661,104 @@
   function applySlice(idx, resolverYear = null) {
     const s = _politySlices[idx];
     if (!s) return;
-    document.getElementById('v3-resolver-year').value       = resolverYear ?? s.fromyear;
-    document.getElementById('v3-polity-from-year').value   = s.fromyear;
-    document.getElementById('v3-polity-to-year').value     = s.toyear;
+    _polityCurrentIdx = idx;
+    document.getElementById('v3-resolver-year').value     = resolverYear ?? s.fromyear;
+    document.getElementById('v3-polity-from-year').value = s.fromyear;
+    document.getElementById('v3-polity-to-year').value   = s.toyear;
+    updateSliceLabel(idx);
     drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
     _repaintChoropleth();
   }
 
-  document.getElementById('v3-slice-select').addEventListener('change', function () {
-    applySlice(parseInt(this.value));
-    _showMapTab();
+  // ── Slice slider + VCR ───────────────────────────────────────────────────
+
+  function initSliceControl() {
+    const slider = document.getElementById('v3-slice-slider');
+    const first  = _politySlices[0].fromyear;
+    const last   = _politySlices[_politySlices.length - 1].toyear;
+    slider.min      = first;
+    slider.max      = last;
+    slider.disabled = false;
+    const single = _politySlices.length <= 1;
+    document.getElementById('v3-btn-play').disabled = single;
+    document.getElementById('v3-btn-next').disabled = single;
+    document.getElementById('v3-btn-first').disabled = true;
+    document.getElementById('v3-btn-prev').disabled  = true;
+    document.getElementById('v3-slice-control').classList.remove('d-none');
+  }
+
+  function updateSliceLabel(idx) {
+    const s = _politySlices[idx];
+    document.getElementById('v3-slice-label').textContent =
+      `Slice ${idx + 1} of ${_politySlices.length}  ·  ` +
+      `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}` +
+      (s.area_km2 ? `  ·  ${Math.round(s.area_km2).toLocaleString()} km²` : '');
+    document.getElementById('v3-btn-first').disabled = idx === 0;
+    document.getElementById('v3-btn-prev').disabled  = idx === 0;
+    document.getElementById('v3-btn-next').disabled  = idx === _politySlices.length - 1;
+  }
+
+  function nearestPolitySlice(year) {
+    let best = 0, bestDist = Infinity;
+    _politySlices.forEach((s, i) => {
+      const mid  = (s.fromyear + s.toyear) / 2;
+      const dist = Math.abs(mid - year);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    return best;
+  }
+
+  function stepPolitySlice(delta) {
+    const next = _polityCurrentIdx + delta;
+    if (next < 0 || next >= _politySlices.length) return;
+    stopPolityPlay();
+    document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
+    applySlice(next);
+  }
+
+  function startPolityPlay() {
+    if (_polityPlayTimer) return;
+    document.getElementById('v3-btn-play').innerHTML = '<i class="bi bi-pause-fill"></i>';
+    document.getElementById('v3-btn-play').title = 'Pause';
+    _polityPlayTimer = setInterval(() => {
+      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(); return; }
+      const next = _polityCurrentIdx + 1;
+      document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
+      applySlice(next);
+    }, 1500);
+  }
+
+  function stopPolityPlay() {
+    if (_polityPlayTimer) { clearInterval(_polityPlayTimer); _polityPlayTimer = null; }
+    const btn = document.getElementById('v3-btn-play');
+    btn.innerHTML = '<i class="bi bi-play-fill"></i>';
+    btn.title = 'Play through slices';
+  }
+
+  document.getElementById('v3-slice-slider').addEventListener('input', () => {
+    const year = parseInt(document.getElementById('v3-slice-slider').value);
+    const idx  = nearestPolitySlice(year);
+    if (idx !== _polityCurrentIdx) { _polityCurrentIdx = idx; updateSliceLabel(idx); }
   });
+  document.getElementById('v3-slice-slider').addEventListener('change', () => {
+    stopPolityPlay();
+    const year = parseInt(document.getElementById('v3-slice-slider').value);
+    const idx  = nearestPolitySlice(year);
+    document.getElementById('v3-slice-slider').value = _politySlices[idx].fromyear;
+    applySlice(idx);
+  });
+  document.getElementById('v3-btn-first').addEventListener('click', () => {
+    stopPolityPlay();
+    document.getElementById('v3-slice-slider').value = _politySlices[0].fromyear;
+    applySlice(0);
+  });
+  document.getElementById('v3-btn-prev').addEventListener('click', () => stepPolitySlice(-1));
+  document.getElementById('v3-btn-play').addEventListener('click', () => {
+    if (_polityPlayTimer) stopPolityPlay(); else startPolityPlay();
+  });
+  document.getElementById('v3-btn-next').addEventListener('click', () => stepPolitySlice(1));
 
   // Polity example handler
   document.getElementById('v3-polity-example').addEventListener('change', function () {

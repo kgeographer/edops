@@ -357,9 +357,21 @@ class TestV3PolitiesExampleReveal:
         self._load_nsong(page, live_server_url)
         expect(page.locator("#v3-polity-band-T")).to_be_checked()
 
-    def test_t_year_row_visible(self, page: Page, live_server_url):
+    def test_t_year_row_hidden(self, page: Page, live_server_url):
+        """Year row stays hidden on Polities tab — span is the slice's own span."""
         self._load_nsong(page, live_server_url)
-        expect(page.locator("#v3-polity-t-year-row")).to_be_visible()
+        expect(page.locator("#v3-polity-t-year-row")).to_be_hidden()
+
+    def test_slice_control_visible(self, page: Page, live_server_url):
+        """Slider control div is revealed after polity loads."""
+        self._load_nsong(page, live_server_url)
+        expect(page.locator("#v3-slice-control")).to_be_visible()
+
+    def test_slice_label_populated(self, page: Page, live_server_url):
+        """Slice label shows ordinal and year span after polity loads."""
+        self._load_nsong(page, live_server_url)
+        label = page.locator("#v3-slice-label").text_content()
+        assert "Slice" in label and "of" in label
 
     def test_t_span_filled_from_polity_lifespan(self, page: Page, live_server_url):
         """Band T span is a valid non-empty range drawn from DB slice extents."""
