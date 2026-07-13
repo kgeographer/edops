@@ -478,10 +478,16 @@
           if (fy) params.set('from_year', fy);
           if (ty) params.set('to_year', ty);
         }
+        if (document.getElementById('v3-basin-var').value)
+          document.getElementById('v3-basin-status').innerHTML =
+            '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading basins…</span>';
         const r = await fetch(`/api/areas?${params}`);
+        console.log('[silentResig] polity fetch', r.status, `/api/areas?${params}`);
         if (!r.ok) return;
-        const nb = (await r.json()).neighborhood || {};
-        _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
+        const data = await r.json();
+        const memberIds = data.member_ids || [];
+        _sigMemberIds = memberIds.length ? new Set(memberIds.map(Number)) : null;
+        console.log('[silentResig] member_ids:', memberIds.length, '  _sigMemberIds size:', _sigMemberIds?.size ?? 0);
       } else {
         const scope = document.getElementById('v3-scope-select').value;
         if (!scope || currentLat == null) return;
@@ -1721,7 +1727,7 @@
     drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
-    _repaintChoropleth();
+    _silentResig();
   }
 
   // ── Slice slider + VCR ───────────────────────────────────────────────────
@@ -1950,8 +1956,10 @@
     const varMeta = BASIN_VARS.find(v => v.key === key);
     if (!varMeta) return;
     const level = _activeLevel();
+    console.log('[applyBasinVar]', key, 'level:', level, '_sigMemberIds size:', _sigMemberIds?.size ?? 0);
     if (level === 8 && !_sigMemberIds?.size) {
       statusEl.textContent = 'Get a signature first to use L08 choropleth';
+      console.log('[applyBasinVar] L08 guard fired — no member_ids');
       return;
     }
     loadBasinLayer();
@@ -1959,6 +1967,7 @@
     statusEl.textContent = 'Loading…';
     try {
       const resp = await fetch(`/api/explorer/values?var=${key}&level=${level}&su=${varMeta.su}`);
+      console.log('[applyBasinVar] values fetch', resp.status, 'level:', level);
       const body = await resp.json();
       const lo = varMeta.fixedDomain ? varMeta.fixedDomain[0] : (body.meta.p10 ?? body.meta.min);
       const hi = varMeta.fixedDomain ? varMeta.fixedDomain[1] : (body.meta.p90 ?? body.meta.max);
@@ -2193,6 +2202,9 @@
     const key    = e.target.value;
     const sl     = _basinSourceLayer();
     const { fromYr, toYr } = _activeBandTYears();
+    const isGrid = key.startsWith('lmr_') || key.startsWith('hyde_');
+    document.getElementById('v3-polity-level').disabled = isGrid;
+    document.getElementById('v3-level').disabled        = isGrid;
     if (key.startsWith('lmr_')) {
       const sid = _layers['basin-choropleth']?.sourceId;
       if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });

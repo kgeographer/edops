@@ -29,6 +29,7 @@ from scripts.edop.areas.engine import (
     resolve_buffer,
     resolve_polygon,
     resolve_polity,
+    resolve_crosswalk,
     resolve_basin_ring,
     load_catalog,
     dispatch_variable,
@@ -141,6 +142,25 @@ class TestResolver:
     def test_single_basin_weight_and_shortfall(self, sb_payload):
         """Single-basin: weight = 1.0, shortfall = 0.0 by construction."""
         assert sb_payload['shortfall'] == 0.0
+
+    def test_crosswalk_northern_song_non_empty(self, conn):
+        """Northern Song year=1000 crosswalk returns basins with weight sum near 1."""
+        row = conn.execute(
+            "SELECT id FROM gaz.clio_polities "
+            "WHERE name='Northern Song' AND fromyear<=1000 AND toyear>=1000 "
+            "AND NOT is_component LIMIT 1"
+        ).fetchone()
+        assert row is not None, "Northern Song year=1000 not found in clio_polities"
+        df = resolve_crosswalk(row[0], level=8, conn=conn)
+        assert len(df) > 0, "Crosswalk returned no basins for Northern Song"
+        assert str(df['hybas_id'].dtype) == 'int64'
+        assert df['weight'].sum() <= 1.0 + 1e-4
+        assert df['weight'].sum() > 0.7
+
+    def test_crosswalk_l06_returns_empty(self, conn):
+        """Crosswalk is L08-only — returns empty DataFrame for level=6."""
+        df = resolve_crosswalk(polity_id=1, level=6, conn=conn)
+        assert df.empty
 
 
 # ---------------------------------------------------------------------------

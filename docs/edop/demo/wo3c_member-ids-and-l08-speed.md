@@ -167,3 +167,42 @@ payload = areal_signature_polygon(
 | `scripts/edop/areas/engine.py` | Add `resolve_crosswalk()`; add `polity_id` param to `areal_signature_polygon` |
 | `app/api/routes.py` | Thread `polity_id` into `areal_signature_polygon`; add `member_ids` to payload in both `/api/area` and `/api/areas?type=polity` |
 | `tests/engine/test_engine_contract.py` | Add `resolve_crosswalk` contract test |
+
+---
+
+## Findings
+
+### Bugs found during implementation
+
+**Bug 1 — `member_ids` nested under wrong key.** The frontend read
+`(await r.json()).neighborhood.member_ids` but the API puts `member_ids` at the response
+top level (not inside `neighborhood`). Result: `_sigMemberIds` always null; first-slice paint
+worked (initial signature fetch goes a different path) but level toggle never functioned.
+Fix: read `data.member_ids` directly from the parsed response.
+
+**Bug 2 — Slice stepping repainted with stale `_sigMemberIds`.** `applySlice()` called
+`_repaintChoropleth()` directly, skipping `_silentResig()`. So `_sigMemberIds` still held the
+previous slice's basin set when the new choropleth rendered: old basins stayed painted, new
+basins in an expanded territory went uncolored.
+Fix: `applySlice()` calls `_silentResig()` instead; `_silentResig()` updates `_sigMemberIds`
+then calls `_repaintChoropleth()`.
+
+### UX additions (not in original spec)
+
+- **Spinner on slice step:** status element shows spinner + "Loading basins…" during the
+  `/api/areas` fetch on slice change, but only when a variable is already active. Silent on
+  initial polity load (no variable selected yet).
+- **Level select disabled for grid variables:** switching to an LMR or HYDE variable disables
+  `#v3-polity-level` and `#v3-level` (level has no meaning for raster/grid choropleth;
+  changing it clears the paint). Re-enabled when a BasinATLAS variable is selected.
+
+### Result
+
+N Song 961 CE at L08: aridity gradient paints correctly across ~4,200 L08 basins.
+Advancing through slices repaints correctly as polity boundary expands southward.
+L08 renders a noticeably more nuanced spatial picture than L06 — the demo value
+of the toggle is clear at this scale.
+
+### Test counts
+
+**577 passed, 52 skipped** (up 2 from two new `resolve_crosswalk` contract tests).

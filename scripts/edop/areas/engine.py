@@ -186,6 +186,36 @@ def resolve_polity(polity_name, year, level, conn, epsilon=0.0):
     return geom_wkt, basin_set, polity_meta
 
 
+def resolve_crosswalk(polity_id, level, conn, epsilon=0.0001):
+    """
+    Crosswalk resolver: polity_id → weighted basin set from pre-built table.
+
+    Fast path for L08 polity signatures — replaces live ST_Intersection (~50 ms
+    vs 3–10 s). Returns same schema as resolve_polygon. Empty DataFrame if the
+    polity is not in the crosswalk (island/oceanic polities with no L08 basins).
+    Only meaningful at level 8; returns empty DataFrame for other levels.
+    """
+    if level != 8:
+        return pd.DataFrame(
+            columns=['hybas_id', 'weight', 'basin_in_polity_fraction', 'overlap_area_km2']
+        )
+    sql = """
+    SELECT hybas_id,
+           weight,
+           basin_in_polity_frac AS basin_in_polity_fraction,
+           overlap_km2          AS overlap_area_km2
+    FROM   temporal.polity_basin08_crosswalk
+    WHERE  polity_id = %s
+      AND  weight >= %s
+    ORDER  BY weight DESC
+    """
+    cur  = conn.execute(sql, (polity_id, epsilon))
+    cols = [d[0] for d in cur.description]
+    df   = pd.DataFrame(cur.fetchall(), columns=cols)
+    df['hybas_id'] = df['hybas_id'].astype('int64')
+    return df
+
+
 def weighted_quantile(scores, weights, q):
     """
     Weighted quantile via sorted cumulative weights + linear interpolation.
@@ -2397,6 +2427,7 @@ def areal_signature_polygon(
     to_year=None,
     include_detail=False,
     resolver_year=None,
+    polity_id=None,
 ):
     """
     Full areal signature for a polygon geometry.
@@ -2416,6 +2447,9 @@ def areal_signature_polygon(
     from_year      : int or None — Band T span start (CE)
     to_year        : int or None — Band T span end (CE)
     include_detail : bool
+    polity_id      : int or None — if provided and level=8, uses pre-built crosswalk
+                     instead of live ST_Intersection; falls back to resolve_polygon
+                     if the polity is not in the crosswalk (island/oceanic cases)
 
     Returns
     -------
@@ -2424,7 +2458,12 @@ def areal_signature_polygon(
     basins where basin_in_polity_fraction < 0.5 / < 0.2 (describe, don't decide).
     """
     level_str = f'{level:02d}'
-    basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    if level == 8 and polity_id is not None:
+        basin_set = resolve_crosswalk(polity_id, level, conn)
+        if basin_set.empty:
+            basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    else:
+        basin_set = resolve_polygon(geom_wkt, level_str, conn)
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     bif = basin_set['basin_in_polity_fraction']
