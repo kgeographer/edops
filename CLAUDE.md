@@ -5,9 +5,9 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- `docs/edop/surface/SURFACE_tracker.md` — authoritative current state, roadmap, locked decisions
+- `docs/edop/demo/DEMO_tracker.md` — authoritative current state, roadmap, locked decisions
 - `docs/design/areas/deferred_items_register.md` — cross-phase parked items
-- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/edop/surface/wo{nn}_findings.md` — per-WO findings
+- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/edop/demo/wo{nn}_findings.md` — per-WO findings
 
 ---
 
@@ -45,8 +45,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/surface/SURFACE_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO21 complete — `sandbox_v3.html` at `/sandbox/lookup3`; both tabs, three clears, Playwright suite. Next WO TBD.
-- **Tests:** 551 pass, 50 skipped
+- **Current step:** WO2 + tweaks0712 merged — AWMC basemap, rivers PMTiles, basin casing, slice overlay, placed examples. Next: hero-shot curation.
+- **Tests:** 575 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:

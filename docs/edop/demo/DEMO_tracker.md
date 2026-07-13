@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-12
+- **Last updated:** 2026-07-12 (tweaks0712 merged)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,7 +50,7 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**580 tests pass, 50 skipped.**
+**575 tests pass, 52 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle.
@@ -59,10 +59,19 @@ Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 lev
 `docs/edop/demo/wo1a_findings.md`; notebook in
 `notebooks/edop/demo/wo1_within_polity_variance.ipynb`; merged to `demo` 2026-07-11.
 
-**WO2 complete** — slice slider + VCR, Band T inputs hidden on Polities tab, coverage
-guards (BCE + below-floor), HYDE nearest-year fallback (Band T always present in
+**WO2 complete and merged** — slice slider + VCR, Band T inputs hidden on Polities tab,
+coverage guards (BCE + below-floor), HYDE nearest-year fallback (Band T always present in
 signature), polity examples added, Polities tab now default. Findings in
-`docs/edop/demo/wo2_findings.md`. **Pending:** Karl browser accept gate → merge `wo2 → demo`.
+`docs/edop/demo/wo2_findings.md`.
+
+**tweaks0712 merged (2026-07-12)** — map cartography + UX polish:
+- AWMC historical terrain basemap (replaces OSM+hillshade)
+- Global HydroRIVERS PMTiles base layer (`app/static/sandbox/rivers.pmtiles`; gitignored); layer control toggle
+- Basin fill-opacity → 0 (choropleth shows through; event targets preserved)
+- White casing on all basin outline layers; color → charcoal `#3d3835` (avoids river-blue conflict)
+- 4 placed settlement examples with Band T years (Timbuktu, Rome, Kaifeng, Santa Fe)
+- Reset clears sig panel, re-disables tabs, returns to Map tab, resets example select
+- Polity slice year overlay (top-left map corner, large `#993333` text, updates on every slice step)
 
 ---
 
@@ -71,7 +80,7 @@ signature), polity examples added, Polities tab now default. Findings in
 | Item | What | Status |
 |---|---|---|
 | Within-polity-variance ranking notebook (WO1 + WO1a) | Rank polities by spread; trajectory + size-confound validation; membership spot-check; hero-shot shortlist confirmed | **complete** |
-| Continuous time slider + signature fixes (WO2) | Slider + VCR, Band T inputs hidden, coverage guards, HYDE nearest-year fallback, polity examples | **complete — pending accept gate** |
+| Continuous time slider + signature fixes (WO2) | Slider + VCR, Band T inputs hidden, coverage guards, HYDE nearest-year fallback, polity examples | **complete — merged** |
 | Money shot curation | Identify 2–3 polity/variable/history triples for demo; requires notebook output | pending |
 | L06 ↔ L08 scale compare (MAUP demo) | Side-by-side view at two scales; Track 1 feature after hero shots confirmed | pending |
 | Analysis tab port/review | Content exists in v1; port/expand only if it carries a demo point | pending Track-2 pull |
