@@ -102,9 +102,10 @@
                 <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
                 <select id="v3-example-select" class="form-select form-select-sm text-muted">
                   <option value="">Load an example</option>
-                  <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
-                  <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
-                  <option value="ring|16.8167,-2.9833|Timbuktu|1400|1500">Timbuktu — basin ring</option>
+                  <option value="16.8167,-2.9833|Timbuktu|1475|1525">Timbuktu, Mali (1475–1525 CE)</option>
+                  <option value="34.7975,114.3074|Kaifeng|965|990">Kaifeng, China (965–990 CE)</option>
+                  <option value="41.6938,44.8015|Tbilisi|1150|1250">Tbilisi, Georgia (1150–1250 CE)</option>
+                  <option value="35.6870,-105.9378|Santa Fe|900|1000">Santa Fe, NM (900–1000 CE)</option>
                 </select>
               </div>
 
@@ -389,7 +390,16 @@
 
         <!-- Map pane -->
         <div class="tab-pane fade show active" id="v3-pane-map" role="tabpanel">
-          <div id="v3-map" style="height:500px; border-radius:6px;"></div>
+          <div style="position:relative;">
+            <div id="v3-map" style="height:500px; border-radius:6px;"></div>
+            <div id="v3-slice-overlay" style="display:none; position:absolute; top:10px; left:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ddd; border-radius:5px; padding:4px 10px; font-size:1.35rem; font-weight:600; color:#993333; line-height:1.3; pointer-events:none;"></div>
+            <div id="v3-layer-control" style="position:absolute; top:70px; right:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ccc; border-radius:6px; padding:7px 10px; font-size:0.78rem; box-shadow:0 1px 4px rgba(0,0,0,0.15);">
+              <div class="text-muted mb-1" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Layers</div>
+              <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
+                <input type="checkbox" id="v3-layer-rivers" checked> Rivers
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Signature pane -->
@@ -584,8 +594,9 @@
           shell.add('buffer-basins',
             { type: 'geojson', data: fc },
             [
-              { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-              { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75 } },
+              { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+              { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
+              { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
             ]
           );
           _fitMap(geojsonBbox(fc));
@@ -843,7 +854,15 @@
     updateSigButton();
   }
 
+  function _resetRightColumn() {
+    document.getElementById('v3-sig-content').innerHTML = '';
+    ['v3-tab-sig-btn', 'v3-tab-analysis-btn'].forEach(id =>
+      document.getElementById(id).classList.add('disabled'));
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
+  }
+
   function resetSettlements() {
+    _resetRightColumn();
     const _sl = _basinSourceLayer();  // capture before any state reset
     clearResolvedPoint();
     // Restore lower panel to cold start
@@ -865,6 +884,7 @@
     document.getElementById('v3-t-year-row').classList.add('d-none');
     document.getElementById('v3-from-year').value = '';
     document.getElementById('v3-to-year').value   = '';
+    document.getElementById('v3-example-select').selectedIndex = 0;
   }
 
   document.getElementById('v3-resolve-btn').addEventListener('click', resolveSettlement);
@@ -880,17 +900,16 @@
   // ── Example handler (Settlements tab) ────────────────────────────────────
   document.getElementById('v3-example-select').addEventListener('change', function () {
     if (!this.value) return;
-    const parts = this.value.split('|');
-    const scope = parts[0];
+    // format: lat,lon|name|from_year|to_year
+    const parts    = this.value.split('|');
+    const coords   = (parts[0] || '').split(',');
+    const fromYear = parts[2];
+    const toYear   = parts[3];
 
-    // Resolve field locks — example path is committed
-    document.getElementById('v3-place-input').disabled  = true;
-    document.getElementById('v3-resolve-btn').disabled  = true;
-
-    const coords = (parts[1] || '').split(',');
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
 
+    // Place marker
     if (currentLat && currentLon) {
       if (_pointMarker) _pointMarker.remove();
       _pointMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -898,26 +917,23 @@
         .addTo(map);
     }
 
-    if (scope === 'buffer') {
-      document.getElementById('v3-radius').value = parts[3] ?? 100;
-    }
-    if (scope === 'ring' && parts[3] && parts[4]) {
-      document.getElementById('v3-band-T').checked = true;
-      document.getElementById('v3-from-year').value = parts[3];
-      document.getElementById('v3-to-year').value   = parts[4];
-      updateBandT();
-    }
+    // Enable Band T and set the time span
+    document.getElementById('v3-band-T').checked     = true;
+    document.getElementById('v3-from-year').value    = fromYear ?? '';
+    document.getElementById('v3-to-year').value      = toYear   ?? '';
+    updateBandT();
 
-    const scopeSelect = document.getElementById('v3-scope-select');
-    scopeSelect.value = scope;
-    document.getElementById('v3-level').value    = '6';  // examples always at L06
-    document.getElementById('v3-level').disabled = false;
+    // Lock resolve path; set scope to single; enable level
+    document.getElementById('v3-place-input').disabled = true;
+    document.getElementById('v3-resolve-btn').disabled = true;
+    document.getElementById('v3-scope-select').value   = 'single';
+    document.getElementById('v3-level').value          = '6';
+    document.getElementById('v3-level').disabled       = false;
     document.getElementById('v3-scope-wrap').style.display = '';
-    applyScope(scope);
+    applyScope('single');
     updateSigButton();
 
-    _drawScopePreview(scope);
-
+    _drawScopePreview('single');
     _revealLowerPanel();
   });
 
@@ -981,8 +997,9 @@
       shell.add('single-basin',
         { type: 'geojson', data: feature },
         [
-          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.15 } },
-          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } },
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
         ]
       );
       return geojsonBbox(feature);
@@ -1016,8 +1033,9 @@
       shell.add('buffer-basins',
         { type: 'geojson', data: fc },
         [
-          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75 } },
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
         ]
       );
       shell.add('buffer-circle',
@@ -1033,15 +1051,17 @@
     shell.add('ring-center',
       { type: 'geojson', data: ringData.center },
       [
-        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0.30 } },
-        { type: 'line', paint: { 'line-color': '#1a3d5c', 'line-width': 2.0 } },
+        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 5.5 } },
+        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.5 } },
       ]
     );
     shell.add('ring-members',
       { type: 'geojson', data: { type: 'FeatureCollection', features: ringData.ring.map(m => m.feature) } },
       [
-        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-        { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75, 'line-opacity': 0.5 } },
+        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.5 } },
+        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
       ]
     );
     const memberFillId = _layers['ring-members'].layerIds[0];
@@ -1545,6 +1565,7 @@
   }
 
   function resetPolities() {
+    _resetRightColumn();
     _polityName   = null;
     _politySlices = [];
     _setLMRAvailability(true, null);
@@ -1561,6 +1582,7 @@
     document.getElementById('v3-slice-control').classList.add('d-none');
     document.getElementById('v3-slice-slider').disabled = true;
     document.getElementById('v3-slice-label').textContent = '';
+    document.getElementById('v3-slice-overlay').style.display = 'none';
     ['v3-btn-first','v3-btn-prev','v3-btn-play','v3-btn-next'].forEach(id =>
       document.getElementById(id).disabled = true);
     const sliceSel = document.getElementById('v3-slice-select');
@@ -1679,7 +1701,10 @@
       shell.remove('polity-boundary');
       shell.add('polity-boundary',
         { type: 'geojson', data: feature },
-        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } }]
+        [
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
+        ]
       );
       _fitMap(geojsonBbox(feature));
     } catch (_) { /* boundary is optional */ }
@@ -1722,6 +1747,9 @@
       `Slice ${idx + 1} of ${_politySlices.length}  ·  ` +
       `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}` +
       (s.area_km2 ? `  ·  ${Math.round(s.area_km2).toLocaleString()} km²` : '');
+    const overlay = document.getElementById('v3-slice-overlay');
+    overlay.textContent = `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}`;
+    overlay.style.display = 'block';
     document.getElementById('v3-btn-first').disabled = idx === 0;
     document.getElementById('v3-btn-prev').disabled  = idx === 0;
     document.getElementById('v3-btn-next').disabled  = idx === _politySlices.length - 1;
@@ -1891,7 +1919,7 @@
     const level = _activeLevel();
     if (_basinLayerLoaded && _basinLayerLevel === level) return;
     const before = Object.entries(_layers)
-      .filter(([n]) => n !== 'basin-choropleth')
+      .filter(([n]) => n !== 'basin-choropleth' && n !== 'rivers')
       .flatMap(([,e]) => e.layerIds)[0];
     shell.remove('basin-choropleth');
     const sl = `basin0${level}`;
@@ -2192,7 +2220,7 @@
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
 
-  const map = new maplibregl.Map({
+  const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
     center: [10, 20],
     zoom: 1,
@@ -2201,26 +2229,15 @@
       version: 8,
       glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
       sources: {
-        hillshade: {
+        awmc: {
           type: 'raster',
-          tiles: ['https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg'],
-          tileSize: 256, maxzoom: 12,
-          attribution: 'Hillshade: &copy; OpenStreetMap US',
-        },
-        osm: {
-          type: 'raster',
-          tiles: [
-            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256, maxzoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+          tileSize: 256, minzoom: 1, maxzoom: 11,
+          attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
         },
       },
       layers: [
-        { id: 'hillshade-layer', type: 'raster', source: 'hillshade', paint: { 'raster-opacity': 1.0 } },
-        { id: 'osm-layer',       type: 'raster', source: 'osm',       paint: { 'raster-opacity': 0.5 } },
+        { id: 'awmc-layer', type: 'raster', source: 'awmc' },
       ],
     },
   });
@@ -2229,7 +2246,38 @@
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
-  window.v3map = map;
+  window._v3map = map;
+
+  map.on('load', () => {
+    shell.add('rivers',
+      { type: 'vector', url: 'pmtiles:///static/sandbox/rivers.pmtiles' },
+      [
+        { type: 'line', 'source-layer': 'rivers',
+          paint: {
+            'line-color': '#6baed6',
+            'line-width': ['case', ['==', ['to-number', ['get', 'ord_clas']], 1], 1.5, 1.0],
+            'line-opacity': 0.85,
+          }
+        },
+      ]
+    );
+  });
+
+  document.getElementById('v3-layer-rivers').addEventListener('change', function () {
+    const vis = this.checked ? 'visible' : 'none';
+    (_layers['rivers']?.layerIds ?? []).forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+    });
+  });
+
+  // ?tab=settlements or ?tab=polities overrides the HTML default — lets the
+  // developer (and tests) specify the starting tab without touching the markup.
+  const _tabParam = new URLSearchParams(window.location.search).get('tab');
+  if (_tabParam === 'settlements') {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-settlements-btn')).show();
+  } else if (_tabParam === 'polities') {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-polities-btn')).show();
+  }
 
 })();
 </script>

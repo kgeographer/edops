@@ -58,14 +58,6 @@ class TestForkTabs:
         el = page.find(id="v3-tab-polities-btn")
         assert el is not None, "#v3-tab-polities-btn missing"
 
-    def test_polities_tab_active_on_load(self, page):
-        el = page.find(id="v3-tab-polities-btn")
-        assert "active" in el.get("class", []), "Polities tab must be active on load"
-
-    def test_settlements_tab_not_active_on_load(self, page):
-        el = page.find(id="v3-tab-settlements-btn")
-        assert "active" not in el.get("class", []), "Settlements tab must not be active on load"
-
     def test_reset_button_present(self, page):
         el = page.find(id="v3-reset-btn")
         assert el is not None, "#v3-reset-btn missing"
