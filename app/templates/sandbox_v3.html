@@ -392,6 +392,7 @@
         <div class="tab-pane fade show active" id="v3-pane-map" role="tabpanel">
           <div style="position:relative;">
             <div id="v3-map" style="height:500px; border-radius:6px;"></div>
+            <div id="v3-slice-overlay" style="display:none; position:absolute; top:10px; left:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ddd; border-radius:5px; padding:4px 10px; font-size:1.35rem; font-weight:600; color:#993333; line-height:1.3; pointer-events:none;"></div>
             <div id="v3-layer-control" style="position:absolute; top:70px; right:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ccc; border-radius:6px; padding:7px 10px; font-size:0.78rem; box-shadow:0 1px 4px rgba(0,0,0,0.15);">
               <div class="text-muted mb-1" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Layers</div>
               <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
@@ -1581,6 +1582,7 @@
     document.getElementById('v3-slice-control').classList.add('d-none');
     document.getElementById('v3-slice-slider').disabled = true;
     document.getElementById('v3-slice-label').textContent = '';
+    document.getElementById('v3-slice-overlay').style.display = 'none';
     ['v3-btn-first','v3-btn-prev','v3-btn-play','v3-btn-next'].forEach(id =>
       document.getElementById(id).disabled = true);
     const sliceSel = document.getElementById('v3-slice-select');
@@ -1745,6 +1747,9 @@
       `Slice ${idx + 1} of ${_politySlices.length}  ·  ` +
       `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}` +
       (s.area_km2 ? `  ·  ${Math.round(s.area_km2).toLocaleString()} km²` : '');
+    const overlay = document.getElementById('v3-slice-overlay');
+    overlay.textContent = `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}`;
+    overlay.style.display = 'block';
     document.getElementById('v3-btn-first').disabled = idx === 0;
     document.getElementById('v3-btn-prev').disabled  = idx === 0;
     document.getElementById('v3-btn-next').disabled  = idx === _politySlices.length - 1;
