@@ -3231,7 +3231,15 @@ def area(
             to_year=band_t_to,
             include_detail=detail,
             resolver_year=year,
+            polity_id=polity_id,
         )
+
+        member_rows = conn.execute(
+            "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
+            "WHERE polity_id = %s ORDER BY weight DESC",
+            (polity_id,),
+        ).fetchall()
+        payload["member_ids"] = [int(r[0]) for r in member_rows]
 
     except HTTPException:
         raise
@@ -3416,7 +3424,16 @@ def areas(
                 to_year=band_t_to,
                 include_detail=detail,
                 resolver_year=year,
+                polity_id=polity_id,
             )
+
+            member_rows = conn.execute(
+                "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
+                "WHERE polity_id = %s ORDER BY weight DESC",
+                (polity_id,),
+            ).fetchall()
+            payload["member_ids"] = [int(r[0]) for r in member_rows]
+
             payload["resolver"] = {
                 "type":      "polity",
                 "polity":    polity_name,

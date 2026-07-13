@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-12 (tweaks0712 merged)
+- **Last updated:** 2026-07-13 (WO3b + WO3c complete, merged to demo)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -23,7 +23,7 @@ help the Braga audience (21 Sep 2026)?**
 
 Three tracks, sequenced:
 
-1. **Track 1 — Money shots**: curation + the features they need. Find the two or three polity
+1. **Track 1 — Hero shots**: curation + the features they need. Find the two or three polity
    cases that land (a polity the audience recognises + an environmental gradient the paint makes
    obvious + a historical fact the gradient illuminates). The within-polity-variance ranking
    notebook is the curation mechanic; the continuous time slider and L06↔L08 compare are the
@@ -64,6 +64,31 @@ coverage guards (BCE + below-floor), HYDE nearest-year fallback (Band T always p
 signature), polity examples added, Polities tab now default. Findings in
 `docs/edop/demo/wo2_findings.md`.
 
+**WO3a complete (read-only probe)** — scale-compare investigation. Findings in
+`docs/edop/demo/wo3_probe_findings.md`. Key results:
+- Tbilisi confirmed as demo case: 30 pp aridity drop, biome full flip (Temperate Broadleaf →
+  Deserts & Xeric) between L06 and L08. Story carried by existing toggle on Settlements tab.
+- N Song gradient holds at L08: spread values within 1–3 pp of L06, confirming gradient is real.
+- Level toggle on Polities wired but L08 broken: `/api/area|areas` never returns `member_ids`,
+  so `_sigMemberIds` = null; L08 paint guard fires. **Backend fix required (see roadmap).**
+- Pacific Northwest (ARI.5): slide/Explorer only; sandbox shows geography, not LISA classes.
+
+**WO3b complete (2026-07-13)** — polity–basin08 spatial crosswalk built:
+- `temporal.polity_basin08_crosswalk`: 9,033,709 rows · 12,975 polities · 0 bad geometry
+- 12 island/oceanic polities have no crosswalk rows (Hawaii, Mauritius, Seychelles, etc.) — correct; no L08 basins in open ocean
+- Geometry repair required: 1,282 invalid slices fixed with `ST_MakeValid` + `ST_CollectionExtract`; build SQL changed to `ST_Intersection(b.geom, p.geom)::geography` (geometry path, matches engine) — geography×geography path caused 2,186 GEOS side-location conflicts
+- `gaz.clio_polities` backed up to `gaz.clio_polities_backup` before repair
+- Full findings: `docs/edop/demo/wo3b_polity-crosswalk.md`
+
+**WO3c complete (2026-07-13)** — member_ids in API response + L08 speed via crosswalk:
+- `resolve_crosswalk()` added to engine.py — keyed L08 lookup (~50 ms vs 3–10 s live query)
+- `areal_signature_polygon()` accepts optional `polity_id`; uses crosswalk at L08 with live fallback for island polities
+- Both `/api/area` and `/api/areas?type=polity` now return `member_ids` list (L08 hybas_ids)
+- Frontend: `member_ids` path fixed (was incorrectly nested under `neighborhood`); `applySlice()` calls `_silentResig()` so member set updates before repaint on slice change; spinner on status el during slice step when variable active; Level select disabled for grid vars (LMR/HYDE), re-enabled for BasinATLAS
+- Verified: N Song L08 aridity choropleth paints correctly; slice stepping repaints correctly; level toggle works
+- Full spec + findings: `docs/edop/demo/wo3c_member-ids-and-l08-speed.md`
+- **577 tests pass, 52 skipped**
+
 **tweaks0712 merged (2026-07-12)** — map cartography + UX polish:
 - AWMC historical terrain basemap (replaces OSM+hillshade)
 - Global HydroRIVERS PMTiles base layer (`app/static/sandbox/rivers.pmtiles`; gitignored); layer control toggle
@@ -81,8 +106,11 @@ signature), polity examples added, Polities tab now default. Findings in
 |---|---|---|
 | Within-polity-variance ranking notebook (WO1 + WO1a) | Rank polities by spread; trajectory + size-confound validation; membership spot-check; hero-shot shortlist confirmed | **complete** |
 | Continuous time slider + signature fixes (WO2) | Slider + VCR, Band T inputs hidden, coverage guards, HYDE nearest-year fallback, polity examples | **complete — merged** |
-| Money shot curation | Identify 2–3 polity/variable/history triples for demo; requires notebook output | pending |
-| L06 ↔ L08 scale compare (MAUP demo) | Side-by-side view at two scales; Track 1 feature after hero shots confirmed | pending |
+| Scale-compare probe (WO3a) | Tbilisi case + N Song gradient + level-toggle diagnosis | **complete** |
+| Polity–basin08 crosswalk (WO3b) | `temporal.polity_basin08_crosswalk` — 9M rows, 12,975 polities, 0 bad geometry | **complete** |
+| L08 polity choropleth fix (WO3c) | member_ids in API; crosswalk-lookup path in engine; level toggle on Polities tab working | **complete — merged** |
+| **Hero shot curation** | Identify 2–3 polity/variable/history triples for demo; Tbilisi + N Song confirmed viable | **next** |
+| L06 ↔ L08 toggle demo (MAUP) | Toggle on Settlements tab already works; Polities tab L08 now working | pending |
 | Analysis tab port/review | Content exists in v1; port/expand only if it carries a demo point | pending Track-2 pull |
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
