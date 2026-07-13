@@ -34,16 +34,17 @@ Research framing: `docs/edop/project_summary_20260606.md`
 | 1 — Signature development | complete | `/api/signature`, `sandbox.html`, variable catalog v0.3 |
 | 2 — Characterization / CHAR | complete | `explorer.html`, EDA/ESDA findings |
 | 3 — Areas | complete 2026-06-30 | `engine.py` — resolver → aggregator → payload; `AREAS_tracker.md` (frozen ref) |
-| **Surface** | **active** | New sandbox page (`sandbox_v3.html`); see `SURFACE_tracker.md` |
+| Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
+| **Demo** | **active** | Curation + polish for Braga; see `DEMO_tracker.md` |
 | 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**Surface is the active track. Branch: `surface`; merge WO branches back to `surface` on accept.**
+**Demo is the active track. Branch: `demo`; cut WO branches off `demo`, merge back on accept.**
 
-- **Goto:** `docs/edop/surface/SURFACE_tracker.md` — authoritative state, roadmap, locked decisions
+- **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
 - **Current step:** WO2 + tweaks0712 merged — AWMC basemap, rivers PMTiles, basin casing, slice overlay, placed examples. Next: hero-shot curation.
 - **Tests:** 575 pass, 52 skipped
@@ -86,16 +87,20 @@ documentation/           # Public-facing docs (tracked)
 docs/                    # Design docs and WIP — gitignored with exceptions:
 docs/edop/areas/         #   Areas tracker (frozen ref) + findings (tracked)
 docs/edop/engine/        #   Work-order specs (tracked)
-docs/edop/surface/       #   Surface tracker + findings (tracked) ← active
+docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
+docs/edop/demo/          #   Demo tracker + findings (tracked) ← active
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
+docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 scripts/edop/areas/      # Areas engine — engine.py is the primary artifact
 notebooks/edop/explore/  # CHAR phase EDA notebooks
 notebooks/edop/spatial/  # CHAR phase ESDA notebooks
 notebooks/edop/areas/    # Areas phase notebooks (research record; frozen)
-notebooks/edop/surface/  # Surface phase notebooks ← active
+notebooks/edop/surface/  # Surface phase notebooks (frozen)
+notebooks/edop/demo/     # Demo phase notebooks ← active
 output/edop/areas/       # Areas output (gitignored)
 output/edop/surface/     # Surface output (gitignored)
+output/edop/demo/        # Demo output (gitignored)
 logs/                    # session_log_YYYYMMDD.md, exploration_log.md, esda_findings.md
 logs/2026_jan-may/       # Archived earlier session logs
 metadata/                # gitignored
@@ -103,7 +108,20 @@ metadata/                # gitignored
 
 ---
 
-## The two sandbox pages
+## The sandbox pages
+
+### `/sandbox/lookup3` — Demo surface (active)
+`app/templates/sandbox_v3.html` — Demo phase product; current focus.
+
+Two-tab surface: **Settlements** (WHG place lookup → scope → BasinATLAS/LMR/HYDE choropleth + signature)
+and **Polities** (search → slice slider + VCR → choropleth + signature).
+
+- AWMC historical terrain basemap; HydroRIVERS PMTiles base layer (`app/static/sandbox/`; gitignored)
+- Layer control (top-right over map); rivers toggleable
+- L06/L08 level toggle; basin fill transparent (choropleth shows through)
+- White-cased charcoal basin outlines; polity slice year overlay (top-left map corner)
+- 4 placed settlement examples (Timbuktu, Rome, Kaifeng, Santa Fe) + 6 polity examples
+- Line spec reference: `docs/design/demo/sandbox_v3_line_specs.md`
 
 ### `/sandbox/lookup` — Lookup
 `app/templates/sandbox.html` — Phase 1 product; primary researcher tool.
@@ -190,6 +208,7 @@ NOTE: see documentation/API_guide.md (master, public)
 - `public.basin06`: 16,397 L6 sub-basins; `hybas_id`, `geom`, signature fields
 - `public.basin08`: 190,675 L8 sub-basins; same schema
 - `gaz.clio_polities`: Cliopatria polities — columns lowercase (`fromyear`, `toyear`, `name`, `geom`)
+- `gaz.rivers`: HydroRIVERS v1.0 global river network — 8.5M rows; `hyriv_id`, `geom` (MultiLineString), `ord_clas` (Strahler order class 1–9); tiled to `app/static/sandbox/rivers.pmtiles` (gitignored)
 - `temporal.hyde_cells`: 2,215,829 HYDE 3.4 grid cells (~5 arc-min); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
 - `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
 - `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
@@ -209,7 +228,8 @@ NOTE: see documentation/API_guide.md (master, public)
 - **Deploy sequence**:
   ```
   git push origin main                  # push edops repo
-  rsync <gitignored assets> server:...  # PMTiles, parquet, tiles, hyde_epoch_maxes.json
+  rsync <gitignored assets> server:...  # Explorer: PMTiles, parquet, tiles, hyde_epoch_maxes.json
+                                        # Sandbox: app/static/sandbox/rivers.pmtiles (365 MB)
   ssh kgeographer-1
     cd /var/www/edops && git pull
     sudo systemctl restart edops        # requires password — manual step
@@ -271,7 +291,7 @@ docs/ hold old drafts and works-in-progress (gitignored)
 
 ## Open / deferred items
 
-Surface-specific deferred items → `SURFACE_tracker.md` roadmap.
+Demo-specific items → `DEMO_tracker.md` roadmap.
 Cross-phase deferred items → `docs/design/areas/deferred_items_register.md`.
 
 Standing cross-phase notes:
