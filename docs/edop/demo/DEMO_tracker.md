@@ -5,11 +5,11 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-13 (WO3b + WO3c complete, merged to demo)
+- **Last updated:** 2026-07-13 (WO4a probe + WO4b Analysis tab complete, merged to demo)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
-  forward-looking note in the same edit — never leave a resolved item as an open question
+  forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
 
 ---
@@ -50,10 +50,11 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**575 tests pass, 52 skipped.**
+**577 tests pass, 52 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
-Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle.
+Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle,
+Analysis tab live on Settlements.
 
 **WO1 + WO1a complete.** Findings in `docs/edop/demo/wo1_findings.md` and
 `docs/edop/demo/wo1a_findings.md`; notebook in
@@ -87,7 +88,6 @@ signature), polity examples added, Polities tab now default. Findings in
 - Frontend: `member_ids` path fixed (was incorrectly nested under `neighborhood`); `applySlice()` calls `_silentResig()` so member set updates before repaint on slice change; spinner on status el during slice step when variable active; Level select disabled for grid vars (LMR/HYDE), re-enabled for BasinATLAS
 - Verified: N Song L08 aridity choropleth paints correctly; slice stepping repaints correctly; level toggle works
 - Full spec + findings: `docs/edop/demo/wo3c_member-ids-and-l08-speed.md`
-- **577 tests pass, 52 skipped**
 
 **tweaks0712 merged (2026-07-12)** — map cartography + UX polish:
 - AWMC historical terrain basemap (replaces OSM+hillshade)
@@ -97,6 +97,28 @@ signature), polity examples added, Polities tab now default. Findings in
 - 4 placed settlement examples with Band T years (Timbuktu, Rome, Kaifeng, Santa Fe)
 - Reset clears sig panel, re-disables tabs, returns to Map tab, resets example select
 - Polity slice year overlay (top-left map corner, large `#993333` text, updates on every slice step)
+
+**WO4a complete (2026-07-13, read-only probe)** — Analysis tab inventory + demo assessment:
+- Scale-mismatch alert: does not fire on Tbilisi (1.4× ratio, threshold 50×); detects size
+  disparity not MAUP effect — **dropped**, not ported.
+- s/u divergence + provenance: fires correctly on archetype cases. Cairo L08: 26.9× precip
+  ratio. Baghdad L08: 3.6×. Timbuktu L06: 5.05×; at L08 basin too small (588 km²) to resolve
+  Niger signal. Lima: coastal terminal, orographic story absent at L08.
+- Global divergence ranking feasibility: trivial query (precomputed columns); notebook pending.
+- Full findings: `docs/edop/demo/wo4a_findings.md`
+
+**WO4b complete (2026-07-13)** — Analysis tab ported to v3 Settlements:
+- `sigVal()` + `renderAnalysis()` ported from v1; powered by parallel `/api/signature` fetch
+  (raw values; `/api/areas` returns normalized scores only).
+- Scale-mismatch alert dropped. Small-basin caveat made actionable (explains mechanism,
+  directs to L06). Level-toggle note added at panel top.
+- Example-select `change` now calls `_resetRightColumn()` — previously analysis pane lingered
+  on example switch.
+- Polity Analysis tab: open design question (logged in roadmap); pane left at placeholder.
+  Upstream fields in polity signature are area-weighted means of per-basin upstream values —
+  not "water from outside polity borders." Different question, unresolved.
+- 577 tests pass, 52 skipped.
+- Full findings: `docs/edop/demo/wo4b_findings.md`
 
 ---
 
@@ -109,9 +131,12 @@ signature), polity examples added, Polities tab now default. Findings in
 | Scale-compare probe (WO3a) | Tbilisi case + N Song gradient + level-toggle diagnosis | **complete** |
 | Polity–basin08 crosswalk (WO3b) | `temporal.polity_basin08_crosswalk` — 9M rows, 12,975 polities, 0 bad geometry | **complete** |
 | L08 polity choropleth fix (WO3c) | member_ids in API; crosswalk-lookup path in engine; level toggle on Polities tab working | **complete — merged** |
+| Analysis tab — s/u divergence + provenance (WO4a–4b) | WO4a probe confirmed Cairo/Baghdad as archetype cases; WO4b ports divergence table + provenance badge to v3 Settlements tab | **complete — merged** |
 | **Hero shot curation** | Identify 2–3 polity/variable/history triples for demo; Tbilisi + N Song confirmed viable | **next** |
 | L06 ↔ L08 toggle demo (MAUP) | Toggle on Settlements tab already works; Polities tab L08 now working | pending |
-| Analysis tab port/review | Content exists in v1; port/expand only if it carries a demo point | pending Track-2 pull |
+| Analysis tab — polity scope | What the Analysis tab shows for a polity is an open design question; upstream fields in polity signature are area-weighted means of per-basin upstream values, not "water from outside polity borders" | pending design |
+| Scale-sensitivity flag | *"This location is scale-sensitive"* tag from L06↔L08 signature diff; replaces dropped v1 scale-mismatch alert | pending |
+| Global divergence ranking | Notebook: rank basins by `precip_yr_upstream / precip_yr` to surface allochthonous places globally; trivial query, both columns precomputed in basin06/basin08 | pending |
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
 | Feature freeze / UX review | Hard calendar checkpoint; surface declared demo-frozen | ~early September 2026 |
@@ -146,6 +171,25 @@ signature), polity examples added, Polities tab now default. Findings in
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-13**
+
+- **s/u divergence is substantially an L06 instrument** — at L08 most basins are small enough
+  that upstream catchment barely exceeds themselves, so divergence tends to unity by construction.
+  Cairo works at L08 only because it sits at the base of the Nile with 2.9M km² upstream — the
+  exception, not the pattern. The Analysis panel reflects this: level-toggle note at top; small-
+  basin caveat directs user to L06 rather than reporting "undetermined."
+
+- **Analysis tab Polities scope is an open design question** — upstream fields in the polity
+  signature (`precip_yr_upstream`, etc.) are area-weighted means of each member basin's own
+  upstream value, not a measure of "water from outside polity borders." The naive ratio would
+  be misleading. No Analysis content wired for Polities tab; design deferred.
+
+- **WHG API broken (2026-07-13)** — all WHG endpoints return 403 "Bot access denied." Token
+  is valid and quota decrements. Root cause: WHG Cloudflare bot-filter change; `User-Agent:
+  notbot` per docs does not resolve it. Stephen Gadd (WHG developer) contacted. Reverted
+  User-Agent to original browser string pending response. WHG lookup non-functional in both
+  local and production until resolved.
 
 **2026-07-11**
 

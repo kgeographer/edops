@@ -411,7 +411,7 @@
 
         <!-- Analysis pane -->
         <div class="tab-pane fade" id="v3-pane-analysis" role="tabpanel">
-          <p class="text-muted mt-3">Run <strong>Get signature</strong> to populate analysis.</p>
+          <p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>
         </div>
 
       </div>
@@ -442,6 +442,7 @@
   let _centerPayload = null;
   let _sigMemberIds    = null;  // Set<number> of hybas_ids in current scope
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
+  let _pointSig        = null;  // /api/signature response for current point — powers Analysis tab
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -860,7 +861,153 @@
     updateSigButton();
   }
 
+  // ── Analysis tab helpers ──────────────────────────────────────────────────
+
+  function sigVal(sig, key) {
+    const groups = sig.profile_groups || {};
+    for (const g of Object.values(groups)) {
+      for (const item of (g.items || [])) {
+        if (item.key === key) return item.value;
+      }
+    }
+    return undefined;
+  }
+
+  function renderAnalysis(sig, level) {
+    const el = document.getElementById('v3-pane-analysis');
+    if (!el || !sig) return;
+
+    const fmt  = v => (v == null) ? '—' : (Number.isInteger(v) ? v.toLocaleString() : Number(v).toLocaleString(undefined, {maximumFractionDigits: 1}));
+    const fmtR = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(2) + '×';
+    const ratio = (a, b) => (a && b && b !== 0) ? a / b : null;
+
+    const upArea   = sig.up_area;
+    const distSink = sigVal(sig, 'dist_sink');
+    const coast    = sigVal(sig, 'coast_flag');
+    const endo     = sigVal(sig, 'endorheic');
+    const precip_s = sigVal(sig, 'precip_yr'),   precip_u = sigVal(sig, 'precip_yr_upstream');
+    const arid_s   = sigVal(sig, 'aridity'),     arid_u   = sigVal(sig, 'aridity_upstream');
+    const temp_s   = sigVal(sig, 'temp_yr'),     temp_u   = sigVal(sig, 'temp_yr_upstream');
+
+    const precipR = ratio(precip_u, precip_s);
+    const aridR   = ratio(arid_u, arid_s);
+    const tempR   = ratio(temp_u, temp_s);
+
+    // drainage fate badge
+    let fateBadge = '';
+    if (endo && endo !== 0) {
+      fateBadge = '<span class="badge bg-secondary me-1">Endorheic</span>';
+    } else if (distSink != null && (distSink < 1 || (coast && distSink < 10))) {
+      fateBadge = '<span class="badge bg-info text-dark me-1">Coastal terminal</span>';
+    } else {
+      fateBadge = '<span class="badge bg-light text-dark border me-1">Exorheic interior</span>';
+    }
+
+    // ratio colour
+    const ratioClass = r => {
+      if (r == null) return '';
+      const d = Math.abs(r - 1);
+      if (d < 0.1) return 'text-muted';
+      if (d < 0.3) return 'text-warning-emphasis';
+      return 'fw-semibold text-danger';
+    };
+
+    // small-basin caveat — actionable, explains mechanism
+    const smallBasinThreshold = level === 6 ? 500 : 5000;
+    const smallBasin = upArea != null && upArea < smallBasinThreshold;
+
+    // water provenance classification
+    let provLabel = '', provNote = '';
+    if (endo && endo !== 0) {
+      provLabel = '<span class="badge bg-secondary">Endorheic</span>';
+      provNote  = 'Basin has no ocean outlet. Water accumulates locally (evaporation, infiltration).';
+    } else if (coast && distSink != null && distSink < 10) {
+      provLabel = '<span class="badge bg-info text-dark">Coastal terminal</span>';
+      provNote  = 'Direct coastal drainer. Local precipitation dominates water supply.';
+    } else if (!smallBasin && precipR != null && precipR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream catchment delivers ${fmtR(precipR)} the precipitation of the local basin — water originating outside the local drainage area is the dominant supply.`;
+    } else if (!smallBasin && aridR != null && aridR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream moisture index is ${fmtR(aridR)} that of the local basin — the catchment is substantially wetter than the local setting.`;
+    } else if (smallBasin) {
+      provLabel = '<span class="badge bg-secondary">Undetermined</span>';
+      provNote  = `This basin's upstream catchment (${fmt(upArea)} km²) is too small to resolve distant water sources — the local and upstream values are nearly identical by construction. Switch to <strong>L06</strong> to see the broader drainage context.`;
+    } else {
+      const nearUnity = r => r == null || (r >= 0.9 && r <= 1.1);
+      if (nearUnity(precipR) && nearUnity(aridR) && nearUnity(tempR)) {
+        provLabel = '<span class="badge bg-secondary">Catchment-uniform</span>';
+        provNote  = 'Climate conditions are consistent throughout the upstream catchment — no significant local/upstream contrast.';
+      } else {
+        provLabel = '<span class="badge bg-success">Local-dominant</span>';
+        provNote  = 'Upstream conditions differ modestly from local — water supply is primarily generated within the regional catchment.';
+      }
+    }
+
+    const levelNote = `<p class="text-muted mb-3" style="font-size:0.8rem;">
+      Showing Level 0${level}. The local/upstream contrast is most informative at <strong>L06</strong>;
+      at L08 most basins are small enough that upstream values converge toward local.
+      Use the <strong>Level</strong> selector to compare.
+    </p>`;
+
+    el.innerHTML = `
+      <div class="pt-3 px-1" style="font-size:0.85rem;">
+        ${levelNote}
+
+        <h6 class="fw-semibold mb-2">Basin context <span class="badge bg-light text-dark border ms-1" style="font-size:0.7rem;">Level 0${level}</span></h6>
+        <table class="table table-sm table-borderless mb-3" style="font-size:0.83rem;">
+          <tbody>
+            <tr><td class="text-muted pe-3" style="width:55%;">Upstream catchment</td>
+                <td><strong>${fmt(upArea)}</strong> km²</td></tr>
+            <tr><td class="text-muted pe-3">Distance to ocean outlet</td>
+                <td><strong>${fmt(distSink)}</strong> km</td></tr>
+            <tr><td class="text-muted pe-3">Drainage type</td>
+                <td>${fateBadge}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-semibold mb-1">Local–upstream divergence</h6>
+        ${smallBasin ? `<p class="text-muted fst-italic mb-2" style="font-size:0.8rem;">${provNote}</p>` : ''}
+        <table class="table table-sm mb-3" style="font-size:0.83rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:38%;">Variable</th>
+              <th>Local (s)</th>
+              <th>Upstream (u)</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-muted">Precipitation (mm/yr)</td>
+              <td>${fmt(precip_s)}</td><td>${fmt(precip_u)}</td>
+              <td class="${ratioClass(precipR)}">${fmtR(precipR)}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Moisture index (P/PET)</td>
+              <td>${fmt(arid_s)}</td><td>${fmt(arid_u)}</td>
+              <td class="${ratioClass(aridR)}">${fmtR(aridR)}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Temperature (°C)</td>
+              <td>${fmt(temp_s)}</td><td>${fmt(temp_u)}</td>
+              <td class="${ratioClass(tempR)}">${fmtR(tempR)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        ${!smallBasin ? `
+        <h6 class="fw-semibold mb-1">Water provenance</h6>
+        <div class="mb-1">${provLabel}</div>
+        <p class="text-muted mb-0" style="font-size:0.82rem;">${provNote}</p>
+        ` : ''}
+      </div>`;
+  }
+
   function _resetRightColumn() {
+    _pointSig = null;
+    document.getElementById('v3-pane-analysis').innerHTML =
+      '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
     ['v3-tab-sig-btn', 'v3-tab-analysis-btn'].forEach(id =>
       document.getElementById(id).classList.add('disabled'));
@@ -911,6 +1058,8 @@
     const coords   = (parts[0] || '').split(',');
     const fromYear = parts[2];
     const toYear   = parts[3];
+
+    _resetRightColumn();
 
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
@@ -1173,6 +1322,11 @@
       let payload, pendingBbox = null;
 
       const lv = _activeLevel();
+      // Kick off /api/signature in parallel for Analysis tab (raw values; /api/areas returns scores only)
+      const _sigFetch = (currentLat != null)
+        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE`)
+        : null;
+
       if (scope === 'single') {
         const url = buildSingleBasinUrl();
         if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
@@ -1239,6 +1393,18 @@
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
 
       _repaintChoropleth();
+
+      // Populate Analysis tab from parallel /api/signature fetch
+      if (_sigFetch) {
+        try {
+          const sigR = await _sigFetch;
+          if (sigR.ok) {
+            _pointSig = await sigR.json();
+            renderAnalysis(_pointSig, lv);
+            document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
+          }
+        } catch (_) { /* analysis tab stays at placeholder */ }
+      }
 
     } catch (err) {
       console.error('[v3] signature error:', err);

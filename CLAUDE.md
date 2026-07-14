@@ -46,8 +46,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO2 + tweaks0712 merged — AWMC basemap, rivers PMTiles, basin casing, slice overlay, placed examples. Next: hero-shot curation.
-- **Tests:** 575 pass, 52 skipped
+- **Current step:** WO4b merged — Analysis tab live on Settlements (s/u divergence + provenance badge; Cairo/Baghdad/Timbuktu confirmed). WHG lookup broken (403 from WHG; developer contacted). Next: hero-shot curation.
+- **Tests:** 577 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
