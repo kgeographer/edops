@@ -129,7 +129,7 @@ Tbilisi's own biome label flips from 4 to 13 between levels (confirming WO3). Th
 
 The L08 top-20 shifts slightly toward warmer/drier analogues (4 biome 13 + 3 biome 12 entries not present at L06), reflecting the Tbilisi L08 basin capturing the warmer Kura valley floor rather than surrounding Caucasus highlands. But biome 4 dominates at both levels and the neighbourhood remains globally distributed (Europe, Asia, North America).
 
-**Finding:** the EDOPS metric provides scale-stable analogue identification where the biome label does not. This is a meaningful property claim — the metric characterises Tbilisi's environment consistently regardless of which basin polygon boundary contains the query point.
+**Finding:** a clean MAUP demonstration at two levels of resolution. At L06 the basin encompasses surrounding Caucasus terrain → wetter, more temperate signature (blue in the UI aridity choropleth). At L08 the basin is the valley floor only → drier, more arid signature (orange). Both are correct at their respective scales; the scale of measurement determines what is measured. The biome flip (4→13) is the stark categorical version. The metric shows the same effect more continuously: L08 analogues skew warmer and drier than L06 analogues, consistent with the valley-floor basin character. The metric does not hide the MAUP instability — it tracks it across 13 continuous variables rather than collapsing it to one label flip.
 
 ---
 
@@ -141,7 +141,7 @@ The L08 top-20 shifts slightly toward warmer/drier analogues (4 biome 13 + 3 bio
 
 3. **Seasonality is the missing dimension.** The Mediterranean five failure (Test 1 negative) and the weakness of within-biome discrimination both point to the same gap: annual-mean variables cannot capture seasonal structure. `pre_mm_s01..s12` (planned) is the fix.
 
-4. **The metric works for scale-stability** (Test 4) and makes fine within-biome discriminations (Test 2 finding). These are the defensible positive claims at this stage.
+4. **MAUP is demonstrable and real at Tbilisi** (Test 4): L06 basin includes Caucasus highlands (wetter); L08 basin is the valley floor (drier). The biome label flip is the categorical expression; the metric shows the same effect continuously — L08 analogues skew warmer and drier. The metric tracks scale-dependence rather than suppressing it. Test 2 finding: the metric makes fine within-biome discriminations (Rhine vs. Willamette resolved at ~2× precip difference).
 
 5. **Mahalanobis over the full variable set is not viable** (κ = 6,091). The selected 13-variable set removes the most collinear pairs; κ of the selected subset was not computed and should be checked before any Mahalanobis implementation.
 
