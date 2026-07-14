@@ -853,7 +853,7 @@
     _whgHideCandidates();
     _whgSetStatus('', false);
     if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
-    shell.clear();
+    shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _sigMemberIds = null;
     document.getElementById('v3-scope-select').value = '';
@@ -1116,7 +1116,7 @@
     restyle(name, layerId, paint) {
       Object.entries(paint).forEach(([prop, val]) => map.setPaintProperty(layerId, prop, val));
     },
-    clear() { Object.keys(_layers).forEach(n => this.remove(n)); },
+    clear({ skip = [] } = {}) { Object.keys(_layers).forEach(n => { if (!skip.includes(n)) this.remove(n); }); },
   };
 
   // ── Geo helpers ───────────────────────────────────────────────────────────
@@ -1773,7 +1773,7 @@
     const polityLvlSel = document.getElementById('v3-polity-level');
     polityLvlSel.value    = '6';
     polityLvlSel.disabled = true;
-    shell.clear();
+    shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _basinLayerLevel  = null;
     _sigMemberIds     = null;
