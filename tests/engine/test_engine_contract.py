@@ -61,6 +61,10 @@ VALID_BANDS       = frozenset({'A', 'B', 'C', 'D', 'E', 'T'})
 VALID_KINDS       = frozenset({'continuous', 'categorical', 'flag'})
 DERIVED_KEYS      = frozenset({
     'coast_fraction', 'elev_point', 'outlet_type', 'relief_position', 'relief_range_m',
+    # WO5 seasonality scalars (derived in signature.py; excluded from engine scoring)
+    'pre_concentration', 'pre_peak_month',
+    'tmp_concentration', 'tmp_peak_month',
+    'seas_phase_offset', 'tmp_seas_amp',
 })
 
 # ---------------------------------------------------------------------------
@@ -172,7 +176,7 @@ class TestCatalog:
         """Catalog has expected derived/sourced split."""
         sourced = meta[~meta['derived']]
         derived = meta[meta['derived']]
-        assert len(derived) == 5
+        assert len(derived) == 11
         assert len(sourced) >= 55       # grows as new vars are added
 
     def test_derived_keys(self, meta):
