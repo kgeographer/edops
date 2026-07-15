@@ -227,7 +227,8 @@ band*. The distinction matters for instrument design.
 - [x] Reason for failure stated plainly: terrain dominates inter-level distance; global terrain-climate covariance corrupts composite analogue medians
 - [x] Instrument selection guidance given
 - [x] Provenance discrimination test (Cell 23): DISCRIMINATES — median dist_prov=2.024 vs. climate twins; all four bands now validated
-- [ ] Karl review
+- [x] dist_sink 2331.1 km confirmed against raw `basin06` (hybas_id 1060551560)
+- [x] Karl review
 
 ## Next steps
 
