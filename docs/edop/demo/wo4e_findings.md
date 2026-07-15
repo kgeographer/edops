@@ -159,10 +159,54 @@ The WO4c–4e arc resolves to three clean findings:
 - The per-band profile as the explanatory layer for both: it says *why* the neighbourhood
   looks the way it does and *in what respects* two places are similar.
 
-**Provenance band status: null behaviour confirmed; discrimination untested.** Climate (100%/111%),
-terrain, and hydrology all responded to the Tbilisi test in the expected direction. The provenance
-band returned 0.000 correctly on a provenance-null site. Three of four bands have been shown to
-respond; provenance is not yet among them.
+**All four bands validated.** Climate (100%/111%), terrain, and hydrology responded correctly to
+the Tbilisi test. Provenance returned 0.000 correctly on a provenance-null site (Tbilisi), and
+returned median 2.024 on a provenance-positive site (Timbuktu's climate twins). Each band has
+been shown to respond where it should and stay silent where it should not.
+
+---
+
+## Provenance discrimination test (Cell 23)
+
+### Setup
+
+Timbuktu's C_climate nearest neighbours (top-20 by C_climate Mahalanobis) are genuine climate
+peers: ari ≈ 9, pre ≈ 189 mm/yr, tmp ≈ 28.6°C — other hyper-arid hot basins globally. All 20
+have dist_C ≤ 0.130 (median 0.107). The question: are they also provenance-similar to Timbuktu
+(precip_ratio 5.05, dist_sink 2331 km), or provenance-distant?
+
+### Result: DISCRIMINATES
+
+| Measure | Climate twins (n=20) | Timbuktu |
+|---|---|---|
+| precip_ratio median | **1.00** | 5.05 |
+| precip_ratio IQR | [1.00, 1.52] | — |
+| dist_prov median | **2.024** | 0.000 |
+| dist_prov range | 1.58 – 2.80 | — |
+
+18 of 20 climate twins have precip_ratio ≤ 1.52. They are rain-fed. Timbuktu's combination of
+low local aridity (ari=9), high upstream moisture (ari_u=47, pre_u=955 mm), and deep network
+position (dist_sink=2331 km) is correctly recognised as provenance-anomalous relative to every
+one of its climate peers. The provenance-band Mahalanobis distance exceeds the climate-band
+distance for all 20 twins.
+
+**Rank 6** is instructive: precip_ratio 4.67 (close to Timbuktu's 5.05) yet dist_sink = 0
+(at the outlet). A river-mouth basin on an allochthonous river — same water-origin mechanism as
+Timbuktu but at the downstream end rather than mid-reach. The Mahalanobis distance reports 2.031:
+similar ratio, very different network position; the band correctly reports them as
+provenance-distinct.
+
+### Reconciliation with WO4c Test 3
+
+WO4c Test 3 found the s/u apparatus "directional but weak" in neighbourhood restructuring (top-20
+overlap 15/20; mean precip_ratio 2.01 → 2.39). Cell 23 resolves the apparent contradiction: the
+band does discriminate — but the weak restructure was a **composite problem**, not a band problem.
+When upstream variables are embedded in a 15-variable Euclidean composite, the provenance penalty
+is distributed across too many dimensions to move the neighbourhood substantially. Used as its own
+distance measure, the provenance band delivers a separation of 2.024 — unambiguous.
+
+The WO4c verdict "quiet exception-detector" should be read as: quiet *in a composite*, loud *as a
+band*. The distinction matters for instrument design.
 
 ---
 
@@ -175,18 +219,11 @@ respond; provenance is not yet among them.
 - [x] Band-weighted composite built and tested: fails (−47%, −57%, +30%)
 - [x] Reason for failure stated plainly: terrain dominates inter-level distance; global terrain-climate covariance corrupts composite analogue medians
 - [x] Instrument selection guidance given
+- [x] Provenance discrimination test (Cell 23): DISCRIMINATES — median dist_prov=2.024 vs. climate twins; all four bands now validated
 - [ ] Karl review
 
 ## Next steps
 
-- **Provenance discrimination test** (notebook cell, no new WO needed): take Timbuktu's
-  C_climate nearest neighbours — basins climatically like Timbuktu — and measure their
-  provenance-band distance from Timbuktu. If climate twins are provenance-distant, the band
-  discriminates: "same climate, water arrived differently." If they are also provenance-close,
-  the apparatus adds nothing detectable at L06, consistent with the r=0.975 local/upstream
-  near-collinearity. No constructed control is needed; this uses the per-band instrument already
-  built in Cell 19. It also doubles as a dry run for the D-PLACE correspondence shape
-  (climate-band distance vs. a second dimension).
 - **WO5** if proceeding: monthly precipitation indices to fix Mediterranean (Test 1) and sharpen
   the C_climate Mahalanobis instrument. Seasonality is the remaining gap.
 - **Surface integration** (separate WO): two query modes — holistic (Euclidean composite) and
