@@ -46,7 +46,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO4b merged — Analysis tab live on Settlements (s/u divergence + provenance badge; Cairo/Baghdad/Timbuktu confirmed). WHG lookup broken (403 from WHG; developer contacted). Next: hero-shot curation.
+- **Current step:** WO4 complete — Analysis tab (WO4a–4b) + basin-similarity research (WO4c–4e). Branch `demo_wo4` ready to merge. Similarity instrument settled: per-band Mahalanobis profile (primary), Euclidean composite (holistic queries), C_climate Mahalanobis (climate-primary queries); band-weighted composite retired. WHG lookup broken (403; Stephen Gadd contacted). **Next: merge `demo_wo4`, then hero-shot curation.**
 - **Tests:** 577 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
