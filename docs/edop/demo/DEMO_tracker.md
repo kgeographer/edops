@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-14 (WO4 complete — Analysis tab + basin-similarity research)
+- **Last updated:** 2026-07-15 (WO5 complete — seasonality arrays + derived indices)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,7 +50,7 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**577 tests pass, 52 skipped.**
+**580 tests pass, 52 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle,
@@ -135,8 +135,27 @@ signature), polity examples added, Polities tab now default. Findings in
 - Polity Analysis tab: open design question (logged in roadmap); pane left at placeholder.
   Upstream fields in polity signature are area-weighted means of per-basin upstream values —
   not "water from outside polity borders." Different question, unresolved.
-- 577 tests pass, 52 skipped.
 - Full findings: `docs/edop/demo/wo4b_findings.md`
+
+**WO5 complete (2026-07-15) — Seasonality arrays + derived indices (Band C):**
+- `v_basin06_persist_rev2` / `v_basin08_persist_rev2` views created in DB: add
+  `pre_mm_monthly float[]` (12 monthly precip values) and `tmp_dc_monthly float[]`
+  (monthly temp in °C, ×10 division applied in view) alongside all rev1 columns.
+- `signature.py` switched to rev2 views (`_VIEW_FOR_LEVEL`); rev1 views untouched as rollback.
+- `_circ_stats()` + `_seasonality_indices()` compute 6 derived scalars from the arrays:
+  `pre_concentration`, `pre_peak_month`, `tmp_concentration`, `tmp_peak_month`,
+  `seas_phase_offset` (circular distance between precip and temp peaks, months [0,6]),
+  `tmp_seas_amp` (max−min monthly temp).
+- Arrays and derived scalars in top-level `out` only — not in `profile_groups` — so v1
+  sandbox accordion is unaffected.
+- Variable catalog updated: 2 rows promoted to implemented (type=object); 6 new derived rows added.
+- Engine contract test updated: DERIVED_KEYS + count 5→11.
+- 3 new WO5 contract tests in `tests/test_api_examples.py`:
+  `test_seasonality_arrays_rome`, `test_seasonality_scalars_rome` (pinned ±0.05),
+  `test_seasonality_discrimination` (Rome offset > 3.5; Delhi offset < 1.5; London conc < 0.2).
+- 580 tests pass, 52 skipped.
+- Notebook investigation: `notebooks/edop/demo/wo5_seasonality.ipynb`
+- Findings: `docs/edop/demo/wo5_findings.md`
 
 ---
 
@@ -157,7 +176,7 @@ signature), polity examples added, Polities tab now default. Findings in
 | Scale-sensitivity flag | *"This location is scale-sensitive"* tag from L06↔L08 signature diff; replaces dropped v1 scale-mismatch alert | pending |
 | Global divergence ranking | Notebook: rank basins by `precip_yr_upstream / precip_yr` to surface allochthonous places globally; trivial query, both columns precomputed in basin06/basin08 | pending |
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
-| Seasonality (WO5) | Monthly precip indices (`pre_mm_s01..s12`) to recover Mediterranean analogues (WO4c Test 1) and sharpen C_climate Mah | deferred — data load WO |
+| Seasonality (WO5) | Monthly arrays + 6 derived indices in signature; rev2 DB views; catalog updated; 3 contract tests | **complete** |
 | Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
 | Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
@@ -194,6 +213,16 @@ signature), polity examples added, Polities tab now default. Findings in
 
 Append-only; dated. Settled unless explicitly revisited here.
 
+**2026-07-15**
+
+- **WO5 seasonality architecture locked** — Monthly arrays (`pre_mm_monthly`, `tmp_dc_monthly`)
+  live in rev2 views alongside all rev1 columns; `signature.py` points to rev2; rev1 stays live
+  as instant rollback. Six derived scalars computed in Python from arrays; placed in top-level
+  `out` only (not `profile_groups`) so v1 sandbox is unaffected. Acceptance criteria (notebook
+  cell 8, 2026-07-14): Rome pre_concentration ≈ 0.280 (±0.05), seas_phase_offset ≈ 4.486 (±0.05);
+  Delhi seas_phase_offset < 1.5; London pre_concentration < 0.2. Engine.py `_LEVEL_VIEW` still
+  points to rev1 — separate step when engine needs seasonality.
+
 **2026-07-14**
 
 - **Basin-similarity instrument settled** — Per-band Mahalanobis profile is the primary
@@ -201,8 +230,8 @@ Append-only; dated. Settled unless explicitly revisited here.
   C_climate Mahalanobis for climate-primary queries. Band-weighted composite retired: it
   amplifies rather than corrects imbalance when one band dominates the inter-level distance.
   The comparison vector is Phase-4 correspondence substrate — do not re-derive.
-  Open (not WO4 loose ends): seasonality (WO5); terrain/hydrology discrimination tests;
-  surface integration (separate future WO).
+  Open (not WO4 loose ends): terrain/hydrology discrimination tests; surface integration
+  (separate future WO). Seasonality (WO5) complete — see 2026-07-15 locked decision above.
 
 **2026-07-13**
 
