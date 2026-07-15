@@ -51,10 +51,21 @@ z-score space):
 highlands (high elevation, high slope); L08 is the Kura valley floor (lower elevation, lower slope).
 C_climate difference is real and large (0.777) but comes second.
 
-**Provenance = 0.000.** The two Tbilisi basins have identical provenance signatures: same network
-position (`dist_sink`), same upstream aridity and precipitation at both levels. The s/u apparatus
-sees no inter-level difference at Tbilisi. The entire L06→L08 environmental shift is terrain +
-climate, not provenance.
+**Provenance = 0.000 — correct and verified.** Both basins share the same downstream pour point
+and drain east toward the Caspian sink (not west to the Black Sea; the drainage divide sits west
+of the query point). `dist_sink` is therefore genuinely identical at both levels. Upstream aridity
+and precipitation are likewise identical: Tbilisi's basin is locally watered, with no divergence
+between local and upstream climate at either resolution. The 0.000 was checked against raw
+`basin06` / `basin08` values; there is no stale-field or data-loading issue.
+
+**What 0.000 confirms and what it does not.** This is a true zero on a provenance-null site —
+the band correctly reports no difference when there is no difference. That is necessary but not
+sufficient. **What remains untested is discrimination:** whether the provenance band reports a
+large distance when there is a large provenance difference. Tbilisi has no provenance signal at
+either level, so it cannot exercise that capacity. Using it to characterise the provenance
+instrument is the same category error as WO4d Test 3 (which tried to test the s/u apparatus on a
+case without a rain-fed control). The entire L06→L08 environmental shift at Tbilisi is terrain +
+climate; provenance is simply absent.
 
 ---
 
@@ -148,6 +159,11 @@ The WO4c–4e arc resolves to three clean findings:
 - The per-band profile as the explanatory layer for both: it says *why* the neighbourhood
   looks the way it does and *in what respects* two places are similar.
 
+**Provenance band status: null behaviour confirmed; discrimination untested.** Climate (100%/111%),
+terrain, and hydrology all responded to the Tbilisi test in the expected direction. The provenance
+band returned 0.000 correctly on a provenance-null site. Three of four bands have been shown to
+respond; provenance is not yet among them.
+
 ---
 
 ## Accept gate
@@ -163,6 +179,14 @@ The WO4c–4e arc resolves to three clean findings:
 
 ## Next steps
 
+- **Provenance discrimination test** (notebook cell, no new WO needed): take Timbuktu's
+  C_climate nearest neighbours — basins climatically like Timbuktu — and measure their
+  provenance-band distance from Timbuktu. If climate twins are provenance-distant, the band
+  discriminates: "same climate, water arrived differently." If they are also provenance-close,
+  the apparatus adds nothing detectable at L06, consistent with the r=0.975 local/upstream
+  near-collinearity. No constructed control is needed; this uses the per-band instrument already
+  built in Cell 19. It also doubles as a dry run for the D-PLACE correspondence shape
+  (climate-band distance vs. a second dimension).
 - **WO5** if proceeding: monthly precipitation indices to fix Mediterranean (Test 1) and sharpen
   the C_climate Mahalanobis instrument. Seasonality is the remaining gap.
 - **Surface integration** (separate WO): two query modes — holistic (Euclidean composite) and
