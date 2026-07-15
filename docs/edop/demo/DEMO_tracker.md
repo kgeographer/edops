@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-13 (WO4a probe + WO4b Analysis tab complete, merged to demo)
+- **Last updated:** 2026-07-14 (WO4 complete — Analysis tab + basin-similarity research)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -107,6 +107,24 @@ signature), polity examples added, Polities tab now default. Findings in
 - Global divergence ranking feasibility: trivial query (precomputed columns); notebook pending.
 - Full findings: `docs/edop/demo/wo4a_findings.md`
 
+**WO4c–4e complete (2026-07-14) — Basin-similarity research (Track 2):**
+- **WO4c** (Cell 1–14): Space characterisation — correlation structure, PCA (PC1 thermal 27%,
+  PC2 moisture 21%, PC3 terrain 15%, PC4 provenance 8%), variable selection (13 local + 2 upstream),
+  feature matrices. Validation: Mediterranean five fails (seasonality gap); Rhine/Willamette resolves
+  correctly; Timbuktu provenance directional but weak in composite; Tbilisi test withdrawn for WO4d.
+- **WO4d** (Cells 15–18): Dilution confirmed — Euclidean composite tracks temperature at 98% but
+  moisture at 18% / wrong direction. Per-band distances built; κ=55.1 (well-conditioned). Rain-fed
+  control non-existent at L06; discharge already carries provenance signal in composite.
+- **WO4e** (Cells 19–23): Per-band Mahalanobis (κ per band 3.1–21.6, all Mah). C_climate Mah
+  fixes dilution: 100%/111%/91%. Band-weighted composite fails (−47%/−57%/+30%): terrain dominates
+  inter-level distance (1.206 vs climate 0.777); equal band weight amplifies not corrects. Provenance
+  band validated: climate twins (dist_C ≈ 0.107) are provenance-distant (dist_prov median 2.024,
+  precip_ratio median 1.00 vs Timbuktu 5.05). Band-weighted composite retired.
+- **Instrument settled**: per-band Mahalanobis profile (primary); Euclidean composite for holistic
+  queries; C_climate Mahalanobis for climate-primary queries. Comparison vector is Phase-4
+  correspondence substrate.
+- Findings: `wo4c_findings.md`, `wo4d_findings.md`, `wo4e_findings.md`
+
 **WO4b complete (2026-07-13)** — Analysis tab ported to v3 Settlements:
 - `sigVal()` + `renderAnalysis()` ported from v1; powered by parallel `/api/signature` fetch
   (raw values; `/api/areas` returns normalized scores only).
@@ -132,12 +150,16 @@ signature), polity examples added, Polities tab now default. Findings in
 | Polity–basin08 crosswalk (WO3b) | `temporal.polity_basin08_crosswalk` — 9M rows, 12,975 polities, 0 bad geometry | **complete** |
 | L08 polity choropleth fix (WO3c) | member_ids in API; crosswalk-lookup path in engine; level toggle on Polities tab working | **complete — merged** |
 | Analysis tab — s/u divergence + provenance (WO4a–4b) | WO4a probe confirmed Cairo/Baghdad as archetype cases; WO4b ports divergence table + provenance badge to v3 Settlements tab | **complete — merged** |
+| Basin-similarity research (WO4c–4e) | Instrument settled: per-band Mah profile + Euclidean composite + C_climate Mah; band-weighted retired; all four bands exercised | **complete** |
 | **Hero shot curation** | Identify 2–3 polity/variable/history triples for demo; Tbilisi + N Song confirmed viable | **next** |
 | L06 ↔ L08 toggle demo (MAUP) | Toggle on Settlements tab already works; Polities tab L08 now working | pending |
 | Analysis tab — polity scope | What the Analysis tab shows for a polity is an open design question; upstream fields in polity signature are area-weighted means of per-basin upstream values, not "water from outside polity borders" | pending design |
 | Scale-sensitivity flag | *"This location is scale-sensitive"* tag from L06↔L08 signature diff; replaces dropped v1 scale-mismatch alert | pending |
 | Global divergence ranking | Notebook: rank basins by `precip_yr_upstream / precip_yr` to surface allochthonous places globally; trivial query, both columns precomputed in basin06/basin08 | pending |
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
+| Seasonality (WO5) | Monthly precip indices (`pre_mm_s01..s12`) to recover Mediterranean analogues (WO4c Test 1) and sharpen C_climate Mah | deferred — data load WO |
+| Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
+| Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
 | Feature freeze / UX review | Hard calendar checkpoint; surface declared demo-frozen | ~early September 2026 |
 
@@ -171,6 +193,16 @@ signature), polity examples added, Polities tab now default. Findings in
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-14**
+
+- **Basin-similarity instrument settled** — Per-band Mahalanobis profile is the primary
+  instrument; Euclidean composite (13 local vars) for holistic "similar places" queries;
+  C_climate Mahalanobis for climate-primary queries. Band-weighted composite retired: it
+  amplifies rather than corrects imbalance when one band dominates the inter-level distance.
+  The comparison vector is Phase-4 correspondence substrate — do not re-derive.
+  Open (not WO4 loose ends): seasonality (WO5); terrain/hydrology discrimination tests;
+  surface integration (separate future WO).
 
 **2026-07-13**
 

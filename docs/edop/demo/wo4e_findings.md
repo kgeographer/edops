@@ -159,10 +159,17 @@ The WO4c–4e arc resolves to three clean findings:
 - The per-band profile as the explanatory layer for both: it says *why* the neighbourhood
   looks the way it does and *in what respects* two places are similar.
 
-**All four bands validated.** Climate (100%/111%), terrain, and hydrology responded correctly to
-the Tbilisi test. Provenance returned 0.000 correctly on a provenance-null site (Tbilisi), and
-returned median 2.024 on a provenance-positive site (Timbuktu's climate twins). Each band has
-been shown to respond where it should and stay silent where it should not.
+**Each band has been shown to respond appropriately on the cases tested — "validated" means
+"responds where it should on the cases run," not "complete."**
+
+- **Climate:** validated on scale-coherence (Tbilisi moisture 100%/111%). Known-analogue
+  recovery still fails pending seasonality — the Mediterranean five (WO4c Test 1) cannot be
+  recovered with annual-mean variables alone.
+- **Provenance:** validated on discrimination — Timbuktu's climate twins (dist_C median 0.107)
+  have dist_prov median 2.024 vs. precip_ratio median 1.00. The band correctly separates
+  "same local climate, water arrived differently."
+- **Terrain and hydrology:** shown to move sensibly on the Tbilisi inter-level difference
+  (A=1.206, B=0.445), but not yet put to a discrimination test of their own.
 
 ---
 
