@@ -128,10 +128,12 @@ rainfall. That disproportion shows up in the hydrology band regardless of whethe
 variables (ari_ix_uav, pre_mm_uyr) are included. The s/u apparatus tries to add explicit upstream
 information, but dis_m3_pyr has already captured most of that signal.
 
-**Consequence:** the s/u apparatus does not add discriminating power at L06 that is not already
-partially expressed through discharge. This is consistent with the r=0.975 correlation between
-ari_ix_uav and ari_ix_sav (Cell 5) and with the weak neighbourhood restructure in WO4c Test 3
-(overlap 15/20; mean precip_ratio shift 2.01 → 2.39).
+**Consequence:** the s/u apparatus is **untested** at L06 — the two-basin discrimination failed
+at its premise, so the apparatus never ran. The r=0.975 correlation between ari_ix_uav and
+ari_ix_sav (Cell 5), and the weak neighbourhood restructure in WO4c Test 3 (overlap 15/20;
+precip_ratio shift 2.01 → 2.39), are real observations but do not establish that the apparatus
+adds nothing. Whether it discriminates is a live question at L08, where basins can be locally arid
+and genuinely dry — the L06 control category is ecologically near-empty, not globally missing.
 
 ---
 
@@ -158,7 +160,7 @@ B_hydrology), not the explicit upstream variables (ari_ix_uav, pre_mm_uyr).
 | Is Mahalanobis available on the 13-var set? | Yes (κ=55.1) |
 | Does the metric track genuine scale-conditionality (Tbilisi)? | Partially — temperature yes, moisture no |
 | Is moisture (aridity/precipitation) diluted by non-climate variables? | Yes — confirmed |
-| Does the s/u apparatus discriminate allochthonous basins? | Not at L06 — discharge already carries the signal |
+| Does the s/u apparatus discriminate allochthonous basins? | **Untested at L06** — control category ecologically near-empty; live question at L08 |
 | Does locally arid + rain-fed exist as a testable category? | No — ecologically near-empty at L06 |
 
 ### What this means for the metric
