@@ -384,6 +384,10 @@
           <button class="nav-link disabled" id="v3-tab-analysis-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-analysis" type="button" role="tab">Analysis</button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v3-tab-seasonality-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-seasonality" type="button" role="tab">Seasonality</button>
+        </li>
       </ul>
 
       <div class="tab-content">
@@ -414,6 +418,12 @@
           <p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>
         </div>
 
+        <!-- Seasonality pane -->
+        <div class="tab-pane fade" id="v3-pane-seasonality" role="tabpanel">
+          <p class="text-muted mt-3 px-1" id="v3-seas-placeholder">Click a location and run <strong>Get signature</strong> to load seasonality.</p>
+          <div id="v3-seas-content" style="display:none;"></div>
+        </div>
+
       </div>
     </div><!-- /right col -->
 
@@ -442,7 +452,8 @@
   let _centerPayload = null;
   let _sigMemberIds    = null;  // Set<number> of hybas_ids in current scope
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
-  let _pointSig        = null;  // /api/signature response for current point — powers Analysis tab
+  let _pointSig         = null;  // /api/signature response for current point — powers Analysis tab
+  let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -807,6 +818,7 @@
   function setResolvedPoint(lat, lon, name) {
     currentLat = lat;
     currentLon = lon;
+    _currentPlaceName = name || '';
 
     _whgHideCandidates();
     _whgSetStatus('', false);
@@ -859,6 +871,173 @@
     document.getElementById('v3-scope-select').value = '';
     applyScope('');
     updateSigButton();
+  }
+
+  // ── Seasonality tab ──────────────────────────────────────────────────────
+
+  function renderSeasonality(sig) {
+    const pre = sig.pre_mm_monthly;
+    const tmp = sig.tmp_dc_monthly;
+    if (!pre || !tmp || pre.length !== 12 || tmp.length !== 12) return;
+
+    const level  = sig.meta?.query?.level ?? '?';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const preConc  = sig.pre_concentration;
+    const prePeak  = sig.pre_peak_month;
+    const tmpConc  = sig.tmp_concentration;
+    const tmpPeak  = sig.tmp_peak_month;
+    const offset   = sig.seas_phase_offset;
+    const tmpAmp   = sig.tmp_seas_amp;
+
+    // ── Walter-Lieth dual-axis SVG ────────────────────────────────────────
+    const WL_W = 460, WL_H = 240, PAD = {t:16, r:50, b:36, l:50};
+    const iW = WL_W - PAD.l - PAD.r, iH = WL_H - PAD.t - PAD.b;
+    const preMax = Math.max(...pre);
+    const tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp);
+    const pScale = v => iH - (v / (preMax * 1.1)) * iH;
+    const tScale = v => iH - ((v - (tmpMin - 3)) / (tmpMax - tmpMin + 6)) * iH;
+    const barW   = iW / 12;
+
+    let bars = '', tPts = '', xLabels = '', yLabelsPre = '', yLabelsTmp = '';
+    for (let i = 0; i < 12; i++) {
+      const x  = PAD.l + i * barW;
+      const bH = iH - pScale(pre[i]);
+      bars    += `<rect x="${(x+1.5).toFixed(1)}" y="${(PAD.t + pScale(pre[i])).toFixed(1)}" width="${(barW-3).toFixed(1)}" height="${bH.toFixed(1)}" fill="#5b8dc4" opacity="0.65"/>`;
+      const tx = (PAD.l + (i + 0.5) * barW).toFixed(1);
+      const ty = (PAD.t + tScale(tmp[i])).toFixed(1);
+      tPts    += `${tx},${ty} `;
+      xLabels += `<text x="${tx}" y="${(WL_H - 8).toFixed(1)}" font-size="11" text-anchor="middle">${months[i]}</text>`;
+    }
+    for (const v of [0, Math.round(preMax * 0.5), Math.round(preMax)]) {
+      const y = (PAD.t + pScale(v)).toFixed(1);
+      yLabelsPre += `<text x="${(PAD.l - 5).toFixed(1)}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${v}</text>`;
+      yLabelsPre += `<line x1="${PAD.l}" y1="${y}" x2="${(PAD.l + iW).toFixed(1)}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
+    }
+    for (const v of [Math.round(tmpMin), Math.round((tmpMin+tmpMax)/2), Math.round(tmpMax)]) {
+      const y = (PAD.t + tScale(v)).toFixed(1);
+      yLabelsTmp += `<text x="${(PAD.l + iW + 5).toFixed(1)}" y="${y}" font-size="11" text-anchor="start" fill="#c0392b" dominant-baseline="middle">${v}°</text>`;
+    }
+    const axRotL = `rotate(-90,${(PAD.l/2).toFixed(1)},${(PAD.t+iH/2).toFixed(1)})`;
+    const axRotR = `rotate(90,${(WL_W-PAD.r/2+8).toFixed(1)},${(PAD.t+iH/2).toFixed(1)})`;
+    const wlSvg = `<svg width="${WL_W}" height="${WL_H}" style="display:block;overflow:visible;">
+      <rect x="${PAD.l}" y="${PAD.t}" width="${iW}" height="${iH}" fill="#f8f9fa" rx="2"/>
+      ${yLabelsPre}
+      ${bars}
+      <polyline points="${tPts.trim()}" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${yLabelsTmp}
+      ${xLabels}
+      <text x="${(PAD.l/2).toFixed(1)}" y="${(PAD.t+iH/2).toFixed(1)}" font-size="11" fill="#5b8dc4" text-anchor="middle" transform="${axRotL}">Precip (mm)</text>
+      <text x="${(WL_W-PAD.r/2+8).toFixed(1)}" y="${(PAD.t+iH/2).toFixed(1)}" font-size="11" fill="#c0392b" text-anchor="middle" transform="${axRotR}">Temp (°C)</text>
+    </svg>`;
+
+    // ── Polar SVG ─────────────────────────────────────────────────────────
+    const PR = 260, cx = PR/2, cy = PR/2, maxR = 100, innerR = 8;
+    const preScaleR = v => innerR + (v / (preMax * 1.05)) * (maxR - innerR);
+    const tRmin = maxR + 12, tRmax = maxR + 28;
+    const tScaleR = v => tRmin + ((v - tmpMin) / (tmpMax - tmpMin + 0.001)) * (tRmax - tRmin);
+
+    let sectors = '', tRing = '', polarLabels = '';
+    const slice = (2 * Math.PI) / 12;
+    for (let i = 0; i < 12; i++) {
+      const a0 = -Math.PI/2 + i * slice, a1 = a0 + slice;
+      const r  = preScaleR(pre[i]);
+      const x0 = (cx + innerR * Math.cos(a0)).toFixed(2), y0 = (cy + innerR * Math.sin(a0)).toFixed(2);
+      const x1 = (cx + r * Math.cos(a0)).toFixed(2),      y1 = (cy + r * Math.sin(a0)).toFixed(2);
+      const x2 = (cx + r * Math.cos(a1)).toFixed(2),      y2 = (cy + r * Math.sin(a1)).toFixed(2);
+      const x3 = (cx + innerR * Math.cos(a1)).toFixed(2), y3 = (cy + innerR * Math.sin(a1)).toFixed(2);
+      sectors += `<path d="M${x0},${y0} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} L${x3},${y3} A${innerR},${innerR} 0 0,0 ${x0},${y0} Z" fill="#5b8dc4" opacity="0.65"/>`;
+    }
+    const tPtsP = tmp.map((v, i) => {
+      const a = -Math.PI/2 + (i + 0.5) * slice;
+      const r = tScaleR(v);
+      return `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+    });
+    tRing = `<polygon points="${tPtsP.join(' ')}" fill="#c0392b" fill-opacity="0.0" stroke="#c0392b" stroke-width="1.8"/>`;
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI/2 + (i + 0.5) * slice;
+      const lr = tRmax + 14;
+      polarLabels += `<text x="${(cx + lr * Math.cos(a)).toFixed(1)}" y="${(cy + lr * Math.sin(a)).toFixed(1)}" font-size="11" text-anchor="middle" dominant-baseline="middle">${months[i]}</text>`;
+    }
+    const refCircles = [maxR/2, maxR].map(r =>
+      `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ddd" stroke-width="0.7"/>`
+    ).join('');
+    const topLbl = `<text x="${cx}" y="${(cy - maxR - 5).toFixed(1)}" font-size="11" text-anchor="middle" fill="#5b8dc4">${Math.round(preMax)} mm</text>`;
+    const legendY = (PR + 32).toFixed(1);
+    const polarSvg = `<svg width="${PR}" height="${PR + 38}" style="display:block;overflow:visible;">
+      <circle cx="${cx}" cy="${cy}" r="${maxR}" fill="#f8f9fa"/>
+      ${refCircles}
+      ${sectors}
+      ${tRing}
+      ${polarLabels}
+      ${topLbl}
+      <text x="${cx}" y="${legendY}" font-size="12" text-anchor="middle">
+        <tspan fill="#5b8dc4">■</tspan><tspan> Precip  </tspan><tspan fill="#c0392b">●</tspan><tspan> Temp</tspan>
+      </text>
+    </svg>`;
+
+    // ── Generated blurb ───────────────────────────────────────────────────
+    const peakMonthName = m => months[Math.round(m) % 12];
+    let preDesc, offsetDesc, ampDesc;
+
+    if (preConc < 0.15)       preDesc = `year-round precipitation with very little seasonal concentration (concentration ${preConc.toFixed(2)})`;
+    else if (preConc < 0.35)  preDesc = `moderately seasonal precipitation, distributed across much of the year (concentration ${preConc.toFixed(2)})`;
+    else if (preConc < 0.60)  preDesc = `clearly seasonal precipitation (concentration ${preConc.toFixed(2)})`;
+    else                      preDesc = `strongly concentrated precipitation (concentration ${preConc.toFixed(2)})`;
+
+    const prePeakN = peakMonthName(sig.pre_peak_month ?? 0);
+    const tmpPeakN = peakMonthName(sig.tmp_peak_month ?? 0);
+
+    if (offset > 3.5)         offsetDesc = `Precipitation peaks in ${prePeakN} while temperature peaks in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — a Mediterranean-type anti-phase pattern where the wet season is the cool season.`;
+    else if (offset < 1.5)    offsetDesc = `Precipitation peaks in ${prePeakN}, nearly co-incident with the temperature peak in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — characteristic of monsoon and continental climates.`;
+    else                      offsetDesc = `Precipitation peaks in ${prePeakN} and temperature in ${tmpPeakN}, giving a moderate offset of ${offset.toFixed(1)} months.`;
+
+    if (tmpAmp < 10)          ampDesc = `Temperature range is small (${tmpAmp.toFixed(1)}°C), indicating a tropical or oceanic regime.`;
+    else if (tmpAmp < 18)     ampDesc = `Temperature range is moderate (${tmpAmp.toFixed(1)}°C).`;
+    else                      ampDesc = `Temperature range is large (${tmpAmp.toFixed(1)}°C), indicating a strongly continental or high-latitude regime.`;
+
+    const blurb = `This basin shows ${preDesc}. ${offsetDesc} ${ampDesc}`;
+
+    // ── Scalar index table ────────────────────────────────────────────────
+    const fmt2 = v => (v == null ? '—' : v.toFixed(2));
+    const fmtMonth = v => (v == null ? '—' : months[Math.round(v) % 12]);
+    const scalars = [
+      { label: 'Precip concentration',     key: 'pre_concentration',  fmt: fmt2,     gloss: '[0–1]' },
+      { label: 'Precip peak month',         key: 'pre_peak_month',     fmt: fmtMonth, gloss: '' },
+      { label: 'Temp concentration',        key: 'tmp_concentration',  fmt: fmt2,     gloss: '[0–1]' },
+      { label: 'Temp peak month',           key: 'tmp_peak_month',     fmt: fmtMonth, gloss: '' },
+      { label: 'Precip–temp phase offset',  key: 'seas_phase_offset',  fmt: fmt2,     gloss: '[0–6 months]' },
+      { label: 'Temp seasonal amplitude',   key: 'tmp_seas_amp',       fmt: fmt2,     gloss: 'max−min °C' },
+    ];
+    const tableRows = scalars.map(s =>
+      `<tr><td class="pe-3 text-nowrap">${s.label}</td><td class="pe-2 text-end fw-semibold">${s.fmt(sig[s.key])}</td><td class="text-muted" style="font-size:0.8rem;">${s.gloss}</td></tr>`
+    ).join('');
+    const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
+
+    // ── Assemble ──────────────────────────────────────────────────────────
+    const nameHtml = _currentPlaceName
+      ? `<h5 class="mb-0">${_currentPlaceName}</h5>` : '';
+
+    document.getElementById('v3-seas-placeholder').style.display = 'none';
+    const content = document.getElementById('v3-seas-content');
+    content.style.display = '';
+    content.innerHTML = `
+      <div class="px-1 pt-2">
+        ${nameHtml}
+        <div style="font-size:0.8rem;" class="text-muted">L0${level} basin · monthly climatology (BasinATLAS)</div>
+      </div>
+      <div class="d-flex flex-wrap gap-3 align-items-start pt-2 px-1">
+        <div>
+          <div style="font-size:0.8rem;" class="mb-1 text-muted">Walter-Lieth</div>
+          ${wlSvg}
+        </div>
+        <div>
+          <div style="font-size:0.8rem;" class="mb-1 text-muted">Polar</div>
+          ${polarSvg}
+        </div>
+      </div>
+      <div class="px-1 pt-3" style="font-size:0.88rem; max-width:640px;">${blurb}</div>
+      <div class="px-1 pt-3">${scalarHtml}</div>`;
   }
 
   // ── Analysis tab helpers ──────────────────────────────────────────────────
@@ -1006,11 +1185,14 @@
 
   function _resetRightColumn() {
     _pointSig = null;
+    _currentPlaceName = '';
     document.getElementById('v3-pane-analysis').innerHTML =
       '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
-    ['v3-tab-sig-btn', 'v3-tab-analysis-btn'].forEach(id =>
+    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn'].forEach(id =>
       document.getElementById(id).classList.add('disabled'));
+    document.getElementById('v3-seas-content').style.display = 'none';
+    document.getElementById('v3-seas-placeholder').style.display = '';
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
   }
 
@@ -1063,6 +1245,7 @@
 
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
+    _currentPlaceName = parts[1] || '';
 
     // Place marker
     if (currentLat && currentLon) {
@@ -1394,7 +1577,7 @@
 
       _repaintChoropleth();
 
-      // Populate Analysis tab from parallel /api/signature fetch
+      // Populate Analysis + Seasonality tabs from parallel /api/signature fetch
       if (_sigFetch) {
         try {
           const sigR = await _sigFetch;
@@ -1402,8 +1585,10 @@
             _pointSig = await sigR.json();
             renderAnalysis(_pointSig, lv);
             document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
+            renderSeasonality(_pointSig);
+            document.getElementById('v3-tab-seasonality-btn').classList.remove('disabled');
           }
-        } catch (_) { /* analysis tab stays at placeholder */ }
+        } catch (_) { /* analysis/seasonality tabs stay at placeholder */ }
       }
 
     } catch (err) {
