@@ -46,7 +46,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO5 complete — seasonality arrays (`pre_mm_monthly`, `tmp_dc_monthly`) + 6 derived indices in signature; rev2 DB views live; 3 new contract tests. Branch `demo_wo5` ready to merge. **Next: merge `demo_wo5`, then hero-shot curation.**
+- **Current step:** WO6 complete — Seasonality tab in sandbox_v3 (Walter-Lieth + polar SVG charts, generated blurb, scalar table). Branch `demo_wo6` ready to merge. **Next: merge `demo_wo6`, then WO7 or further UI work.**
 - **Tests:** 580 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 

@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-15 (WO5 complete — seasonality arrays + derived indices)
+- **Last updated:** 2026-07-16 (WO6 complete — Seasonality tab in sandbox_v3)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -137,6 +137,18 @@ signature), polity examples added, Polities tab now default. Findings in
   not "water from outside polity borders." Different question, unresolved.
 - Full findings: `docs/edop/demo/wo4b_findings.md`
 
+**WO6 complete (2026-07-16) — Seasonality tab in sandbox_v3 (Settlements):**
+- Fourth tab added to right-column strip: Map / Signature / Analysis / **Seasonality**.
+- Disabled at cold start; enabled after "Get signature" on Settlements tab.
+- Settlement name (H5) from `_currentPlaceName` — tracked in both WHG resolve and example paths.
+- Two SVG charts side by side: Walter-Lieth dual-axis bar+line (precip bars + temp line) and
+  polar (12 sectors radius ∝ precip; near-clear temp polygon). Both raw SVG, no library.
+- Generated blurb: three rule-based sentences from concentration, phase offset+peak months,
+  amplitude. Stays within what the scalar readings can claim — no geographic inference.
+- Scalar table: peak months rendered as month name (not 0–11 index); gloss blank for those rows.
+- No new tests (UI-only). 580 tests pass, 52 skipped.
+- Spec: `docs/edop/demo/wo6_seasonality-tab.md`; findings: `docs/edop/demo/wo6_findings.md`
+
 **WO5 complete (2026-07-15) — Seasonality arrays + derived indices (Band C):**
 - `v_basin06_persist_rev2` / `v_basin08_persist_rev2` views created in DB: add
   `pre_mm_monthly float[]` (12 monthly precip values) and `tmp_dc_monthly float[]`
@@ -170,13 +182,14 @@ signature), polity examples added, Polities tab now default. Findings in
 | L08 polity choropleth fix (WO3c) | member_ids in API; crosswalk-lookup path in engine; level toggle on Polities tab working | **complete — merged** |
 | Analysis tab — s/u divergence + provenance (WO4a–4b) | WO4a probe confirmed Cairo/Baghdad as archetype cases; WO4b ports divergence table + provenance badge to v3 Settlements tab | **complete — merged** |
 | Basin-similarity research (WO4c–4e) | Instrument settled: per-band Mah profile + Euclidean composite + C_climate Mah; band-weighted retired; all four bands exercised | **complete** |
-| **Hero shot curation** | Identify 2–3 polity/variable/history triples for demo; Tbilisi + N Song confirmed viable | **next** |
+| Hero shot curation | Manual curation once UI is stable; Karl selects cases in browser | pending — Karl-driven |
 | L06 ↔ L08 toggle demo (MAUP) | Toggle on Settlements tab already works; Polities tab L08 now working | pending |
 | Analysis tab — polity scope | What the Analysis tab shows for a polity is an open design question; upstream fields in polity signature are area-weighted means of per-basin upstream values, not "water from outside polity borders" | pending design |
 | Scale-sensitivity flag | *"This location is scale-sensitive"* tag from L06↔L08 signature diff; replaces dropped v1 scale-mismatch alert | pending |
 | Global divergence ranking | Notebook: rank basins by `precip_yr_upstream / precip_yr` to surface allochthonous places globally; trivial query, both columns precomputed in basin06/basin08 | pending |
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
 | Seasonality (WO5) | Monthly arrays + 6 derived indices in signature; rev2 DB views; catalog updated; 3 contract tests | **complete** |
+| Seasonality tab (WO6) | Walter-Lieth + polar SVG charts; generated blurb; scalar table with month names; settlement name heading | **complete** |
 | Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
 | Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
