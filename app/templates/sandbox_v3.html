@@ -106,6 +106,7 @@
                   <option value="34.7975,114.3074|Kaifeng|965|990">Kaifeng, China (965–990 CE)</option>
                   <option value="41.6938,44.8015|Tbilisi|1150|1250">Tbilisi, Georgia (1150–1250 CE)</option>
                   <option value="35.6870,-105.9378|Santa Fe|900|1000">Santa Fe, NM (900–1000 CE)</option>
+                  <option value="37.7749,-122.4194|San Francisco|1825|1875">San Francisco, CA (1825–1875 CE)</option>
                 </select>
               </div>
 
@@ -449,6 +450,7 @@
               <span class="text-muted" style="font-size:0.75rem;">Least similar</span>
             </div>
             <div id="v3-sim-map" style="height:445px; border-radius:6px;"></div>
+            <div id="v3-sim-blurb" class="px-1 pt-2" style="font-size:0.88rem; max-width:680px;"></div>
           </div>
         </div>
 
@@ -1075,6 +1077,35 @@
 
   // ── Similarity tab ────────────────────────────────────────────────────────
 
+  function _simBlurb(simData) {
+    const conc   = simData.query_pre_concentration;
+    const offset = simData.query_seas_phase_offset;
+    const n      = (simData.results || []).length;
+    if (conc == null || offset == null) return '';
+
+    let typeDesc, mapDesc;
+    if (conc < 0.15) {
+      typeDesc = 'a uniform, maritime-type seasonal pattern — precipitation is distributed year-round with no strong peak season';
+      mapDesc  = 'This pattern is common in mid-latitude oceanic climates and some equatorial zones. Similar basins may appear widely scattered across several continents.';
+    } else if (conc < 0.35) {
+      typeDesc = 'a weakly seasonal precipitation pattern — a modest peak season with substantial year-round rainfall';
+      mapDesc  = 'Weakly seasonal patterns appear in humid continental interiors, subtropical margins, and monsoonal transition zones, so results tend to be geographically dispersed.';
+    } else if (offset < 1.5) {
+      typeDesc = 'a monsoon-type seasonal pattern — concentrated precipitation coinciding with peak temperatures';
+      mapDesc  = 'Monsoon-type climates occur across the summer-rain belts of every continent. Southern Hemisphere results share the same structural pattern with reversed calendar seasons — the relationship between wet and warm is identical. Expect globally scattered results: this is a common climate type.';
+    } else if (offset < 3.5) {
+      typeDesc = 'a transitional seasonal pattern — precipitation is concentrated but offset from peak temperatures by several months';
+      mapDesc  = 'This intermediate pattern appears in continental interiors and subtropical margins where seasonal timing reflects a mix of oceanic and continental air-mass influence. Results may be moderately dispersed.';
+    } else {
+      typeDesc = 'a Mediterranean-type seasonal pattern — concentrated winter rainfall anti-phased with summer temperatures';
+      mapDesc  = 'Mediterranean climates are geographically rare, occurring in five compact zones: California, central Chile, the Western Cape, SW Australia, and the circum-Mediterranean basin. Results tend to cluster in these regions.';
+    }
+
+    return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
+         + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
+         + `${mapDesc} Showing ${n} most similar basins with a named place.</p>`;
+  }
+
   async function renderSimilarity() {
     if (currentLat == null || currentLon == null) return;
     if (_simQueryLat === currentLat && _simQueryLon === currentLon) {
@@ -1177,6 +1208,7 @@
         }));
 
       _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features });
+      document.getElementById('v3-sim-blurb').innerHTML = _simBlurb(simData);
 
       if (features.length) {
         const bounds = new maplibregl.LngLatBounds();
@@ -1351,6 +1383,7 @@
     document.getElementById('v3-sim-placeholder').style.display = '';
     if (_simMarker) { _simMarker.remove(); _simMarker = null; }
     if (_simMap) _simMap.getSource('sim-basins')?.setData({ type: 'FeatureCollection', features: [] });
+    document.getElementById('v3-sim-blurb').innerHTML = '';
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
   }
 
