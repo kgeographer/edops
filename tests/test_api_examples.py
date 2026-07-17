@@ -12,6 +12,7 @@ Examples tested:
   5. Timbuktu       — bands=ABT,  from_year=1200, to_year=1600 (medieval)
   6. Kaifeng L6     — bands=ABC,  level=6         (regional scale)
   7. Seasonality    — WO5 contract tests (pinned values + ordering)
+  8. Similarity     — WO7 /api/seasonality/similar (SF validation)
 """
 
 import pytest
@@ -23,7 +24,8 @@ def client(db_available):
     if not db_available:
         pytest.skip("DB not available")
     from app.main import app
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 # ---------------------------------------------------------------------------
@@ -189,3 +191,42 @@ def test_seasonality_discrimination(client):
     # London has low precip concentration (year-round rain)
     assert london_conc is not None
     assert london_conc < 0.2, f"London pre_concentration {london_conc:.3f} — expected < 0.2"
+
+
+# ---------------------------------------------------------------------------
+# 8. WO7 Similarity — /api/seasonality/similar SF validation
+# ---------------------------------------------------------------------------
+
+def test_seasonality_similar_sf(client):
+    """SF query returns Mediterranean-climate analogs (IQ/CL/IR/JO) in top-10 results."""
+    r = client.get("/api/seasonality/similar", params={"lat": 37.77, "lon": -122.42, "n": 20})
+    assert r.status_code == 200
+    data = r.json()
+
+    assert data["metric"] == "normalized_euclidean_2idx"
+    assert data["query_basin_id"] is not None
+    assert data["query_pre_concentration"] is not None
+    assert data["query_seas_phase_offset"] is not None
+
+    results = data["results"]
+    assert len(results) > 0, "Expected at least one result"
+
+    # All results must have required fields
+    for res in results:
+        assert "basin_rank" in res
+        assert "basin_id" in res
+        assert "distance" in res
+        assert "place_name" in res
+        assert "ccodes" in res
+
+    # Distances must be non-negative and ascending
+    dists = [r["distance"] for r in results]
+    assert all(d >= 0 for d in dists)
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+
+    # Top-10 must include at least one Mediterranean-climate country
+    top_ccodes = {cc for r in results[:10] for cc in (r["ccodes"] or [])}
+    med_countries = {"IQ", "CL", "IR", "JO", "EG", "MA", "ES", "PT"}
+    assert top_ccodes & med_countries, (
+        f"Expected Mediterranean analogs in top-10 ccodes, got {top_ccodes}"
+    )

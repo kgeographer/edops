@@ -12,6 +12,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
+from app.db.seasonality import find_similar
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -401,6 +402,131 @@ def _get_cluster_labels() -> Dict[int, str]:
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@router.get("/seasonality/similar")
+def seasonality_similar(lat: float, lon: float, n: int = 20):
+    """Return places whose basins have the most similar seasonal pattern to (lat, lon).
+
+    Uses normalized Euclidean distance on two indices computed from L06 monthly arrays:
+    pre_concentration and seas_phase_offset. Distance matrix computed in-process at
+    request time (~16k basins; sub-millisecond). Gazetteer join returns one representative
+    place per matching basin (lowest place_id).
+
+    Parameters
+    ----------
+    lat, lon : query coordinates
+    n        : number of top basins to return (default 20, max 50)
+    """
+    n = min(max(1, n), 100)
+
+    conn = db_connect()
+    try:
+        # Find containing L06 basin
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT hybas_id FROM public.basin06 "
+                "WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) "
+                "ORDER BY ST_Area(geom::geography) ASC LIMIT 1",
+                (lon, lat),
+            )
+            row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="No basin found at this location")
+        query_hybas_id = int(row[0])
+
+        # Rank similar basins in memory
+        try:
+            query_info, ranked = find_similar(query_hybas_id, n=n)
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        if not ranked:
+            return {
+                "query_basin_id":          query_hybas_id,
+                "query_pre_concentration": None,
+                "query_seas_phase_offset": None,
+                "metric":                  "normalized_euclidean_2idx",
+                "results":                 [],
+            }
+
+        # Join top-N basins to gazetteer — one place per basin (lowest place_id)
+        hybas_ids = [r["hybas_id"] for r in ranked]
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT DISTINCT ON (hybas_id_l06)
+                    hybas_id_l06, place_id, place_name, ccodes, lat, lon
+                FROM gaz.whg_gaz
+                WHERE hybas_id_l06 = ANY(%s)
+                ORDER BY hybas_id_l06, place_id
+                """,
+                (hybas_ids,),
+            )
+            gaz_by_basin = {int(r[0]): r for r in cur.fetchall()}
+
+        results = []
+        for r in ranked:
+            place = gaz_by_basin.get(r["hybas_id"])
+            if not place:
+                continue
+            results.append({
+                "basin_rank":        r["rank"],
+                "basin_id":          r["hybas_id"],
+                "distance":          r["distance"],
+                "pre_concentration": r["pre_concentration"],
+                "seas_phase_offset": r["seas_phase_offset"],
+                "place_id":          place[1],
+                "place_name":        place[2],
+                "ccodes":            place[3],
+                "lat":               float(place[4]),
+                "lon":               float(place[5]),
+            })
+
+        return {
+            "query_basin_id":          query_info["hybas_id"],
+            "query_pre_concentration": round(query_info["pre_concentration"], 6),
+            "query_seas_phase_offset": round(query_info["seas_phase_offset"], 6),
+            "metric":                  "normalized_euclidean_2idx",
+            "results":                 results,
+        }
+
+    finally:
+        conn.close()
+
+
+@router.get("/basin-geom")
+def basin_geom(ids: str, level: int = 6):
+    """Return GeoJSON geometry strings for a list of basin hybas_ids.
+
+    Parameters
+    ----------
+    ids   : comma-separated hybas_id integers (max 100)
+    level : basin level — 6 or 8 (default 6)
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    try:
+        hybas_ids = [int(x.strip()) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ids must be comma-separated integers")
+    if not hybas_ids or len(hybas_ids) > 100:
+        raise HTTPException(status_code=400, detail="ids must contain 1–100 hybas_id values")
+
+    table = "basin06" if level == 6 else "basin08"
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT hybas_id, ST_AsGeoJSON(geom, 5) FROM public.{table} "
+                "WHERE hybas_id = ANY(%s)",
+                (hybas_ids,),
+            )
+            return {str(int(row[0])): row[1] for row in cur.fetchall()}
+    finally:
+        conn.close()
 
 
 @router.get("/signature")

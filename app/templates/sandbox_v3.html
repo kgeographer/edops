@@ -388,6 +388,10 @@
           <button class="nav-link disabled" id="v3-tab-seasonality-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-seasonality" type="button" role="tab">Seasonality</button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
+        </li>
       </ul>
 
       <div class="tab-content">
@@ -424,6 +428,30 @@
           <div id="v3-seas-content" style="display:none;"></div>
         </div>
 
+        <!-- Similarity pane -->
+        <div class="tab-pane fade" id="v3-pane-similarity" role="tabpanel">
+          <p class="text-muted mt-3 px-1" id="v3-sim-placeholder">Click a location and run <strong>Get signature</strong> to find similar basins.</p>
+          <div id="v3-sim-content" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between px-1 py-2">
+              <div id="v3-sim-title"></div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small fw-semibold">Lens:</span>
+                <select id="v3-sim-lens" class="form-select form-select-sm" style="width:auto;">
+                  <option value="seasonality">Seasonality</option>
+                  <option value="terrain" disabled>Terrain (coming soon)</option>
+                  <option value="hydrology" disabled>Hydrology (coming soon)</option>
+                </select>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 px-1 pb-1">
+              <span class="text-muted" style="font-size:0.75rem;">Most similar</span>
+              <div style="width:120px; height:8px; background:linear-gradient(to right,#b2182b,#f4a582,#fddbc7); border-radius:3px; border:1px solid #ddd;"></div>
+              <span class="text-muted" style="font-size:0.75rem;">Least similar</span>
+            </div>
+            <div id="v3-sim-map" style="height:445px; border-radius:6px;"></div>
+          </div>
+        </div>
+
       </div>
     </div><!-- /right col -->
 
@@ -454,6 +482,11 @@
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
   let _pointSig         = null;  // /api/signature response for current point — powers Analysis tab
   let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
+  let _simMap           = null;  // MapLibre instance for Similarity tab (lazy-initialized)
+  let _simPopup         = null;
+  let _simMarker        = null;  // query-location marker on similarity map
+  let _simQueryLat      = null;  // coords of last similarity fetch — skip refetch if unchanged
+  let _simQueryLon      = null;
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -1040,6 +1073,125 @@
       <div class="px-1 pt-3">${scalarHtml}</div>`;
   }
 
+  // ── Similarity tab ────────────────────────────────────────────────────────
+
+  async function renderSimilarity() {
+    if (currentLat == null || currentLon == null) return;
+    if (_simQueryLat === currentLat && _simQueryLon === currentLon) {
+      if (_simMap) _simMap.resize();
+      return;
+    }
+    _simQueryLat = currentLat;
+    _simQueryLon = currentLon;
+
+    // Init MapLibre instance on first call (tab must already be visible)
+    if (!_simMap) {
+      _simMap = new maplibregl.Map({
+        container: 'v3-sim-map',
+        center: [10, 20],
+        zoom: 1,
+        attributionControl: true,
+        style: {
+          version: 8,
+          sources: {
+            carto: {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            },
+          },
+          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+        },
+      });
+      _simPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
+      await new Promise(r => _simMap.on('load', r));
+      _simMap.addSource('sim-basins', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _simMap.addLayer({
+        id: 'sim-fill', type: 'fill', source: 'sim-basins',
+        paint: {
+          'fill-color': ['interpolate', ['linear'], ['to-number', ['get', 'rank']],
+            1, '#b2182b', 10, '#d6604d', 25, '#f4a582', 50, '#fddbc7'],
+          'fill-opacity': 0.75,
+        },
+      });
+      _simMap.addLayer({
+        id: 'sim-outline', type: 'line', source: 'sim-basins',
+        paint: { 'line-color': '#7f0000', 'line-width': 0.8, 'line-opacity': 0.7 },
+      });
+      _simMap.on('mouseenter', 'sim-fill', (e) => {
+        _simMap.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const ccodes = JSON.parse(p.ccodes || '[]').join(', ');
+        _simPopup.setLngLat(e.lngLat)
+          .setHTML(`<strong>${escapeHtml(p.place_name)}</strong><br>${escapeHtml(ccodes)}<br><span class="text-muted" style="font-size:0.8rem;">dist ${parseFloat(p.distance).toFixed(3)}</span>`)
+          .addTo(_simMap);
+      });
+      _simMap.on('mouseleave', 'sim-fill', () => {
+        _simMap.getCanvas().style.cursor = '';
+        _simPopup.remove();
+      });
+    } else {
+      _simMap.resize();
+    }
+
+    document.getElementById('v3-sim-title').innerHTML = _currentPlaceName
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+
+    // Place query-location marker
+    if (_simMarker) _simMarker.remove();
+    _simMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+      .setLngLat([currentLon, currentLat])
+      .addTo(_simMap);
+
+    try {
+      const simR = await fetch(`/api/seasonality/similar?lat=${currentLat}&lon=${currentLon}&n=50`);
+      if (!simR.ok) throw new Error(`similarity ${simR.status}`);
+      const simData = await simR.json();
+      const results = simData.results || [];
+      if (!results.length) {
+        _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+
+      const ids = results.map(r => r.basin_id).join(',');
+      const geomR = await fetch(`/api/basin-geom?ids=${ids}`);
+      if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
+      const geomData = await geomR.json();
+
+      const features = results
+        .filter(r => geomData[r.basin_id])
+        .map(r => ({
+          type: 'Feature',
+          geometry: JSON.parse(geomData[r.basin_id]),
+          properties: {
+            rank:       r.rank,
+            basin_id:   r.basin_id,
+            distance:   r.distance,
+            place_name: r.place_name || '',
+            ccodes:     JSON.stringify(r.ccodes || []),
+          },
+        }));
+
+      _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features });
+
+      if (features.length) {
+        const bounds = new maplibregl.LngLatBounds();
+        features.forEach(f => {
+          const g = f.geometry;
+          const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
+          rings.forEach(ring => ring.forEach(c => bounds.extend(c)));
+        });
+        _simMap.fitBounds(bounds, { padding: 30, maxZoom: 5 });
+      }
+    } catch (err) {
+      console.error('[similarity]', err);
+    }
+  }
+
   // ── Analysis tab helpers ──────────────────────────────────────────────────
 
   function sigVal(sig, key) {
@@ -1186,13 +1338,19 @@
   function _resetRightColumn() {
     _pointSig = null;
     _currentPlaceName = '';
+    _simQueryLat = null;
+    _simQueryLon = null;
     document.getElementById('v3-pane-analysis').innerHTML =
       '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
-    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn'].forEach(id =>
+    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn', 'v3-tab-similarity-btn'].forEach(id =>
       document.getElementById(id).classList.add('disabled'));
     document.getElementById('v3-seas-content').style.display = 'none';
     document.getElementById('v3-seas-placeholder').style.display = '';
+    document.getElementById('v3-sim-content').style.display = 'none';
+    document.getElementById('v3-sim-placeholder').style.display = '';
+    if (_simMarker) { _simMarker.remove(); _simMarker = null; }
+    if (_simMap) _simMap.getSource('sim-basins')?.setData({ type: 'FeatureCollection', features: [] });
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
   }
 
@@ -1587,6 +1745,9 @@
             document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
             renderSeasonality(_pointSig);
             document.getElementById('v3-tab-seasonality-btn').classList.remove('disabled');
+            document.getElementById('v3-sim-placeholder').style.display = 'none';
+            document.getElementById('v3-sim-content').style.display = '';
+            document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
           }
         } catch (_) { /* analysis/seasonality tabs stay at placeholder */ }
       }
@@ -2608,6 +2769,7 @@
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
+  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderSimilarity);
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
   window._v3map = map;
 
