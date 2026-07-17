@@ -416,9 +416,10 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
     Parameters
     ----------
     lat, lon : query coordinates
-    n        : number of top basins to return (default 20, max 50)
+    n        : number of top basins to return (default 20, max 200)
     """
-    n = min(max(1, n), 100)
+    # n = min(max(1, n), 100)
+    n = min(max(1, n), 200)
 
     conn = db_connect()
     try:
@@ -470,19 +471,17 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
         results = []
         for r in ranked:
             place = gaz_by_basin.get(r["hybas_id"])
-            if not place:
-                continue
             results.append({
                 "basin_rank":        r["rank"],
                 "basin_id":          r["hybas_id"],
                 "distance":          r["distance"],
                 "pre_concentration": r["pre_concentration"],
                 "seas_phase_offset": r["seas_phase_offset"],
-                "place_id":          place[1],
-                "place_name":        place[2],
-                "ccodes":            place[3],
-                "lat":               float(place[4]),
-                "lon":               float(place[5]),
+                "place_id":          place[1] if place else None,
+                "place_name":        place[2] if place else None,
+                "ccodes":            place[3] if place else None,
+                "lat":               float(place[4]) if place else None,
+                "lon":               float(place[5]) if place else None,
             })
 
         return {
@@ -512,8 +511,8 @@ def basin_geom(ids: str, level: int = 6):
         hybas_ids = [int(x.strip()) for x in ids.split(",") if x.strip()]
     except ValueError:
         raise HTTPException(status_code=400, detail="ids must be comma-separated integers")
-    if not hybas_ids or len(hybas_ids) > 100:
-        raise HTTPException(status_code=400, detail="ids must contain 1–100 hybas_id values")
+    if not hybas_ids or len(hybas_ids) > 200:
+        raise HTTPException(status_code=400, detail="ids must contain 1–200 hybas_id values")
 
     table = "basin06" if level == 6 else "basin08"
     conn = db_connect()

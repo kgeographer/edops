@@ -1103,7 +1103,7 @@
 
     return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
          + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
-         + `${mapDesc} Showing ${n} most similar basins with a named place.</p>`;
+         + `${mapDesc} Showing the ${n} most similar basins.</p>`;
   }
 
   async function renderSimilarity() {
@@ -1144,21 +1144,23 @@
       _simMap.addLayer({
         id: 'sim-fill', type: 'fill', source: 'sim-basins',
         paint: {
-          'fill-color': ['interpolate', ['linear'], ['to-number', ['get', 'rank']],
-            1, '#b2182b', 10, '#d6604d', 25, '#f4a582', 50, '#fddbc7'],
+          'fill-color': ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
+            0, '#b2182b', 1, '#fddbc7'],
           'fill-opacity': 0.75,
         },
       });
       _simMap.addLayer({
         id: 'sim-outline', type: 'line', source: 'sim-basins',
-        paint: { 'line-color': '#7f0000', 'line-width': 0.8, 'line-opacity': 0.7 },
+        paint: { 'line-color': '#7f0000', 'line-width': 0, 'line-opacity': 0 },
       });
       _simMap.on('mouseenter', 'sim-fill', (e) => {
         _simMap.getCanvas().style.cursor = 'pointer';
         const p = e.features[0].properties;
-        const ccodes = JSON.parse(p.ccodes || '[]').join(', ');
+        const ccodes   = JSON.parse(p.ccodes || '[]').join(', ');
+        const nameHtml = p.place_name ? `<strong>${escapeHtml(p.place_name)}</strong><br>` : '';
+        const ccHtml   = ccodes ? `${escapeHtml(ccodes)}<br>` : '';
         _simPopup.setLngLat(e.lngLat)
-          .setHTML(`<strong>${escapeHtml(p.place_name)}</strong><br>${escapeHtml(ccodes)}<br><span class="text-muted" style="font-size:0.8rem;">dist ${parseFloat(p.distance).toFixed(3)}</span>`)
+          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">dist ${parseFloat(p.distance).toFixed(3)}</span>`)
           .addTo(_simMap);
       });
       _simMap.on('mouseleave', 'sim-fill', () => {
@@ -1179,7 +1181,7 @@
       .addTo(_simMap);
 
     try {
-      const simR = await fetch(`/api/seasonality/similar?lat=${currentLat}&lon=${currentLon}&n=50`);
+      const simR = await fetch(`/api/seasonality/similar?lat=${currentLat}&lon=${currentLon}&n=200`);
       if (!simR.ok) throw new Error(`similarity ${simR.status}`);
       const simData = await simR.json();
       const results = simData.results || [];
@@ -1208,6 +1210,18 @@
         }));
 
       _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features });
+
+      // Scale ramp to actual distance range of returned results
+      const dists   = results.map(r => r.distance);
+      const minDist = Math.min(...dists);
+      const maxDist = Math.max(...dists);
+      const mid     = minDist + (maxDist - minDist) * 0.5;
+      _simMap.setPaintProperty('sim-fill', 'fill-color',
+        ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
+          minDist, '#b2182b',
+          mid,     '#f4a582',
+          maxDist, '#fddbc7']);
+
       document.getElementById('v3-sim-blurb').innerHTML = _simBlurb(simData);
 
       if (features.length) {
