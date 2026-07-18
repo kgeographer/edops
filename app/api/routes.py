@@ -12,7 +12,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
-from app.db.seasonality import find_similar
+from app.db.seasonality import find_similar, get_lens_registry
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -404,41 +404,50 @@ def health():
     return {"status": "ok"}
 
 
+def _resolve_basin(conn, lat: float, lon: float) -> int:
+    """Return the L06 hybas_id containing (lat, lon); raises 404 if none found."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT hybas_id FROM public.basin06 "
+            "WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) "
+            "ORDER BY ST_Area(geom::geography) ASC LIMIT 1",
+            (lon, lat),
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="No basin found at this location")
+    return int(row[0])
+
+
+def _gaz_join(conn, hybas_ids: list) -> dict:
+    """Return {hybas_id: (place_id, place_name, ccodes, lat, lon)} for a list of ids."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT ON (hybas_id_l06)
+                hybas_id_l06, place_id, place_name, ccodes, lat, lon
+            FROM gaz.whg_gaz
+            WHERE hybas_id_l06 = ANY(%s)
+            ORDER BY hybas_id_l06, place_id
+            """,
+            (hybas_ids,),
+        )
+        return {int(r[0]): r for r in cur.fetchall()}
+
+
 @router.get("/seasonality/similar")
 def seasonality_similar(lat: float, lon: float, n: int = 20):
-    """Return places whose basins have the most similar seasonal pattern to (lat, lon).
+    """Backward-compat wrapper for the climate.phase lens.
 
-    Uses normalized Euclidean distance on two indices computed from L06 monthly arrays:
-    pre_concentration and seas_phase_offset. Distance matrix computed in-process at
-    request time (~16k basins; sub-millisecond). Gazetteer join returns one representative
-    place per matching basin (lowest place_id).
-
-    Parameters
-    ----------
-    lat, lon : query coordinates
-    n        : number of top basins to return (default 20, max 200)
+    Delegates to /api/similarity with lens=climate.phase and returns the original
+    flat response shape so existing callers and tests are unaffected.
     """
-    # n = min(max(1, n), 100)
     n = min(max(1, n), 200)
-
     conn = db_connect()
     try:
-        # Find containing L06 basin
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT hybas_id FROM public.basin06 "
-                "WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) "
-                "ORDER BY ST_Area(geom::geography) ASC LIMIT 1",
-                (lon, lat),
-            )
-            row = cur.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="No basin found at this location")
-        query_hybas_id = int(row[0])
-
-        # Rank similar basins in memory
+        query_hybas_id = _resolve_basin(conn, lat, lon)
         try:
-            query_info, ranked = find_similar(query_hybas_id, n=n)
+            query_meta, ranked = find_similar(query_hybas_id, lens_id="climate.phase", n=n)
         except RuntimeError as e:
             raise HTTPException(status_code=503, detail=str(e))
         except ValueError as e:
@@ -453,20 +462,7 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
                 "results":                 [],
             }
 
-        # Join top-N basins to gazetteer — one place per basin (lowest place_id)
-        hybas_ids = [r["hybas_id"] for r in ranked]
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT DISTINCT ON (hybas_id_l06)
-                    hybas_id_l06, place_id, place_name, ccodes, lat, lon
-                FROM gaz.whg_gaz
-                WHERE hybas_id_l06 = ANY(%s)
-                ORDER BY hybas_id_l06, place_id
-                """,
-                (hybas_ids,),
-            )
-            gaz_by_basin = {int(r[0]): r for r in cur.fetchall()}
+        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked])
 
         results = []
         for r in ranked:
@@ -475,8 +471,8 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
                 "basin_rank":        r["rank"],
                 "basin_id":          r["hybas_id"],
                 "distance":          r["distance"],
-                "pre_concentration": r["pre_concentration"],
-                "seas_phase_offset": r["seas_phase_offset"],
+                "pre_concentration": r["values"]["pre_concentration"],
+                "seas_phase_offset": r["values"]["seas_phase_offset"],
                 "place_id":          place[1] if place else None,
                 "place_name":        place[2] if place else None,
                 "ccodes":            place[3] if place else None,
@@ -484,12 +480,85 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
                 "lon":               float(place[5]) if place else None,
             })
 
+        qv = query_meta["query_values"]
         return {
-            "query_basin_id":          query_info["hybas_id"],
-            "query_pre_concentration": round(query_info["pre_concentration"], 6),
-            "query_seas_phase_offset": round(query_info["seas_phase_offset"], 6),
+            "query_basin_id":          query_meta["query_hybas_id"],
+            "query_pre_concentration": qv["pre_concentration"],
+            "query_seas_phase_offset": qv["seas_phase_offset"],
             "metric":                  "normalized_euclidean_2idx",
             "results":                 results,
+        }
+
+    finally:
+        conn.close()
+
+
+@router.get("/similarity/lenses")
+def similarity_lenses():
+    """Return the full lens registry (active and disabled lenses)."""
+    return {"lenses": get_lens_registry()}
+
+
+@router.get("/similarity")
+def similarity(lat: float, lon: float, lens: str = "climate.phase", n: int = 20):
+    """Return basins most similar to (lat, lon) under the given similarity lens.
+
+    Parameters
+    ----------
+    lat, lon : query coordinates
+    lens     : lens_id from the registry (e.g. 'climate.phase', 'climate.temp')
+    n        : number of top basins to return (default 20, max 200)
+
+    Response
+    --------
+    {
+      "lens_id": str, "lens_label": str, "metric": str,
+      "query_basin_id": int,
+      "query_values": {var: value, ...},          # lens variables for the query basin
+      "results": [
+        { "rank": int, "basin_id": int, "distance": float,
+          "values": {var: value, ...},            # lens variables for this basin
+          "place_id": int|null, "place_name": str|null,
+          "ccodes": str|null, "lat": float|null, "lon": float|null },
+        ...
+      ]
+    }
+    """
+    n = min(max(1, n), 200)
+    conn = db_connect()
+    try:
+        query_hybas_id = _resolve_basin(conn, lat, lon)
+        try:
+            query_meta, ranked = find_similar(query_hybas_id, lens_id=lens, n=n)
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked]) if ranked else {}
+
+        results = []
+        for r in ranked:
+            place = gaz_by_basin.get(r["hybas_id"])
+            results.append({
+                "rank":       r["rank"],
+                "basin_id":   r["hybas_id"],
+                "distance":   r["distance"],
+                "values":     r["values"],
+                "place_id":   place[1] if place else None,
+                "place_name": place[2] if place else None,
+                "ccodes":     place[3] if place else None,
+                "lat":        float(place[4]) if place else None,
+                "lon":        float(place[5]) if place else None,
+            })
+
+        return {
+            "lens_id":        query_meta["lens_id"],
+            "lens_label":     query_meta["lens_label"],
+            "metric":         query_meta["metric"],
+            "query_basin_id": query_meta["query_hybas_id"],
+            "query_values":   query_meta["query_values"],
+            "results":        results,
         }
 
     finally:

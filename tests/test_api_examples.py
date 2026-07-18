@@ -12,7 +12,9 @@ Examples tested:
   5. Timbuktu       — bands=ABT,  from_year=1200, to_year=1600 (medieval)
   6. Kaifeng L6     — bands=ABC,  level=6         (regional scale)
   7. Seasonality    — WO5 contract tests (pinned values + ordering)
-  8. Similarity     — WO7 /api/seasonality/similar (SF validation)
+  8. Similarity     — WO7a /api/seasonality/similar backward-compat (SF, climate.phase)
+  9. Similarity     — WO7a /api/similarity?lens=climate.temp (London, Mahalanobis)
+ 10. Similarity     — WO7a /api/similarity/lenses (registry shape)
 """
 
 import pytest
@@ -230,3 +232,90 @@ def test_seasonality_similar_sf(client):
     assert top_ccodes & med_countries, (
         f"Expected Mediterranean analogs in top-10 ccodes, got {top_ccodes}"
     )
+
+
+# ---------------------------------------------------------------------------
+# 9. WO7a Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
+# ---------------------------------------------------------------------------
+
+def test_similarity_climate_temp_london(client):
+    """London query via Mahalanobis temp lens returns mild maritime basins in top-10.
+
+    Contract: mean annual temp 7–13°C; NW Europe (GB/IE/NO/FR) or Pacific NW (US/CA)
+    should appear; high-amplitude continental basins must be absent from top-10.
+    """
+    r = client.get("/api/similarity", params={"lat": 51.5, "lon": -0.12, "lens": "climate.temp", "n": 20})
+    assert r.status_code == 200
+    data = r.json()
+
+    assert data["lens_id"] == "climate.temp"
+    assert data["metric"] == "mahalanobis"
+    assert data["query_basin_id"] is not None
+
+    qv = data["query_values"]
+    assert "tmp_dc_syr" in qv
+    assert "tmp_seas_amp" in qv
+    assert "tmp_concentration" in qv
+    # London annual mean temp should be 8–12°C
+    assert 6.0 <= qv["tmp_dc_syr"] <= 14.0, f"London tmp_dc_syr={qv['tmp_dc_syr']:.2f} out of expected range"
+
+    results = data["results"]
+    assert len(results) > 0
+
+    # All results must have required fields
+    for res in results:
+        assert "rank" in res
+        assert "basin_id" in res
+        assert "distance" in res
+        assert "values" in res
+        v = res["values"]
+        assert "tmp_dc_syr" in v
+        assert "tmp_seas_amp" in v
+        assert "tmp_concentration" in v
+
+    # Distances must be non-negative and ascending
+    dists = [res["distance"] for res in results]
+    assert all(d >= 0 for d in dists)
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+
+    # Top-10 must include maritime Europe or Pacific NW
+    top_ccodes = {cc for res in results[:10] for cc in (res["ccodes"] or [])}
+    maritime = {"GB", "IE", "NO", "NL", "DK", "BE", "FR", "US", "CA", "DE"}
+    assert top_ccodes & maritime, (
+        f"Expected maritime Europe/PNW in top-10 ccodes, got {top_ccodes}"
+    )
+
+    # Top-10 seasonal amplitudes should be low (maritime: < 20°C typical)
+    top_amps = [res["values"]["tmp_seas_amp"] for res in results[:10]]
+    assert max(top_amps) < 25.0, (
+        f"Top-10 tmp_seas_amp max {max(top_amps):.1f}°C — unexpectedly high for maritime lens"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 10. WO7a Similarity — /api/similarity/lenses (registry shape)
+# ---------------------------------------------------------------------------
+
+def test_similarity_lenses_registry(client):
+    """Registry endpoint returns active Climate lenses and disabled stub groups."""
+    r = client.get("/api/similarity/lenses")
+    assert r.status_code == 200
+    data = r.json()
+    assert "lenses" in data
+
+    by_id = {lens["lens_id"]: lens for lens in data["lenses"]}
+
+    # Three active Climate lenses must be present
+    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+        assert lid in by_id, f"Missing lens {lid!r} in registry"
+        assert by_id[lid]["status"] == "active"
+        assert by_id[lid]["group"] == "Climate"
+        assert by_id[lid]["variables"]
+        assert by_id[lid]["metric"] in ("euclidean", "mahalanobis")
+
+    # climate.temp must declare Mahalanobis
+    assert by_id["climate.temp"]["metric"] == "mahalanobis"
+
+    # At least one disabled stub group must be present (Terrain or Hydrology)
+    disabled = [lens for lens in data["lenses"] if lens["status"] == "disabled"]
+    assert disabled, "Expected at least one disabled stub lens in registry"
