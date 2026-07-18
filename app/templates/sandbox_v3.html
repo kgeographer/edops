@@ -437,11 +437,8 @@
               <div id="v3-sim-title"></div>
               <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small fw-semibold">Lens:</span>
-                <select id="v3-sim-lens" class="form-select form-select-sm" style="width:auto;">
-                  <option value="seasonality">Seasonality</option>
-                  <option value="terrain" disabled>Terrain (coming soon)</option>
-                  <option value="hydrology" disabled>Hydrology (coming soon)</option>
-                </select>
+                <select id="v3-sim-group" class="form-select form-select-sm" style="width:auto;"></select>
+                <select id="v3-sim-sublens" class="form-select form-select-sm" style="width:auto;"></select>
               </div>
             </div>
             <div class="d-flex align-items-center gap-2 px-1 pb-1">
@@ -487,8 +484,11 @@
   let _simMap           = null;  // MapLibre instance for Similarity tab (lazy-initialized)
   let _simPopup         = null;
   let _simMarker        = null;  // query-location marker on similarity map
-  let _simQueryLat      = null;  // coords of last similarity fetch — skip refetch if unchanged
+  let _simQueryLat      = null;  // coords + lens of last similarity fetch — skip refetch if unchanged
   let _simQueryLon      = null;
+  let _simQueryLens     = null;
+  let _simCurrentLens   = 'climate.phase';   // active lens id
+  let _simLensRegistry  = [];                // [{lens_id, group, label, status, ...}]
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -1078,42 +1078,131 @@
   // ── Similarity tab ────────────────────────────────────────────────────────
 
   function _simBlurb(simData) {
-    const conc   = simData.query_pre_concentration;
-    const offset = simData.query_seas_phase_offset;
     const n      = (simData.results || []).length;
-    if (conc == null || offset == null) return '';
+    const lensId = simData.lens_id || 'climate.phase';
+    const qv     = simData.query_values || {};
 
-    let typeDesc, mapDesc;
-    if (conc < 0.15) {
-      typeDesc = 'a uniform, maritime-type seasonal pattern — precipitation is distributed year-round with no strong peak season';
-      mapDesc  = 'This pattern is common in mid-latitude oceanic climates and some equatorial zones. Similar basins may appear widely scattered across several continents.';
-    } else if (conc < 0.35) {
-      typeDesc = 'a weakly seasonal precipitation pattern — a modest peak season with substantial year-round rainfall';
-      mapDesc  = 'Weakly seasonal patterns appear in humid continental interiors, subtropical margins, and monsoonal transition zones, so results tend to be geographically dispersed.';
-    } else if (offset < 1.5) {
-      typeDesc = 'a monsoon-type seasonal pattern — concentrated precipitation coinciding with peak temperatures';
-      mapDesc  = 'Monsoon-type climates occur across the summer-rain belts of every continent. Southern Hemisphere results share the same structural pattern with reversed calendar seasons — the relationship between wet and warm is identical. Expect globally scattered results: this is a common climate type.';
-    } else if (offset < 3.5) {
-      typeDesc = 'a transitional seasonal pattern — precipitation is concentrated but offset from peak temperatures by several months';
-      mapDesc  = 'This intermediate pattern appears in continental interiors and subtropical margins where seasonal timing reflects a mix of oceanic and continental air-mass influence. Results may be moderately dispersed.';
-    } else {
-      typeDesc = 'a Mediterranean-type seasonal pattern — concentrated winter rainfall anti-phased with summer temperatures';
-      mapDesc  = 'Mediterranean climates are geographically rare, occurring in five compact zones: California, central Chile, the Western Cape, SW Australia, and the circum-Mediterranean basin. Results tend to cluster in these regions.';
+    if (lensId === 'climate.phase') {
+      const conc   = qv.pre_concentration ?? simData.query_pre_concentration;
+      const offset = qv.seas_phase_offset ?? simData.query_seas_phase_offset;
+      if (conc == null || offset == null) return '';
+      let typeDesc, mapDesc;
+      if (conc < 0.15) {
+        typeDesc = 'a uniform, maritime-type seasonal pattern — precipitation is distributed year-round with no strong peak season';
+        mapDesc  = 'This pattern is common in mid-latitude oceanic climates and some equatorial zones. Similar basins may appear widely scattered across several continents.';
+      } else if (conc < 0.35) {
+        typeDesc = 'a weakly seasonal precipitation pattern — a modest peak season with substantial year-round rainfall';
+        mapDesc  = 'Weakly seasonal patterns appear in humid continental interiors, subtropical margins, and monsoonal transition zones, so results tend to be geographically dispersed.';
+      } else if (offset < 1.5) {
+        typeDesc = 'a monsoon-type seasonal pattern — concentrated precipitation coinciding with peak temperatures';
+        mapDesc  = 'Monsoon-type climates occur across the summer-rain belts of every continent. Southern Hemisphere results share the same structural pattern with reversed calendar seasons — the relationship between wet and warm is identical. Expect globally scattered results: this is a common climate type.';
+      } else if (offset < 3.5) {
+        typeDesc = 'a transitional seasonal pattern — precipitation is concentrated but offset from peak temperatures by several months';
+        mapDesc  = 'This intermediate pattern appears in continental interiors and subtropical margins where seasonal timing reflects a mix of oceanic and continental air-mass influence. Results may be moderately dispersed.';
+      } else {
+        typeDesc = 'a Mediterranean-type seasonal pattern — concentrated winter rainfall anti-phased with summer temperatures';
+        mapDesc  = 'Mediterranean climates are geographically rare, occurring in five compact zones: California, central Chile, the Western Cape, SW Australia, and the circum-Mediterranean basin. Results tend to cluster in these regions.';
+      }
+      return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
+           + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
+           + `${mapDesc} Showing the ${n} most similar basins.</p>`;
     }
 
-    return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
-         + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
-         + `${mapDesc} Showing the ${n} most similar basins.</p>`;
+    if (lensId === 'climate.precip') {
+      const pre_mm = qv.pre_mm_syr;
+      const conc   = qv.pre_concentration;
+      if (pre_mm == null || conc == null) return '';
+      let seasDesc;
+      if (conc < 0.15)      seasDesc = 'distributed year-round (no dominant wet season)';
+      else if (conc < 0.35) seasDesc = 'weakly seasonal (a modest peak season)';
+      else if (conc < 0.55) seasDesc = 'moderately seasonal';
+      else                  seasDesc = 'strongly seasonal (concentrated in a short wet season)';
+      return `<p class="text-muted mb-0">The containing basin receives `
+           + `${Math.round(pre_mm)}&nbsp;mm/year of precipitation, ${seasDesc} `
+           + `(concentration&nbsp;${conc.toFixed(2)}). `
+           + `Showing the ${n} most similar basins by annual total and seasonal distribution of precipitation.</p>`;
+    }
+
+    if (lensId === 'climate.temp') {
+      const tmp_mean = qv.tmp_dc_syr;
+      const amp      = qv.tmp_seas_amp;
+      if (tmp_mean == null || amp == null) return '';
+      let thermalDesc;
+      if (tmp_mean > 20)       thermalDesc = 'a hot tropical regime';
+      else if (tmp_mean > 12)  thermalDesc = 'a warm temperate regime';
+      else if (tmp_mean > 4)   thermalDesc = 'a cool temperate regime';
+      else if (tmp_mean > -5)  thermalDesc = 'a cold continental or high-elevation regime';
+      else                     thermalDesc = 'a polar or extreme continental regime';
+      let ampDesc;
+      if (amp < 10)       ampDesc = 'low seasonal amplitude (equable, maritime-influenced)';
+      else if (amp < 20)  ampDesc = 'moderate seasonal amplitude';
+      else if (amp < 35)  ampDesc = 'high seasonal amplitude (continental)';
+      else                ampDesc = 'extreme seasonal amplitude (deep continental or high-latitude)';
+      return `<p class="text-muted mb-0">The containing basin has a mean annual temperature of `
+           + `${tmp_mean.toFixed(1)}&nbsp;°C — ${thermalDesc} — with ${ampDesc} `
+           + `(${amp.toFixed(1)}&nbsp;°C range). `
+           + `Showing the ${n} most similar basins by thermal character.</p>`;
+    }
+
+    // Generic fallback for future lenses
+    const label = simData.lens_label || lensId;
+    return `<p class="text-muted mb-0">Showing the ${n} most similar basins by ${label.toLowerCase()}.</p>`;
+  }
+
+  function _populateGroupSelect() {
+    const sel = document.getElementById('v3-sim-group');
+    sel.innerHTML = '';
+    const seen = new Set();
+    _simLensRegistry.forEach(l => {
+      if (seen.has(l.group)) return;
+      seen.add(l.group);
+      const hasActive = _simLensRegistry.some(m => m.group === l.group && m.status === 'active');
+      const opt = document.createElement('option');
+      opt.value       = l.group;
+      opt.textContent = hasActive ? l.group : `${l.group} (coming soon)`;
+      opt.disabled    = !hasActive;
+      sel.appendChild(opt);
+    });
+  }
+
+  function _populateSubLensSelect(group) {
+    const sel = document.getElementById('v3-sim-sublens');
+    sel.innerHTML = '';
+    _simLensRegistry.filter(l => l.group === group).forEach(l => {
+      const opt = document.createElement('option');
+      opt.value       = l.lens_id;
+      opt.textContent = l.status === 'active' ? l.label : `${l.label} (coming soon)`;
+      opt.disabled    = l.status !== 'active';
+      if (l.lens_id === _simCurrentLens) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function _loadSimLensRegistry() {
+    try {
+      const r = await fetch('/api/similarity/lenses');
+      if (!r.ok) return;
+      const data = await r.json();
+      _simLensRegistry = data.lenses || [];
+      _populateGroupSelect();
+      const defaultGroup = (_simLensRegistry.find(l => l.lens_id === _simCurrentLens) || {}).group || 'Climate';
+      document.getElementById('v3-sim-group').value = defaultGroup;
+      _populateSubLensSelect(defaultGroup);
+      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
+    } catch (e) {
+      console.warn('[similarity] registry load failed', e);
+    }
   }
 
   async function renderSimilarity() {
     if (currentLat == null || currentLon == null) return;
-    if (_simQueryLat === currentLat && _simQueryLon === currentLon) {
+    if (_simQueryLat === currentLat && _simQueryLon === currentLon && _simQueryLens === _simCurrentLens) {
       if (_simMap) _simMap.resize();
       return;
     }
-    _simQueryLat = currentLat;
-    _simQueryLon = currentLon;
+    _simQueryLat  = currentLat;
+    _simQueryLon  = currentLon;
+    _simQueryLens = _simCurrentLens;
 
     // Init MapLibre instance on first call (tab must already be visible)
     if (!_simMap) {
@@ -1181,7 +1270,7 @@
       .addTo(_simMap);
 
     try {
-      const simR = await fetch(`/api/seasonality/similar?lat=${currentLat}&lon=${currentLon}&n=200`);
+      const simR = await fetch(`/api/similarity?lat=${currentLat}&lon=${currentLon}&lens=${_simCurrentLens}&n=200`);
       if (!simR.ok) throw new Error(`similarity ${simR.status}`);
       const simData = await simR.json();
       const results = simData.results || [];
@@ -1384,8 +1473,9 @@
   function _resetRightColumn() {
     _pointSig = null;
     _currentPlaceName = '';
-    _simQueryLat = null;
-    _simQueryLon = null;
+    _simQueryLat  = null;
+    _simQueryLon  = null;
+    _simQueryLens = null;
     document.getElementById('v3-pane-analysis').innerHTML =
       '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
@@ -2817,6 +2907,22 @@
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
   document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderSimilarity);
+  document.getElementById('v3-sim-group').addEventListener('change', function () {
+    _populateSubLensSelect(this.value);
+    const first = _simLensRegistry.find(l => l.group === this.value && l.status === 'active');
+    if (first) {
+      _simCurrentLens = first.lens_id;
+      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
+      _simQueryLens = null;
+      renderSimilarity();
+    }
+  });
+  document.getElementById('v3-sim-sublens').addEventListener('change', function () {
+    _simCurrentLens = this.value;
+    _simQueryLens = null;
+    renderSimilarity();
+  });
+  _loadSimLensRegistry();
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
   window._v3map = map;
 
