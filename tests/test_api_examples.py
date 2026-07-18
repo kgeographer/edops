@@ -235,16 +235,16 @@ def test_seasonality_similar_sf(client):
 
 
 # ---------------------------------------------------------------------------
-# 9. WO7a Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
+# 9. WO7a/WO7b Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
 # ---------------------------------------------------------------------------
 
 def test_similarity_climate_temp_london(client):
-    """London query via Mahalanobis temp lens returns mild maritime basins in top-10.
+    """London query via Mahalanobis temp lens (threshold mode) returns mild maritime basins.
 
     Contract: mean annual temp 7–13°C; NW Europe (GB/IE/NO/FR) or Pacific NW (US/CA)
     should appear; high-amplitude continental basins must be absent from top-10.
     """
-    r = client.get("/api/similarity", params={"lat": 51.5, "lon": -0.12, "lens": "climate.temp", "n": 20})
+    r = client.get("/api/similarity", params={"lat": 51.5, "lon": -0.12, "lens": "climate.temp"})
     assert r.status_code == 200
     data = r.json()
 
@@ -321,6 +321,62 @@ def test_similarity_lenses_registry(client):
     # climate.temp must declare Mahalanobis
     assert by_id["climate.temp"]["metric"] == "mahalanobis"
 
+    # All active lenses must expose strict/moderate/loose thresholds
+    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+        t = by_id[lid].get("thresholds", {})
+        assert set(t) == {"strict", "moderate", "loose"}, (
+            f"{lid} missing thresholds dict with strict/moderate/loose; got {t}"
+        )
+        assert t["strict"] < t["moderate"] < t["loose"], (
+            f"{lid} thresholds not ordered strict < moderate < loose: {t}"
+        )
+
     # At least one disabled stub group must be present (Terrain or Hydrology)
     disabled = [lens for lens in data["lenses"] if lens["status"] == "disabled"]
     assert disabled, "Expected at least one disabled stub lens in registry"
+
+
+# ---------------------------------------------------------------------------
+# 11. WO7b Similarity — threshold mode shape + variable-count contract
+# ---------------------------------------------------------------------------
+
+def test_similarity_threshold_response_shape(client):
+    """Threshold mode response includes mode/stringency/radius/result_count."""
+    r = client.get("/api/similarity", params={
+        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["mode"] == "threshold"
+    assert data["stringency"] == "moderate"
+    assert isinstance(data["radius"], float) and data["radius"] > 0
+    assert isinstance(data["result_count"], int) and data["result_count"] > 0
+    assert len(data["results"]) == data["result_count"]
+    dists = [res["distance"] for res in data["results"]]
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+    assert all(d <= data["radius"] for d in dists), "All distances must be within the declared radius"
+
+
+def test_similarity_threshold_variable_count(client):
+    """Rare-type basin returns fewer similar basins than common-type at same lens + stringency.
+
+    SF (Mediterranean phase) is a comparatively rare climate type; Timbuktu (monsoon)
+    is common. At the same lens and stringency the rare type must return fewer basins.
+    This is the core contract: threshold count is signal, not noise.
+    """
+    sf  = client.get("/api/similarity", params={
+        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    tim = client.get("/api/similarity", params={
+        "lat": 16.77, "lon": -3.01, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    assert sf.status_code == 200 and tim.status_code == 200
+    sf_n  = sf.json()["result_count"]
+    tim_n = tim.json()["result_count"]
+    assert sf_n < tim_n, (
+        f"SF (rare Mediterranean) should return fewer basins than Timbuktu (common monsoon) "
+        f"at climate.phase moderate — got SF={sf_n}, Timbuktu={tim_n}"
+    )
