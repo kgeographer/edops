@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-16 (WO6 complete — Seasonality tab in sandbox_v3)
+- **Last updated:** 2026-07-17 (WO7a complete — lens registry + /api/similarity + two-dropdown UI)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,7 +50,7 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**580 tests pass, 52 skipped.**
+**583 tests pass, 52 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle,
@@ -137,6 +137,29 @@ signature), polity examples added, Polities tab now default. Findings in
   not "water from outside polity borders." Different question, unresolved.
 - Full findings: `docs/edop/demo/wo4b_findings.md`
 
+**WO7 + WO7a complete (2026-07-17) — Similarity tab: lens registry + two-dropdown UI:**
+
+WO7 (Parts A/B, previously complete): seasonal-phase similarity endpoint, Similarity tab scaffold
+with MapLibre world map, distance-based color ramp, SF example, named-place filter removed.
+
+WO7a (Parts A–C, complete 2026-07-17):
+- **Part A** (notebook `wo7a_climate_lenses.ipynb`): settled variable sets and metrics for
+  three Climate sub-lenses. Confirmed: `ari_ix_sav` rejected from Precipitation lens (dimension
+  mixing); Mahalanobis mandatory for Temperature (r = −0.837); NE adequate for Precip and Phase.
+- **Part B** (`app/db/seasonality.py` refactor): `LENS_REGISTRY` drives all three active lenses.
+  `load_similarity_index()` loads arrays once at startup; `find_similar(hybas_id, lens_id, n)`
+  dispatches to Euclidean or Mahalanobis per lens. New: `GET /api/similarity?lens=<id>` (richer
+  shape with `query_values` and per-result `values`); `GET /api/similarity/lenses` (registry for
+  UI). `/api/seasonality/similar` kept as backward-compat wrapper.
+- **Part C** (sandbox_v3 UI): single lens select replaced by group + sub-lens dropdowns populated
+  from registry at page load. Anchor persists across sub-lens changes; switching sub-lens refetches
+  for same location. `_simBlurb()` dispatches by lens_id with distinct text per lens.
+- 3 new contract tests (backward-compat SF, London Mahalanobis maritime check, registry shape).
+  583 tests pass, 52 skipped.
+- **Part D (threshold rendering) → WO7b.** Current fixed top-200 works but is unprincipled —
+  result count should reflect the actual similarity neighborhood, not an arbitrary cap.
+- Branch: `demo_wo7a`. Spec: `wo7a_similarity-lenses.md`; findings: `wo7a_findings.md`.
+
 **WO6 complete (2026-07-16) — Seasonality tab in sandbox_v3 (Settlements):**
 - Fourth tab added to right-column strip: Map / Signature / Analysis / **Seasonality**.
 - Disabled at cold start; enabled after "Get signature" on Settlements tab.
@@ -190,6 +213,8 @@ signature), polity examples added, Polities tab now default. Findings in
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
 | Seasonality (WO5) | Monthly arrays + 6 derived indices in signature; rev2 DB views; catalog updated; 3 contract tests | **complete** |
 | Seasonality tab (WO6) | Walter-Lieth + polar SVG charts; generated blurb; scalar table with month names; settlement name heading | **complete** |
+| Similarity lens registry + UI (WO7 + WO7a) | Lens registry; `/api/similarity`; two-dropdown group+sub-lens UI; three Climate sub-lenses live; Parts A–C complete | **complete — branch demo_wo7a, pending merge** |
+| Similarity threshold rendering (WO7b) | Distance-threshold result sets (variable-N) so result count reflects actual similarity neighborhood; honest stringency control | **next** |
 | Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
 | Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
@@ -225,6 +250,22 @@ signature), polity examples added, Polities tab now default. Findings in
 ## Locked decisions
 
 Append-only; dated. Settled unless explicitly revisited here.
+
+**2026-07-17**
+
+- **WO7a lens registry architecture locked** — `LENS_REGISTRY` in `seasonality.py` is the
+  single source of truth for similarity lens definitions. Adding a lens is a registry entry;
+  no new distance logic is needed. Three active Climate sub-lenses shipped:
+  `climate.precip` (NE, 2 vars), `climate.temp` (Mahalanobis, 3 vars), `climate.phase`
+  (NE, 2 vars). Disabled stubs for Terrain and Hydrology present in registry.
+  `/api/seasonality/similar` kept as backward-compat wrapper indefinitely.
+
+- **Fixed top-N is insufficient for honest similarity display** — current top-200 result set
+  has no principled relationship to the query basin's actual similarity neighborhood. A
+  Mediterranean-type basin (rare climate) and a tropical monsoon basin (common climate) both
+  return 200 results at wildly different distance spreads. WO7b will introduce a distance
+  threshold (SD-radius or equivalent) so map density reflects how many basins genuinely
+  qualify — not how many the cap allows.
 
 **2026-07-15**
 

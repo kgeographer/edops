@@ -46,8 +46,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO6 complete — Seasonality tab in sandbox_v3 (Walter-Lieth + polar SVG charts, generated blurb, scalar table). Branch `demo_wo6` ready to merge. **Next: merge `demo_wo6`, then WO7 or further UI work.**
-- **Tests:** 580 pass, 52 skipped
+- **Current step:** WO7a complete (Parts A–C) — lens registry (`app/db/seasonality.py`), `/api/similarity` + `/api/similarity/lenses` endpoints, two-dropdown UI (group + sub-lens) on Similarity tab. Branch `demo_wo7a`. **Next: merge `demo_wo7a → demo`, then WO7b (threshold rendering — variable-N result sets by distance threshold instead of fixed top-N).**
+- **Tests:** 583 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:

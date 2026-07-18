@@ -125,3 +125,71 @@ different physical processes produces results that cannot be truthfully labelled
 | climate.precip | Precipitation regime | pre_mm_syr, pre_concentration | euclidean | −0.200 |
 | climate.temp | Temperature regime | tmp_dc_syr, tmp_seas_amp, tmp_concentration | mahalanobis | −0.837 |
 | climate.phase | Seasonal phase | pre_concentration, seas_phase_offset | euclidean | −0.121 |
+
+---
+
+## B — Backend registry (`app/db/seasonality.py` refactor)
+
+`LENS_REGISTRY` dict drives all three active lenses. `load_similarity_index()` loads monthly
+arrays once at startup, computes all four derived variables (`pre_concentration`,
+`seas_phase_offset`, `tmp_concentration`, `tmp_seas_amp`) and the two needed BasinATLAS
+scalars (`pre_mm_syr`, `tmp_dc_syr` ÷10), then builds per-lens state:
+
+- **Euclidean lenses** — z-scored matrix; `Xz` stored; distance = √(Σ(zᵢ−zⱼ)²)
+- **Mahalanobis lenses** — raw matrix + inverse covariance `VI`; distance = √(d·VI·dᵀ) via `einsum`
+
+`find_similar(hybas_id, lens_id, n)` dispatches by lens spec. Returns `(query_meta, ranked)`:
+- `query_meta` — `{lens_id, lens_label, metric, query_hybas_id, query_values}`
+- `ranked` — list of `{rank, hybas_id, distance, values}` with per-result lens-variable values
+
+New endpoints:
+- `GET /api/similarity?lat&lon&lens&n` — new shape, per-result `values` dict
+- `GET /api/similarity/lenses` — full registry (active + disabled stubs)
+- `GET /api/seasonality/similar` — kept as backward-compat wrapper (climate.phase, old flat shape)
+
+Two disabled stubs (`terrain.*`, `hydrology.*`) in the registry give the UI something to
+render as greyed options without any backend work.
+
+**Tests added:** `test_similarity_climate_temp_london` (Mahalanobis maritime check — top-10
+amplitude < 25°C, maritime Europe/PNW in ccodes); `test_similarity_lenses_registry` (three
+active Climate lenses present; climate.temp declares mahalanobis; at least one disabled stub).
+
+---
+
+## C — Two-dropdown UI (sandbox_v3 Similarity tab)
+
+Single `#v3-sim-lens` select replaced with `#v3-sim-group` + `#v3-sim-sublens`. Registry
+loaded at page init from `/api/similarity/lenses`; group select populated from distinct
+groups; sub-lens select repopulated on group change with active lenses only (disabled entries
+greyed). Default: Climate / Seasonal phase.
+
+Lens-switching contract: anchor (lat/lon) persists across sub-lens changes; cache key is
+`(lat, lon, lens_id)`; switching sub-lens nulls `_simQueryLens` to force refetch.
+
+`renderSimilarity()` now calls `/api/similarity?lens=<id>&n=200`. `_simBlurb()` dispatches
+by `lens_id` — existing phase text for `climate.phase`; new descriptive blurbs for
+`climate.precip` (annual total + concentration characterisation) and `climate.temp` (mean
+temp + amplitude characterisation).
+
+Reviewed in browser: 2026-07-17 — three Climate sub-lenses render and repaint on switch;
+Terrain and Hydrology present but disabled; anchor persists across lens changes.
+
+---
+
+## Status: Parts A–C complete; Part D (threshold rendering) → WO7b
+
+WO7a acceptance criteria satisfied:
+- Notebook reports settled variable sets + metrics for all three Climate sub-lenses ✓
+- Registry drives the endpoint — same code path for all three lenses ✓
+- Two dropdowns render; Climate active with three sub-lenses; Terrain/Hydrology greyed ✓
+- Sub-lens switch for fixed location re-queries and repaints without losing anchor ✓
+- Validation passes: Precipitation-regime Rome recovers Mediterranean rainfall basins;
+  Temperature-regime London recovers maritime basins; Seasonal-phase SF recovers
+  Mediterranean cluster ✓
+- All existing tests pass; contract tests added for Mahalanobis lens and registry shape ✓
+
+Part D (honest variable-N / distance-threshold result sets) deferred to WO7b.
+The current fixed top-200 produces coherent displays but the result count has no
+principled relationship to the query basin's actual similarity neighborhood. WO7b will
+introduce a distance threshold (SD-radius or equivalent) so the map shows "how many
+basins qualify" rather than "the 200 nearest regardless of distance."
