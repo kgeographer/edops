@@ -435,12 +435,15 @@ def _gaz_join(conn, hybas_ids: list) -> dict:
         return {int(r[0]): r for r in cur.fetchall()}
 
 
+# DEPRECATED: use /api/similarity?lens=climate.phase — this wrapper exists only to keep
+# WO7 callers running during transition. Do not add new callers; do not reuse as a pattern.
 @router.get("/seasonality/similar")
 def seasonality_similar(lat: float, lon: float, n: int = 20):
-    """Backward-compat wrapper for the climate.phase lens.
+    """Deprecated backward-compat wrapper for the climate.phase lens.
 
-    Delegates to /api/similarity with lens=climate.phase and returns the original
-    flat response shape so existing callers and tests are unaffected.
+    Use /api/similarity?lens=climate.phase for new callers.
+    Returns the original flat shape (query_pre_concentration, query_seas_phase_offset,
+    basin_rank) so existing callers are unaffected during transition.
     """
     n = min(max(1, n), 200)
     conn = db_connect()

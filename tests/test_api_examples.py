@@ -258,6 +258,11 @@ def test_similarity_climate_temp_london(client):
     assert "tmp_concentration" in qv
     # London annual mean temp should be 8–12°C
     assert 6.0 <= qv["tmp_dc_syr"] <= 14.0, f"London tmp_dc_syr={qv['tmp_dc_syr']:.2f} out of expected range"
+    # London seasonal amplitude ~13–15°C; guards against tmp_dc_monthly ×10 regression
+    assert 8.0 <= qv["tmp_seas_amp"] <= 22.0, (
+        f"London tmp_seas_amp={qv['tmp_seas_amp']:.2f}°C out of expected range — "
+        "check that tmp_dc_monthly is loaded in °C (not ×10)"
+    )
 
     results = data["results"]
     assert len(results) > 0

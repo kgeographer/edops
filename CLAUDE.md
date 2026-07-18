@@ -297,4 +297,5 @@ Cross-phase deferred items → `docs/design/areas/deferred_items_register.md`.
 Standing cross-phase notes:
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
+- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. New callers use `/api/similarity?lens=climate.phase`. Remove once sandbox_v3 Part C UI is the only caller (post WO7b).
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review

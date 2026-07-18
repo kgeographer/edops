@@ -267,6 +267,17 @@ Append-only; dated. Settled unless explicitly revisited here.
   threshold (SD-radius or equivalent) so map density reflects how many basins genuinely
   qualify — not how many the cap allows.
 
+- **One physical question per lens — architectural rule for all future lens groups** —
+  shared-physics correlation between variables is acceptable and handled by Mahalanobis
+  (cold mean temp and high amplitude are correlated because continental physics links them;
+  keep both, use Mahalanobis). Dimension-mixing correlation is a signal to reject a variable
+  (`ari_ix_sav` correlates with precip because it divides precip by PET — mixing atmospheric
+  supply with evaporative demand, a different physical process). The rule: each lens label
+  must honestly describe what the metric measures; no variable whose correlation is driven by
+  a different physical process belongs in a lens. This governs Terrain, Hydrology, Vegetation,
+  and any other future lens group — compose lenses by physical coherence, not by correlation
+  structure alone.
+
 **2026-07-15**
 
 - **WO5 seasonality architecture locked** — Monthly arrays (`pre_mm_monthly`, `tmp_dc_monthly`)
