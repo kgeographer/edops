@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-17 (WO7a complete — lens registry + /api/similarity + two-dropdown UI)
+- **Last updated:** 2026-07-17 (WO7b Parts C+D complete — threshold mode + stringency UI)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -50,7 +50,7 @@ cross-phase: consult at every step resumption, add rows there
 ## You are here
 
 Phase opened 2026-07-10. Branch: `demo` (cut fresh from main after Surface merge).
-**583 tests pass, 52 skipped.**
+**585 tests pass, 38 skipped.**
 
 Active page: `sandbox_v3.html` at `/sandbox/lookup3` — two-tab surface (Settlements +
 Polities), all four scopes operable, BasinATLAS/LMR/HYDE choropleth, L06/L08 level toggle,
@@ -156,9 +156,20 @@ WO7a (Parts A–C, complete 2026-07-17):
   for same location. `_simBlurb()` dispatches by lens_id with distinct text per lens.
 - 3 new contract tests (backward-compat SF, London Mahalanobis maritime check, registry shape).
   583 tests pass, 52 skipped.
-- **Part D (threshold rendering) → WO7b.** Current fixed top-200 works but is unprincipled —
-  result count should reflect the actual similarity neighborhood, not an arbitrary cap.
-- Branch: `demo_wo7a`. Spec: `wo7a_similarity-lenses.md`; findings: `wo7a_findings.md`.
+- Branch: `demo_wo7a` (merged to demo 2026-07-17). Spec: `wo7a_similarity-lenses.md`; findings: `wo7a_findings.md`.
+
+**WO7b Parts C+D complete (2026-07-17) — Distance threshold rendering:**
+
+- **Part A** (perf probe, inline): POST `/api/basin-geom` endpoint added (was GET-limited by URL length); geometry precision reduced to 3 dp; n cap raised to 6000. 5272-basin set (Tbilisi/temp loose) confirmed ~2 seconds — acceptable; spinner deferred.
+- **Part B** (notebook `wo7b_threshold.ipynb`): CDFs plotted for all three Climate lenses; strict/moderate/loose radii settled empirically:
+  - `climate.phase`:  strict 0.10, moderate 0.30, loose 0.75
+  - `climate.precip`: strict 0.10, moderate 0.20, loose 0.50
+  - `climate.temp`:   strict 0.25, moderate 0.75, loose 1.50
+- **Part C** (backend): `thresholds` dict added to each active lens in `LENS_REGISTRY`; `find_similar()` gains `mode='threshold'` (default) + `stringency='moderate'`; `/api/similarity` defaults to threshold/moderate — returns all basins within calibrated radius; `mode=topn` retained as fallback; `result_count` + `radius` in response; `/api/similarity/lenses` exposes thresholds for UI.
+- **Part D** (UI): Strict / Moderate / Loose segmented control added to Similarity tab controls row; changing stringency re-queries and repaints; blurb now reports "Showing all N basins within the {stringency} threshold" using server `result_count`. Cache key extended to include stringency.
+- 2 new contract tests: threshold response shape; SF < Timbuktu count at `climate.phase` moderate. 585 tests pass.
+- **Pending:** Karl browser review (hero-shot check: SF moderate tight cluster vs Timbuktu moderate broad dispersion on Seasonal Phase); then `wo7b_findings.md` + merge `demo_wo7b → demo`.
+- Branch: `demo_wo7b`. Spec: `wo7b_distance-thresholds.md`.
 
 **WO6 complete (2026-07-16) — Seasonality tab in sandbox_v3 (Settlements):**
 - Fourth tab added to right-column strip: Map / Signature / Analysis / **Seasonality**.
@@ -213,8 +224,8 @@ WO7a (Parts A–C, complete 2026-07-17):
 | Correspondence surfacing | D-PLACE / Workbench Societies screen; decision: port vs. demo-as-is | pending |
 | Seasonality (WO5) | Monthly arrays + 6 derived indices in signature; rev2 DB views; catalog updated; 3 contract tests | **complete** |
 | Seasonality tab (WO6) | Walter-Lieth + polar SVG charts; generated blurb; scalar table with month names; settlement name heading | **complete** |
-| Similarity lens registry + UI (WO7 + WO7a) | Lens registry; `/api/similarity`; two-dropdown group+sub-lens UI; three Climate sub-lenses live; Parts A–C complete | **complete — branch demo_wo7a, pending merge** |
-| Similarity threshold rendering (WO7b) | Distance-threshold result sets (variable-N) so result count reflects actual similarity neighborhood; honest stringency control | **next** |
+| Similarity lens registry + UI (WO7 + WO7a) | Lens registry; `/api/similarity`; two-dropdown group+sub-lens UI; three Climate sub-lenses live; Parts A–C complete | **complete — merged** |
+| Similarity threshold rendering (WO7b) | Distance-threshold result sets (variable-N); strict/moderate/loose control; honest count in blurb; Parts A–D complete | **browser review + findings pending → merge** |
 | Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
 | Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
@@ -252,6 +263,13 @@ WO7a (Parts A–C, complete 2026-07-17):
 Append-only; dated. Settled unless explicitly revisited here.
 
 **2026-07-17**
+
+- **WO7b threshold architecture locked** — `find_similar()` defaults to `mode='threshold'`,
+  `stringency='moderate'`. Per-lens strict/moderate/loose radii live in `LENS_REGISTRY`; they are
+  declared analytical choices calibrated empirically from CDFs, not derived from normality
+  assumptions. Count varies by query type; that variation is the finding. `mode='topn'` retained
+  as a comparison path; `/api/seasonality/similar` (deprecated wrapper) permanently pinned to topn.
+  Spinner deferred until post-Braga.
 
 - **WO7a lens registry architecture locked** — `LENS_REGISTRY` in `seasonality.py` is the
   single source of truth for similarity lens definitions. Adding a lens is a registry entry;

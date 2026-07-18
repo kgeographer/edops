@@ -46,8 +46,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO7a complete (Parts A–C) — lens registry (`app/db/seasonality.py`), `/api/similarity` + `/api/similarity/lenses` endpoints, two-dropdown UI (group + sub-lens) on Similarity tab. Branch `demo_wo7a`. **Next: merge `demo_wo7a → demo`, then WO7b (threshold rendering — variable-N result sets by distance threshold instead of fixed top-N).**
-- **Tests:** 583 pass, 52 skipped
+- **Current step:** WO7b Parts C+D complete — threshold mode in `find_similar()` + `/api/similarity` (strict/moderate/loose radii per lens; variable-N result sets); Strict/Moderate/Loose segmented control + honest count in Similarity tab blurb. Branch `demo_wo7b`. **Next: Karl browser review (hero-shot check), then `wo7b_findings.md`, then merge `demo_wo7b → demo`.**
+- **Tests:** 585 pass, 38 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
@@ -297,5 +297,5 @@ Cross-phase deferred items → `docs/design/areas/deferred_items_register.md`.
 Standing cross-phase notes:
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
 - **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
-- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. New callers use `/api/similarity?lens=climate.phase`. Remove once sandbox_v3 Part C UI is the only caller (post WO7b).
+- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
