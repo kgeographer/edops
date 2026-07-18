@@ -435,10 +435,19 @@
           <div id="v3-sim-content" style="display:none;">
             <div class="d-flex align-items-center justify-content-between px-1 py-2">
               <div id="v3-sim-title"></div>
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="text-muted small fw-semibold">Lens:</span>
                 <select id="v3-sim-group" class="form-select form-select-sm" style="width:auto;"></select>
                 <select id="v3-sim-sublens" class="form-select form-select-sm" style="width:auto;"></select>
+                <span class="text-muted small ms-1" style="border-left:1px solid #dee2e6; padding-left:0.6rem;">Threshold:</span>
+                <div class="btn-group btn-group-sm" role="group">
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-strict"   value="strict"   autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-strict"   style="font-size:0.75rem; line-height:1.6;">Strict</label>
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-moderate" value="moderate" autocomplete="off" checked>
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-moderate" style="font-size:0.75rem; line-height:1.6;">Moderate</label>
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-loose"    value="loose"    autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-loose"    style="font-size:0.75rem; line-height:1.6;">Loose</label>
+                </div>
               </div>
             </div>
             <div class="d-flex align-items-center gap-2 px-1 pb-1">
@@ -487,8 +496,10 @@
   let _simQueryLat      = null;  // coords + lens of last similarity fetch — skip refetch if unchanged
   let _simQueryLon      = null;
   let _simQueryLens     = null;
-  let _simCurrentLens   = 'climate.phase';   // active lens id
-  let _simLensRegistry  = [];                // [{lens_id, group, label, status, ...}]
+  let _simCurrentLens        = 'climate.phase';   // active lens id
+  let _simCurrentStringency  = 'moderate';         // strict | moderate | loose
+  let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
+  let _simQueryStringency    = null;               // stringency of last rendered fetch
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -1078,7 +1089,9 @@
   // ── Similarity tab ────────────────────────────────────────────────────────
 
   function _simBlurb(simData) {
-    const n      = (simData.results || []).length;
+    const n          = simData.result_count ?? (simData.results || []).length;
+    const stringency = simData.stringency || _simCurrentStringency;
+    const countLine  = `Showing all ${n.toLocaleString()} basins within the ${stringency} threshold.`;
     const lensId = simData.lens_id || 'climate.phase';
     const qv     = simData.query_values || {};
 
@@ -1105,7 +1118,7 @@
       }
       return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
            + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
-           + `${mapDesc} Showing the ${n} most similar basins.</p>`;
+           + `${mapDesc} ${countLine}</p>`;
     }
 
     if (lensId === 'climate.precip') {
@@ -1120,7 +1133,7 @@
       return `<p class="text-muted mb-0">The containing basin receives `
            + `${Math.round(pre_mm)}&nbsp;mm/year of precipitation, ${seasDesc} `
            + `(concentration&nbsp;${conc.toFixed(2)}). `
-           + `Showing the ${n} most similar basins by annual total and seasonal distribution of precipitation.</p>`;
+           + `${countLine}</p>`;
     }
 
     if (lensId === 'climate.temp') {
@@ -1141,12 +1154,12 @@
       return `<p class="text-muted mb-0">The containing basin has a mean annual temperature of `
            + `${tmp_mean.toFixed(1)}&nbsp;°C — ${thermalDesc} — with ${ampDesc} `
            + `(${amp.toFixed(1)}&nbsp;°C range). `
-           + `Showing the ${n} most similar basins by thermal character.</p>`;
+           + `${countLine}</p>`;
     }
 
     // Generic fallback for future lenses
     const label = simData.lens_label || lensId;
-    return `<p class="text-muted mb-0">Showing the ${n} most similar basins by ${label.toLowerCase()}.</p>`;
+    return `<p class="text-muted mb-0">${countLine}</p>`;
   }
 
   function _populateGroupSelect() {
@@ -1196,13 +1209,15 @@
 
   async function renderSimilarity() {
     if (currentLat == null || currentLon == null) return;
-    if (_simQueryLat === currentLat && _simQueryLon === currentLon && _simQueryLens === _simCurrentLens) {
+    if (_simQueryLat === currentLat && _simQueryLon === currentLon &&
+        _simQueryLens === _simCurrentLens && _simQueryStringency === _simCurrentStringency) {
       if (_simMap) _simMap.resize();
       return;
     }
-    _simQueryLat  = currentLat;
-    _simQueryLon  = currentLon;
-    _simQueryLens = _simCurrentLens;
+    _simQueryLat        = currentLat;
+    _simQueryLon        = currentLon;
+    _simQueryLens       = _simCurrentLens;
+    _simQueryStringency = _simCurrentStringency;
 
     // Init MapLibre instance on first call (tab must already be visible)
     if (!_simMap) {
@@ -1270,7 +1285,7 @@
       .addTo(_simMap);
 
     try {
-      const simR = await fetch(`/api/similarity?lat=${currentLat}&lon=${currentLon}&lens=${_simCurrentLens}&n=200`);
+      const simR = await fetch(`/api/similarity?lat=${currentLat}&lon=${currentLon}&lens=${_simCurrentLens}&mode=threshold&stringency=${_simCurrentStringency}`);
       if (!simR.ok) throw new Error(`similarity ${simR.status}`);
       const simData = await simR.json();
       const results = simData.results || [];
@@ -1279,8 +1294,12 @@
         return;
       }
 
-      const ids = results.map(r => r.basin_id).join(',');
-      const geomR = await fetch(`/api/basin-geom?ids=${ids}`);
+      const ids = results.map(r => r.basin_id);
+      const geomR = await fetch('/api/basin-geom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, level: 6 }),
+      });
       if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
       const geomData = await geomR.json();
 
@@ -1473,9 +1492,10 @@
   function _resetRightColumn() {
     _pointSig = null;
     _currentPlaceName = '';
-    _simQueryLat  = null;
-    _simQueryLon  = null;
-    _simQueryLens = null;
+    _simQueryLat        = null;
+    _simQueryLon        = null;
+    _simQueryLens       = null;
+    _simQueryStringency = null;
     document.getElementById('v3-pane-analysis').innerHTML =
       '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
@@ -2919,8 +2939,15 @@
   });
   document.getElementById('v3-sim-sublens').addEventListener('change', function () {
     _simCurrentLens = this.value;
-    _simQueryLens = null;
+    _simQueryLens   = null;
     renderSimilarity();
+  });
+  document.querySelectorAll('input[name="v3sim-str"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+      _simCurrentStringency = this.value;
+      _simQueryStringency   = null;
+      renderSimilarity();
+    });
   });
   _loadSimLensRegistry();
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });

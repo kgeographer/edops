@@ -30,25 +30,28 @@ logger = logging.getLogger(__name__)
 
 LENS_REGISTRY: Dict[str, Dict[str, Any]] = {
     "climate.precip": {
-        "group":     "Climate",
-        "label":     "Precipitation regime",
-        "variables": ["pre_mm_syr", "pre_concentration"],
-        "metric":    "euclidean",
-        "status":    "active",
+        "group":      "Climate",
+        "label":      "Precipitation regime",
+        "variables":  ["pre_mm_syr", "pre_concentration"],
+        "metric":     "euclidean",
+        "status":     "active",
+        "thresholds": {"strict": 0.10, "moderate": 0.20, "loose": 0.50},
     },
     "climate.temp": {
-        "group":     "Climate",
-        "label":     "Temperature regime",
-        "variables": ["tmp_dc_syr", "tmp_seas_amp", "tmp_concentration"],
-        "metric":    "mahalanobis",
-        "status":    "active",
+        "group":      "Climate",
+        "label":      "Temperature regime",
+        "variables":  ["tmp_dc_syr", "tmp_seas_amp", "tmp_concentration"],
+        "metric":     "mahalanobis",
+        "status":     "active",
+        "thresholds": {"strict": 0.25, "moderate": 0.75, "loose": 1.50},
     },
     "climate.phase": {
-        "group":     "Climate",
-        "label":     "Seasonal phase",
-        "variables": ["pre_concentration", "seas_phase_offset"],
-        "metric":    "euclidean",
-        "status":    "active",
+        "group":      "Climate",
+        "label":      "Seasonal phase",
+        "variables":  ["pre_concentration", "seas_phase_offset"],
+        "metric":     "euclidean",
+        "status":     "active",
+        "thresholds": {"strict": 0.10, "moderate": 0.30, "loose": 0.75},
     },
     "terrain.*": {
         "group":  "Terrain",
@@ -146,12 +149,13 @@ def get_lens_registry() -> List[Dict[str, Any]]:
     """Return the public view of the lens registry (all lenses, active and disabled)."""
     return [
         {
-            "lens_id":   lid,
-            "group":     spec.get("group", ""),
-            "label":     spec.get("label", ""),
-            "status":    spec.get("status", "disabled"),
-            "variables": spec.get("variables", []),
-            "metric":    spec.get("metric", ""),
+            "lens_id":    lid,
+            "group":      spec.get("group", ""),
+            "label":      spec.get("label", ""),
+            "status":     spec.get("status", "disabled"),
+            "variables":  spec.get("variables", []),
+            "metric":     spec.get("metric", ""),
+            "thresholds": spec.get("thresholds", {}),
         }
         for lid, spec in LENS_REGISTRY.items()
     ]
@@ -246,13 +250,20 @@ def load_similarity_index(conn) -> None:
 def find_similar(
     query_hybas_id: int,
     lens_id: str = "climate.phase",
-    n: int = 20,
+    n: int = 200,
+    mode: str = "threshold",
+    stringency: str = "moderate",
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    """Rank all L06 basins by distance to the query basin under the given lens.
+    """Rank L06 basins by distance to the query basin under the given lens.
+
+    mode='threshold' (default): returns all basins within the calibrated radius
+      for the given stringency ('strict'/'moderate'/'loose'). Count varies.
+    mode='topn': returns the n nearest basins regardless of radius.
 
     Returns (query_meta, ranked):
-      query_meta — lens_id, lens_label, metric, query_hybas_id, query_values
-      ranked     — list of n dicts: rank, hybas_id, distance, values
+      query_meta — lens_id, lens_label, metric, mode, query_hybas_id, query_values;
+                   in threshold mode also: stringency, radius, result_count
+      ranked     — list of dicts: rank, hybas_id, distance, values
 
     Raises RuntimeError if index not loaded; ValueError if lens unknown/inactive,
     basin not found, or basin has no valid data for this lens.
@@ -293,16 +304,27 @@ def find_similar(
 
     dist[q_idx] = np.inf
 
-    top_idx = np.argsort(dist)[:n + 1]
-    top_idx = [int(i) for i in top_idx if dist[i] < np.inf][:n]
+    if mode == "threshold":
+        if stringency not in ("strict", "moderate", "loose"):
+            raise ValueError(f"Unknown stringency: {stringency!r}")
+        radius = spec["thresholds"][stringency]
+        valid = np.where(np.isfinite(dist) & (dist <= radius))[0]
+        top_idx = [int(i) for i in valid[np.argsort(dist[valid])]]
+    else:
+        top_idx = [int(i) for i in np.argsort(dist)[:n + 1] if dist[i] < np.inf][:n]
 
-    query_meta = {
+    query_meta: Dict[str, Any] = {
         "lens_id":        lens_id,
         "lens_label":     spec["label"],
         "metric":         state["metric"],
+        "mode":           mode,
         "query_hybas_id": int(_HYBAS_IDS[q_idx]),
         "query_values":   {v: round(float(X_raw[q_idx, j]), 6) for j, v in enumerate(vars_)},
     }
+    if mode == "threshold":
+        query_meta["stringency"]   = stringency
+        query_meta["radius"]       = radius
+        query_meta["result_count"] = len(top_idx)
 
     ranked = [
         {

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 import json
 import urllib.parse
@@ -445,12 +446,12 @@ def seasonality_similar(lat: float, lon: float, n: int = 20):
     Returns the original flat shape (query_pre_concentration, query_seas_phase_offset,
     basin_rank) so existing callers are unaffected during transition.
     """
-    n = min(max(1, n), 200)
+    n = min(max(1, n), 6000)
     conn = db_connect()
     try:
         query_hybas_id = _resolve_basin(conn, lat, lon)
         try:
-            query_meta, ranked = find_similar(query_hybas_id, lens_id="climate.phase", n=n)
+            query_meta, ranked = find_similar(query_hybas_id, lens_id="climate.phase", n=n, mode="topn")
         except RuntimeError as e:
             raise HTTPException(status_code=503, detail=str(e))
         except ValueError as e:
@@ -503,36 +504,55 @@ def similarity_lenses():
 
 
 @router.get("/similarity")
-def similarity(lat: float, lon: float, lens: str = "climate.phase", n: int = 20):
-    """Return basins most similar to (lat, lon) under the given similarity lens.
+def similarity(
+    lat: float,
+    lon: float,
+    lens: str = "climate.phase",
+    mode: str = "threshold",
+    stringency: str = "moderate",
+    n: int = 200,
+):
+    """Return basins similar to (lat, lon) under the given similarity lens.
 
     Parameters
     ----------
-    lat, lon : query coordinates
-    lens     : lens_id from the registry (e.g. 'climate.phase', 'climate.temp')
-    n        : number of top basins to return (default 20, max 200)
+    lat, lon    : query coordinates
+    lens        : lens_id from the registry (e.g. 'climate.phase', 'climate.temp')
+    mode        : 'threshold' (default) — all basins within the calibrated radius;
+                  'topn' — the n nearest basins regardless of radius
+    stringency  : 'strict' | 'moderate' (default) | 'loose' — used in threshold mode
+    n           : top-N count used only when mode='topn' (default 200, max 2000)
 
     Response
     --------
     {
       "lens_id": str, "lens_label": str, "metric": str,
+      "mode": str,
       "query_basin_id": int,
-      "query_values": {var: value, ...},          # lens variables for the query basin
+      "query_values": {var: value, ...},
+      # threshold mode only:
+      "stringency": str, "radius": float, "result_count": int,
       "results": [
         { "rank": int, "basin_id": int, "distance": float,
-          "values": {var: value, ...},            # lens variables for this basin
+          "values": {var: value, ...},
           "place_id": int|null, "place_name": str|null,
           "ccodes": str|null, "lat": float|null, "lon": float|null },
         ...
       ]
     }
     """
-    n = min(max(1, n), 200)
+    if mode not in ("threshold", "topn"):
+        raise HTTPException(status_code=400, detail="mode must be 'threshold' or 'topn'")
+    if mode == "threshold" and stringency not in ("strict", "moderate", "loose"):
+        raise HTTPException(status_code=400, detail="stringency must be 'strict', 'moderate', or 'loose'")
+    n = min(max(1, n), 2000)
     conn = db_connect()
     try:
         query_hybas_id = _resolve_basin(conn, lat, lon)
         try:
-            query_meta, ranked = find_similar(query_hybas_id, lens_id=lens, n=n)
+            query_meta, ranked = find_similar(
+                query_hybas_id, lens_id=lens, n=n, mode=mode, stringency=stringency,
+            )
         except RuntimeError as e:
             raise HTTPException(status_code=503, detail=str(e))
         except ValueError as e:
@@ -555,27 +575,46 @@ def similarity(lat: float, lon: float, lens: str = "climate.phase", n: int = 20)
                 "lon":        float(place[5]) if place else None,
             })
 
-        return {
+        resp = {
             "lens_id":        query_meta["lens_id"],
             "lens_label":     query_meta["lens_label"],
             "metric":         query_meta["metric"],
+            "mode":           query_meta["mode"],
             "query_basin_id": query_meta["query_hybas_id"],
             "query_values":   query_meta["query_values"],
             "results":        results,
         }
+        if query_meta["mode"] == "threshold":
+            resp["stringency"]   = query_meta["stringency"]
+            resp["radius"]       = query_meta["radius"]
+            resp["result_count"] = query_meta["result_count"]
+        return resp
 
+    finally:
+        conn.close()
+
+
+def _fetch_basin_geom(hybas_ids: list, level: int) -> dict:
+    """Query basin geometries at precision 3 (~100 m). Shared by GET and POST handlers."""
+    table = "basin06" if level == 6 else "basin08"
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT hybas_id, ST_AsGeoJSON(geom, 3) FROM public.{table} "
+                "WHERE hybas_id = ANY(%s)",
+                (hybas_ids,),
+            )
+            return {str(int(row[0])): row[1] for row in cur.fetchall()}
     finally:
         conn.close()
 
 
 @router.get("/basin-geom")
 def basin_geom(ids: str, level: int = 6):
-    """Return GeoJSON geometry strings for a list of basin hybas_ids.
+    """Return GeoJSON geometry strings for a list of basin hybas_ids (GET, max 200).
 
-    Parameters
-    ----------
-    ids   : comma-separated hybas_id integers (max 100)
-    level : basin level — 6 or 8 (default 6)
+    For larger sets use POST /api/basin-geom with body {"ids": [...], "level": 6}.
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail="level must be 6 or 8")
@@ -585,19 +624,26 @@ def basin_geom(ids: str, level: int = 6):
         raise HTTPException(status_code=400, detail="ids must be comma-separated integers")
     if not hybas_ids or len(hybas_ids) > 200:
         raise HTTPException(status_code=400, detail="ids must contain 1–200 hybas_id values")
+    return _fetch_basin_geom(hybas_ids, level)
 
-    table = "basin06" if level == 6 else "basin08"
-    conn = db_connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"SELECT hybas_id, ST_AsGeoJSON(geom, 5) FROM public.{table} "
-                "WHERE hybas_id = ANY(%s)",
-                (hybas_ids,),
-            )
-            return {str(int(row[0])): row[1] for row in cur.fetchall()}
-    finally:
-        conn.close()
+
+class BasinGeomRequest(BaseModel):
+    ids: List[int]
+    level: int = 6
+
+
+@router.post("/basin-geom")
+def basin_geom_post(body: BasinGeomRequest):
+    """Return GeoJSON geometry strings for a list of basin hybas_ids (POST, max 2000).
+
+    Body: {"ids": [hybas_id, ...], "level": 6}
+    Returns: {"<hybas_id>": "<GeoJSON geometry string>", ...}
+    """
+    if body.level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    if not body.ids or len(body.ids) > 6000:
+        raise HTTPException(status_code=400, detail="ids must contain 1–6000 hybas_id values")
+    return _fetch_basin_geom(body.ids, body.level)
 
 
 @router.get("/signature")
