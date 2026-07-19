@@ -48,7 +48,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO1 open — `cdop_pilot.html` scaffold + L08 lens index + WH Cities lens swap. Branch `cdop_pilot` cut from `cdop`.
+- **Current step:** WO3 open — continuous precip lens + retire phase lens + scalar hygiene. Branch `cdop_wo2` (WO2/WO2a complete on same branch). See `wo3_retire-phase.md`.
 - **Tests:** 585 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
