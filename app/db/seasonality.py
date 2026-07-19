@@ -1,8 +1,9 @@
 """
 Similarity lens registry — loaded once at startup, queried per request.
 
-Three Climate sub-lenses are precomputed from L06 monthly arrays and BasinATLAS
-scalars at startup. Adding a new lens is a registry entry; no new distance logic needed.
+Three Climate sub-lenses are precomputed from L06 and L08 monthly arrays and
+BasinATLAS scalars at startup. Level is a parameter of index selection; no new
+distance logic is needed to add a level.
 
 Metric per lens:
   euclidean    — normalized Euclidean on z-scored variables (low inter-variable correlation)
@@ -11,9 +12,10 @@ Metric per lens:
 Derived variables (computed from monthly arrays; no DB column):
   pre_concentration, seas_phase_offset, tmp_concentration, tmp_seas_amp
 
-BasinATLAS scalar variables (loaded from basin06):
+BasinATLAS scalar variables:
   pre_mm_syr  — annual precip mm/yr        (no scaling)
   tmp_dc_syr  — annual mean temp °C×10     (divide by 10)
+  Sources: basin06 (level=6), basin08 (level=8) — same column names.
 """
 import logging
 import warnings
@@ -65,26 +67,41 @@ LENS_REGISTRY: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# Variables derived from monthly arrays (no basin06 column).
+# Variables derived from monthly arrays (no basin column).
 _DERIVED = {"pre_concentration", "seas_phase_offset", "tmp_concentration", "tmp_seas_amp"}
 
 # BasinATLAS scalar variables needed by active lenses.
-# Maps variable name → (basin06_column, scale_factor).
+# Maps variable name → (column_name, scale_factor).
 # scale_factor applied after load (tmp_dc_* stored ×10).
+# Column names are identical in basin06 and basin08.
 _SCALAR_SOURCES: Dict[str, Tuple[str, float]] = {
     "pre_mm_syr": ("pre_mm_syr", 1.0),
     "tmp_dc_syr": ("tmp_dc_syr", 0.1),
 }
 
+# Level → (monthly-arrays view, scalars table)
+_LEVEL_SOURCES: Dict[int, Tuple[str, str]] = {
+    6: ("public.v_basin06_persist_rev2", "public.basin06"),
+    8: ("public.v_basin08_persist_rev2", "public.basin08"),
+}
+
 # ---------------------------------------------------------------------------
-# Module-level state (None until load_similarity_index is called)
+# Module-level state keyed by level (None until load_similarity_index called)
 # ---------------------------------------------------------------------------
 
 _TWO_PI    = 2 * np.pi
 _THETA     = np.array([_TWO_PI * m / 12 for m in range(12)])
 
-_HYBAS_IDS: Optional[np.ndarray] = None          # (N,) int64 — shared
-_LENS_STATE: Dict[str, Dict[str, Any]] = {}       # lens_id → per-lens arrays
+# _INDEX[level] = {"hybas_ids": ndarray | None, "lens_state": dict}
+_INDEX: Dict[int, Dict[str, Any]] = {
+    6: {"hybas_ids": None, "lens_state": {}},
+    8: {"hybas_ids": None, "lens_state": {}},
+}
+
+# Keep legacy module-level names as aliases for backwards compatibility
+# (routes.py and tests may reference _HYBAS_IDS / _LENS_STATE via import)
+_HYBAS_IDS: Optional[np.ndarray] = None
+_LENS_STATE: Dict[str, Dict[str, Any]] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -161,9 +178,18 @@ def get_lens_registry() -> List[Dict[str, Any]]:
     ]
 
 
-def load_similarity_index(conn) -> None:
-    """Precompute all active-lens similarity state from DB. Call once at startup."""
+def load_similarity_index(conn, level: int = 6) -> None:
+    """Precompute all active-lens similarity state from DB for a given basin level.
+
+    Call once per level at startup (level=6 then level=8).
+    Level selects the source view and scalars table; distance logic is unchanged.
+    """
     global _HYBAS_IDS, _LENS_STATE
+
+    if level not in _LEVEL_SOURCES:
+        raise ValueError(f"Unsupported level: {level}. Supported: {list(_LEVEL_SOURCES)}")
+
+    arr_view, scalars_table = _LEVEL_SOURCES[level]
 
     import pandas as pd
 
@@ -175,8 +201,7 @@ def load_similarity_index(conn) -> None:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
             arr = pd.read_sql(
-                "SELECT hybas_id, pre_mm_monthly, tmp_dc_monthly "
-                "FROM public.v_basin06_persist_rev2",
+                f"SELECT hybas_id, pre_mm_monthly, tmp_dc_monthly FROM {arr_view}",
                 conn,
             )
 
@@ -200,7 +225,7 @@ def load_similarity_index(conn) -> None:
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
                 sc = pd.read_sql(
-                    f"SELECT hybas_id, {cols_sql} FROM public.basin06",
+                    f"SELECT hybas_id, {cols_sql} FROM {scalars_table}",
                     conn,
                 )
             sc["hybas_id"] = sc["hybas_id"].astype(np.int64)
@@ -238,13 +263,19 @@ def load_similarity_index(conn) -> None:
             n_valid = int((~np.isnan(X).any(axis=1)).sum())
             state["variables"] = vars_
             lens_state[lid]    = state
-            logger.info("lens %-20s ready: %d/%d valid basins", lid, n_valid, len(hybas_ids))
+            logger.info("L%d lens %-20s ready: %d/%d valid basins",
+                        level, lid, n_valid, len(hybas_ids))
 
-        _HYBAS_IDS  = hybas_ids
-        _LENS_STATE = lens_state
+        _INDEX[level]["hybas_ids"]  = hybas_ids
+        _INDEX[level]["lens_state"] = lens_state
+
+        # Keep legacy L06 globals in sync so existing callers are unaffected
+        if level == 6:
+            _HYBAS_IDS  = hybas_ids
+            _LENS_STATE = lens_state
 
     except Exception:
-        logger.exception("similarity index failed to load")
+        logger.exception("similarity index (level=%d) failed to load", level)
 
 
 def find_similar(
@@ -253,35 +284,49 @@ def find_similar(
     n: int = 200,
     mode: str = "threshold",
     stringency: str = "moderate",
+    level: int = 6,
+    filter_hybas_ids: Optional[np.ndarray] = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    """Rank L06 basins by distance to the query basin under the given lens.
+    """Rank basins by distance to the query basin under the given lens.
+
+    level: 6 (default, L06 global index) or 8 (L08, for WH Cities corpus queries).
 
     mode='threshold' (default): returns all basins within the calibrated radius
       for the given stringency ('strict'/'moderate'/'loose'). Count varies.
+      Thresholds are calibrated on L06; use mode='topn' for level=8.
     mode='topn': returns the n nearest basins regardless of radius.
 
+    filter_hybas_ids: if provided, only basins in this array are considered.
+      Used for corpus-restricted similarity (e.g. within the 254 WH Cities).
+
     Returns (query_meta, ranked):
-      query_meta — lens_id, lens_label, metric, mode, query_hybas_id, query_values;
+      query_meta — lens_id, lens_label, metric, mode, level, query_hybas_id, query_values;
                    in threshold mode also: stringency, radius, result_count
       ranked     — list of dicts: rank, hybas_id, distance, values
 
     Raises RuntimeError if index not loaded; ValueError if lens unknown/inactive,
     basin not found, or basin has no valid data for this lens.
     """
-    if _HYBAS_IDS is None:
-        raise RuntimeError("Similarity index not loaded — startup may have failed")
+    idx_entry = _INDEX.get(level)
+    if idx_entry is None or idx_entry["hybas_ids"] is None:
+        raise RuntimeError(
+            f"Similarity index (level={level}) not loaded — startup may have failed"
+        )
+
+    hybas_ids = idx_entry["hybas_ids"]
+    lens_state = idx_entry["lens_state"]
 
     spec = LENS_REGISTRY.get(lens_id)
     if not spec or spec.get("status") != "active":
         raise ValueError(f"Unknown or inactive lens: {lens_id!r}")
 
-    state = _LENS_STATE.get(lens_id)
+    state = lens_state.get(lens_id)
     if state is None:
         raise RuntimeError(f"Lens {lens_id!r} state missing — startup may have failed")
 
-    hits = np.where(_HYBAS_IDS == int(query_hybas_id))[0]
+    hits = np.where(hybas_ids == int(query_hybas_id))[0]
     if len(hits) == 0:
-        raise ValueError(f"Basin {query_hybas_id} not in similarity index")
+        raise ValueError(f"Basin {query_hybas_id} not in similarity index (level={level})")
     q_idx = int(hits[0])
 
     X_raw = state["X_raw"]
@@ -304,6 +349,12 @@ def find_similar(
 
     dist[q_idx] = np.inf
 
+    # Restrict to corpus when caller provides a filter set (e.g. WH Cities subset)
+    if filter_hybas_ids is not None:
+        filter_arr = np.asarray(filter_hybas_ids, dtype=np.int64)
+        corpus_mask = np.isin(hybas_ids, filter_arr)
+        dist = np.where(corpus_mask, dist, np.inf)
+
     if mode == "threshold":
         if stringency not in ("strict", "moderate", "loose"):
             raise ValueError(f"Unknown stringency: {stringency!r}")
@@ -318,7 +369,8 @@ def find_similar(
         "lens_label":     spec["label"],
         "metric":         state["metric"],
         "mode":           mode,
-        "query_hybas_id": int(_HYBAS_IDS[q_idx]),
+        "level":          level,
+        "query_hybas_id": int(hybas_ids[q_idx]),
         "query_values":   {v: round(float(X_raw[q_idx, j]), 6) for j, v in enumerate(vars_)},
     }
     if mode == "threshold":
@@ -329,7 +381,7 @@ def find_similar(
     ranked = [
         {
             "rank":     rank + 1,
-            "hybas_id": int(_HYBAS_IDS[i]),
+            "hybas_id": int(hybas_ids[i]),
             "distance": round(float(dist[i]), 6),
             "values":   {v: round(float(X_raw[i, j]), 6) for j, v in enumerate(vars_)},
         }

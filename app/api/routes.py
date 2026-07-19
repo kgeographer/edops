@@ -1289,6 +1289,89 @@ def whc_similar(city_id: int, limit: int = 5):
             conn.close()
 
 
+@router.get("/whc-similar-env-lens", include_in_schema=False)
+def whc_similar_env_lens(city_id: int, lens_id: str = "climate.phase", limit: int = 5):
+    """Return the N most similar WH cities by LENS_REGISTRY climate distance (L08, topN).
+
+    Uses the L08 similarity index. Corpus-restricted: distances are computed only
+    among the 254 cities that have an L08 basin assignment.
+    FK path: gaz.wh_cities.basin_id → basin08.id → basin08.hybas_id
+    """
+    import numpy as np
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            # Query city's L08 hybas_id
+            cur.execute("""
+                SELECT b.hybas_id
+                FROM gaz.wh_cities c
+                JOIN public.basin08 b ON b.id = c.basin_id
+                WHERE c.id = %s
+            """, (city_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404,
+                                    detail=f"City {city_id} not found or has no L08 basin")
+            q_hybas_id = int(row[0])
+
+            # Load all other corpus cities with their hybas_ids and display info
+            cur.execute("""
+                SELECT c.id, c.city, c.country, c.region,
+                       ST_X(c.geom) AS lon, ST_Y(c.geom) AS lat,
+                       b.hybas_id
+                FROM gaz.wh_cities c
+                JOIN public.basin08 b ON b.id = c.basin_id
+                WHERE c.id != %s AND c.basin_id IS NOT NULL
+            """, (city_id,))
+            corpus_rows = cur.fetchall()
+
+        corpus_hybas = np.array([r[6] for r in corpus_rows], dtype=np.int64)
+
+        _, ranked = find_similar(
+            q_hybas_id,
+            lens_id=lens_id,
+            n=len(corpus_rows),
+            mode="topn",
+            level=8,
+            filter_hybas_ids=corpus_hybas,
+        )
+
+        # Map hybas_id → corpus row for display info
+        hybas_to_row = {int(r[6]): r for r in corpus_rows}
+
+        results = []
+        for r in ranked:
+            city_row = hybas_to_row.get(r["hybas_id"])
+            if city_row is None:
+                continue
+            results.append({
+                "id":       city_row[0],
+                "city":     city_row[1],
+                "country":  city_row[2],
+                "region":   city_row[3],
+                "lon":      float(city_row[4]) if city_row[4] is not None else None,
+                "lat":      float(city_row[5]) if city_row[5] is not None else None,
+                "distance": r["distance"],
+            })
+            if len(results) >= limit:
+                break
+
+        return {
+            "source_city_id": city_id,
+            "lens_id":        lens_id,
+            "corpus_size":    len(corpus_rows) + 1,
+            "similar":        results,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+
 @router.get("/whc-similar-env-by-coord", include_in_schema=False)
 def whc_similar_env_by_coord(lon: float, lat: float, limit: int = 5):
     """Return most similar WH cities by environmental signature for any coordinate.

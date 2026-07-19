@@ -5,9 +5,10 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- `docs/edop/demo/DEMO_tracker.md` — authoritative current state, roadmap, locked decisions
+- `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative current state, roadmap, locked decisions ← active
+- `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/areas/deferred_items_register.md` — cross-phase parked items
-- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/edop/demo/wo{nn}_findings.md` — per-WO findings
+- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/pilot/wo{nn}_findings.md` — per-WO findings
 
 ---
 
@@ -35,19 +36,20 @@ Research framing: `docs/edop/project_summary_20260606.md`
 | 2 — Characterization / CHAR | complete | `explorer.html`, EDA/ESDA findings |
 | 3 — Areas | complete 2026-06-30 | `engine.py` — resolver → aggregator → payload; `AREAS_tracker.md` (frozen ref) |
 | Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
-| **Demo** | **active** | Curation + polish for Braga; see `DEMO_tracker.md` |
+| Demo | complete 2026-07-18 | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
+| **CDOP1 — pilot** | **active** | `cdop_pilot.html`; L08 lens index; WH Cities lens swap; see `CDOP_PILOT_tracker.md` |
 | 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**Demo is the active track. Branch: `demo`; cut WO branches off `demo`, merge back on accept.**
+**CDOP1 is the active track. Branch: `cdop`; cut WO branches off `cdop`, merge back on accept.**
 
-- **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
+- **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO7b complete and merged — distance threshold mode in `find_similar()` + `/api/similarity`; strict/moderate/loose segmented control; variable-N result sets; hero-shot check passed (SF moderate tight Mediterranean cluster vs Timbuktu moderate broad monsoon dispersion). Branch `demo_wo7b` merged to `demo`. **Next: L08 performance notebook (demo branch) → CDOP phase (new branch).**
-- **Tests:** 585 pass, 38 skipped
+- **Current step:** WO1 open — `cdop_pilot.html` scaffold + L08 lens index + WH Cities lens swap. Branch `cdop_pilot` cut from `cdop`.
+- **Tests:** 585 pass, 52 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:

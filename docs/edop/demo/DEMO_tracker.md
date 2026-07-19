@@ -1,13 +1,11 @@
-# DEMO — Phase tracker
+# DEMO — Phase tracker (frozen reference)
 
-**This is the living source of truth** for the Demo phase: current state, roadmap, and
-locked decisions. If any other Demo document disagrees with this one about *where things
-stand*, this one wins.
+**Phase closed 2026-07-18.** This document is a frozen reference for the Demo phase.
+It is authoritative for Demo scope only. The active tracker is
+`docs/cdop/pilot/CDOP_PILOT_tracker.md`.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-18 (L08 inquiry complete — findings written; DEMO phase closing)
-- **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
-  start of each step and each phase gate.
+- **Closed:** 2026-07-18 (L08 inquiry complete — findings written; DEMO phase closed)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.

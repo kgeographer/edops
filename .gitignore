@@ -50,6 +50,10 @@ docs/edop/*
 !docs/edop/surface/**
 !docs/edop/demo/
 !docs/edop/demo/**
+!docs/cdop/
+docs/cdop/*
+!docs/cdop/pilot/
+!docs/cdop/pilot/**
 
 # Office temp/lock files
 ~$*

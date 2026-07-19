@@ -55,6 +55,11 @@ def polities(request: Request):
 def workbench(request: Request):
     return _render(request, "workbench.html")
 
+
+@router.get("/cdop")
+def cdop_pilot(request: Request):
+    return _render(request, "cdop_pilot.html")
+
 @router.get("/sandbox/lookup2")
 def sandbox_v2(request: Request):
     return _render(request, "sandbox_v2.html")

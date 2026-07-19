@@ -14,7 +14,8 @@ from app.db.seasonality import load_similarity_index
 async def lifespan(app: FastAPI):
     conn = db_connect()
     try:
-        load_similarity_index(conn)
+        load_similarity_index(conn, level=6)
+        load_similarity_index(conn, level=8)
     finally:
         conn.close()
     yield
