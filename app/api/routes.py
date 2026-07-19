@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 import json
 import urllib.parse
@@ -12,6 +13,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
+from app.db.seasonality import find_similar, get_lens_registry
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -401,6 +403,247 @@ def _get_cluster_labels() -> Dict[int, str]:
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+def _resolve_basin(conn, lat: float, lon: float) -> int:
+    """Return the L06 hybas_id containing (lat, lon); raises 404 if none found."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT hybas_id FROM public.basin06 "
+            "WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) "
+            "ORDER BY ST_Area(geom::geography) ASC LIMIT 1",
+            (lon, lat),
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="No basin found at this location")
+    return int(row[0])
+
+
+def _gaz_join(conn, hybas_ids: list) -> dict:
+    """Return {hybas_id: (place_id, place_name, ccodes, lat, lon)} for a list of ids."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT ON (hybas_id_l06)
+                hybas_id_l06, place_id, place_name, ccodes, lat, lon
+            FROM gaz.whg_gaz
+            WHERE hybas_id_l06 = ANY(%s)
+            ORDER BY hybas_id_l06, place_id
+            """,
+            (hybas_ids,),
+        )
+        return {int(r[0]): r for r in cur.fetchall()}
+
+
+# DEPRECATED: use /api/similarity?lens=climate.phase — this wrapper exists only to keep
+# WO7 callers running during transition. Do not add new callers; do not reuse as a pattern.
+@router.get("/seasonality/similar")
+def seasonality_similar(lat: float, lon: float, n: int = 20):
+    """Deprecated backward-compat wrapper for the climate.phase lens.
+
+    Use /api/similarity?lens=climate.phase for new callers.
+    Returns the original flat shape (query_pre_concentration, query_seas_phase_offset,
+    basin_rank) so existing callers are unaffected during transition.
+    """
+    n = min(max(1, n), 6000)
+    conn = db_connect()
+    try:
+        query_hybas_id = _resolve_basin(conn, lat, lon)
+        try:
+            query_meta, ranked = find_similar(query_hybas_id, lens_id="climate.phase", n=n, mode="topn")
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        if not ranked:
+            return {
+                "query_basin_id":          query_hybas_id,
+                "query_pre_concentration": None,
+                "query_seas_phase_offset": None,
+                "metric":                  "normalized_euclidean_2idx",
+                "results":                 [],
+            }
+
+        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked])
+
+        results = []
+        for r in ranked:
+            place = gaz_by_basin.get(r["hybas_id"])
+            results.append({
+                "basin_rank":        r["rank"],
+                "basin_id":          r["hybas_id"],
+                "distance":          r["distance"],
+                "pre_concentration": r["values"]["pre_concentration"],
+                "seas_phase_offset": r["values"]["seas_phase_offset"],
+                "place_id":          place[1] if place else None,
+                "place_name":        place[2] if place else None,
+                "ccodes":            place[3] if place else None,
+                "lat":               float(place[4]) if place else None,
+                "lon":               float(place[5]) if place else None,
+            })
+
+        qv = query_meta["query_values"]
+        return {
+            "query_basin_id":          query_meta["query_hybas_id"],
+            "query_pre_concentration": qv["pre_concentration"],
+            "query_seas_phase_offset": qv["seas_phase_offset"],
+            "metric":                  "normalized_euclidean_2idx",
+            "results":                 results,
+        }
+
+    finally:
+        conn.close()
+
+
+@router.get("/similarity/lenses")
+def similarity_lenses():
+    """Return the full lens registry (active and disabled lenses)."""
+    return {"lenses": get_lens_registry()}
+
+
+@router.get("/similarity")
+def similarity(
+    lat: float,
+    lon: float,
+    lens: str = "climate.phase",
+    mode: str = "threshold",
+    stringency: str = "moderate",
+    n: int = 200,
+):
+    """Return basins similar to (lat, lon) under the given similarity lens.
+
+    Parameters
+    ----------
+    lat, lon    : query coordinates
+    lens        : lens_id from the registry (e.g. 'climate.phase', 'climate.temp')
+    mode        : 'threshold' (default) — all basins within the calibrated radius;
+                  'topn' — the n nearest basins regardless of radius
+    stringency  : 'strict' | 'moderate' (default) | 'loose' — used in threshold mode
+    n           : top-N count used only when mode='topn' (default 200, max 2000)
+
+    Response
+    --------
+    {
+      "lens_id": str, "lens_label": str, "metric": str,
+      "mode": str,
+      "query_basin_id": int,
+      "query_values": {var: value, ...},
+      # threshold mode only:
+      "stringency": str, "radius": float, "result_count": int,
+      "results": [
+        { "rank": int, "basin_id": int, "distance": float,
+          "values": {var: value, ...},
+          "place_id": int|null, "place_name": str|null,
+          "ccodes": str|null, "lat": float|null, "lon": float|null },
+        ...
+      ]
+    }
+    """
+    if mode not in ("threshold", "topn"):
+        raise HTTPException(status_code=400, detail="mode must be 'threshold' or 'topn'")
+    if mode == "threshold" and stringency not in ("strict", "moderate", "loose"):
+        raise HTTPException(status_code=400, detail="stringency must be 'strict', 'moderate', or 'loose'")
+    n = min(max(1, n), 2000)
+    conn = db_connect()
+    try:
+        query_hybas_id = _resolve_basin(conn, lat, lon)
+        try:
+            query_meta, ranked = find_similar(
+                query_hybas_id, lens_id=lens, n=n, mode=mode, stringency=stringency,
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked]) if ranked else {}
+
+        results = []
+        for r in ranked:
+            place = gaz_by_basin.get(r["hybas_id"])
+            results.append({
+                "rank":       r["rank"],
+                "basin_id":   r["hybas_id"],
+                "distance":   r["distance"],
+                "values":     r["values"],
+                "place_id":   place[1] if place else None,
+                "place_name": place[2] if place else None,
+                "ccodes":     place[3] if place else None,
+                "lat":        float(place[4]) if place else None,
+                "lon":        float(place[5]) if place else None,
+            })
+
+        resp = {
+            "lens_id":        query_meta["lens_id"],
+            "lens_label":     query_meta["lens_label"],
+            "metric":         query_meta["metric"],
+            "mode":           query_meta["mode"],
+            "query_basin_id": query_meta["query_hybas_id"],
+            "query_values":   query_meta["query_values"],
+            "results":        results,
+        }
+        if query_meta["mode"] == "threshold":
+            resp["stringency"]   = query_meta["stringency"]
+            resp["radius"]       = query_meta["radius"]
+            resp["result_count"] = query_meta["result_count"]
+        return resp
+
+    finally:
+        conn.close()
+
+
+def _fetch_basin_geom(hybas_ids: list, level: int) -> dict:
+    """Query basin geometries at precision 3 (~100 m). Shared by GET and POST handlers."""
+    table = "basin06" if level == 6 else "basin08"
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT hybas_id, ST_AsGeoJSON(geom, 3) FROM public.{table} "
+                "WHERE hybas_id = ANY(%s)",
+                (hybas_ids,),
+            )
+            return {str(int(row[0])): row[1] for row in cur.fetchall()}
+    finally:
+        conn.close()
+
+
+@router.get("/basin-geom")
+def basin_geom(ids: str, level: int = 6):
+    """Return GeoJSON geometry strings for a list of basin hybas_ids (GET, max 200).
+
+    For larger sets use POST /api/basin-geom with body {"ids": [...], "level": 6}.
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    try:
+        hybas_ids = [int(x.strip()) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ids must be comma-separated integers")
+    if not hybas_ids or len(hybas_ids) > 200:
+        raise HTTPException(status_code=400, detail="ids must contain 1–200 hybas_id values")
+    return _fetch_basin_geom(hybas_ids, level)
+
+
+class BasinGeomRequest(BaseModel):
+    ids: List[int]
+    level: int = 6
+
+
+@router.post("/basin-geom")
+def basin_geom_post(body: BasinGeomRequest):
+    """Return GeoJSON geometry strings for a list of basin hybas_ids (POST, max 2000).
+
+    Body: {"ids": [hybas_id, ...], "level": 6}
+    Returns: {"<hybas_id>": "<GeoJSON geometry string>", ...}
+    """
+    if body.level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    if not body.ids or len(body.ids) > 6000:
+        raise HTTPException(status_code=400, detail="ids must contain 1–6000 hybas_id values")
+    return _fetch_basin_geom(body.ids, body.level)
 
 
 @router.get("/signature")
@@ -3231,7 +3474,15 @@ def area(
             to_year=band_t_to,
             include_detail=detail,
             resolver_year=year,
+            polity_id=polity_id,
         )
+
+        member_rows = conn.execute(
+            "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
+            "WHERE polity_id = %s ORDER BY weight DESC",
+            (polity_id,),
+        ).fetchall()
+        payload["member_ids"] = [int(r[0]) for r in member_rows]
 
     except HTTPException:
         raise
@@ -3416,7 +3667,16 @@ def areas(
                 to_year=band_t_to,
                 include_detail=detail,
                 resolver_year=year,
+                polity_id=polity_id,
             )
+
+            member_rows = conn.execute(
+                "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
+                "WHERE polity_id = %s ORDER BY weight DESC",
+                (polity_id,),
+            ).fetchall()
+            payload["member_ids"] = [int(r[0]) for r in member_rows]
+
             payload["resolver"] = {
                 "type":      "polity",
                 "polity":    polity_name,

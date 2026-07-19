@@ -1,11 +1,27 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
 from app.web.pages import router as page_router
+from app.db.connection import db_connect
+from app.db.seasonality import load_similarity_index
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    conn = db_connect()
+    try:
+        load_similarity_index(conn)
+    finally:
+        conn.close()
+    yield
+
 
 app = FastAPI(
+    lifespan=lifespan,
     title="Environmental Dimensions of Place Service (EDOPS)",
     description="A component of [Computing Place](https://computingplace.org).\n\n[API Guide](https://edops.computingplace.org/static/api_guide.html) · [Variable catalog](https://edops.computingplace.org/documentation/EDOPS_variable_catalog_v0.3.tsv) · [Schema](https://edops.computingplace.org/documentation/edops_schema.json)",
     version="0.3"

@@ -11,6 +11,10 @@ Examples tested:
   4. Kaifeng        — bands=ABCT, from_year=960, to_year=1127  (Song dynasty)
   5. Timbuktu       — bands=ABT,  from_year=1200, to_year=1600 (medieval)
   6. Kaifeng L6     — bands=ABC,  level=6         (regional scale)
+  7. Seasonality    — WO5 contract tests (pinned values + ordering)
+  8. Similarity     — WO7a /api/seasonality/similar backward-compat (SF, climate.phase)
+  9. Similarity     — WO7a /api/similarity?lens=climate.temp (London, Mahalanobis)
+ 10. Similarity     — WO7a /api/similarity/lenses (registry shape)
 """
 
 import pytest
@@ -22,7 +26,8 @@ def client(db_available):
     if not db_available:
         pytest.skip("DB not available")
     from app.main import app
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 # ---------------------------------------------------------------------------
@@ -134,3 +139,244 @@ def test_kaifeng_level6(client):
     for band in ("A", "B", "C"):
         assert band in pg
     assert "T" not in pg
+
+
+# ---------------------------------------------------------------------------
+# 7. WO5 Seasonality — array presence, length, pinned scalars, ordering
+# ---------------------------------------------------------------------------
+
+def test_seasonality_arrays_rome(client):
+    """Monthly arrays present and length-12 for Rome (L08 default)."""
+    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data.get("pre_mm_monthly"), list), "pre_mm_monthly missing"
+    assert len(data["pre_mm_monthly"]) == 12
+    assert isinstance(data.get("tmp_dc_monthly"), list), "tmp_dc_monthly missing"
+    assert len(data["tmp_dc_monthly"]) == 12
+
+
+def test_seasonality_scalars_rome(client):
+    """Pinned seasonality indices for Rome L08 — tolerance ±0.05."""
+    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    assert r.status_code == 200
+    data = r.json()
+    pre_conc   = data["pre_concentration"]
+    phase_off  = data["seas_phase_offset"]
+    tmp_amp    = data["tmp_seas_amp"]
+    assert pre_conc  is not None
+    assert phase_off is not None
+    assert tmp_amp   is not None
+    # Pinned from notebook cell 8 (2026-07-14):
+    assert abs(pre_conc  - 0.280) < 0.05, f"pre_concentration {pre_conc:.3f} outside ±0.05 of 0.280"
+    assert abs(phase_off - 4.486) < 0.05, f"seas_phase_offset {phase_off:.3f} outside ±0.05 of 4.486"
+    assert abs(tmp_amp   - 16.4)  < 1.0,  f"tmp_seas_amp {tmp_amp:.1f} outside ±1.0 of 16.4"
+
+
+def test_seasonality_discrimination(client):
+    """Ordering relationships encode the Mediterranean vs monsoon discrimination story."""
+    rome   = client.get("/api/signature", params={"lat": 41.9,  "lon": 12.5,  "bands": "C"}).json()
+    delhi  = client.get("/api/signature", params={"lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
+    london = client.get("/api/signature", params={"lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
+
+    rome_offset   = rome["seas_phase_offset"]
+    delhi_offset  = delhi["seas_phase_offset"]
+    london_conc   = london["pre_concentration"]
+
+    # Mediterranean (Rome) has large precip–temp phase offset; monsoon (Delhi) small
+    assert rome_offset  is not None
+    assert delhi_offset is not None
+    assert rome_offset  > 3.5,  f"Rome seas_phase_offset {rome_offset:.3f} — expected > 3.5"
+    assert delhi_offset < 1.5,  f"Delhi seas_phase_offset {delhi_offset:.3f} — expected < 1.5"
+    assert rome_offset  > delhi_offset, "Rome offset should exceed Delhi offset"
+
+    # London has low precip concentration (year-round rain)
+    assert london_conc is not None
+    assert london_conc < 0.2, f"London pre_concentration {london_conc:.3f} — expected < 0.2"
+
+
+# ---------------------------------------------------------------------------
+# 8. WO7 Similarity — /api/seasonality/similar SF validation
+# ---------------------------------------------------------------------------
+
+def test_seasonality_similar_sf(client):
+    """SF query returns Mediterranean-climate analogs (IQ/CL/IR/JO) in top-10 results."""
+    r = client.get("/api/seasonality/similar", params={"lat": 37.77, "lon": -122.42, "n": 20})
+    assert r.status_code == 200
+    data = r.json()
+
+    assert data["metric"] == "normalized_euclidean_2idx"
+    assert data["query_basin_id"] is not None
+    assert data["query_pre_concentration"] is not None
+    assert data["query_seas_phase_offset"] is not None
+
+    results = data["results"]
+    assert len(results) > 0, "Expected at least one result"
+
+    # All results must have required fields
+    for res in results:
+        assert "basin_rank" in res
+        assert "basin_id" in res
+        assert "distance" in res
+        assert "place_name" in res
+        assert "ccodes" in res
+
+    # Distances must be non-negative and ascending
+    dists = [r["distance"] for r in results]
+    assert all(d >= 0 for d in dists)
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+
+    # Top-10 must include at least one Mediterranean-climate country
+    top_ccodes = {cc for r in results[:10] for cc in (r["ccodes"] or [])}
+    med_countries = {"IQ", "CL", "IR", "JO", "EG", "MA", "ES", "PT"}
+    assert top_ccodes & med_countries, (
+        f"Expected Mediterranean analogs in top-10 ccodes, got {top_ccodes}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 9. WO7a/WO7b Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
+# ---------------------------------------------------------------------------
+
+def test_similarity_climate_temp_london(client):
+    """London query via Mahalanobis temp lens (threshold mode) returns mild maritime basins.
+
+    Contract: mean annual temp 7–13°C; NW Europe (GB/IE/NO/FR) or Pacific NW (US/CA)
+    should appear; high-amplitude continental basins must be absent from top-10.
+    """
+    r = client.get("/api/similarity", params={"lat": 51.5, "lon": -0.12, "lens": "climate.temp"})
+    assert r.status_code == 200
+    data = r.json()
+
+    assert data["lens_id"] == "climate.temp"
+    assert data["metric"] == "mahalanobis"
+    assert data["query_basin_id"] is not None
+
+    qv = data["query_values"]
+    assert "tmp_dc_syr" in qv
+    assert "tmp_seas_amp" in qv
+    assert "tmp_concentration" in qv
+    # London annual mean temp should be 8–12°C
+    assert 6.0 <= qv["tmp_dc_syr"] <= 14.0, f"London tmp_dc_syr={qv['tmp_dc_syr']:.2f} out of expected range"
+    # London seasonal amplitude ~13–15°C; guards against tmp_dc_monthly ×10 regression
+    assert 8.0 <= qv["tmp_seas_amp"] <= 22.0, (
+        f"London tmp_seas_amp={qv['tmp_seas_amp']:.2f}°C out of expected range — "
+        "check that tmp_dc_monthly is loaded in °C (not ×10)"
+    )
+
+    results = data["results"]
+    assert len(results) > 0
+
+    # All results must have required fields
+    for res in results:
+        assert "rank" in res
+        assert "basin_id" in res
+        assert "distance" in res
+        assert "values" in res
+        v = res["values"]
+        assert "tmp_dc_syr" in v
+        assert "tmp_seas_amp" in v
+        assert "tmp_concentration" in v
+
+    # Distances must be non-negative and ascending
+    dists = [res["distance"] for res in results]
+    assert all(d >= 0 for d in dists)
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+
+    # Top-10 must include maritime Europe or Pacific NW
+    top_ccodes = {cc for res in results[:10] for cc in (res["ccodes"] or [])}
+    maritime = {"GB", "IE", "NO", "NL", "DK", "BE", "FR", "US", "CA", "DE"}
+    assert top_ccodes & maritime, (
+        f"Expected maritime Europe/PNW in top-10 ccodes, got {top_ccodes}"
+    )
+
+    # Top-10 seasonal amplitudes should be low (maritime: < 20°C typical)
+    top_amps = [res["values"]["tmp_seas_amp"] for res in results[:10]]
+    assert max(top_amps) < 25.0, (
+        f"Top-10 tmp_seas_amp max {max(top_amps):.1f}°C — unexpectedly high for maritime lens"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 10. WO7a Similarity — /api/similarity/lenses (registry shape)
+# ---------------------------------------------------------------------------
+
+def test_similarity_lenses_registry(client):
+    """Registry endpoint returns active Climate lenses and disabled stub groups."""
+    r = client.get("/api/similarity/lenses")
+    assert r.status_code == 200
+    data = r.json()
+    assert "lenses" in data
+
+    by_id = {lens["lens_id"]: lens for lens in data["lenses"]}
+
+    # Three active Climate lenses must be present
+    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+        assert lid in by_id, f"Missing lens {lid!r} in registry"
+        assert by_id[lid]["status"] == "active"
+        assert by_id[lid]["group"] == "Climate"
+        assert by_id[lid]["variables"]
+        assert by_id[lid]["metric"] in ("euclidean", "mahalanobis")
+
+    # climate.temp must declare Mahalanobis
+    assert by_id["climate.temp"]["metric"] == "mahalanobis"
+
+    # All active lenses must expose strict/moderate/loose thresholds
+    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+        t = by_id[lid].get("thresholds", {})
+        assert set(t) == {"strict", "moderate", "loose"}, (
+            f"{lid} missing thresholds dict with strict/moderate/loose; got {t}"
+        )
+        assert t["strict"] < t["moderate"] < t["loose"], (
+            f"{lid} thresholds not ordered strict < moderate < loose: {t}"
+        )
+
+    # At least one disabled stub group must be present (Terrain or Hydrology)
+    disabled = [lens for lens in data["lenses"] if lens["status"] == "disabled"]
+    assert disabled, "Expected at least one disabled stub lens in registry"
+
+
+# ---------------------------------------------------------------------------
+# 11. WO7b Similarity — threshold mode shape + variable-count contract
+# ---------------------------------------------------------------------------
+
+def test_similarity_threshold_response_shape(client):
+    """Threshold mode response includes mode/stringency/radius/result_count."""
+    r = client.get("/api/similarity", params={
+        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["mode"] == "threshold"
+    assert data["stringency"] == "moderate"
+    assert isinstance(data["radius"], float) and data["radius"] > 0
+    assert isinstance(data["result_count"], int) and data["result_count"] > 0
+    assert len(data["results"]) == data["result_count"]
+    dists = [res["distance"] for res in data["results"]]
+    assert dists == sorted(dists), "Results must be ordered by distance ascending"
+    assert all(d <= data["radius"] for d in dists), "All distances must be within the declared radius"
+
+
+def test_similarity_threshold_variable_count(client):
+    """Rare-type basin returns fewer similar basins than common-type at same lens + stringency.
+
+    SF (Mediterranean phase) is a comparatively rare climate type; Timbuktu (monsoon)
+    is common. At the same lens and stringency the rare type must return fewer basins.
+    This is the core contract: threshold count is signal, not noise.
+    """
+    sf  = client.get("/api/similarity", params={
+        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    tim = client.get("/api/similarity", params={
+        "lat": 16.77, "lon": -3.01, "lens": "climate.phase",
+        "mode": "threshold", "stringency": "moderate",
+    })
+    assert sf.status_code == 200 and tim.status_code == 200
+    sf_n  = sf.json()["result_count"]
+    tim_n = tim.json()["result_count"]
+    assert sf_n < tim_n, (
+        f"SF (rare Mediterranean) should return fewer basins than Timbuktu (common monsoon) "
+        f"at climate.phase moderate — got SF={sf_n}, Timbuktu={tim_n}"
+    )

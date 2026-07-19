@@ -50,12 +50,12 @@
       <div class="d-flex align-items-end">
         <ul class="nav nav-tabs flex-grow-1" id="v3-fork-tabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="v3-tab-settlements-btn"
+            <button class="nav-link" id="v3-tab-settlements-btn"
                     data-bs-toggle="tab" data-bs-target="#v3-pane-settlements"
                     type="button" role="tab">Settlements</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="v3-tab-polities-btn"
+            <button class="nav-link active" id="v3-tab-polities-btn"
                     data-bs-toggle="tab" data-bs-target="#v3-pane-polities"
                     type="button" role="tab">Polities</button>
           </li>
@@ -70,7 +70,7 @@
           <div class="tab-content" id="v3-fork-content">
 
             <!-- ======== SETTLEMENTS PANE ======== -->
-            <div class="tab-pane fade show active" id="v3-pane-settlements" role="tabpanel"
+            <div class="tab-pane fade" id="v3-pane-settlements" role="tabpanel"
                  aria-labelledby="v3-tab-settlements-btn">
 
               <!-- WHG resolve field -->
@@ -102,9 +102,11 @@
                 <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
                 <select id="v3-example-select" class="form-select form-select-sm text-muted">
                   <option value="">Load an example</option>
-                  <option value="single|16.8167,-2.9833|Timbuktu">Timbuktu — single basin</option>
-                  <option value="buffer|16.8167,-2.9833|Timbuktu|100">Timbuktu — buffer 100 km</option>
-                  <option value="ring|16.8167,-2.9833|Timbuktu|1400|1500">Timbuktu — basin ring</option>
+                  <option value="16.8167,-2.9833|Timbuktu|1475|1525">Timbuktu, Mali (1475–1525 CE)</option>
+                  <option value="34.7975,114.3074|Kaifeng|965|990">Kaifeng, China (965–990 CE)</option>
+                  <option value="41.6938,44.8015|Tbilisi|1150|1250">Tbilisi, Georgia (1150–1250 CE)</option>
+                  <option value="35.6870,-105.9378|Santa Fe|900|1000">Santa Fe, NM (900–1000 CE)</option>
+                  <option value="37.7749,-122.4194|San Francisco|1825|1875">San Francisco, CA (1825–1875 CE)</option>
                 </select>
               </div>
 
@@ -192,7 +194,7 @@
             </div><!-- /v3-pane-settlements -->
 
             <!-- ======== POLITIES PANE ======== -->
-            <div class="tab-pane fade" id="v3-pane-polities" role="tabpanel"
+            <div class="tab-pane fade show active" id="v3-pane-polities" role="tabpanel"
                  aria-labelledby="v3-tab-polities-btn">
 
               <!-- Polity search -->
@@ -211,16 +213,28 @@
                 <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
                 <select id="v3-polity-example" class="form-select form-select-sm text-muted">
                   <option value="">Load an example</option>
-                  <option value="polity|Northern Song|1000|1000|1100">Northern Song (1000–1100 CE)</option>
+                  <option value="polity|Northern Song">Northern Song (961–1027 CE)</option>
+                  <option value="polity|Abbasid Caliphate">Abbasid Caliphate (750–1258 CE)</option>
+                  <option value="polity|Tibetan Empire">Tibetan Empire (623–849 CE)</option>
+                  <option value="polity|Tang Dynasty">Tang Dynasty (618–907 CE)</option>
+                  <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
+                  <option value="polity|Qin">Qin (750–222 BCE) — no LMR</option>
                 </select>
               </div>
 
-              <!-- Time slice — visible but disabled at cold start -->
-              <div class="mb-2">
-                <select id="v3-slice-select" class="form-select form-select-sm" disabled>
-                  <option value="">Select time slice</option>
-                </select>
+              <!-- Time slice control — slider + VCR (replaces dropdown) -->
+              <div id="v3-slice-control" class="d-none mb-2">
+                <div class="d-flex gap-1 align-items-center mb-1">
+                  <button id="v3-btn-first" class="btn btn-sm btn-outline-secondary" disabled title="First slice"><i class="bi bi-skip-start-fill"></i></button>
+                  <button id="v3-btn-prev"  class="btn btn-sm btn-outline-secondary" disabled title="Previous slice"><i class="bi bi-chevron-left"></i></button>
+                  <button id="v3-btn-play"  class="btn btn-sm btn-outline-secondary" disabled title="Play through slices"><i class="bi bi-play-fill"></i></button>
+                  <button id="v3-btn-next"  class="btn btn-sm btn-outline-secondary" disabled title="Next slice"><i class="bi bi-chevron-right"></i></button>
+                </div>
+                <input id="v3-slice-slider" type="range" class="form-range mb-1" disabled style="width:100%;">
+                <div id="v3-slice-label" style="font-size:0.78rem; color:#6c757d; min-height:1.1em;"></div>
               </div>
+              <!-- Hidden sync element kept for test compat; not a user control -->
+              <select id="v3-slice-select" class="d-none" disabled></select>
               <input type="hidden" id="v3-resolver-year" value="">
 
               <!-- Level + Signature Bands (T pre-checked; all disabled at cold start) -->
@@ -371,13 +385,30 @@
           <button class="nav-link disabled" id="v3-tab-analysis-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-analysis" type="button" role="tab">Analysis</button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v3-tab-seasonality-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-seasonality" type="button" role="tab">Seasonality</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
+        </li>
       </ul>
 
       <div class="tab-content">
 
         <!-- Map pane -->
         <div class="tab-pane fade show active" id="v3-pane-map" role="tabpanel">
-          <div id="v3-map" style="height:500px; border-radius:6px;"></div>
+          <div style="position:relative;">
+            <div id="v3-map" style="height:500px; border-radius:6px;"></div>
+            <div id="v3-slice-overlay" style="display:none; position:absolute; top:10px; left:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ddd; border-radius:5px; padding:4px 10px; font-size:1.35rem; font-weight:600; color:#993333; line-height:1.3; pointer-events:none;"></div>
+            <div id="v3-layer-control" style="position:absolute; top:70px; right:10px; z-index:10; background:rgba(255,255,255,0.92); border:1px solid #ccc; border-radius:6px; padding:7px 10px; font-size:0.78rem; box-shadow:0 1px 4px rgba(0,0,0,0.15);">
+              <div class="text-muted mb-1" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Layers</div>
+              <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
+                <input type="checkbox" id="v3-layer-rivers" checked> Rivers
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Signature pane -->
@@ -389,7 +420,44 @@
 
         <!-- Analysis pane -->
         <div class="tab-pane fade" id="v3-pane-analysis" role="tabpanel">
-          <p class="text-muted mt-3">Run <strong>Get signature</strong> to populate analysis.</p>
+          <p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>
+        </div>
+
+        <!-- Seasonality pane -->
+        <div class="tab-pane fade" id="v3-pane-seasonality" role="tabpanel">
+          <p class="text-muted mt-3 px-1" id="v3-seas-placeholder">Click a location and run <strong>Get signature</strong> to load seasonality.</p>
+          <div id="v3-seas-content" style="display:none;"></div>
+        </div>
+
+        <!-- Similarity pane -->
+        <div class="tab-pane fade" id="v3-pane-similarity" role="tabpanel">
+          <p class="text-muted mt-3 px-1" id="v3-sim-placeholder">Click a location and run <strong>Get signature</strong> to find similar basins.</p>
+          <div id="v3-sim-content" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between px-1 py-2">
+              <div id="v3-sim-title"></div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-muted small fw-semibold">Lens:</span>
+                <select id="v3-sim-group" class="form-select form-select-sm" style="width:auto;"></select>
+                <select id="v3-sim-sublens" class="form-select form-select-sm" style="width:auto;"></select>
+                <span class="text-muted small ms-1" style="border-left:1px solid #dee2e6; padding-left:0.6rem;">Threshold:</span>
+                <div class="btn-group btn-group-sm" role="group">
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-strict"   value="strict"   autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-strict"   style="font-size:0.75rem; line-height:1.6;">Strict</label>
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-moderate" value="moderate" autocomplete="off" checked>
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-moderate" style="font-size:0.75rem; line-height:1.6;">Moderate</label>
+                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-loose"    value="loose"    autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-loose"    style="font-size:0.75rem; line-height:1.6;">Loose</label>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 px-1 pb-1">
+              <span class="text-muted" style="font-size:0.75rem;">Most similar</span>
+              <div style="width:120px; height:8px; background:linear-gradient(to right,#b2182b,#f4a582,#fddbc7); border-radius:3px; border:1px solid #ddd;"></div>
+              <span class="text-muted" style="font-size:0.75rem;">Least similar</span>
+            </div>
+            <div id="v3-sim-map" style="height:445px; border-radius:6px;"></div>
+            <div id="v3-sim-blurb" class="px-1 pt-2" style="font-size:0.88rem; max-width:680px;"></div>
+          </div>
         </div>
 
       </div>
@@ -420,6 +488,18 @@
   let _centerPayload = null;
   let _sigMemberIds    = null;  // Set<number> of hybas_ids in current scope
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
+  let _pointSig         = null;  // /api/signature response for current point — powers Analysis tab
+  let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
+  let _simMap           = null;  // MapLibre instance for Similarity tab (lazy-initialized)
+  let _simPopup         = null;
+  let _simMarker        = null;  // query-location marker on similarity map
+  let _simQueryLat      = null;  // coords + lens of last similarity fetch — skip refetch if unchanged
+  let _simQueryLon      = null;
+  let _simQueryLens     = null;
+  let _simCurrentLens        = 'climate.phase';   // active lens id
+  let _simCurrentStringency  = 'moderate';         // strict | moderate | loose
+  let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
+  let _simQueryStringency    = null;               // stringency of last rendered fetch
 
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
@@ -456,10 +536,16 @@
           if (fy) params.set('from_year', fy);
           if (ty) params.set('to_year', ty);
         }
+        if (document.getElementById('v3-basin-var').value)
+          document.getElementById('v3-basin-status').innerHTML =
+            '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading basins…</span>';
         const r = await fetch(`/api/areas?${params}`);
+        console.log('[silentResig] polity fetch', r.status, `/api/areas?${params}`);
         if (!r.ok) return;
-        const nb = (await r.json()).neighborhood || {};
-        _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
+        const data = await r.json();
+        const memberIds = data.member_ids || [];
+        _sigMemberIds = memberIds.length ? new Set(memberIds.map(Number)) : null;
+        console.log('[silentResig] member_ids:', memberIds.length, '  _sigMemberIds size:', _sigMemberIds?.size ?? 0);
       } else {
         const scope = document.getElementById('v3-scope-select').value;
         if (!scope || currentLat == null) return;
@@ -502,10 +588,11 @@
 
   function _repaintChoropleth() {
     const key = document.getElementById('v3-basin-var').value;
-    if (!key || key.startsWith('lmr_')) return;
-    const { fromYr } = _activeBandTYears();
-    if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
-    else applyBasinVar(key);
+    if (!key) return;
+    const { fromYr, toYr } = _activeBandTYears();
+    if (key.startsWith('lmr_'))       applyLMRChoropleth(key, fromYr, toYr);
+    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
+    else                              applyBasinVar(key);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -571,8 +658,9 @@
           shell.add('buffer-basins',
             { type: 'geojson', data: fc },
             [
-              { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-              { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75 } },
+              { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+              { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
+              { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
             ]
           );
           _fitMap(geojsonBbox(fc));
@@ -776,6 +864,7 @@
   function setResolvedPoint(lat, lon, name) {
     currentLat = lat;
     currentLon = lon;
+    _currentPlaceName = name || '';
 
     _whgHideCandidates();
     _whgSetStatus('', false);
@@ -822,7 +911,7 @@
     _whgHideCandidates();
     _whgSetStatus('', false);
     if (_pointMarker) { _pointMarker.remove(); _pointMarker = null; }
-    shell.clear();
+    shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _sigMemberIds = null;
     document.getElementById('v3-scope-select').value = '';
@@ -830,7 +919,600 @@
     updateSigButton();
   }
 
+  // ── Seasonality tab ──────────────────────────────────────────────────────
+
+  function renderSeasonality(sig) {
+    const pre = sig.pre_mm_monthly;
+    const tmp = sig.tmp_dc_monthly;
+    if (!pre || !tmp || pre.length !== 12 || tmp.length !== 12) return;
+
+    const level  = sig.meta?.query?.level ?? '?';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const preConc  = sig.pre_concentration;
+    const prePeak  = sig.pre_peak_month;
+    const tmpConc  = sig.tmp_concentration;
+    const tmpPeak  = sig.tmp_peak_month;
+    const offset   = sig.seas_phase_offset;
+    const tmpAmp   = sig.tmp_seas_amp;
+
+    // ── Walter-Lieth dual-axis SVG ────────────────────────────────────────
+    const WL_W = 460, WL_H = 240, PAD = {t:16, r:50, b:36, l:50};
+    const iW = WL_W - PAD.l - PAD.r, iH = WL_H - PAD.t - PAD.b;
+    const preMax = Math.max(...pre);
+    const tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp);
+    const pScale = v => iH - (v / (preMax * 1.1)) * iH;
+    const tScale = v => iH - ((v - (tmpMin - 3)) / (tmpMax - tmpMin + 6)) * iH;
+    const barW   = iW / 12;
+
+    let bars = '', tPts = '', xLabels = '', yLabelsPre = '', yLabelsTmp = '';
+    for (let i = 0; i < 12; i++) {
+      const x  = PAD.l + i * barW;
+      const bH = iH - pScale(pre[i]);
+      bars    += `<rect x="${(x+1.5).toFixed(1)}" y="${(PAD.t + pScale(pre[i])).toFixed(1)}" width="${(barW-3).toFixed(1)}" height="${bH.toFixed(1)}" fill="#5b8dc4" opacity="0.65"/>`;
+      const tx = (PAD.l + (i + 0.5) * barW).toFixed(1);
+      const ty = (PAD.t + tScale(tmp[i])).toFixed(1);
+      tPts    += `${tx},${ty} `;
+      xLabels += `<text x="${tx}" y="${(WL_H - 8).toFixed(1)}" font-size="11" text-anchor="middle">${months[i]}</text>`;
+    }
+    for (const v of [0, Math.round(preMax * 0.5), Math.round(preMax)]) {
+      const y = (PAD.t + pScale(v)).toFixed(1);
+      yLabelsPre += `<text x="${(PAD.l - 5).toFixed(1)}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${v}</text>`;
+      yLabelsPre += `<line x1="${PAD.l}" y1="${y}" x2="${(PAD.l + iW).toFixed(1)}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
+    }
+    for (const v of [Math.round(tmpMin), Math.round((tmpMin+tmpMax)/2), Math.round(tmpMax)]) {
+      const y = (PAD.t + tScale(v)).toFixed(1);
+      yLabelsTmp += `<text x="${(PAD.l + iW + 5).toFixed(1)}" y="${y}" font-size="11" text-anchor="start" fill="#c0392b" dominant-baseline="middle">${v}°</text>`;
+    }
+    const axRotL = `rotate(-90,${(PAD.l/2).toFixed(1)},${(PAD.t+iH/2).toFixed(1)})`;
+    const axRotR = `rotate(90,${(WL_W-PAD.r/2+8).toFixed(1)},${(PAD.t+iH/2).toFixed(1)})`;
+    const wlSvg = `<svg width="${WL_W}" height="${WL_H}" style="display:block;overflow:visible;">
+      <rect x="${PAD.l}" y="${PAD.t}" width="${iW}" height="${iH}" fill="#f8f9fa" rx="2"/>
+      ${yLabelsPre}
+      ${bars}
+      <polyline points="${tPts.trim()}" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${yLabelsTmp}
+      ${xLabels}
+      <text x="${(PAD.l/2).toFixed(1)}" y="${(PAD.t+iH/2).toFixed(1)}" font-size="11" fill="#5b8dc4" text-anchor="middle" transform="${axRotL}">Precip (mm)</text>
+      <text x="${(WL_W-PAD.r/2+8).toFixed(1)}" y="${(PAD.t+iH/2).toFixed(1)}" font-size="11" fill="#c0392b" text-anchor="middle" transform="${axRotR}">Temp (°C)</text>
+    </svg>`;
+
+    // ── Polar SVG ─────────────────────────────────────────────────────────
+    const PR = 260, cx = PR/2, cy = PR/2, maxR = 100, innerR = 8;
+    const preScaleR = v => innerR + (v / (preMax * 1.05)) * (maxR - innerR);
+    const tRmin = maxR + 12, tRmax = maxR + 28;
+    const tScaleR = v => tRmin + ((v - tmpMin) / (tmpMax - tmpMin + 0.001)) * (tRmax - tRmin);
+
+    let sectors = '', tRing = '', polarLabels = '';
+    const slice = (2 * Math.PI) / 12;
+    for (let i = 0; i < 12; i++) {
+      const a0 = -Math.PI/2 + i * slice, a1 = a0 + slice;
+      const r  = preScaleR(pre[i]);
+      const x0 = (cx + innerR * Math.cos(a0)).toFixed(2), y0 = (cy + innerR * Math.sin(a0)).toFixed(2);
+      const x1 = (cx + r * Math.cos(a0)).toFixed(2),      y1 = (cy + r * Math.sin(a0)).toFixed(2);
+      const x2 = (cx + r * Math.cos(a1)).toFixed(2),      y2 = (cy + r * Math.sin(a1)).toFixed(2);
+      const x3 = (cx + innerR * Math.cos(a1)).toFixed(2), y3 = (cy + innerR * Math.sin(a1)).toFixed(2);
+      sectors += `<path d="M${x0},${y0} L${x1},${y1} A${r},${r} 0 0,1 ${x2},${y2} L${x3},${y3} A${innerR},${innerR} 0 0,0 ${x0},${y0} Z" fill="#5b8dc4" opacity="0.65"/>`;
+    }
+    const tPtsP = tmp.map((v, i) => {
+      const a = -Math.PI/2 + (i + 0.5) * slice;
+      const r = tScaleR(v);
+      return `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+    });
+    tRing = `<polygon points="${tPtsP.join(' ')}" fill="#c0392b" fill-opacity="0.0" stroke="#c0392b" stroke-width="1.8"/>`;
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI/2 + (i + 0.5) * slice;
+      const lr = tRmax + 14;
+      polarLabels += `<text x="${(cx + lr * Math.cos(a)).toFixed(1)}" y="${(cy + lr * Math.sin(a)).toFixed(1)}" font-size="11" text-anchor="middle" dominant-baseline="middle">${months[i]}</text>`;
+    }
+    const refCircles = [maxR/2, maxR].map(r =>
+      `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ddd" stroke-width="0.7"/>`
+    ).join('');
+    const topLbl = `<text x="${cx}" y="${(cy - maxR - 5).toFixed(1)}" font-size="11" text-anchor="middle" fill="#5b8dc4">${Math.round(preMax)} mm</text>`;
+    const legendY = (PR + 32).toFixed(1);
+    const polarSvg = `<svg width="${PR}" height="${PR + 38}" style="display:block;overflow:visible;">
+      <circle cx="${cx}" cy="${cy}" r="${maxR}" fill="#f8f9fa"/>
+      ${refCircles}
+      ${sectors}
+      ${tRing}
+      ${polarLabels}
+      ${topLbl}
+      <text x="${cx}" y="${legendY}" font-size="12" text-anchor="middle">
+        <tspan fill="#5b8dc4">■</tspan><tspan> Precip  </tspan><tspan fill="#c0392b">●</tspan><tspan> Temp</tspan>
+      </text>
+    </svg>`;
+
+    // ── Generated blurb ───────────────────────────────────────────────────
+    const peakMonthName = m => months[Math.round(m) % 12];
+    let preDesc, offsetDesc, ampDesc;
+
+    if (preConc < 0.15)       preDesc = `year-round precipitation with very little seasonal concentration (concentration ${preConc.toFixed(2)})`;
+    else if (preConc < 0.35)  preDesc = `moderately seasonal precipitation, distributed across much of the year (concentration ${preConc.toFixed(2)})`;
+    else if (preConc < 0.60)  preDesc = `clearly seasonal precipitation (concentration ${preConc.toFixed(2)})`;
+    else                      preDesc = `strongly concentrated precipitation (concentration ${preConc.toFixed(2)})`;
+
+    const prePeakN = peakMonthName(sig.pre_peak_month ?? 0);
+    const tmpPeakN = peakMonthName(sig.tmp_peak_month ?? 0);
+
+    if (offset > 3.5)         offsetDesc = `Precipitation peaks in ${prePeakN} while temperature peaks in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — a Mediterranean-type anti-phase pattern where the wet season is the cool season.`;
+    else if (offset < 1.5)    offsetDesc = `Precipitation peaks in ${prePeakN}, nearly co-incident with the temperature peak in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — characteristic of monsoon and continental climates.`;
+    else                      offsetDesc = `Precipitation peaks in ${prePeakN} and temperature in ${tmpPeakN}, giving a moderate offset of ${offset.toFixed(1)} months.`;
+
+    if (tmpAmp < 10)          ampDesc = `Temperature range is small (${tmpAmp.toFixed(1)}°C), indicating a tropical or oceanic regime.`;
+    else if (tmpAmp < 18)     ampDesc = `Temperature range is moderate (${tmpAmp.toFixed(1)}°C).`;
+    else                      ampDesc = `Temperature range is large (${tmpAmp.toFixed(1)}°C), indicating a strongly continental or high-latitude regime.`;
+
+    const blurb = `This basin shows ${preDesc}. ${offsetDesc} ${ampDesc}`;
+
+    // ── Scalar index table ────────────────────────────────────────────────
+    const fmt2 = v => (v == null ? '—' : v.toFixed(2));
+    const fmtMonth = v => (v == null ? '—' : months[Math.round(v) % 12]);
+    const scalars = [
+      { label: 'Precip concentration',     key: 'pre_concentration',  fmt: fmt2,     gloss: '[0–1]' },
+      { label: 'Precip peak month',         key: 'pre_peak_month',     fmt: fmtMonth, gloss: '' },
+      { label: 'Temp concentration',        key: 'tmp_concentration',  fmt: fmt2,     gloss: '[0–1]' },
+      { label: 'Temp peak month',           key: 'tmp_peak_month',     fmt: fmtMonth, gloss: '' },
+      { label: 'Precip–temp phase offset',  key: 'seas_phase_offset',  fmt: fmt2,     gloss: '[0–6 months]' },
+      { label: 'Temp seasonal amplitude',   key: 'tmp_seas_amp',       fmt: fmt2,     gloss: 'max−min °C' },
+    ];
+    const tableRows = scalars.map(s =>
+      `<tr><td class="pe-3 text-nowrap">${s.label}</td><td class="pe-2 text-end fw-semibold">${s.fmt(sig[s.key])}</td><td class="text-muted" style="font-size:0.8rem;">${s.gloss}</td></tr>`
+    ).join('');
+    const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
+
+    // ── Assemble ──────────────────────────────────────────────────────────
+    const nameHtml = _currentPlaceName
+      ? `<h5 class="mb-0">${_currentPlaceName}</h5>` : '';
+
+    document.getElementById('v3-seas-placeholder').style.display = 'none';
+    const content = document.getElementById('v3-seas-content');
+    content.style.display = '';
+    content.innerHTML = `
+      <div class="px-1 pt-2">
+        ${nameHtml}
+        <div style="font-size:0.8rem;" class="text-muted">L0${level} basin · monthly climatology (BasinATLAS)</div>
+      </div>
+      <div class="d-flex flex-wrap gap-3 align-items-start pt-2 px-1">
+        <div>
+          <div style="font-size:0.8rem;" class="mb-1 text-muted">Walter-Lieth</div>
+          ${wlSvg}
+        </div>
+        <div>
+          <div style="font-size:0.8rem;" class="mb-1 text-muted">Polar</div>
+          ${polarSvg}
+        </div>
+      </div>
+      <div class="px-1 pt-3" style="font-size:0.88rem; max-width:640px;">${blurb}</div>
+      <div class="px-1 pt-3">${scalarHtml}</div>`;
+  }
+
+  // ── Similarity tab ────────────────────────────────────────────────────────
+
+  function _simBlurb(simData) {
+    const n          = simData.result_count ?? (simData.results || []).length;
+    const stringency = simData.stringency || _simCurrentStringency;
+    const countLine  = `Showing all ${n.toLocaleString()} basins within the ${stringency} threshold.`;
+    const lensId = simData.lens_id || 'climate.phase';
+    const qv     = simData.query_values || {};
+
+    if (lensId === 'climate.phase') {
+      const conc   = qv.pre_concentration ?? simData.query_pre_concentration;
+      const offset = qv.seas_phase_offset ?? simData.query_seas_phase_offset;
+      if (conc == null || offset == null) return '';
+      let typeDesc, mapDesc;
+      if (conc < 0.15) {
+        typeDesc = 'a uniform, maritime-type seasonal pattern — precipitation is distributed year-round with no strong peak season';
+        mapDesc  = 'This pattern is common in mid-latitude oceanic climates and some equatorial zones. Similar basins may appear widely scattered across several continents.';
+      } else if (conc < 0.35) {
+        typeDesc = 'a weakly seasonal precipitation pattern — a modest peak season with substantial year-round rainfall';
+        mapDesc  = 'Weakly seasonal patterns appear in humid continental interiors, subtropical margins, and monsoonal transition zones, so results tend to be geographically dispersed.';
+      } else if (offset < 1.5) {
+        typeDesc = 'a monsoon-type seasonal pattern — concentrated precipitation coinciding with peak temperatures';
+        mapDesc  = 'Monsoon-type climates occur across the summer-rain belts of every continent. Southern Hemisphere results share the same structural pattern with reversed calendar seasons — the relationship between wet and warm is identical. Expect globally scattered results: this is a common climate type.';
+      } else if (offset < 3.5) {
+        typeDesc = 'a transitional seasonal pattern — precipitation is concentrated but offset from peak temperatures by several months';
+        mapDesc  = 'This intermediate pattern appears in continental interiors and subtropical margins where seasonal timing reflects a mix of oceanic and continental air-mass influence. Results may be moderately dispersed.';
+      } else {
+        typeDesc = 'a Mediterranean-type seasonal pattern — concentrated winter rainfall anti-phased with summer temperatures';
+        mapDesc  = 'Mediterranean climates are geographically rare, occurring in five compact zones: California, central Chile, the Western Cape, SW Australia, and the circum-Mediterranean basin. Results tend to cluster in these regions.';
+      }
+      return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
+           + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
+           + `${mapDesc} ${countLine}</p>`;
+    }
+
+    if (lensId === 'climate.precip') {
+      const pre_mm = qv.pre_mm_syr;
+      const conc   = qv.pre_concentration;
+      if (pre_mm == null || conc == null) return '';
+      let seasDesc;
+      if (conc < 0.15)      seasDesc = 'distributed year-round (no dominant wet season)';
+      else if (conc < 0.35) seasDesc = 'weakly seasonal (a modest peak season)';
+      else if (conc < 0.55) seasDesc = 'moderately seasonal';
+      else                  seasDesc = 'strongly seasonal (concentrated in a short wet season)';
+      return `<p class="text-muted mb-0">The containing basin receives `
+           + `${Math.round(pre_mm)}&nbsp;mm/year of precipitation, ${seasDesc} `
+           + `(concentration&nbsp;${conc.toFixed(2)}). `
+           + `${countLine}</p>`;
+    }
+
+    if (lensId === 'climate.temp') {
+      const tmp_mean = qv.tmp_dc_syr;
+      const amp      = qv.tmp_seas_amp;
+      if (tmp_mean == null || amp == null) return '';
+      let thermalDesc;
+      if (tmp_mean > 20)       thermalDesc = 'a hot tropical regime';
+      else if (tmp_mean > 12)  thermalDesc = 'a warm temperate regime';
+      else if (tmp_mean > 4)   thermalDesc = 'a cool temperate regime';
+      else if (tmp_mean > -5)  thermalDesc = 'a cold continental or high-elevation regime';
+      else                     thermalDesc = 'a polar or extreme continental regime';
+      let ampDesc;
+      if (amp < 10)       ampDesc = 'low seasonal amplitude (equable, maritime-influenced)';
+      else if (amp < 20)  ampDesc = 'moderate seasonal amplitude';
+      else if (amp < 35)  ampDesc = 'high seasonal amplitude (continental)';
+      else                ampDesc = 'extreme seasonal amplitude (deep continental or high-latitude)';
+      return `<p class="text-muted mb-0">The containing basin has a mean annual temperature of `
+           + `${tmp_mean.toFixed(1)}&nbsp;°C — ${thermalDesc} — with ${ampDesc} `
+           + `(${amp.toFixed(1)}&nbsp;°C range). `
+           + `${countLine}</p>`;
+    }
+
+    // Generic fallback for future lenses
+    const label = simData.lens_label || lensId;
+    return `<p class="text-muted mb-0">${countLine}</p>`;
+  }
+
+  function _populateGroupSelect() {
+    const sel = document.getElementById('v3-sim-group');
+    sel.innerHTML = '';
+    const seen = new Set();
+    _simLensRegistry.forEach(l => {
+      if (seen.has(l.group)) return;
+      seen.add(l.group);
+      const hasActive = _simLensRegistry.some(m => m.group === l.group && m.status === 'active');
+      const opt = document.createElement('option');
+      opt.value       = l.group;
+      opt.textContent = hasActive ? l.group : `${l.group} (coming soon)`;
+      opt.disabled    = !hasActive;
+      sel.appendChild(opt);
+    });
+  }
+
+  function _populateSubLensSelect(group) {
+    const sel = document.getElementById('v3-sim-sublens');
+    sel.innerHTML = '';
+    _simLensRegistry.filter(l => l.group === group).forEach(l => {
+      const opt = document.createElement('option');
+      opt.value       = l.lens_id;
+      opt.textContent = l.status === 'active' ? l.label : `${l.label} (coming soon)`;
+      opt.disabled    = l.status !== 'active';
+      if (l.lens_id === _simCurrentLens) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function _loadSimLensRegistry() {
+    try {
+      const r = await fetch('/api/similarity/lenses');
+      if (!r.ok) return;
+      const data = await r.json();
+      _simLensRegistry = data.lenses || [];
+      _populateGroupSelect();
+      const defaultGroup = (_simLensRegistry.find(l => l.lens_id === _simCurrentLens) || {}).group || 'Climate';
+      document.getElementById('v3-sim-group').value = defaultGroup;
+      _populateSubLensSelect(defaultGroup);
+      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
+    } catch (e) {
+      console.warn('[similarity] registry load failed', e);
+    }
+  }
+
+  async function renderSimilarity() {
+    if (currentLat == null || currentLon == null) return;
+    if (_simQueryLat === currentLat && _simQueryLon === currentLon &&
+        _simQueryLens === _simCurrentLens && _simQueryStringency === _simCurrentStringency) {
+      if (_simMap) _simMap.resize();
+      return;
+    }
+    _simQueryLat        = currentLat;
+    _simQueryLon        = currentLon;
+    _simQueryLens       = _simCurrentLens;
+    _simQueryStringency = _simCurrentStringency;
+
+    // Init MapLibre instance on first call (tab must already be visible)
+    if (!_simMap) {
+      _simMap = new maplibregl.Map({
+        container: 'v3-sim-map',
+        center: [10, 20],
+        zoom: 1,
+        attributionControl: true,
+        style: {
+          version: 8,
+          sources: {
+            carto: {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            },
+          },
+          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+        },
+      });
+      _simPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
+      await new Promise(r => _simMap.on('load', r));
+      _simMap.addSource('sim-basins', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _simMap.addLayer({
+        id: 'sim-fill', type: 'fill', source: 'sim-basins',
+        paint: {
+          'fill-color': ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
+            0, '#b2182b', 1, '#fddbc7'],
+          'fill-opacity': 0.75,
+        },
+      });
+      _simMap.addLayer({
+        id: 'sim-outline', type: 'line', source: 'sim-basins',
+        paint: { 'line-color': '#7f0000', 'line-width': 0, 'line-opacity': 0 },
+      });
+      _simMap.on('mouseenter', 'sim-fill', (e) => {
+        _simMap.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const ccodes   = JSON.parse(p.ccodes || '[]').join(', ');
+        const nameHtml = p.place_name ? `<strong>${escapeHtml(p.place_name)}</strong><br>` : '';
+        const ccHtml   = ccodes ? `${escapeHtml(ccodes)}<br>` : '';
+        _simPopup.setLngLat(e.lngLat)
+          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">dist ${parseFloat(p.distance).toFixed(3)}</span>`)
+          .addTo(_simMap);
+      });
+      _simMap.on('mouseleave', 'sim-fill', () => {
+        _simMap.getCanvas().style.cursor = '';
+        _simPopup.remove();
+      });
+    } else {
+      _simMap.resize();
+    }
+
+    document.getElementById('v3-sim-title').innerHTML = _currentPlaceName
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+
+    // Place query-location marker
+    if (_simMarker) _simMarker.remove();
+    _simMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+      .setLngLat([currentLon, currentLat])
+      .addTo(_simMap);
+
+    try {
+      const simR = await fetch(`/api/similarity?lat=${currentLat}&lon=${currentLon}&lens=${_simCurrentLens}&mode=threshold&stringency=${_simCurrentStringency}`);
+      if (!simR.ok) throw new Error(`similarity ${simR.status}`);
+      const simData = await simR.json();
+      const results = simData.results || [];
+      if (!results.length) {
+        _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+
+      const ids = results.map(r => r.basin_id);
+      const geomR = await fetch('/api/basin-geom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, level: 6 }),
+      });
+      if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
+      const geomData = await geomR.json();
+
+      const features = results
+        .filter(r => geomData[r.basin_id])
+        .map(r => ({
+          type: 'Feature',
+          geometry: JSON.parse(geomData[r.basin_id]),
+          properties: {
+            rank:       r.rank,
+            basin_id:   r.basin_id,
+            distance:   r.distance,
+            place_name: r.place_name || '',
+            ccodes:     JSON.stringify(r.ccodes || []),
+          },
+        }));
+
+      _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features });
+
+      // Scale ramp to actual distance range of returned results
+      const dists   = results.map(r => r.distance);
+      const minDist = Math.min(...dists);
+      const maxDist = Math.max(...dists);
+      const mid     = minDist + (maxDist - minDist) * 0.5;
+      _simMap.setPaintProperty('sim-fill', 'fill-color',
+        ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
+          minDist, '#b2182b',
+          mid,     '#f4a582',
+          maxDist, '#fddbc7']);
+
+      document.getElementById('v3-sim-blurb').innerHTML = _simBlurb(simData);
+
+      if (features.length) {
+        const bounds = new maplibregl.LngLatBounds();
+        features.forEach(f => {
+          const g = f.geometry;
+          const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
+          rings.forEach(ring => ring.forEach(c => bounds.extend(c)));
+        });
+        _simMap.fitBounds(bounds, { padding: 30, maxZoom: 5 });
+      }
+    } catch (err) {
+      console.error('[similarity]', err);
+    }
+  }
+
+  // ── Analysis tab helpers ──────────────────────────────────────────────────
+
+  function sigVal(sig, key) {
+    const groups = sig.profile_groups || {};
+    for (const g of Object.values(groups)) {
+      for (const item of (g.items || [])) {
+        if (item.key === key) return item.value;
+      }
+    }
+    return undefined;
+  }
+
+  function renderAnalysis(sig, level) {
+    const el = document.getElementById('v3-pane-analysis');
+    if (!el || !sig) return;
+
+    const fmt  = v => (v == null) ? '—' : (Number.isInteger(v) ? v.toLocaleString() : Number(v).toLocaleString(undefined, {maximumFractionDigits: 1}));
+    const fmtR = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(2) + '×';
+    const ratio = (a, b) => (a && b && b !== 0) ? a / b : null;
+
+    const upArea   = sig.up_area;
+    const distSink = sigVal(sig, 'dist_sink');
+    const coast    = sigVal(sig, 'coast_flag');
+    const endo     = sigVal(sig, 'endorheic');
+    const precip_s = sigVal(sig, 'precip_yr'),   precip_u = sigVal(sig, 'precip_yr_upstream');
+    const arid_s   = sigVal(sig, 'aridity'),     arid_u   = sigVal(sig, 'aridity_upstream');
+    const temp_s   = sigVal(sig, 'temp_yr'),     temp_u   = sigVal(sig, 'temp_yr_upstream');
+
+    const precipR = ratio(precip_u, precip_s);
+    const aridR   = ratio(arid_u, arid_s);
+    const tempR   = ratio(temp_u, temp_s);
+
+    // drainage fate badge
+    let fateBadge = '';
+    if (endo && endo !== 0) {
+      fateBadge = '<span class="badge bg-secondary me-1">Endorheic</span>';
+    } else if (distSink != null && (distSink < 1 || (coast && distSink < 10))) {
+      fateBadge = '<span class="badge bg-info text-dark me-1">Coastal terminal</span>';
+    } else {
+      fateBadge = '<span class="badge bg-light text-dark border me-1">Exorheic interior</span>';
+    }
+
+    // ratio colour
+    const ratioClass = r => {
+      if (r == null) return '';
+      const d = Math.abs(r - 1);
+      if (d < 0.1) return 'text-muted';
+      if (d < 0.3) return 'text-warning-emphasis';
+      return 'fw-semibold text-danger';
+    };
+
+    // small-basin caveat — actionable, explains mechanism
+    const smallBasinThreshold = level === 6 ? 500 : 5000;
+    const smallBasin = upArea != null && upArea < smallBasinThreshold;
+
+    // water provenance classification
+    let provLabel = '', provNote = '';
+    if (endo && endo !== 0) {
+      provLabel = '<span class="badge bg-secondary">Endorheic</span>';
+      provNote  = 'Basin has no ocean outlet. Water accumulates locally (evaporation, infiltration).';
+    } else if (coast && distSink != null && distSink < 10) {
+      provLabel = '<span class="badge bg-info text-dark">Coastal terminal</span>';
+      provNote  = 'Direct coastal drainer. Local precipitation dominates water supply.';
+    } else if (!smallBasin && precipR != null && precipR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream catchment delivers ${fmtR(precipR)} the precipitation of the local basin — water originating outside the local drainage area is the dominant supply.`;
+    } else if (!smallBasin && aridR != null && aridR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream moisture index is ${fmtR(aridR)} that of the local basin — the catchment is substantially wetter than the local setting.`;
+    } else if (smallBasin) {
+      provLabel = '<span class="badge bg-secondary">Undetermined</span>';
+      provNote  = `This basin's upstream catchment (${fmt(upArea)} km²) is too small to resolve distant water sources — the local and upstream values are nearly identical by construction. Switch to <strong>L06</strong> to see the broader drainage context.`;
+    } else {
+      const nearUnity = r => r == null || (r >= 0.9 && r <= 1.1);
+      if (nearUnity(precipR) && nearUnity(aridR) && nearUnity(tempR)) {
+        provLabel = '<span class="badge bg-secondary">Catchment-uniform</span>';
+        provNote  = 'Climate conditions are consistent throughout the upstream catchment — no significant local/upstream contrast.';
+      } else {
+        provLabel = '<span class="badge bg-success">Local-dominant</span>';
+        provNote  = 'Upstream conditions differ modestly from local — water supply is primarily generated within the regional catchment.';
+      }
+    }
+
+    const levelNote = `<p class="text-muted mb-3" style="font-size:0.8rem;">
+      Showing Level 0${level}. The local/upstream contrast is most informative at <strong>L06</strong>;
+      at L08 most basins are small enough that upstream values converge toward local.
+      Use the <strong>Level</strong> selector to compare.
+    </p>`;
+
+    el.innerHTML = `
+      <div class="pt-3 px-1" style="font-size:0.85rem;">
+        ${levelNote}
+
+        <h6 class="fw-semibold mb-2">Basin context <span class="badge bg-light text-dark border ms-1" style="font-size:0.7rem;">Level 0${level}</span></h6>
+        <table class="table table-sm table-borderless mb-3" style="font-size:0.83rem;">
+          <tbody>
+            <tr><td class="text-muted pe-3" style="width:55%;">Upstream catchment</td>
+                <td><strong>${fmt(upArea)}</strong> km²</td></tr>
+            <tr><td class="text-muted pe-3">Distance to ocean outlet</td>
+                <td><strong>${fmt(distSink)}</strong> km</td></tr>
+            <tr><td class="text-muted pe-3">Drainage type</td>
+                <td>${fateBadge}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-semibold mb-1">Local–upstream divergence</h6>
+        ${smallBasin ? `<p class="text-muted fst-italic mb-2" style="font-size:0.8rem;">${provNote}</p>` : ''}
+        <table class="table table-sm mb-3" style="font-size:0.83rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:38%;">Variable</th>
+              <th>Local (s)</th>
+              <th>Upstream (u)</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-muted">Precipitation (mm/yr)</td>
+              <td>${fmt(precip_s)}</td><td>${fmt(precip_u)}</td>
+              <td class="${ratioClass(precipR)}">${fmtR(precipR)}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Moisture index (P/PET)</td>
+              <td>${fmt(arid_s)}</td><td>${fmt(arid_u)}</td>
+              <td class="${ratioClass(aridR)}">${fmtR(aridR)}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Temperature (°C)</td>
+              <td>${fmt(temp_s)}</td><td>${fmt(temp_u)}</td>
+              <td class="${ratioClass(tempR)}">${fmtR(tempR)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        ${!smallBasin ? `
+        <h6 class="fw-semibold mb-1">Water provenance</h6>
+        <div class="mb-1">${provLabel}</div>
+        <p class="text-muted mb-0" style="font-size:0.82rem;">${provNote}</p>
+        ` : ''}
+      </div>`;
+  }
+
+  function _resetRightColumn() {
+    _pointSig = null;
+    _currentPlaceName = '';
+    _simQueryLat        = null;
+    _simQueryLon        = null;
+    _simQueryLens       = null;
+    _simQueryStringency = null;
+    document.getElementById('v3-pane-analysis').innerHTML =
+      '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
+    document.getElementById('v3-sig-content').innerHTML = '';
+    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn', 'v3-tab-similarity-btn'].forEach(id =>
+      document.getElementById(id).classList.add('disabled'));
+    document.getElementById('v3-seas-content').style.display = 'none';
+    document.getElementById('v3-seas-placeholder').style.display = '';
+    document.getElementById('v3-sim-content').style.display = 'none';
+    document.getElementById('v3-sim-placeholder').style.display = '';
+    if (_simMarker) { _simMarker.remove(); _simMarker = null; }
+    if (_simMap) _simMap.getSource('sim-basins')?.setData({ type: 'FeatureCollection', features: [] });
+    document.getElementById('v3-sim-blurb').innerHTML = '';
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
+  }
+
   function resetSettlements() {
+    _resetRightColumn();
     const _sl = _basinSourceLayer();  // capture before any state reset
     clearResolvedPoint();
     // Restore lower panel to cold start
@@ -852,6 +1534,7 @@
     document.getElementById('v3-t-year-row').classList.add('d-none');
     document.getElementById('v3-from-year').value = '';
     document.getElementById('v3-to-year').value   = '';
+    document.getElementById('v3-example-select').selectedIndex = 0;
   }
 
   document.getElementById('v3-resolve-btn').addEventListener('click', resolveSettlement);
@@ -867,17 +1550,19 @@
   // ── Example handler (Settlements tab) ────────────────────────────────────
   document.getElementById('v3-example-select').addEventListener('change', function () {
     if (!this.value) return;
-    const parts = this.value.split('|');
-    const scope = parts[0];
+    // format: lat,lon|name|from_year|to_year
+    const parts    = this.value.split('|');
+    const coords   = (parts[0] || '').split(',');
+    const fromYear = parts[2];
+    const toYear   = parts[3];
 
-    // Resolve field locks — example path is committed
-    document.getElementById('v3-place-input').disabled  = true;
-    document.getElementById('v3-resolve-btn').disabled  = true;
+    _resetRightColumn();
 
-    const coords = (parts[1] || '').split(',');
     currentLat = coords[0] ? parseFloat(coords[0]) : null;
     currentLon = coords[1] ? parseFloat(coords[1]) : null;
+    _currentPlaceName = parts[1] || '';
 
+    // Place marker
     if (currentLat && currentLon) {
       if (_pointMarker) _pointMarker.remove();
       _pointMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -885,26 +1570,23 @@
         .addTo(map);
     }
 
-    if (scope === 'buffer') {
-      document.getElementById('v3-radius').value = parts[3] ?? 100;
-    }
-    if (scope === 'ring' && parts[3] && parts[4]) {
-      document.getElementById('v3-band-T').checked = true;
-      document.getElementById('v3-from-year').value = parts[3];
-      document.getElementById('v3-to-year').value   = parts[4];
-      updateBandT();
-    }
+    // Enable Band T and set the time span
+    document.getElementById('v3-band-T').checked     = true;
+    document.getElementById('v3-from-year').value    = fromYear ?? '';
+    document.getElementById('v3-to-year').value      = toYear   ?? '';
+    updateBandT();
 
-    const scopeSelect = document.getElementById('v3-scope-select');
-    scopeSelect.value = scope;
-    document.getElementById('v3-level').value    = '6';  // examples always at L06
-    document.getElementById('v3-level').disabled = false;
+    // Lock resolve path; set scope to single; enable level
+    document.getElementById('v3-place-input').disabled = true;
+    document.getElementById('v3-resolve-btn').disabled = true;
+    document.getElementById('v3-scope-select').value   = 'single';
+    document.getElementById('v3-level').value          = '6';
+    document.getElementById('v3-level').disabled       = false;
     document.getElementById('v3-scope-wrap').style.display = '';
-    applyScope(scope);
+    applyScope('single');
     updateSigButton();
 
-    _drawScopePreview(scope);
-
+    _drawScopePreview('single');
     _revealLowerPanel();
   });
 
@@ -932,7 +1614,7 @@
     restyle(name, layerId, paint) {
       Object.entries(paint).forEach(([prop, val]) => map.setPaintProperty(layerId, prop, val));
     },
-    clear() { Object.keys(_layers).forEach(n => this.remove(n)); },
+    clear({ skip = [] } = {}) { Object.keys(_layers).forEach(n => { if (!skip.includes(n)) this.remove(n); }); },
   };
 
   // ── Geo helpers ───────────────────────────────────────────────────────────
@@ -968,8 +1650,9 @@
       shell.add('single-basin',
         { type: 'geojson', data: feature },
         [
-          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.15 } },
-          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } },
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
         ]
       );
       return geojsonBbox(feature);
@@ -1003,8 +1686,9 @@
       shell.add('buffer-basins',
         { type: 'geojson', data: fc },
         [
-          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-          { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75 } },
+          { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
         ]
       );
       shell.add('buffer-circle',
@@ -1020,15 +1704,17 @@
     shell.add('ring-center',
       { type: 'geojson', data: ringData.center },
       [
-        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0.30 } },
-        { type: 'line', paint: { 'line-color': '#1a3d5c', 'line-width': 2.0 } },
+        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 5.5 } },
+        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.5 } },
       ]
     );
     shell.add('ring-members',
       { type: 'geojson', data: { type: 'FeatureCollection', features: ringData.ring.map(m => m.feature) } },
       [
-        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0.12 } },
-        { type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 0.75, 'line-opacity': 0.5 } },
+        { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.5 } },
+        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
       ]
     );
     const memberFillId = _layers['ring-members'].layerIds[0];
@@ -1134,6 +1820,11 @@
       let payload, pendingBbox = null;
 
       const lv = _activeLevel();
+      // Kick off /api/signature in parallel for Analysis tab (raw values; /api/areas returns scores only)
+      const _sigFetch = (currentLat != null)
+        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE`)
+        : null;
+
       if (scope === 'single') {
         const url = buildSingleBasinUrl();
         if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
@@ -1200,6 +1891,23 @@
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
 
       _repaintChoropleth();
+
+      // Populate Analysis + Seasonality tabs from parallel /api/signature fetch
+      if (_sigFetch) {
+        try {
+          const sigR = await _sigFetch;
+          if (sigR.ok) {
+            _pointSig = await sigR.json();
+            renderAnalysis(_pointSig, lv);
+            document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
+            renderSeasonality(_pointSig);
+            document.getElementById('v3-tab-seasonality-btn').classList.remove('disabled');
+            document.getElementById('v3-sim-placeholder').style.display = 'none';
+            document.getElementById('v3-sim-content').style.display = '';
+            document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
+          }
+        } catch (_) { /* analysis/seasonality tabs stay at placeholder */ }
+      }
 
     } catch (err) {
       console.error('[v3] signature error:', err);
@@ -1338,11 +2046,15 @@
 
     const hydePresent = HYDE_VARS.filter(v => byVar[v]);
     if (hydePresent.length) {
-      const epochRows = byVar[hydePresent[0]];
+      const epochRows    = byVar[hydePresent[0]];
+      const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
       html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
-        <table class="table table-sm mb-2" style="font-size:0.78rem;">
+        <table class="table table-sm mb-1" style="font-size:0.78rem;">
           <thead><tr><th></th>`;
-      for (const r of epochRows) html += `<th class="text-muted">${r.epoch_year ?? r.year} CE</th>`;
+      for (const r of epochRows) {
+        const near = r.caveat?.includes('hyde_nearest_year');
+        html += `<th class="text-muted">${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
+      }
       html += `</tr></thead><tbody>`;
       for (const v of hydePresent) {
         html += `<tr><td>${HYDE_LABELS[v] || v}</td>`;
@@ -1352,6 +2064,8 @@
         html += `</tr>`;
       }
       html += `</tbody></table>`;
+      if (hasNearest)
+        html += `<p class="text-muted mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
     }
 
     if (byVar['evolv2k_vssi']) {
@@ -1499,33 +2213,53 @@
   }
 
   // ── Polities tab state machine ───────────────────────────────────────────
-  let _polityName   = null;
-  let _politySlices = [];
-  let _searchTimer  = null;
+  let _polityName       = null;
+  let _politySlices     = [];
+  let _polityCurrentIdx = -1;
+  let _polityPlayTimer  = null;
+  let _searchTimer      = null;
 
   function updatePolityButton() {
-    const sliceVal = document.getElementById('v3-slice-select').value;
-    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && sliceVal !== '');
+    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
   }
 
-  function updatePolityBandT() {
-    const tChecked = document.getElementById('v3-polity-band-T').checked;
-    document.getElementById('v3-polity-t-year-row').classList.toggle('d-none', !tChecked);
+  function _setLMRAvailability(available, reason) {
+    const varSel = document.getElementById('v3-basin-var');
+    ['lmr_temp_anomaly', 'lmr_precip_anomaly'].forEach(val => {
+      const opt = varSel.querySelector(`option[value="${val}"]`);
+      if (opt) opt.disabled = !available;
+    });
+    if (!available) {
+      if (['lmr_temp_anomaly', 'lmr_precip_anomaly'].includes(varSel.value)) {
+        varSel.value = '';
+        hideLMRLayer();
+        document.getElementById('v3-basin-legend').style.display = 'none';
+      }
+      if (reason) document.getElementById('v3-basin-status').textContent = reason;
+    }
   }
-  document.querySelectorAll('.v3-polity-band-chk').forEach(cb => {
-    cb.addEventListener('change', updatePolityBandT);
-  });
 
   function resetPolities() {
+    _resetRightColumn();
     _polityName   = null;
     _politySlices = [];
+    _setLMRAvailability(true, null);
     clearTimeout(_searchTimer);
     document.getElementById('v3-polity-input').value    = '';
+    document.getElementById('v3-polity-input').disabled = false;
     document.getElementById('v3-polity-dropdown').style.display = 'none';
     document.getElementById('v3-polity-dropdown').innerHTML     = '';
     const exSel = document.getElementById('v3-polity-example');
     exSel.value    = '';
     exSel.disabled = false;
+    _polityCurrentIdx = -1;
+    stopPolityPlay();
+    document.getElementById('v3-slice-control').classList.add('d-none');
+    document.getElementById('v3-slice-slider').disabled = true;
+    document.getElementById('v3-slice-label').textContent = '';
+    document.getElementById('v3-slice-overlay').style.display = 'none';
+    ['v3-btn-first','v3-btn-prev','v3-btn-play','v3-btn-next'].forEach(id =>
+      document.getElementById(id).disabled = true);
     const sliceSel = document.getElementById('v3-slice-select');
     sliceSel.innerHTML = '<option value="">Select time slice</option>';
     sliceSel.disabled  = true;
@@ -1542,7 +2276,7 @@
     const polityLvlSel = document.getElementById('v3-polity-level');
     polityLvlSel.value    = '6';
     polityLvlSel.disabled = true;
-    shell.clear();
+    shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _basinLayerLevel  = null;
     _sigMemberIds     = null;
@@ -1607,6 +2341,11 @@
     if (!r.ok) return;
     _politySlices = await r.json();
 
+    const hasLMR = _politySlices.some(s => s.toyear >= 700);
+    _setLMRAvailability(hasLMR,
+      hasLMR ? null : 'LMR data begins 700 CE — this polity predates the record');
+
+    // Keep hidden select populated for test compat
     const sliceSel = document.getElementById('v3-slice-select');
     sliceSel.innerHTML = _politySlices.map((s, i) =>
       `<option value="${i}">${formatYear(s.fromyear)} – ${formatYear(s.toyear)}</option>`
@@ -1617,22 +2356,15 @@
     document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.disabled = false; });
     document.getElementById('v3-polity-level').disabled = false;
 
-    // Auto-fill Band T from full polity lifespan
-    const polityFrom = Math.min(..._politySlices.map(s => s.fromyear));
-    const polityTo   = Math.max(..._politySlices.map(s => s.toyear));
-    document.getElementById('v3-polity-band-T').checked   = true;
-    document.getElementById('v3-polity-from-year').value  = polityFrom;
-    document.getElementById('v3-polity-to-year').value    = polityTo;
-    document.getElementById('v3-polity-t-year-row').classList.remove('d-none');
+    // Enable Band T (year row stays hidden — span is the slice's own span on Polities tab)
+    document.getElementById('v3-polity-band-T').checked = true;
 
-    // Auto-select slice containing targetYear, or default to first
-    let idx = 0;
-    if (targetYear !== null) {
-      const found = _politySlices.findIndex(s => s.fromyear <= targetYear && s.toyear >= targetYear);
-      if (found >= 0) idx = found;
-    }
-    sliceSel.value = String(idx);
-    applySlice(idx, targetYear);
+    // Init slider control
+    initSliceControl();
+
+    // Always start at first slice
+    document.getElementById('v3-slice-slider').value = _politySlices[0].fromyear;
+    applySlice(0);
     _showMapTab();
   }
 
@@ -1644,7 +2376,10 @@
       shell.remove('polity-boundary');
       shell.add('polity-boundary',
         { type: 'geojson', data: feature },
-        [{ type: 'line', paint: { 'line-color': '#2c5f8a', 'line-width': 1.5 } }]
+        [
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
+        ]
       );
       _fitMap(geojsonBbox(feature));
     } catch (_) { /* boundary is optional */ }
@@ -1653,16 +2388,107 @@
   function applySlice(idx, resolverYear = null) {
     const s = _politySlices[idx];
     if (!s) return;
-    document.getElementById('v3-resolver-year').value = resolverYear ?? s.fromyear;
+    _polityCurrentIdx = idx;
+    document.getElementById('v3-resolver-year').value     = resolverYear ?? s.fromyear;
+    document.getElementById('v3-polity-from-year').value = s.fromyear;
+    document.getElementById('v3-polity-to-year').value   = s.toyear;
+    updateSliceLabel(idx);
     drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
+    _silentResig();
   }
 
-  document.getElementById('v3-slice-select').addEventListener('change', function () {
-    applySlice(parseInt(this.value));
-    _showMapTab();
+  // ── Slice slider + VCR ───────────────────────────────────────────────────
+
+  function initSliceControl() {
+    const slider = document.getElementById('v3-slice-slider');
+    const first  = _politySlices[0].fromyear;
+    const last   = _politySlices[_politySlices.length - 1].toyear;
+    slider.min      = first;
+    slider.max      = last;
+    slider.disabled = false;
+    const single = _politySlices.length <= 1;
+    document.getElementById('v3-btn-play').disabled = single;
+    document.getElementById('v3-btn-next').disabled = single;
+    document.getElementById('v3-btn-first').disabled = true;
+    document.getElementById('v3-btn-prev').disabled  = true;
+    document.getElementById('v3-slice-control').classList.remove('d-none');
+  }
+
+  function updateSliceLabel(idx) {
+    const s = _politySlices[idx];
+    document.getElementById('v3-slice-label').textContent =
+      `Slice ${idx + 1} of ${_politySlices.length}  ·  ` +
+      `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}` +
+      (s.area_km2 ? `  ·  ${Math.round(s.area_km2).toLocaleString()} km²` : '');
+    const overlay = document.getElementById('v3-slice-overlay');
+    overlay.textContent = `${formatYear(s.fromyear)} – ${formatYear(s.toyear)}`;
+    overlay.style.display = 'block';
+    document.getElementById('v3-btn-first').disabled = idx === 0;
+    document.getElementById('v3-btn-prev').disabled  = idx === 0;
+    document.getElementById('v3-btn-next').disabled  = idx === _politySlices.length - 1;
+  }
+
+  function nearestPolitySlice(year) {
+    let best = 0, bestDist = Infinity;
+    _politySlices.forEach((s, i) => {
+      const mid  = (s.fromyear + s.toyear) / 2;
+      const dist = Math.abs(mid - year);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    return best;
+  }
+
+  function stepPolitySlice(delta) {
+    const next = _polityCurrentIdx + delta;
+    if (next < 0 || next >= _politySlices.length) return;
+    stopPolityPlay();
+    document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
+    applySlice(next);
+  }
+
+  function startPolityPlay() {
+    if (_polityPlayTimer) return;
+    document.getElementById('v3-btn-play').innerHTML = '<i class="bi bi-pause-fill"></i>';
+    document.getElementById('v3-btn-play').title = 'Pause';
+    _polityPlayTimer = setInterval(() => {
+      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(); return; }
+      const next = _polityCurrentIdx + 1;
+      document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
+      applySlice(next);
+    }, 1500);
+  }
+
+  function stopPolityPlay() {
+    if (_polityPlayTimer) { clearInterval(_polityPlayTimer); _polityPlayTimer = null; }
+    const btn = document.getElementById('v3-btn-play');
+    btn.innerHTML = '<i class="bi bi-play-fill"></i>';
+    btn.title = 'Play through slices';
+  }
+
+  document.getElementById('v3-slice-slider').addEventListener('input', () => {
+    const year = parseInt(document.getElementById('v3-slice-slider').value);
+    const idx  = nearestPolitySlice(year);
+    if (idx !== _polityCurrentIdx) { _polityCurrentIdx = idx; updateSliceLabel(idx); }
   });
+  document.getElementById('v3-slice-slider').addEventListener('change', () => {
+    stopPolityPlay();
+    const year = parseInt(document.getElementById('v3-slice-slider').value);
+    const idx  = nearestPolitySlice(year);
+    document.getElementById('v3-slice-slider').value = _politySlices[idx].fromyear;
+    applySlice(idx);
+  });
+  document.getElementById('v3-btn-first').addEventListener('click', () => {
+    stopPolityPlay();
+    document.getElementById('v3-slice-slider').value = _politySlices[0].fromyear;
+    applySlice(0);
+  });
+  document.getElementById('v3-btn-prev').addEventListener('click', () => stepPolitySlice(-1));
+  document.getElementById('v3-btn-play').addEventListener('click', () => {
+    if (_polityPlayTimer) stopPolityPlay(); else startPolityPlay();
+  });
+  document.getElementById('v3-btn-next').addEventListener('click', () => stepPolitySlice(1));
 
   // Polity example handler
   document.getElementById('v3-polity-example').addEventListener('change', function () {
@@ -1768,7 +2594,7 @@
     const level = _activeLevel();
     if (_basinLayerLoaded && _basinLayerLevel === level) return;
     const before = Object.entries(_layers)
-      .filter(([n]) => n !== 'basin-choropleth')
+      .filter(([n]) => n !== 'basin-choropleth' && n !== 'rivers')
       .flatMap(([,e]) => e.layerIds)[0];
     shell.remove('basin-choropleth');
     const sl = `basin0${level}`;
@@ -1799,8 +2625,10 @@
     const varMeta = BASIN_VARS.find(v => v.key === key);
     if (!varMeta) return;
     const level = _activeLevel();
+    console.log('[applyBasinVar]', key, 'level:', level, '_sigMemberIds size:', _sigMemberIds?.size ?? 0);
     if (level === 8 && !_sigMemberIds?.size) {
       statusEl.textContent = 'Get a signature first to use L08 choropleth';
+      console.log('[applyBasinVar] L08 guard fired — no member_ids');
       return;
     }
     loadBasinLayer();
@@ -1808,6 +2636,7 @@
     statusEl.textContent = 'Loading…';
     try {
       const resp = await fetch(`/api/explorer/values?var=${key}&level=${level}&su=${varMeta.su}`);
+      console.log('[applyBasinVar] values fetch', resp.status, 'level:', level);
       const body = await resp.json();
       const lo = varMeta.fixedDomain ? varMeta.fixedDomain[0] : (body.meta.p10 ?? body.meta.min);
       const hi = varMeta.fixedDomain ? varMeta.fixedDomain[1] : (body.meta.p90 ?? body.meta.max);
@@ -1928,6 +2757,14 @@
     const nums   = Object.values(values).filter(v => v != null);
     const sorted = [...nums].sort((a, b) => a - b);
     const n      = sorted.length;
+    if (n === 0) {
+      hideLMRLayer();
+      document.getElementById('v3-basin-legend').style.display = 'none';
+      const floor = actualFrom ?? 700;
+      statusEl.textContent = `LMR data begins ${floor} CE — this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates the record`;
+      _lmrPainting = false;
+      return;
+    }
     const lo3    = sorted[Math.max(0, Math.round(0.03 * n))];
     const hi97   = sorted[Math.min(n - 1, Math.round(0.97 * n))];
     const absMax = Math.max(Math.abs(lo3), Math.abs(hi97)) || 1;
@@ -2034,6 +2871,9 @@
     const key    = e.target.value;
     const sl     = _basinSourceLayer();
     const { fromYr, toYr } = _activeBandTYears();
+    const isGrid = key.startsWith('lmr_') || key.startsWith('hyde_');
+    document.getElementById('v3-polity-level').disabled = isGrid;
+    document.getElementById('v3-level').disabled        = isGrid;
     if (key.startsWith('lmr_')) {
       const sid = _layers['basin-choropleth']?.sourceId;
       if (sid) map.removeFeatureState({ source: sid, sourceLayer: sl });
@@ -2061,7 +2901,7 @@
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
 
-  const map = new maplibregl.Map({
+  const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
     center: [10, 20],
     zoom: 1,
@@ -2070,26 +2910,15 @@
       version: 8,
       glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
       sources: {
-        hillshade: {
+        awmc: {
           type: 'raster',
-          tiles: ['https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg'],
-          tileSize: 256, maxzoom: 12,
-          attribution: 'Hillshade: &copy; OpenStreetMap US',
-        },
-        osm: {
-          type: 'raster',
-          tiles: [
-            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256, maxzoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+          tileSize: 256, minzoom: 1, maxzoom: 11,
+          attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
         },
       },
       layers: [
-        { id: 'hillshade-layer', type: 'raster', source: 'hillshade', paint: { 'raster-opacity': 1.0 } },
-        { id: 'osm-layer',       type: 'raster', source: 'osm',       paint: { 'raster-opacity': 0.5 } },
+        { id: 'awmc-layer', type: 'raster', source: 'awmc' },
       ],
     },
   });
@@ -2097,8 +2926,63 @@
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
+  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderSimilarity);
+  document.getElementById('v3-sim-group').addEventListener('change', function () {
+    _populateSubLensSelect(this.value);
+    const first = _simLensRegistry.find(l => l.group === this.value && l.status === 'active');
+    if (first) {
+      _simCurrentLens = first.lens_id;
+      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
+      _simQueryLens = null;
+      renderSimilarity();
+    }
+  });
+  document.getElementById('v3-sim-sublens').addEventListener('change', function () {
+    _simCurrentLens = this.value;
+    _simQueryLens   = null;
+    renderSimilarity();
+  });
+  document.querySelectorAll('input[name="v3sim-str"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+      _simCurrentStringency = this.value;
+      _simQueryStringency   = null;
+      renderSimilarity();
+    });
+  });
+  _loadSimLensRegistry();
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
-  window.v3map = map;
+  window._v3map = map;
+
+  map.on('load', () => {
+    shell.add('rivers',
+      { type: 'vector', url: 'pmtiles:///static/sandbox/rivers.pmtiles' },
+      [
+        { type: 'line', 'source-layer': 'rivers',
+          paint: {
+            'line-color': '#6baed6',
+            'line-width': ['case', ['==', ['to-number', ['get', 'ord_clas']], 1], 1.5, 1.0],
+            'line-opacity': 0.85,
+          }
+        },
+      ]
+    );
+  });
+
+  document.getElementById('v3-layer-rivers').addEventListener('change', function () {
+    const vis = this.checked ? 'visible' : 'none';
+    (_layers['rivers']?.layerIds ?? []).forEach(id => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+    });
+  });
+
+  // ?tab=settlements or ?tab=polities overrides the HTML default — lets the
+  // developer (and tests) specify the starting tab without touching the markup.
+  const _tabParam = new URLSearchParams(window.location.search).get('tab');
+  if (_tabParam === 'settlements') {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-settlements-btn')).show();
+  } else if (_tabParam === 'polities') {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-polities-btn')).show();
+  }
 
 })();
 </script>

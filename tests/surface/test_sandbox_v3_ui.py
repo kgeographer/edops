@@ -42,8 +42,10 @@ def click_settlements_tab(page: Page) -> None:
     expect(page.locator("#v3-tab-settlements-btn")).to_have_class(re.compile(r"\bactive\b"))
 
 
-def select_settlements_example(page: Page, value: str) -> None:
-    page.select_option("#v3-example-select", value)
+def select_settlements_example(page: Page) -> None:
+    """Select the first real example (index 1). Decoupled from option contents."""
+    click_settlements_tab(page)
+    page.select_option("#v3-example-select", index=1)
 
 
 # ---------------------------------------------------------------------------
@@ -51,11 +53,7 @@ def select_settlements_example(page: Page, value: str) -> None:
 # ---------------------------------------------------------------------------
 
 class TestV3SettlementsColdStart:
-    """On load: Settlements tab active, nothing resolved."""
-
-    def test_settlements_tab_active(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        expect(page.locator("#v3-tab-settlements-btn")).to_have_class(re.compile(r"\bactive\b"))
+    """Settlements cold-start state (default tab irrelevant — use ?tab= param or click tab)."""
 
     def test_scope_wrap_hidden(self, page: Page, live_server_url):
         goto(page, live_server_url)
@@ -83,6 +81,7 @@ class TestV3SettlementsColdStart:
 
     def test_example_row_visible(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         expect(page.locator("#v3-example-row")).to_be_visible()
 
     def test_t_year_row_hidden(self, page: Page, live_server_url):
@@ -139,55 +138,42 @@ class TestV3SettlementsExampleReveal:
 
     def test_scope_wrap_appears(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-scope-wrap")).to_be_visible()
 
     def test_sig_btn_enabled(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-sig-btn")).to_be_enabled()
 
     def test_choropleth_appears(self, page: Page, live_server_url):
         """Variable select is hidden at cold start, visible after scope render."""
         goto(page, live_server_url)
         expect(page.locator("#v3-choropleth")).to_be_hidden()
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-choropleth")).to_be_visible()
 
     def test_intro_text_hidden(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-intro-text")).to_be_hidden()
 
     def test_resolve_field_locked(self, page: Page, live_server_url):
         """Example path removes the alternate entry: resolve input disabled."""
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-place-input")).to_be_disabled()
 
     def test_resolve_btn_locked(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-resolve-btn")).to_be_disabled()
 
     def test_scope_defaults_to_single(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-scope-select")).to_have_value("single")
 
-    def test_buffer_example_shows_radius(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        select_settlements_example(page, "buffer|16.8167,-2.9833|Timbuktu|100")
-        expect(page.locator("#v3-scope-select")).to_have_value("buffer")
-        expect(page.locator("#v3-buffer-extra")).to_be_visible()
-
-    def test_ring_example_checks_band_T(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        select_settlements_example(page, "ring|16.8167,-2.9833|Timbuktu|1400|1500")
-        expect(page.locator("#v3-band-T")).to_be_checked()
-        expect(page.locator("#v3-from-year")).to_have_value("1400")
-        expect(page.locator("#v3-to-year")).to_have_value("1500")
-        expect(page.locator("#v3-t-year-row")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -198,12 +184,14 @@ class TestV3BandTToggle:
 
     def test_check_shows_year_row(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         expect(page.locator("#v3-t-year-row")).to_be_hidden()
         page.check("#v3-band-T")
         expect(page.locator("#v3-t-year-row")).to_be_visible()
 
     def test_uncheck_hides_year_row(self, page: Page, live_server_url):
         goto(page, live_server_url)
+        click_settlements_tab(page)
         page.check("#v3-band-T")
         page.uncheck("#v3-band-T")
         expect(page.locator("#v3-t-year-row")).to_be_hidden()
@@ -219,7 +207,7 @@ class TestV3TabSwitchReset:
     def test_polities_tab_resets_settlements_scope(self, page: Page, live_server_url):
         """Settlements with example selected → switch to Polities → scope wrap clears."""
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-scope-wrap")).to_be_visible()
         click_polities_tab(page)
         click_settlements_tab(page)
@@ -227,14 +215,14 @@ class TestV3TabSwitchReset:
 
     def test_polities_tab_resets_settlements_sig_btn(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         click_polities_tab(page)
         click_settlements_tab(page)
         expect(page.locator("#v3-sig-btn")).to_be_disabled()
 
     def test_polities_tab_resets_settlements_choropleth(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-choropleth")).to_be_visible()
         click_polities_tab(page)
         click_settlements_tab(page)
@@ -243,7 +231,7 @@ class TestV3TabSwitchReset:
     def test_polities_tab_unlocks_resolve_input(self, page: Page, live_server_url):
         """Resolve input re-enables and empties after tab-switch reset."""
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-place-input")).to_be_disabled()
         click_polities_tab(page)
         click_settlements_tab(page)
@@ -274,38 +262,38 @@ class TestV3ResetButton:
 
     def test_reset_hides_scope_wrap(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-scope-wrap")).to_be_hidden()
 
     def test_reset_disables_sig_btn(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-sig-btn")).to_be_disabled()
 
     def test_reset_hides_choropleth(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-choropleth")).to_be_hidden()
 
     def test_reset_shows_intro_text(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-intro-text")).to_be_visible()
 
     def test_reset_unlocks_resolve_input(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-place-input")).to_be_enabled()
         expect(page.locator("#v3-place-input")).to_have_value("")
 
     def test_reset_re_enables_example_select(self, page: Page, live_server_url):
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-example-select")).to_be_enabled()
 
@@ -336,7 +324,7 @@ class TestV3PolitiesExampleReveal:
     def _load_nsong(self, page: Page, live_server_url: str) -> None:
         goto(page, live_server_url)
         click_polities_tab(page)
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         # Wait for async slices fetch to complete
         page.wait_for_function(
             "document.getElementById('v3-slice-select').options.length > 1",
@@ -357,22 +345,34 @@ class TestV3PolitiesExampleReveal:
         self._load_nsong(page, live_server_url)
         expect(page.locator("#v3-polity-band-T")).to_be_checked()
 
-    def test_t_year_row_visible(self, page: Page, live_server_url):
+    def test_t_year_row_hidden(self, page: Page, live_server_url):
+        """Year row stays hidden on Polities tab — span is the slice's own span."""
         self._load_nsong(page, live_server_url)
-        expect(page.locator("#v3-polity-t-year-row")).to_be_visible()
+        expect(page.locator("#v3-polity-t-year-row")).to_be_hidden()
+
+    def test_slice_control_visible(self, page: Page, live_server_url):
+        """Slider control div is revealed after polity loads."""
+        self._load_nsong(page, live_server_url)
+        expect(page.locator("#v3-slice-control")).to_be_visible()
+
+    def test_slice_label_populated(self, page: Page, live_server_url):
+        """Slice label shows ordinal and year span after polity loads."""
+        self._load_nsong(page, live_server_url)
+        label = page.locator("#v3-slice-label").text_content()
+        assert "Slice" in label and "of" in label
 
     def test_t_span_filled_from_polity_lifespan(self, page: Page, live_server_url):
-        """Band T span is a valid non-empty range drawn from DB slice extents."""
+        """Band T span mirrors the active slice (zero-width slices are valid)."""
         self._load_nsong(page, live_server_url)
         from_yr = int(page.locator("#v3-polity-from-year").input_value())
         to_yr   = int(page.locator("#v3-polity-to-year").input_value())
-        assert from_yr < to_yr
+        assert from_yr <= to_yr
 
     def test_search_input_locked(self, page: Page, live_server_url):
         """Example path removes the alternate entry: search input is disabled."""
         goto(page, live_server_url)
         click_polities_tab(page)
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         # Disabled synchronously before the async fetch
         expect(page.locator("#v3-polity-input")).to_be_disabled()
 
@@ -381,7 +381,7 @@ class TestV3PolitiesExampleReveal:
         goto(page, live_server_url)
         click_polities_tab(page)
         expect(page.locator("#v3-polity-level")).to_be_disabled()
-        page.select_option("#v3-polity-example", "polity|Northern Song|1000|1000|1100")
+        page.select_option("#v3-polity-example", "polity|Northern Song")
         page.wait_for_function(
             "document.getElementById('v3-slice-select').options.length > 1",
             timeout=10000,
@@ -408,7 +408,7 @@ class TestV3LevelSelect:
     def test_level_select_enabled_after_example(self, page: Page, live_server_url):
         """Level select becomes interactive and is set to L06 when an example loads."""
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         expect(page.locator("#v3-level")).to_be_enabled()
         expect(page.locator("#v3-level")).to_have_value("6")
 
@@ -420,7 +420,7 @@ class TestV3LevelSelect:
     def test_reset_returns_level_to_l06_and_disabled(self, page: Page, live_server_url):
         """Reset restores level to L06 and disables the select."""
         goto(page, live_server_url)
-        select_settlements_example(page, "single|16.8167,-2.9833|Timbuktu")
+        select_settlements_example(page)
         page.select_option("#v3-level", "8")
         page.click("#v3-reset-btn")
         expect(page.locator("#v3-level")).to_have_value("6")

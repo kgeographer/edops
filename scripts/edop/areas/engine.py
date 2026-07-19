@@ -186,6 +186,36 @@ def resolve_polity(polity_name, year, level, conn, epsilon=0.0):
     return geom_wkt, basin_set, polity_meta
 
 
+def resolve_crosswalk(polity_id, level, conn, epsilon=0.0001):
+    """
+    Crosswalk resolver: polity_id → weighted basin set from pre-built table.
+
+    Fast path for L08 polity signatures — replaces live ST_Intersection (~50 ms
+    vs 3–10 s). Returns same schema as resolve_polygon. Empty DataFrame if the
+    polity is not in the crosswalk (island/oceanic polities with no L08 basins).
+    Only meaningful at level 8; returns empty DataFrame for other levels.
+    """
+    if level != 8:
+        return pd.DataFrame(
+            columns=['hybas_id', 'weight', 'basin_in_polity_fraction', 'overlap_area_km2']
+        )
+    sql = """
+    SELECT hybas_id,
+           weight,
+           basin_in_polity_frac AS basin_in_polity_fraction,
+           overlap_km2          AS overlap_area_km2
+    FROM   temporal.polity_basin08_crosswalk
+    WHERE  polity_id = %s
+      AND  weight >= %s
+    ORDER  BY weight DESC
+    """
+    cur  = conn.execute(sql, (polity_id, epsilon))
+    cols = [d[0] for d in cur.description]
+    df   = pd.DataFrame(cur.fetchall(), columns=cols)
+    df['hybas_id'] = df['hybas_id'].astype('int64')
+    return df
+
+
 def weighted_quantile(scores, weights, q):
     """
     Weighted quantile via sorted cumulative weights + linear interpolation.
@@ -759,6 +789,9 @@ CAVEAT_TEXTS = {
         "HYDE 3.4 cadence-transition artifact: 1950 is the last centennial/decadal "
         "epoch before annual data begins; value may not reflect real land-use change."
     ),
+    'hyde_nearest_year': (
+        "No HYDE 3.4 epoch falls within this span; nearest available step shown."
+    ),
 }
 
 def make_row(
@@ -957,12 +990,27 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     # ── HYDE ──────────────────────────────────────────────────────────────────
     # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
     # extracts the correct array element without re-scanning hyde_cells.
+    # Nearest-year fallback: if no HYDE step falls within the span (common for
+    # narrow polity slices between centennial epochs), use the closest epoch so
+    # that some HYDE context always appears in the signature.
+    mid = (from_year + to_year) // 2
     hyde_sql = f"""
     WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
-    epochs AS (
+    in_span AS (
         SELECT step_idx, year_ce
         FROM temporal.hyde_times
         WHERE year_ce BETWEEN {from_year} AND {to_year}
+    ),
+    epochs AS (
+        SELECT step_idx, year_ce, false AS is_nearest FROM in_span
+        UNION ALL
+        SELECT step_idx, year_ce, true AS is_nearest
+        FROM (
+            SELECT step_idx, year_ce
+            FROM temporal.hyde_times
+            ORDER BY ABS(year_ce - {mid}) LIMIT 1
+        ) nearest_fallback
+        WHERE NOT EXISTS (SELECT 1 FROM in_span)
     ),
     cell_overlaps AS (
         SELECT area_km2,
@@ -972,7 +1020,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
         WHERE ST_Intersects(hc.geom, buf.buf_geom)
     )
     SELECT
-        e.year_ce, e.step_idx,
+        e.year_ce, e.step_idx, e.is_nearest,
         co.area_km2, co.overlap_m2,
         co.cropland [e.step_idx + 1] AS cropland,
         co.grazing  [e.step_idx + 1] AS grazing,
@@ -987,6 +1035,8 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     for year_ce, grp in hyde_ts.groupby('year_ce', sort=True):
         yr     = int(year_ce)
         caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
+        if bool(grp['is_nearest'].iloc[0]):
+            caveat.append('hyde_nearest_year')
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
             agg = _agg_hyde_b7(grp, var, buf_area_m2)
@@ -2377,6 +2427,7 @@ def areal_signature_polygon(
     to_year=None,
     include_detail=False,
     resolver_year=None,
+    polity_id=None,
 ):
     """
     Full areal signature for a polygon geometry.
@@ -2396,6 +2447,9 @@ def areal_signature_polygon(
     from_year      : int or None — Band T span start (CE)
     to_year        : int or None — Band T span end (CE)
     include_detail : bool
+    polity_id      : int or None — if provided and level=8, uses pre-built crosswalk
+                     instead of live ST_Intersection; falls back to resolve_polygon
+                     if the polity is not in the crosswalk (island/oceanic cases)
 
     Returns
     -------
@@ -2404,7 +2458,12 @@ def areal_signature_polygon(
     basins where basin_in_polity_fraction < 0.5 / < 0.2 (describe, don't decide).
     """
     level_str = f'{level:02d}'
-    basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    if level == 8 and polity_id is not None:
+        basin_set = resolve_crosswalk(polity_id, level, conn)
+        if basin_set.empty:
+            basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    else:
+        basin_set = resolve_polygon(geom_wkt, level_str, conn)
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     bif = basin_set['basin_in_polity_fraction']

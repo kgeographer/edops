@@ -1,6 +1,7 @@
 import os
 import csv
 import json
+import math
 import ssl
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -51,9 +52,65 @@ def _load_field_lookup() -> Dict[str, Dict[str, str]]:
 
 FIELD_LOOKUP: Dict[str, Dict[str, str]] = _load_field_lookup()
 
+_TWO_PI = 2 * math.pi
+_THETA  = [_TWO_PI * m / 12 for m in range(12)]   # Jan=0 … Dec=11π/6
+
+
+def _circ_stats(weights):
+    """Circular mean resultant for a 12-month weight vector.
+    Returns (concentration, peak_angle_rad, peak_month_continuous) or (None,None,None).
+    """
+    total = sum(weights)
+    if total == 0:
+        return None, None, None
+    Rx = sum(w * math.cos(t) for w, t in zip(weights, _THETA)) / total
+    Ry = sum(w * math.sin(t) for w, t in zip(weights, _THETA)) / total
+    concentration = math.sqrt(Rx ** 2 + Ry ** 2)
+    angle         = math.atan2(Ry, Rx)
+    peak_month    = (angle / _TWO_PI * 12) % 12
+    return concentration, angle, peak_month
+
+
+def _seasonality_indices(pre_monthly, tmp_monthly):
+    """Compute six scalar seasonality indices from monthly precip and temp arrays.
+    Returns a dict; all values None if inputs are missing or malformed.
+    """
+    _none = {k: None for k in (
+        "pre_concentration", "pre_peak_month",
+        "tmp_concentration", "tmp_peak_month",
+        "seas_phase_offset", "tmp_seas_amp",
+    )}
+    if not pre_monthly or not tmp_monthly:
+        return _none
+    pre = [float(v) for v in pre_monthly]
+    tmp = [float(v) for v in tmp_monthly]
+    if len(pre) != 12 or len(tmp) != 12:
+        return _none
+
+    pre_conc, pre_angle, pre_peak = _circ_stats(pre)
+
+    tmp_min = min(tmp)
+    tmp_conc, tmp_angle, tmp_peak = _circ_stats([v - tmp_min for v in tmp])
+
+    if pre_angle is not None and tmp_angle is not None:
+        delta  = abs(pre_angle - tmp_angle)
+        delta  = min(delta, _TWO_PI - delta)
+        offset = delta / _TWO_PI * 12
+    else:
+        offset = None
+
+    return {
+        "pre_concentration": pre_conc,
+        "pre_peak_month":    pre_peak,
+        "tmp_concentration": tmp_conc,
+        "tmp_peak_month":    tmp_peak,
+        "seas_phase_offset": offset,
+        "tmp_seas_amp":      max(tmp) - min(tmp),
+    }
+
 _VIEW_FOR_LEVEL = {
-    8: "v_basin08_persist_rev1",
-    6: "v_basin06_persist_rev1",
+    8: "v_basin08_persist_rev2",
+    6: "v_basin06_persist_rev2",
 }
 
 SIGNATURE_SQL_TMPL = """
@@ -101,6 +158,8 @@ SELECT
   wetland_class,
 
   -- C: Bioclimatic proxies
+  pre_mm_monthly,
+  tmp_dc_monthly,
   temp_yr,
   temp_min,
   temp_max,
@@ -477,6 +536,18 @@ def get_signature(
                 sig["relief_position"] = None
 
             # -----------------------
+            # Seasonality indices (derived from monthly arrays in rev2 views)
+            # -----------------------
+            pre_monthly = sig.get("pre_mm_monthly")
+            tmp_monthly = sig.get("tmp_dc_monthly")
+            if pre_monthly is not None:
+                pre_monthly = list(pre_monthly)
+            if tmp_monthly is not None:
+                tmp_monthly = list(tmp_monthly)
+            seas = _seasonality_indices(pre_monthly, tmp_monthly)
+            sig.update(seas)
+
+            # -----------------------
             # Pilot payload helpers for UI rendering (no UI changes required yet)
             # -----------------------
 
@@ -512,6 +583,16 @@ def get_signature(
                 }
 
             out: Dict[str, Any] = {
+                # Seasonality arrays + derived scalar indices (Band C; top-level only)
+                "pre_mm_monthly":    pre_monthly,
+                "tmp_dc_monthly":    tmp_monthly,
+                "pre_concentration": seas.get("pre_concentration"),
+                "pre_peak_month":    seas.get("pre_peak_month"),
+                "tmp_concentration": seas.get("tmp_concentration"),
+                "tmp_peak_month":    seas.get("tmp_peak_month"),
+                "seas_phase_offset": seas.get("seas_phase_offset"),
+                "tmp_seas_amp":      seas.get("tmp_seas_amp"),
+                # Core fields
                 "id":           sig.get("id"),
                 "eco_id":       sig.get("eco_id"),
                 "up_area":      sig.get("up_area"),
