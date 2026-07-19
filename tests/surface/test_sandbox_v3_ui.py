@@ -174,19 +174,6 @@ class TestV3SettlementsExampleReveal:
         select_settlements_example(page)
         expect(page.locator("#v3-scope-select")).to_have_value("single")
 
-    @pytest.mark.skip(reason="buffer and ring example options removed — all examples now load single basin with Band T")
-    def test_buffer_example_shows_radius(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        expect(page.locator("#v3-scope-select")).to_have_value("buffer")
-        expect(page.locator("#v3-buffer-extra")).to_be_visible()
-
-    @pytest.mark.skip(reason="buffer and ring example options removed — all examples now load single basin with Band T")
-    def test_ring_example_checks_band_T(self, page: Page, live_server_url):
-        goto(page, live_server_url)
-        expect(page.locator("#v3-band-T")).to_be_checked()
-        expect(page.locator("#v3-from-year")).to_have_value("1400")
-        expect(page.locator("#v3-to-year")).to_have_value("1500")
-        expect(page.locator("#v3-t-year-row")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
