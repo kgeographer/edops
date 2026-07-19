@@ -5,7 +5,7 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-18 (WO1 plumbing complete; accept gate partially failed — bimodal rainfall issue; deferred to Opus)
+- **Last updated:** 2026-07-19 (WO2 opened — rainfall modality investigation; notebook-only; EDOP work homed here)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -45,7 +45,7 @@ Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO 
 WO branches cut from `cdop`, merged back on accept.
 **585 tests pass, 52 skipped.**
 
-**WO1 in progress** on branch `cdop_pilot` (cut from `cdop`).
+**WO2 open** on branch `cdop_wo2` (cut from `cdop_pilot`). WO1 blocked pending WO2 outcome.
 
 ---
 
@@ -53,7 +53,8 @@ WO branches cut from `cdop`, merged back on accept.
 
 | Step | Branch | Status | Notes |
 |---|---|---|---|
-| WO1 — CDOP pilot page + L08 lens similarity | `cdop_pilot` | **open — blocked** | Plumbing complete; accept gate partial fail; bimodal issue → Opus review |
+| WO1 — CDOP pilot page + L08 lens similarity | `cdop_pilot` | **blocked** | Plumbing complete; accept gate partial fail; blocked on WO2 |
+| WO2 — Rainfall modality investigation | `cdop_wo2` | **open** | Notebook-only; EDOP work; doubles as WO1 unblock |
 
 ---
 
@@ -114,11 +115,10 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 
 ### Open / pending
 
-- [ ] Opus review: confirm/refute bimodal hypothesis; decide remediation path
-- [ ] Sandbox comparison: run Mombasa on sandbox Similarity tab (L06 global) for comparison
-- [ ] Remediation implementation (scope TBD after Opus review)
+- [ ] WO2 complete: bimodal class characterized, variable definitions recommended
+- [ ] Remediation implementation (scope set by WO2 Part B/C findings)
 - [ ] Test suite green after L08 startup change
-- [ ] Commit `cdop_pilot` branch + merge to `cdop` on accept
+- [ ] Merge `cdop_pilot → cdop` on accept
 
 ---
 
