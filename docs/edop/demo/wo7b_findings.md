@@ -200,7 +200,7 @@ fetch even if stringency is unchanged.
   surfaced in response; NaN masking confirmed per lens. ✓
 - UI stringency control re-queries and repaints; count reported in blurb; anchor + lens
   persist across stringency changes. ✓
-- **Hero-shot check (pending Karl browser review):** SF moderate on Seasonal Phase should
-  show tight Mediterranean cluster; Timbuktu moderate should show broad monsoon dispersion.
-  The count contrast is the demonstrator.
+- **Hero-shot check passed (2026-07-18):** SF moderate on Seasonal Phase shows tight
+  Mediterranean cluster; Timbuktu moderate shows broad monsoon dispersion. Count contrast
+  confirmed as the demonstrator. ✓
 - All existing tests pass; two new contract tests added. ✓

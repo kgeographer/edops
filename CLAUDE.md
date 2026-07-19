@@ -46,7 +46,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/edop/demo/DEMO_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** WO7b Parts C+D complete — threshold mode in `find_similar()` + `/api/similarity` (strict/moderate/loose radii per lens; variable-N result sets); Strict/Moderate/Loose segmented control + honest count in Similarity tab blurb. Branch `demo_wo7b`. **Next: Karl browser review (hero-shot check), then `wo7b_findings.md`, then merge `demo_wo7b → demo`.**
+- **Current step:** WO7b complete and merged — distance threshold mode in `find_similar()` + `/api/similarity`; strict/moderate/loose segmented control; variable-N result sets; hero-shot check passed (SF moderate tight Mediterranean cluster vs Timbuktu moderate broad monsoon dispersion). Branch `demo_wo7b` merged to `demo`. **Next: L08 performance notebook (demo branch) → CDOP phase (new branch).**
 - **Tests:** 585 pass, 38 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 

@@ -5,7 +5,7 @@ locked decisions. If any other Demo document disagrees with this one about *wher
 stand*, this one wins.
 
 - **Location:** `docs/edop/demo/DEMO_tracker.md`
-- **Last updated:** 2026-07-17 (WO7b Parts C+D complete — threshold mode + stringency UI)
+- **Last updated:** 2026-07-18 (L08 inquiry complete — findings written; DEMO phase closing)
 - **Maintained:** updated by CC at session end and whenever a decision is locked; read at the
   start of each step and each phase gate.
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
@@ -158,6 +158,16 @@ WO7a (Parts A–C, complete 2026-07-17):
   583 tests pass, 52 skipped.
 - Branch: `demo_wo7a` (merged to demo 2026-07-17). Spec: `wo7a_similarity-lenses.md`; findings: `wo7a_findings.md`.
 
+**L08 similarity inquiry complete (2026-07-18):**
+- Four questions answered: build feasibility (viable, ~4 s / 17 MB), query performance
+  (2.4–4.5 ms), threshold transfer (L06 thresholds do not transfer at L08 — 10× counts,
+  temp/loose captures 46% of all L08 basins), topN for WH Cities (topN=5 confirmed;
+  threshold mode broken for corpus — 36–39% zero peers at strict).
+- Key schema finding: `gaz.wh_cities.basin_id` → `basin08.id` → `basin08.hybas_id`
+  (not a direct hybas_id FK).
+- Findings: `docs/edop/demo/wo_l08_findings.md`. Branch `l08` — pending merge to `demo`.
+- **DEMO phase closing. Next: CDOP phase on new `cdop` branch.**
+
 **WO7b Parts C+D complete (2026-07-17) — Distance threshold rendering:**
 
 - **Part A** (perf probe, inline): POST `/api/basin-geom` endpoint added (was GET-limited by URL length); geometry precision reduced to 3 dp; n cap raised to 6000. 5272-basin set (Tbilisi/temp loose) confirmed ~2 seconds — acceptable; spinner deferred.
@@ -168,8 +178,7 @@ WO7a (Parts A–C, complete 2026-07-17):
 - **Part C** (backend): `thresholds` dict added to each active lens in `LENS_REGISTRY`; `find_similar()` gains `mode='threshold'` (default) + `stringency='moderate'`; `/api/similarity` defaults to threshold/moderate — returns all basins within calibrated radius; `mode=topn` retained as fallback; `result_count` + `radius` in response; `/api/similarity/lenses` exposes thresholds for UI.
 - **Part D** (UI): Strict / Moderate / Loose segmented control added to Similarity tab controls row; changing stringency re-queries and repaints; blurb now reports "Showing all N basins within the {stringency} threshold" using server `result_count`. Cache key extended to include stringency.
 - 2 new contract tests: threshold response shape; SF < Timbuktu count at `climate.phase` moderate. 585 tests pass.
-- **Pending:** Karl browser review (hero-shot check: SF moderate tight cluster vs Timbuktu moderate broad dispersion on Seasonal Phase); then `wo7b_findings.md` + merge `demo_wo7b → demo`.
-- Branch: `demo_wo7b`. Spec: `wo7b_distance-thresholds.md`.
+- **Hero-shot check passed (2026-07-18):** SF moderate shows tight Mediterranean cluster; Timbuktu moderate shows broad monsoon dispersion. Findings: `docs/edop/demo/wo7b_findings.md`. Branch `demo_wo7b` merged to `demo`; pushed to origin.
 
 **WO6 complete (2026-07-16) — Seasonality tab in sandbox_v3 (Settlements):**
 - Fourth tab added to right-column strip: Map / Signature / Analysis / **Seasonality**.
@@ -225,7 +234,8 @@ WO7a (Parts A–C, complete 2026-07-17):
 | Seasonality (WO5) | Monthly arrays + 6 derived indices in signature; rev2 DB views; catalog updated; 3 contract tests | **complete** |
 | Seasonality tab (WO6) | Walter-Lieth + polar SVG charts; generated blurb; scalar table with month names; settlement name heading | **complete** |
 | Similarity lens registry + UI (WO7 + WO7a) | Lens registry; `/api/similarity`; two-dropdown group+sub-lens UI; three Climate sub-lenses live; Parts A–C complete | **complete — merged** |
-| Similarity threshold rendering (WO7b) | Distance-threshold result sets (variable-N); strict/moderate/loose control; honest count in blurb; Parts A–D complete | **browser review + findings pending → merge** |
+| Similarity threshold rendering (WO7b) | Distance-threshold result sets (variable-N); strict/moderate/loose control; honest count in blurb; Parts A–D complete; hero-shot check passed | **complete — merged** |
+| L08 similarity inquiry | Build feasibility, query perf, threshold transfer, topN for WH Cities — all four questions answered; topN=5 confirmed for CDOP Workbench | **complete — pending merge** |
 | Terrain/hydrology discrimination tests | Per-band discrimination tests analogous to WO4e Cell 23; needed only if a use case requires it | deferred |
 | Surface integration — similarity instruments | Expose per-band profile + Euclidean composite + C_climate Mah in sandbox_v3; separate future WO | deferred |
 | Track 3 legibility pass | Basin-ring explanation, map legibility, minimal user guide — over frozen surface only | post feature-freeze |
