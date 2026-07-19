@@ -5,7 +5,7 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-18 (WO1 plumbing complete; accept gate partially failed — bimodal rainfall issue; deferred to Opus)
+- **Last updated:** 2026-07-19 (WO2 + WO2a complete; WO3 open — continuous precip lens + retire phase lens)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -45,7 +45,10 @@ Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO 
 WO branches cut from `cdop`, merged back on accept.
 **585 tests pass, 52 skipped.**
 
-**WO1 in progress** on branch `cdop_pilot` (cut from `cdop`).
+**WO3 open** on branch `cdop_wo2`. WO1 blocked pending WO3 completion.
+
+WO2 and WO2a are complete on the same branch. WO3 implements the continuous precipitation
+lens and retires the phase lens. See `wo3_retire-phase.md` for full spec.
 
 ---
 
@@ -53,7 +56,10 @@ WO branches cut from `cdop`, merged back on accept.
 
 | Step | Branch | Status | Notes |
 |---|---|---|---|
-| WO1 — CDOP pilot page + L08 lens similarity | `cdop_pilot` | **open — blocked** | Plumbing complete; accept gate partial fail; bimodal issue → Opus review |
+| WO1 — CDOP pilot page + L08 lens similarity | `cdop_pilot` | **blocked** | Plumbing complete; accept gate partial fail; blocked on WO3 |
+| WO2 — Rainfall modality investigation | `cdop_wo2` | **complete** | Bimodal characterization; continuous (a1,b1,a2,b2) representation validated |
+| WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
+| WO3 — Continuous precip lens + retire phase lens | `cdop_wo2` | **open** | See `wo3_retire-phase.md`; closes WO1 accept gate |
 
 ---
 
@@ -114,11 +120,9 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 
 ### Open / pending
 
-- [ ] Opus review: confirm/refute bimodal hypothesis; decide remediation path
-- [ ] Sandbox comparison: run Mombasa on sandbox Similarity tab (L06 global) for comparison
-- [ ] Remediation implementation (scope TBD after Opus review)
-- [ ] Test suite green after L08 startup change
-- [ ] Commit `cdop_pilot` branch + merge to `cdop` on accept
+- [ ] WO3 complete: continuous precip lens implemented; phase lens retired; scalar hygiene done
+- [ ] Test suite green after index rebuild
+- [ ] Merge `cdop_pilot → cdop` on WO3 accept
 
 ---
 
@@ -131,6 +135,9 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 | Corpus-relative label | "5 most similar cities in this collection" — scope is the 258-city corpus, not a global neighbourhood. Distinguishes from sandbox Similarity tab. |
 | Old Workbench stays live | Rollback path; retire/redirect decision deferred. |
 | Basins tab dropped but recoverable | Passed the inverted-query test; dropped as EDOP-side classification. Clone makes it recoverable. Not rediscovered as a new idea. |
+| `climate.precip` features: continuous (a1,b1,a2,b2) | Identities verified to machine epsilon; Mombasa top-5 all East African with no modality filter; Abidjan recovered (R_dbl=0.246 < 0.30 threshold, continuous correct). No threshold inside feature construction. `pre_concentration` and `R_dbl` are redundant once components included — do not add. `same_modality` dropped. From WO2a Part B. |
+| `climate.phase` lens retired | The lens was never one question: it bundled how-many-wet-seasons (now in precip lens), hemisphere-blind phase relation, and hemisphere-aware seasonal timing. Questions 2 and 3 cannot share a lens — each fix breaks the other's repair. Undefined across the equatorial belt where D-PLACE work is concentrated. Retired, not redesigned. Phase fork recorded in deferred register. From WO3 spec. |
+| Phase fork recorded, not planned | Hemisphere-blind relation and hemisphere-aware timing are two distinct lenses. Neither is built until a use case asks for it. Analysis is done; do not re-derive. From `wo3_retire-phase.md` deferred register. |
 
 ---
 
