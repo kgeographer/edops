@@ -5,7 +5,7 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-19 (WO2 + WO2a complete; WO3 open — continuous precip lens + retire phase lens)
+- **Last updated:** 2026-07-20 (WO3 Parts A+B complete; similarity in stasis pending approach reconsideration)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -43,12 +43,12 @@ consult at every step resumption, add rows there (`docs/design/areas/deferred_it
 
 Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO merge).
 WO branches cut from `cdop`, merged back on accept.
-**585 tests pass, 52 skipped.**
+**584 tests pass, 50 skipped.**
 
-**WO3 open** on branch `cdop_wo2`. WO1 blocked pending WO3 completion.
-
-WO2 and WO2a are complete on the same branch. WO3 implements the continuous precipitation
-lens and retires the phase lens. See `wo3_retire-phase.md` for full spec.
+**Similarity in stasis.** WO3 Parts A+B complete and merged to `cdop_pilot`. Parts C+D
+(scalar hygiene, glyph) suspended. The temperature lens maps are producing geographically
+wrong results at moderate threshold; the overall similarity approach needs reconsideration
+before further WO3 work. Problem statement drafted for Opus. See WO3 section.
 
 ---
 
@@ -59,7 +59,7 @@ lens and retires the phase lens. See `wo3_retire-phase.md` for full spec.
 | WO1 — CDOP pilot page + L08 lens similarity | `cdop_pilot` | **blocked** | Plumbing complete; accept gate partial fail; blocked on WO3 |
 | WO2 — Rainfall modality investigation | `cdop_wo2` | **complete** | Bimodal characterization; continuous (a1,b1,a2,b2) representation validated |
 | WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
-| WO3 — Continuous precip lens + retire phase lens | `cdop_wo2` | **open** | See `wo3_retire-phase.md`; closes WO1 accept gate |
+| WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
 
 ---
 
@@ -120,9 +120,56 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 
 ### Open / pending
 
-- [ ] WO3 complete: continuous precip lens implemented; phase lens retired; scalar hygiene done
-- [ ] Test suite green after index rebuild
-- [ ] Merge `cdop_pilot → cdop` on WO3 accept
+- [ ] Similarity approach reconsideration — problem statement drafted; Opus review pending
+- [x] Test suite green (584 pass, 50 skipped, 0 failed — 2026-07-20)
+- [ ] Merge `cdop_pilot → cdop` on WO1 accept gate met
+
+---
+
+## WO3 — Continuous precip lens + retire phase lens + scalar hygiene
+
+**Work order:** `docs/cdop/pilot/wo3_retire-phase.md`
+**Branch:** `cdop_wo3` (merged to `cdop_pilot` 2026-07-20)
+
+### Parts A+B — Complete
+
+**Part A** — `climate.precip` feature set replaced: `(pre_mm_syr, pre_concentration)` →
+`(log_pre_mm_syr, a1, b1, a2, b2)`. Continuous harmonic form; no threshold in feature
+construction; log total keeps magnitude independent of shape. `_compute_derived()` rewritten.
+Provisional L06 thresholds set (strict: 0.25, moderate: 0.60, loose: 1.20); CDF
+recalibration deferred.
+
+**Part B** — `climate.phase` retired from `LENS_REGISTRY` (status → `"retired"`).
+Deprecated `/api/seasonality/similar` route removed. Dropdown removed from `cdop_pilot.html`.
+Phase blurb block removed from `sandbox_v3.html`. All defaults updated to `climate.precip`.
+
+### Parts C+D — Suspended
+
+Scalar hygiene (`pre_peak_month`, `pre_concentration` rename, narrative fix) and the
+monthly-profile glyph are suspended. Reason: similarity approach is under reconsideration
+before further investment.
+
+### Problems discovered during map review (2026-07-20)
+
+Two distinct problems with the **temperature lens** found during visual review:
+
+**1. `climate.temp` Mahalanobis distortion.** At moderate threshold (0.75), Tbilisi returns
+852 basins including coastal Norway — wrong, as coastal Scandinavian basins have amplitude
+8–12 °C vs Tbilisi's 21.7 °C. The global covariance matrix is dominated by the
+mean-temperature/latitude correlation, tilting the Mahalanobis ellipse so that amplitude
+differences become secondary. The strict threshold (0.25) produces geographically coherent
+results. The moderate-to-strict jump (3×) is too large and crosses a distortion boundary.
+`climate.temp` thresholds were never CDF-calibrated; carried over from WO7 without review.
+
+**2. L06 container-constitutes-the-place.** Tbilisi city mean annual temperature ~13.8 °C;
+L06 basin reports 5.3 °C. The 8.5 °C gap is because the basin extends into the Greater
+Caucasus at 3,000–5,000 m. The similarity query answers "what is similar to the upper Kura
+headwaters?" not "what is similar to Tbilisi?" This is inherent to L06 for mountain-valley
+cities; L08 would give a smaller, more representative basin. The sandbox similarity tab is
+hardwired to L06 (two lines) regardless of the level toggle — an oversight noted but not yet
+fixed.
+
+Problem statement for Opus drafted (session_log_20260720.md).
 
 ---
 
@@ -143,6 +190,10 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 
 ## Deferred / out of scope
 
+- Similarity approach reconsideration — overall instrument validity; Mahalanobis vs Euclidean
+  for climate.temp; L06 container problem for mountain cities; threshold CDF calibration for
+  all active lenses; wiring level toggle into sandbox similarity tab (2-line fix, held)
+- WO3 Parts C+D — scalar hygiene + monthly profile glyph (suspended pending approach decision)
 - L08 threshold recalibration
 - Semantic-similarity calibration
 - Ecoregion IDs in the signature
