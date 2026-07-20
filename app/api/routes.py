@@ -436,67 +436,6 @@ def _gaz_join(conn, hybas_ids: list) -> dict:
         return {int(r[0]): r for r in cur.fetchall()}
 
 
-# DEPRECATED: use /api/similarity?lens=climate.phase — this wrapper exists only to keep
-# WO7 callers running during transition. Do not add new callers; do not reuse as a pattern.
-@router.get("/seasonality/similar")
-def seasonality_similar(lat: float, lon: float, n: int = 20):
-    """Deprecated backward-compat wrapper for the climate.phase lens.
-
-    Use /api/similarity?lens=climate.phase for new callers.
-    Returns the original flat shape (query_pre_concentration, query_seas_phase_offset,
-    basin_rank) so existing callers are unaffected during transition.
-    """
-    n = min(max(1, n), 6000)
-    conn = db_connect()
-    try:
-        query_hybas_id = _resolve_basin(conn, lat, lon)
-        try:
-            query_meta, ranked = find_similar(query_hybas_id, lens_id="climate.phase", n=n, mode="topn")
-        except RuntimeError as e:
-            raise HTTPException(status_code=503, detail=str(e))
-        except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
-
-        if not ranked:
-            return {
-                "query_basin_id":          query_hybas_id,
-                "query_pre_concentration": None,
-                "query_seas_phase_offset": None,
-                "metric":                  "normalized_euclidean_2idx",
-                "results":                 [],
-            }
-
-        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked])
-
-        results = []
-        for r in ranked:
-            place = gaz_by_basin.get(r["hybas_id"])
-            results.append({
-                "basin_rank":        r["rank"],
-                "basin_id":          r["hybas_id"],
-                "distance":          r["distance"],
-                "pre_concentration": r["values"]["pre_concentration"],
-                "seas_phase_offset": r["values"]["seas_phase_offset"],
-                "place_id":          place[1] if place else None,
-                "place_name":        place[2] if place else None,
-                "ccodes":            place[3] if place else None,
-                "lat":               float(place[4]) if place else None,
-                "lon":               float(place[5]) if place else None,
-            })
-
-        qv = query_meta["query_values"]
-        return {
-            "query_basin_id":          query_meta["query_hybas_id"],
-            "query_pre_concentration": qv["pre_concentration"],
-            "query_seas_phase_offset": qv["seas_phase_offset"],
-            "metric":                  "normalized_euclidean_2idx",
-            "results":                 results,
-        }
-
-    finally:
-        conn.close()
-
-
 @router.get("/similarity/lenses")
 def similarity_lenses():
     """Return the full lens registry (active and disabled lenses)."""
@@ -507,7 +446,7 @@ def similarity_lenses():
 def similarity(
     lat: float,
     lon: float,
-    lens: str = "climate.phase",
+    lens: str = "climate.precip",
     mode: str = "threshold",
     stringency: str = "moderate",
     n: int = 200,
@@ -517,7 +456,7 @@ def similarity(
     Parameters
     ----------
     lat, lon    : query coordinates
-    lens        : lens_id from the registry (e.g. 'climate.phase', 'climate.temp')
+    lens        : lens_id from the registry (e.g. 'climate.precip', 'climate.temp')
     mode        : 'threshold' (default) — all basins within the calibrated radius;
                   'topn' — the n nearest basins regardless of radius
     stringency  : 'strict' | 'moderate' (default) | 'loose' — used in threshold mode
@@ -1290,7 +1229,7 @@ def whc_similar(city_id: int, limit: int = 5):
 
 
 @router.get("/whc-similar-env-lens", include_in_schema=False)
-def whc_similar_env_lens(city_id: int, lens_id: str = "climate.phase", limit: int = 5):
+def whc_similar_env_lens(city_id: int, lens_id: str = "climate.precip", limit: int = 5):
     """Return the N most similar WH cities by LENS_REGISTRY climate distance (L08, topN).
 
     Uses the L08 similarity index. Corpus-restricted: distances are computed only

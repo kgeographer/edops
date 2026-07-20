@@ -1,7 +1,7 @@
 """
 Similarity lens registry — loaded once at startup, queried per request.
 
-Three Climate sub-lenses are precomputed from L06 and L08 monthly arrays and
+Two active Climate sub-lenses are precomputed from L06 and L08 monthly arrays and
 BasinATLAS scalars at startup. Level is a parameter of index selection; no new
 distance logic is needed to add a level.
 
@@ -10,10 +10,12 @@ Metric per lens:
   mahalanobis  — accounts for correlated variables (mandatory when |r| > ~0.3)
 
 Derived variables (computed from monthly arrays; no DB column):
-  pre_concentration, seas_phase_offset, tmp_concentration, tmp_seas_amp
+  a1, b1          — annual harmonic components (normalized by annual total)
+  a2, b2          — semi-annual harmonic components (normalized by annual total)
+  log_pre_mm_syr  — log1p(annual precip total)
+  tmp_concentration, tmp_seas_amp
 
 BasinATLAS scalar variables:
-  pre_mm_syr  — annual precip mm/yr        (no scaling)
   tmp_dc_syr  — annual mean temp °C×10     (divide by 10)
   Sources: basin06 (level=6), basin08 (level=8) — same column names.
 """
@@ -34,10 +36,13 @@ LENS_REGISTRY: Dict[str, Dict[str, Any]] = {
     "climate.precip": {
         "group":      "Climate",
         "label":      "Precipitation regime",
-        "variables":  ["pre_mm_syr", "pre_concentration"],
+        # Continuous harmonic form: (a1,b1,a2,b2) capture modality naturally; log total
+        # keeps magnitude separate from shape. Identities verified in WO2a to machine epsilon.
+        "variables":  ["log_pre_mm_syr", "a1", "b1", "a2", "b2"],
         "metric":     "euclidean",
         "status":     "active",
-        "thresholds": {"strict": 0.10, "moderate": 0.20, "loose": 0.50},
+        # Provisional thresholds — recalibrate against L06 CDFs in 5D z-score space (WO3)
+        "thresholds": {"strict": 0.25, "moderate": 0.60, "loose": 1.20},
     },
     "climate.temp": {
         "group":      "Climate",
@@ -48,12 +53,12 @@ LENS_REGISTRY: Dict[str, Dict[str, Any]] = {
         "thresholds": {"strict": 0.25, "moderate": 0.75, "loose": 1.50},
     },
     "climate.phase": {
-        "group":      "Climate",
-        "label":      "Seasonal phase",
-        "variables":  ["pre_concentration", "seas_phase_offset"],
-        "metric":     "euclidean",
-        "status":     "active",
-        "thresholds": {"strict": 0.10, "moderate": 0.30, "loose": 0.75},
+        # Retired in WO3. Was never one question: bundled modality (now in precip),
+        # hemisphere-blind phase relation, and hemisphere-aware seasonal timing. Questions
+        # 2 and 3 cannot share a lens. Analysis recorded in wo3_retire-phase.md.
+        "group":  "Climate",
+        "label":  "Seasonal phase",
+        "status": "retired",
     },
     "terrain.*": {
         "group":  "Terrain",
@@ -68,14 +73,13 @@ LENS_REGISTRY: Dict[str, Dict[str, Any]] = {
 }
 
 # Variables derived from monthly arrays (no basin column).
-_DERIVED = {"pre_concentration", "seas_phase_offset", "tmp_concentration", "tmp_seas_amp"}
+_DERIVED = {"a1", "b1", "a2", "b2", "log_pre_mm_syr", "tmp_concentration", "tmp_seas_amp"}
 
 # BasinATLAS scalar variables needed by active lenses.
 # Maps variable name → (column_name, scale_factor).
 # scale_factor applied after load (tmp_dc_* stored ×10).
 # Column names are identical in basin06 and basin08.
 _SCALAR_SOURCES: Dict[str, Tuple[str, float]] = {
-    "pre_mm_syr": ("pre_mm_syr", 1.0),
     "tmp_dc_syr": ("tmp_dc_syr", 0.1),
 }
 
@@ -90,7 +94,8 @@ _LEVEL_SOURCES: Dict[int, Tuple[str, str]] = {
 # ---------------------------------------------------------------------------
 
 _TWO_PI    = 2 * np.pi
-_THETA     = np.array([_TWO_PI * m / 12 for m in range(12)])
+_THETA     = np.array([_TWO_PI * m / 12 for m in range(12)])   # annual
+_THETA2    = np.array([_TWO_PI * m / 6  for m in range(12)])   # semi-annual
 
 # _INDEX[level] = {"hybas_ids": ndarray | None, "lens_state": dict}
 _INDEX: Dict[int, Dict[str, Any]] = {
@@ -122,21 +127,35 @@ def _compute_derived(PRE: np.ndarray, TMP: np.ndarray) -> Dict[str, np.ndarray]:
 
     PRE in mm/month; TMP in °C (v_basin06_persist_rev2 already stores °C, not ×10).
     Returns dict of variable_name → (N,) array.
+
+    Harmonic components (a1,b1,a2,b2) are normalized by annual total so they measure
+    *shape* independently of *magnitude* (log_pre_mm_syr). Hyper-arid basins with zero
+    annual total yield NaN — excluded from the index automatically.
     """
-    pre_conc, pre_angle = _circ_conc_angle(PRE)
+    total = PRE.sum(axis=1)
+    # Safe denominator: zero-total basins → NaN components (excluded from index)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        total_safe = np.where(total > 0, total, np.nan)
+        # Annual harmonic (12-month period)
+        a1 = (PRE * np.cos(_THETA)).sum(axis=1) / total_safe
+        b1 = (PRE * np.sin(_THETA)).sum(axis=1) / total_safe
+        # Semi-annual harmonic (6-month period)
+        a2 = (PRE * np.cos(_THETA2)).sum(axis=1) / total_safe
+        b2 = (PRE * np.sin(_THETA2)).sum(axis=1) / total_safe
+        # Log total — right-skewed (range ~50–5000 mm/yr); log1p handles zeros safely
+        log_pre = np.log1p(total)
 
+    # Temperature: concentration and amplitude
     TMP_shifted = TMP - TMP.min(axis=1, keepdims=True)
-    tmp_conc, tmp_angle = _circ_conc_angle(TMP_shifted)
-
-    delta          = np.abs(pre_angle - tmp_angle)
-    delta          = np.minimum(delta, _TWO_PI - delta)
-    seas_phase_off = delta / _TWO_PI * 12
-
+    tmp_conc, _ = _circ_conc_angle(TMP_shifted)
     tmp_seas_amp = TMP.max(axis=1) - TMP.min(axis=1)
 
     return {
-        "pre_concentration": pre_conc,
-        "seas_phase_offset": seas_phase_off,
+        "a1":             a1,
+        "b1":             b1,
+        "a2":             a2,
+        "b2":             b2,
+        "log_pre_mm_syr": log_pre,
         "tmp_concentration": tmp_conc,
         "tmp_seas_amp":      tmp_seas_amp,
     }
@@ -280,7 +299,7 @@ def load_similarity_index(conn, level: int = 6) -> None:
 
 def find_similar(
     query_hybas_id: int,
-    lens_id: str = "climate.phase",
+    lens_id: str = "climate.precip",
     n: int = 200,
     mode: str = "threshold",
     stringency: str = "moderate",
