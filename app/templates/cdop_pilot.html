@@ -40,7 +40,6 @@
                 Similar (env)
               </button>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
-                <li><a class="dropdown-item" href="#" data-lens="climate.phase">Seasonal phase</a></li>
                 <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
                 <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
               </ul>
@@ -426,7 +425,7 @@
     }
   }
 
-  async function fetchWhcSimilarEnv(cityId, lensId = 'climate.phase', limit = 5) {
+  async function fetchWhcSimilarEnv(cityId, lensId = 'climate.precip', limit = 5) {
     const url = `/api/whc-similar-env-lens?city_id=${encodeURIComponent(cityId)}&lens_id=${encodeURIComponent(lensId)}&limit=${limit}`;
     const resp = await fetch(url);
     if (!resp.ok) {
@@ -455,7 +454,6 @@
 
     // Set heading and description based on similarity type and band/lens
     const ENV_LENS_LABELS = {
-      'climate.phase':  'Seasonal phase',
       'climate.precip': 'Precipitation regime',
       'climate.temp':   'Temperature regime',
     };
@@ -559,7 +557,7 @@
     }
   }
 
-  async function whcShowSimilarEnv(lensId = 'climate.phase') {
+  async function whcShowSimilarEnv(lensId = 'climate.precip') {
     if (!whcSelected) return;
 
     const btn = document.getElementById('whc-similar-env-btn');

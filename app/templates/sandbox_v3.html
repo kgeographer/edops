@@ -496,7 +496,7 @@
   let _simQueryLat      = null;  // coords + lens of last similarity fetch — skip refetch if unchanged
   let _simQueryLon      = null;
   let _simQueryLens     = null;
-  let _simCurrentLens        = 'climate.phase';   // active lens id
+  let _simCurrentLens        = 'climate.precip';  // active lens id
   let _simCurrentStringency  = 'moderate';         // strict | moderate | loose
   let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
   let _simQueryStringency    = null;               // stringency of last rendered fetch
@@ -1092,47 +1092,24 @@
     const n          = simData.result_count ?? (simData.results || []).length;
     const stringency = simData.stringency || _simCurrentStringency;
     const countLine  = `Showing all ${n.toLocaleString()} basins within the ${stringency} threshold.`;
-    const lensId = simData.lens_id || 'climate.phase';
+    const lensId = simData.lens_id || 'climate.precip';
     const qv     = simData.query_values || {};
 
-    if (lensId === 'climate.phase') {
-      const conc   = qv.pre_concentration ?? simData.query_pre_concentration;
-      const offset = qv.seas_phase_offset ?? simData.query_seas_phase_offset;
-      if (conc == null || offset == null) return '';
-      let typeDesc, mapDesc;
-      if (conc < 0.15) {
-        typeDesc = 'a uniform, maritime-type seasonal pattern — precipitation is distributed year-round with no strong peak season';
-        mapDesc  = 'This pattern is common in mid-latitude oceanic climates and some equatorial zones. Similar basins may appear widely scattered across several continents.';
-      } else if (conc < 0.35) {
-        typeDesc = 'a weakly seasonal precipitation pattern — a modest peak season with substantial year-round rainfall';
-        mapDesc  = 'Weakly seasonal patterns appear in humid continental interiors, subtropical margins, and monsoonal transition zones, so results tend to be geographically dispersed.';
-      } else if (offset < 1.5) {
-        typeDesc = 'a monsoon-type seasonal pattern — concentrated precipitation coinciding with peak temperatures';
-        mapDesc  = 'Monsoon-type climates occur across the summer-rain belts of every continent. Southern Hemisphere results share the same structural pattern with reversed calendar seasons — the relationship between wet and warm is identical. Expect globally scattered results: this is a common climate type.';
-      } else if (offset < 3.5) {
-        typeDesc = 'a transitional seasonal pattern — precipitation is concentrated but offset from peak temperatures by several months';
-        mapDesc  = 'This intermediate pattern appears in continental interiors and subtropical margins where seasonal timing reflects a mix of oceanic and continental air-mass influence. Results may be moderately dispersed.';
-      } else {
-        typeDesc = 'a Mediterranean-type seasonal pattern — concentrated winter rainfall anti-phased with summer temperatures';
-        mapDesc  = 'Mediterranean climates are geographically rare, occurring in five compact zones: California, central Chile, the Western Cape, SW Australia, and the circum-Mediterranean basin. Results tend to cluster in these regions.';
-      }
-      return `<p class="text-muted mb-0">The containing basin has ${typeDesc} `
-           + `(concentration&nbsp;${conc.toFixed(2)}, phase offset&nbsp;${offset.toFixed(1)}&nbsp;mo). `
-           + `${mapDesc} ${countLine}</p>`;
-    }
-
     if (lensId === 'climate.precip') {
-      const pre_mm = qv.pre_mm_syr;
-      const conc   = qv.pre_concentration;
-      if (pre_mm == null || conc == null) return '';
+      const log_pre = qv.log_pre_mm_syr;
+      const a1 = qv.a1, b1 = qv.b1, a2 = qv.a2, b2 = qv.b2;
+      if (log_pre == null || a1 == null) return '';
+      const pre_mm = Math.round(Math.expm1(log_pre));
+      const R_std  = Math.hypot(a1, b1);  // annual cycle strength (= old pre_concentration)
+      const R_dbl  = Math.hypot(a2, b2);  // semi-annual cycle strength
       let seasDesc;
-      if (conc < 0.15)      seasDesc = 'distributed year-round (no dominant wet season)';
-      else if (conc < 0.35) seasDesc = 'weakly seasonal (a modest peak season)';
-      else if (conc < 0.55) seasDesc = 'moderately seasonal';
-      else                  seasDesc = 'strongly seasonal (concentrated in a short wet season)';
+      if (R_std < 0.15)      seasDesc = 'distributed year-round (no dominant wet season)';
+      else if (R_std < 0.35) seasDesc = 'weakly seasonal (a modest peak season)';
+      else if (R_std < 0.55) seasDesc = 'moderately seasonal';
+      else                   seasDesc = 'strongly seasonal (concentrated in a short wet season)';
+      const bimodalNote = R_dbl > 0.20 ? ' with a secondary peak (bimodal structure)' : '';
       return `<p class="text-muted mb-0">The containing basin receives `
-           + `${Math.round(pre_mm)}&nbsp;mm/year of precipitation, ${seasDesc} `
-           + `(concentration&nbsp;${conc.toFixed(2)}). `
+           + `${pre_mm.toLocaleString()}&nbsp;mm/year of precipitation, ${seasDesc}${bimodalNote}. `
            + `${countLine}</p>`;
     }
 
@@ -1172,7 +1149,7 @@
       const hasActive = _simLensRegistry.some(m => m.group === l.group && m.status === 'active');
       const opt = document.createElement('option');
       opt.value       = l.group;
-      opt.textContent = hasActive ? l.group : `${l.group} (coming soon)`;
+      opt.textContent = hasActive ? l.group : `${l.group}`;
       opt.disabled    = !hasActive;
       sel.appendChild(opt);
     });

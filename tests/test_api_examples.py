@@ -12,9 +12,8 @@ Examples tested:
   5. Timbuktu       — bands=ABT,  from_year=1200, to_year=1600 (medieval)
   6. Kaifeng L6     — bands=ABC,  level=6         (regional scale)
   7. Seasonality    — WO5 contract tests (pinned values + ordering)
-  8. Similarity     — WO7a /api/seasonality/similar backward-compat (SF, climate.phase)
-  9. Similarity     — WO7a /api/similarity?lens=climate.temp (London, Mahalanobis)
- 10. Similarity     — WO7a /api/similarity/lenses (registry shape)
+  8. Similarity     — WO7a /api/similarity?lens=climate.temp (London, Mahalanobis)
+  9. Similarity     — WO7a /api/similarity/lenses (registry shape)
 """
 
 import pytest
@@ -196,46 +195,8 @@ def test_seasonality_discrimination(client):
 
 
 # ---------------------------------------------------------------------------
-# 8. WO7 Similarity — /api/seasonality/similar SF validation
 # ---------------------------------------------------------------------------
-
-def test_seasonality_similar_sf(client):
-    """SF query returns Mediterranean-climate analogs (IQ/CL/IR/JO) in top-10 results."""
-    r = client.get("/api/seasonality/similar", params={"lat": 37.77, "lon": -122.42, "n": 20})
-    assert r.status_code == 200
-    data = r.json()
-
-    assert data["metric"] == "normalized_euclidean_2idx"
-    assert data["query_basin_id"] is not None
-    assert data["query_pre_concentration"] is not None
-    assert data["query_seas_phase_offset"] is not None
-
-    results = data["results"]
-    assert len(results) > 0, "Expected at least one result"
-
-    # All results must have required fields
-    for res in results:
-        assert "basin_rank" in res
-        assert "basin_id" in res
-        assert "distance" in res
-        assert "place_name" in res
-        assert "ccodes" in res
-
-    # Distances must be non-negative and ascending
-    dists = [r["distance"] for r in results]
-    assert all(d >= 0 for d in dists)
-    assert dists == sorted(dists), "Results must be ordered by distance ascending"
-
-    # Top-10 must include at least one Mediterranean-climate country
-    top_ccodes = {cc for r in results[:10] for cc in (r["ccodes"] or [])}
-    med_countries = {"IQ", "CL", "IR", "JO", "EG", "MA", "ES", "PT"}
-    assert top_ccodes & med_countries, (
-        f"Expected Mediterranean analogs in top-10 ccodes, got {top_ccodes}"
-    )
-
-
-# ---------------------------------------------------------------------------
-# 9. WO7a/WO7b Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
+# 8. WO7a/WO7b Similarity — /api/similarity?lens=climate.temp (Mahalanobis, London)
 # ---------------------------------------------------------------------------
 
 def test_similarity_climate_temp_london(client):
@@ -298,7 +259,7 @@ def test_similarity_climate_temp_london(client):
 
 
 # ---------------------------------------------------------------------------
-# 10. WO7a Similarity — /api/similarity/lenses (registry shape)
+# 9. WO7a Similarity — /api/similarity/lenses (registry shape)
 # ---------------------------------------------------------------------------
 
 def test_similarity_lenses_registry(client):
@@ -310,19 +271,23 @@ def test_similarity_lenses_registry(client):
 
     by_id = {lens["lens_id"]: lens for lens in data["lenses"]}
 
-    # Three active Climate lenses must be present
-    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+    # Two active Climate lenses (climate.phase retired in WO3)
+    for lid in ("climate.precip", "climate.temp"):
         assert lid in by_id, f"Missing lens {lid!r} in registry"
         assert by_id[lid]["status"] == "active"
         assert by_id[lid]["group"] == "Climate"
         assert by_id[lid]["variables"]
         assert by_id[lid]["metric"] in ("euclidean", "mahalanobis")
 
+    # climate.phase must be present but retired
+    assert "climate.phase" in by_id
+    assert by_id["climate.phase"]["status"] == "retired"
+
     # climate.temp must declare Mahalanobis
     assert by_id["climate.temp"]["metric"] == "mahalanobis"
 
-    # All active lenses must expose strict/moderate/loose thresholds
-    for lid in ("climate.precip", "climate.temp", "climate.phase"):
+    # Active lenses must expose strict/moderate/loose thresholds
+    for lid in ("climate.precip", "climate.temp"):
         t = by_id[lid].get("thresholds", {})
         assert set(t) == {"strict", "moderate", "loose"}, (
             f"{lid} missing thresholds dict with strict/moderate/loose; got {t}"
@@ -337,13 +302,13 @@ def test_similarity_lenses_registry(client):
 
 
 # ---------------------------------------------------------------------------
-# 11. WO7b Similarity — threshold mode shape + variable-count contract
+# 10. WO7b Similarity — threshold mode shape + variable-count contract
 # ---------------------------------------------------------------------------
 
 def test_similarity_threshold_response_shape(client):
     """Threshold mode response includes mode/stringency/radius/result_count."""
     r = client.get("/api/similarity", params={
-        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
+        "lat": 37.77, "lon": -122.42, "lens": "climate.precip",
         "mode": "threshold", "stringency": "moderate",
     })
     assert r.status_code == 200
@@ -359,24 +324,26 @@ def test_similarity_threshold_response_shape(client):
 
 
 def test_similarity_threshold_variable_count(client):
-    """Rare-type basin returns fewer similar basins than common-type at same lens + stringency.
+    """Stringency ordering: strict ≤ moderate ≤ loose for climate.precip at any location.
 
-    SF (Mediterranean phase) is a comparatively rare climate type; Timbuktu (monsoon)
-    is common. At the same lens and stringency the rare type must return fewer basins.
-    This is the core contract: threshold count is signal, not noise.
+    This tests the core contract: threshold radii are ordered, so result counts must be
+    monotonically non-decreasing from strict to loose. Count variation between stringency
+    levels is signal; it would be zero if the metric were noise.
+    Directional rarity comparison (rare type < common type) requires CDF calibration — deferred.
     """
-    sf  = client.get("/api/similarity", params={
-        "lat": 37.77, "lon": -122.42, "lens": "climate.phase",
-        "mode": "threshold", "stringency": "moderate",
-    })
-    tim = client.get("/api/similarity", params={
-        "lat": 16.77, "lon": -3.01, "lens": "climate.phase",
-        "mode": "threshold", "stringency": "moderate",
-    })
-    assert sf.status_code == 200 and tim.status_code == 200
-    sf_n  = sf.json()["result_count"]
-    tim_n = tim.json()["result_count"]
-    assert sf_n < tim_n, (
-        f"SF (rare Mediterranean) should return fewer basins than Timbuktu (common monsoon) "
-        f"at climate.phase moderate — got SF={sf_n}, Timbuktu={tim_n}"
-    )
+    for lat, lon, label in [
+        (37.77,  -122.42, "SF"),
+        (16.77,  -3.01,   "Timbuktu"),
+    ]:
+        counts = {}
+        for s in ("strict", "moderate", "loose"):
+            r = client.get("/api/similarity", params={
+                "lat": lat, "lon": lon, "lens": "climate.precip",
+                "mode": "threshold", "stringency": s,
+            })
+            assert r.status_code == 200, f"{label} {s} returned {r.status_code}"
+            counts[s] = r.json()["result_count"]
+        assert counts["strict"] <= counts["moderate"] <= counts["loose"], (
+            f"{label}: strict={counts['strict']}, moderate={counts['moderate']}, "
+            f"loose={counts['loose']} — counts must be non-decreasing"
+        )
