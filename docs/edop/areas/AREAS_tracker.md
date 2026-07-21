@@ -231,7 +231,7 @@ Brief here; fuller treatment in `docs/design/areas/areas_phase_outline.md` (back
 | Document | Role | Status |
 |---|---|---|
 | `docs/edop/areas/AREAS_tracker.md` (this) | Current state, roadmap, locked decisions — the goto | **living** |
-| `docs/design/areas/deferred_items_register.md` | Parked items + their triggers | **living** |
+| `docs/design/deferred_items_register.md` | Parked items + their triggers | **living** |
 | `docs/edop/areas/areas_findings.md` | Coded observations (AF.n) — method behavior, signals, data properties | **living** |
 | project session log | Chronological record of what happened each day | append-only |
 | `docs/edop/areas/typology_review.md` | Zero-inflation / typing investigation | dated artifact |

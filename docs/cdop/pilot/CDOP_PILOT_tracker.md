@@ -5,7 +5,8 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-20 (WO3 Parts A+B complete; similarity in stasis pending approach reconsideration)
+- **Last updated:** 2026-07-21 (WO4 complete — all six parts run, findings logged, overall
+  verdict delivered; next decision is what to build in response, not more investigation)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -35,7 +36,7 @@ Full rationale: `docs/cdop/CDOP_workplan_v1.md`. Feasibility evidence: `docs/edo
 
 DEMO is **frozen reference** (`docs/edop/demo/DEMO_tracker.md`, closed 2026-07-18).
 Do not extend it. The **deferred items register is shared** and cross-phase:
-consult at every step resumption, add rows there (`docs/design/areas/deferred_items_register.md`).
+consult at every step resumption, add rows there (`docs/design/deferred_items_register.md`).
 
 ---
 
@@ -45,10 +46,17 @@ Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO 
 WO branches cut from `cdop`, merged back on accept.
 **584 tests pass, 50 skipped.**
 
-**Similarity in stasis.** WO3 Parts A+B complete and merged to `cdop_pilot`. Parts C+D
-(scalar hygiene, glyph) suspended. The temperature lens maps are producing geographically
-wrong results at moderate threshold; the overall similarity approach needs reconsideration
-before further WO3 work. Problem statement drafted for Opus. See WO3 section.
+**WO4 complete — verdict delivered; similarity architecture decision now pending.** WO3 Parts
+A+B complete and merged to `cdop_pilot`. Parts C+D (scalar hygiene, glyph) remain suspended —
+WO4 (`wo4_similarity-studies.md`, approved 2026-07-20) was the similarity-approach
+reconsideration this was waiting on: `notebooks/cdop/wo4_similarity-studies.ipynb`, testing
+whether "similarity" is one instrument or four (analogue, geography-excluded analogue, matched
+control set, typological position) on seven probe basins, ran to completion. **Verdict: four
+genuinely different instruments, not one — convergence between any two is probe-dependent, not
+fixed.** Practical implication: a plain "nearest similar place" search with no geography control
+is close to useless as an analogue finder at most locations. Full findings:
+`docs/cdop/pilot/wo4_findings.md`. **Next step is a design decision** (what WO3 Parts C+D and
+WO1's accept gate should actually do in response), not more investigation — see WO4 section.
 
 ---
 
@@ -60,6 +68,7 @@ before further WO3 work. Problem statement drafted for Opus. See WO3 section.
 | WO2 — Rainfall modality investigation | `cdop_wo2` | **complete** | Bimodal characterization; continuous (a1,b1,a2,b2) representation validated |
 | WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
 | WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
+| WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four genuinely different instruments, convergence is probe-dependent. Design decision on architecture now pending. |
 
 ---
 
@@ -173,6 +182,113 @@ Problem statement for Opus drafted (session_log_20260720.md).
 
 ---
 
+## WO4 — Four similarity instruments on shared probes
+
+**Work order:** `docs/cdop/pilot/wo4_similarity-studies.md` (approved 2026-07-20)
+**Branch:** `cdop_pilot`. Notebook: `notebooks/cdop/wo4_similarity-studies.ipynb` (complete, all
+six parts run). Full findings: `docs/cdop/pilot/wo4_findings.md`.
+
+Tests whether "similarity" is one instrument or four (analogue / analogue net of geography /
+matched control set / typological position) on seven probe basins (the WO's six plus Santiago,
+added for Southern Hemisphere coverage), plus a Part 0 measuring how often the L06/L08
+basin-container mean diverges from actual site elevation across historically significant
+settlements.
+
+### Prerequisite — D-PLACE schema audit (complete 2026-07-20)
+
+Part 3 (matched control set, addressing Galton's problem for the eventual D-PLACE
+correspondence test) needs a trustworthy society↔basin join and a phylogenetic proxy. Full
+findings: `data/dplace/dplace_audit_findings.md` (gitignored — data-adjacent working doc).
+Follow-up EDA: `notebooks/cdop/dplace_eda.ipynb`.
+
+Headline: the core CLDF tables (`societies`, `data`, `variables`, `codes`, `contributions`)
+are a complete, exact, current import of D-PLACE CLDF v3.1.1 — not the stale hodgepodge
+suspected going in. `dplace.societies` (6,684 rows) holds 4,085 `languoid` scaffold rows plus
+2,599 real `society` rows across **seven** independent ethnographic samples (EA 1,291; ccmc
+410; binford 339; sccs 186; wnai 172; carneiro4 127; carneiro6 74) — `cdop_pilot`/workbench
+currently surfaces only the EA slice (via `contribution_id='dplace-dataset-ea'`), which is why
+the app shows 1,291 against the table's 6,684.
+
+**Locked decisions:**
+
+- **EA-only for WO4 Part 3.** `xd_id`/`glottocode` cross-checks (`dplace_eda.ipynb`) show 41.8%
+  of EA's 1,291 societies (540) have a same-culture match in another sample — 395 via `xd_id`
+  to Binford/SCCS/WNAI, 281 via `glottocode` to ccmc/carneiro4/6 — and carneiro4/6 mostly
+  duplicate EA outright (83–86% overlap; two editions of the same source). Pooling would
+  overcount and needs real dedup work. EA is the one sample with existing basin/bioregion
+  linkage (`society_basin`, `society_spatial`) and no internal duplication problem of its own.
+- **`society_basin` L06 backfill: still held.** Only L08 rows exist (1,133 of 1,291 EA
+  societies, 87.8% — matches Part 3's own cited figure). Not needed — Part 3 runs at L08 only.
+- **Family crosswalk: built in Part 3, not held anymore.** 85 Glottolog family tree files on
+  disk parsed by regex (leaf glottocodes only, no tree-topology parsing) → 1,245-glottocode
+  crosswalk. Matching on raw `glottocode` alone only resolved 74.3% of EA societies to a
+  family; CLDF's `language_level_glottocodes` field exists specifically for this and raised it
+  to 92.6% (1,049/1,133). Detail in `wo4_findings.md` Part 3.
+- **D-PLACE enrichment (pooling variables from the other six samples onto EA societies via
+  `xd_id`/`glottocode`, not adding new society rows) logged as deferred**, not built now:
+  `docs/design/deferred_items_register.md` § CDOP — D-PLACE data.
+- **Two dead scripts deleted**: `scripts/edop/dplace_env_correlations_{signature,exploratory}.py`
+  referenced a `dplace.societies.basin_id` column that doesn't exist in the current schema and
+  would error if run. Superseded by `app/api/routes.py`'s `/societies` route.
+- **Deferred items register relocated**: `docs/design/areas/deferred_items_register.md` →
+  `docs/design/deferred_items_register.md` — it was never Areas-specific, just nested there.
+  All full-path references repo-wide updated in the same edit.
+
+### Notebook setup decisions (resolved)
+
+- **Part 0's "WHG settlement corpus" scope**: full `gaz.whg_gaz` (1.5M rows) was infeasible
+  against the free elevation API. Resolved to two corpora, matching the WO's own proviso to
+  count exposure in units of use — WH Cities (254/258) **and** D-PLACE EA (1,133/1,291) — run
+  side by side, not either alone.
+- **A real bug found and fixed early**: the notebook's first pass used only the 4 shape
+  features `(a1,b1,a2,b2)` with raw Euclidean distance. Production `climate.precip`
+  (`app/db/seasonality.py` — the WO text's `app/db/similarity.py` doesn't exist) actually uses
+  5 features including `log_pre_mm_syr`, Euclidean on **z-scored** variables. Fixed; surfaced
+  by spurious ~17,500 km "matches" for George Town before the fix. Full detail in
+  `wo4_findings.md`.
+
+### Results (Parts 0–6) — full detail in `wo4_findings.md`
+
+- **Part 0**: L08 basin nested in (or, for Mombasa, exactly equal to — HydroBASINS' hierarchy
+  terminates early for some basins) its L06 parent, confirmed for all 7 probes directly against
+  geometry. Corpus-wide exposure (Part 0B): container mismatch is **a substantial share, not a
+  thin tail**, even at L08 — 13.4% (EA) to 14.6% (WH Cities) still show a >2°C implied
+  temperature gap at the better level.
+- **Part 1**: 6 of 7 probes are entirely local in their unrestricted top-10 (autocorrelation,
+  not analogy). Santiago's exception (Western Australia wheatbelt matches) is a genuine,
+  textbook Mediterranean-climate teleconnection.
+- **Part 2**: Mombasa → Guitri, Ivory Coast replicates WO2a's own validated Abidjan finding.
+  Tbilisi and George Town show single distant matches that don't change across any exclusion
+  radius from 250–5000 km — an unexplained pattern, noted for follow-up.
+- **Part 3**: matched-control-set construction (Galton's problem instrument, `EA042` as a
+  smoke test) works — 37 matched pairs found (997 usable societies). Known limitation, not
+  fixed: some pairs share a "b" partner from the same real-world cluster counted more than once
+  (~30–32 genuinely distinct once collapsed).
+- **Part 4**: `pre_modality`'s distance-to-boundary confidence measure is actively misleading —
+  Timbuktu's known-artifact "bimodal" reading (WO2a) shows the *largest* margin of any probe,
+  while Mombasa's validated real bimodal case shows the *thinnest*. Mombasa and George Town land
+  in the identical bioclimate bucket despite meaningfully different continuous-lens values —
+  categorical typology is coarser than the continuous lens, concretely.
+- **Part 5**: local-anomaly percentiles independently reconfirm the container problem for
+  Tbilisi and Augsburg (both collapse to the bottom ~3% of their own 1000 km region on
+  temperature despite unremarkable global percentiles) — a third, unrelated method landing on
+  the same fact Part 0 and the original visual review already established.
+- **Part 6**: Jaccard(Part 1, Part 2) = 0.00 for 6 of 7 probes (mechanically guaranteed once
+  Part 1 showed those probes were all-local) and 0.25 for Santiago (real convergence — Part 2
+  independently rediscovers the same distant Western Australia matches Part 1 found
+  unprompted).
+
+**Overall verdict**: four genuinely different instruments, not one — Part 1 (raw) and Part 2
+(geography-excluded) return completely disjoint answers for most locations, converging only
+when a distant analogue is strong enough to dominate the unrestricted search on its own.
+Practical implication: a plain "nearest similar place" search with no geography control is
+close to useless as an analogue finder at most real locations. **Next step is a design
+decision** on what this means for the lens registry / similarity architecture (e.g. whether a
+lens needs a declared geography-inclusion argument, not just a variable set) — not further
+investigation. Not made here; needs Karl/Opus review.
+
+---
+
 ## Locked decisions
 
 | Decision | Rationale |
@@ -190,9 +306,11 @@ Problem statement for Opus drafted (session_log_20260720.md).
 
 ## Deferred / out of scope
 
-- Similarity approach reconsideration — overall instrument validity; Mahalanobis vs Euclidean
-  for climate.temp; L06 container problem for mountain cities; threshold CDF calibration for
-  all active lenses; wiring level toggle into sandbox similarity tab (2-line fix, held)
+- Overall instrument validity — **answered by WO4** (four genuinely different instruments;
+  see WO4 section above); implementation decision still pending, not further investigation
+- Mahalanobis vs Euclidean for climate.temp; L06 container problem for mountain cities;
+  threshold CDF calibration for all active lenses; wiring level toggle into sandbox similarity
+  tab (2-line fix, held)
 - WO3 Parts C+D — scalar hygiene + monthly profile glyph (suspended pending approach decision)
 - L08 threshold recalibration
 - Semantic-similarity calibration

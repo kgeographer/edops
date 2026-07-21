@@ -41,7 +41,7 @@ Surface is **frozen reference** (`SURFACE_tracker.md`, closed 2026-07-10). The i
 full range — scope, scale, variables, state management — is built. Read Surface for settled
 UI/engine background. Do not extend it. The **deferred items register is shared** and
 cross-phase: consult at every step resumption, add rows there
-(`docs/design/areas/deferred_items_register.md`).
+(`docs/design/deferred_items_register.md`).
 
 ---
 

@@ -139,7 +139,7 @@ five notch aggregates. Showing a year-scrub slider implies annual resolution the
 have, and a notch-period dropdown visible alongside the Band T from/to inputs creates
 framing confusion.
 
-The correct solution — registered in `docs/design/areas/deferred_items_register.md` as
+The correct solution — registered in `docs/design/deferred_items_register.md` as
 **pre-Braga required** — is a new API route `/api/lmr/values?var=air&from_year=N&to_year=N`
 querying the annual arrays in `temporal.lmr_climate` and returning per-cell weighted means for
 the requested span. This would let the LMR paint reflect the actual Band T window (e.g. 1018–1027

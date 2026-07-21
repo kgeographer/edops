@@ -93,7 +93,7 @@ the gap to 100% implies heterogeneity without naming the minority classes.
 
 **Engine gap confirmed:** A stacked bar or tooltip showing minority classes is blocked on
 an engine change to populate `detail.classes`. This is not a surface rendering task.
-**Move to `docs/design/areas/deferred_items_register.md`**: engine to emit full class
+**Move to `docs/design/deferred_items_register.md`**: engine to emit full class
 breakdown in `detail.classes` for `class_mixture` rows, across all resolver types.
 
 **Display note:** Long categorical labels (e.g. "Tropical and subtropical floodplain

@@ -8,7 +8,8 @@
 - text in disabled select dimmer (e.g. darkgrey)
 - messages below variable dropdown too light
 - WHG result: expose more
-- variable options to include: elev, slope, 
-- add rivers
-
+- variable options to include: elev, slope,
+- on select of basin-ring, and click of ring basin, sig panel need context, e.g. this is a ring basin for {place}, maybe even with relative compass point
+- align the label thresholds between the two generators (or extracting a shared _concLabel(conc) helper both call). e.g. seasonality on its tab and on Similarity (Tokyo 0.29)
+- ~~add rivers~~
 - ~~settlement basin(s) fill needs to clear when variables are chosen~~

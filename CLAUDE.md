@@ -7,7 +7,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
 - `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative current state, roadmap, locked decisions ← active
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
-- `docs/design/areas/deferred_items_register.md` — cross-phase parked items
+- `docs/design/deferred_items_register.md` — cross-phase parked items
 - `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/pilot/wo{nn}_findings.md` — per-WO findings
 
 ---
@@ -47,8 +47,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 **CDOP1 is the active track. Branch: `cdop`; cut WO branches off `cdop`, merge back on accept.**
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
-- **Deferred items:** `docs/design/areas/deferred_items_register.md` (cross-phase)
-- **Current step:** Similarity in stasis. WO3 Parts A+B complete (merged to `cdop_pilot`); Parts C+D suspended. Temperature lens Mahalanobis distortion + L06 container problem found; overall similarity approach under reconsideration. Problem statement drafted for Opus.
+- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
+- **Current step:** WO4 (four similarity instruments on shared probes) complete 2026-07-21 — verdict: similarity is genuinely four different instruments, not one; convergence between any two is probe-dependent. A design decision on the similarity architecture is now pending (not made yet); WO3 Parts C+D stay suspended until it is. See tracker for full detail.
 - **Tests:** 584 pass, 50 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
@@ -326,7 +326,7 @@ docs/ hold old drafts and works-in-progress (gitignored)
 ## Open / deferred items
 
 Demo-specific items → `DEMO_tracker.md` roadmap.
-Cross-phase deferred items → `docs/design/areas/deferred_items_register.md`.
+Cross-phase deferred items → `docs/design/deferred_items_register.md`.
 
 Standing cross-phase notes:
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
