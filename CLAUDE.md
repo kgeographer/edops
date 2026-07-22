@@ -48,7 +48,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** WO4 (four similarity instruments on shared probes) complete 2026-07-21 — verdict: similarity is genuinely four different instruments, not one; convergence between any two is probe-dependent. A design decision on the similarity architecture is now pending (not made yet); WO3 Parts C+D stay suspended until it is. See tracker for full detail.
+- **Current step:** WO5 (Context tab; temperature lens diagnostic; hide Similarity) Parts A–D complete 2026-07-21 on branch `cdop_wo5` (cut from `cdop_pilot`) — new `app/db/context.py` + `/api/context`, `/api/context/population`; Context tab shipped on `sandbox_v3.html` as a structurally different instrument alongside Similarity (percentiles, no ranking, no composite score), not a fix to it. Part E (hide Similarity) deliberately set aside, not blocked — Karl wants further discussion with Opus on the similarity-architecture question before deciding what happens to the Similarity tab. WO3 Parts C+D stay suspended until that lands. See tracker for full detail.
 - **Tests:** 584 pass, 50 skipped
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 

@@ -5,8 +5,9 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-21 (WO4 complete — all six parts run, findings logged, overall
-  verdict delivered; next decision is what to build in response, not more investigation)
+- **Last updated:** 2026-07-21 (WO5 Parts A–D complete — Context tab shipped on `cdop_wo5`; Part
+  E deliberately set aside, not blocked, pending further similarity-architecture discussion with
+  Opus)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -46,17 +47,26 @@ Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO 
 WO branches cut from `cdop`, merged back on accept.
 **584 tests pass, 50 skipped.**
 
-**WO4 complete — verdict delivered; similarity architecture decision now pending.** WO3 Parts
-A+B complete and merged to `cdop_pilot`. Parts C+D (scalar hygiene, glyph) remain suspended —
-WO4 (`wo4_similarity-studies.md`, approved 2026-07-20) was the similarity-approach
-reconsideration this was waiting on: `notebooks/cdop/wo4_similarity-studies.ipynb`, testing
-whether "similarity" is one instrument or four (analogue, geography-excluded analogue, matched
-control set, typological position) on seven probe basins, ran to completion. **Verdict: four
-genuinely different instruments, not one — convergence between any two is probe-dependent, not
-fixed.** Practical implication: a plain "nearest similar place" search with no geography control
-is close to useless as an analogue finder at most locations. Full findings:
-`docs/cdop/pilot/wo4_findings.md`. **Next step is a design decision** (what WO3 Parts C+D and
-WO1's accept gate should actually do in response), not more investigation — see WO4 section.
+**WO5 Parts A–D complete; Part E deliberately set aside.** WO4's four-instruments verdict
+(previous entry, still holds — see WO4 section) prompted WO5 as one concrete response: rather than
+recalibrate or redesign the `climate.temp`/`climate.precip` ranked-analogue lenses, WO5 ships a
+structurally different instrument — Context — built on the two "rank nothing" WO4 instruments
+(typological position, local anomaly) that needed no threshold and produced no candidate list.
+Part A found a real, non-hypothetical mechanism behind the Tbilisi/WO1 false-match complaint:
+`climate.temp`'s Mahalanobis metric lets seasonal-amplitude agreement compensate for large
+mean-temperature mismatches at moderate threshold — a composite-distance problem, not a bad
+threshold or a bad variable. Parts B–D built and shipped the Context tab (per-variable global +
+within-radius percentiles, no ranking, no composite score, a rule-based blurb) on `cdop_wo5`
+(cut from `cdop_pilot`). Full findings: `docs/cdop/pilot/wo5_findings.md`.
+
+**Part E (hide the Similarity tab) is not blocked — Karl wants more discussion with Opus before
+deciding what happens to it.** A parallel similarity-architecture thread surfaced mid-WO5 (a
+percentile-vector instrument with modality as a hard eligibility gate rather than a weighted
+axis) and is still open; Part E waits on wherever that conversation lands, not on any unresolved
+technical question. WO3 Parts C+D remain suspended for the same underlying reason they always
+were — the similarity approach is still being decided, now with two candidate directions
+(Context, already shipped; the gated percentile-vector idea, not yet built) instead of one
+undecided one.
 
 ---
 
@@ -68,7 +78,8 @@ WO1's accept gate should actually do in response), not more investigation — se
 | WO2 — Rainfall modality investigation | `cdop_wo2` | **complete** | Bimodal characterization; continuous (a1,b1,a2,b2) representation validated |
 | WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
 | WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
-| WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four genuinely different instruments, convergence is probe-dependent. Design decision on architecture now pending. |
+| WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four instruments by output shape (ranked analogue w/ exclusion parameter, matched set, global/local typology). Design decision on architecture now pending. |
+| WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
 
 ---
 
@@ -278,14 +289,97 @@ the app shows 1,291 against the table's 6,684.
   independently rediscovers the same distant Western Australia matches Part 1 found
   unprompted).
 
-**Overall verdict**: four genuinely different instruments, not one — Part 1 (raw) and Part 2
-(geography-excluded) return completely disjoint answers for most locations, converging only
-when a distant analogue is strong enough to dominate the unrestricted search on its own.
-Practical implication: a plain "nearest similar place" search with no geography control is
-close to useless as an analogue finder at most real locations. **Next step is a design
-decision** on what this means for the lens registry / similarity architecture (e.g. whether a
-lens needs a declared geography-inclusion argument, not just a variable set) — not further
-investigation. Not made here; needs Karl/Opus review.
+**Overall verdict**: four instruments distinguished by output shape, not by whether geography is
+excluded — ranked analogue (Parts 1–2 unified; exclusion radius is a parameter of this one
+instrument), matched control set (Part 3), global-typological position (Part 4),
+local-typological position (Part 5). Six of seven probes returning all-local top-10s at L08 is a
+measurement of those places, not a failure of the instrument; Part 6's six zero-Jaccard cells
+follow mechanically from Part 1's own results and aren't independent evidence for anything
+(Santiago's 0.25 is the one informative cell). Geography exclusion answers a second question a
+user may ask — worth a control, default off — not a precondition for the first question to mean
+anything. **Next step is a design decision** on what this means for the lens registry /
+similarity architecture (e.g. whether a lens needs a declared geography-inclusion argument, not
+just a variable set) — not further investigation. Not made here; needs Karl/Opus review.
+
+---
+
+## WO5 — Context tab; temperature lens diagnostic; hide Similarity
+
+**Work order:** `docs/cdop/pilot/wo5_context-panel.md`. **Branch:** `cdop_wo5` (cut from
+`cdop_pilot`). Findings: `docs/cdop/pilot/wo5_findings.md`.
+
+### Part A — Temperature lens diagnostic
+
+Neither of the WO's own two predicted outcomes held. `climate.temp`'s Mahalanobis metric is
+uniformly looser at Tbilisi's position in variable space than at the Kaifeng control, not
+selectively broken on `tmp_concentration` as hypothesized — and that looseness reflects real,
+substantial, globally-consistent climatic diversity at any fixed mean temperature (std of seasonal
+amplitude is 6–9°C at every 5°C temperature band, corpus-wide), not a Tbilisi-specific anomaly.
+The mechanism that actually explains the WO1 false-match complaint: the composite "regime"
+distance lets shape variables (`tmp_seas_amp`, `tmp_concentration`) compensate for a mismatch on
+absolute level (`tmp_dc_syr`) — at `moderate` threshold, Tbilisi's admitted set spans −3.9°C to
++14.9°C, nearly 10°C off in either direction, all under one "Temperature regime" label. At
+`strict` the same lens behaves exactly as labeled (±3°C both dimensions) — the threshold, not the
+metric or the variables, determines how much compensation is tolerated. Not a bug: the arithmetic
+is correctly computed against the real covariance structure; the label promises more than the
+composite distance delivers at wide thresholds.
+
+### Part B — Context data path
+
+New module `app/db/context.py`, routes `GET /api/context` and `GET /api/context/population`. Same
+architecture as the similarity index (in-memory, loaded at startup) but reports each of 7
+variables independently — global percentile, within-radius percentile, no composite distance, no
+ranking. Cross-validated against WO4 Part 5's independently-computed numbers (agreement within
+~1.6 percentage points). Basin representative point is `ST_PointOnSurface`, not `ST_Centroid`
+(the WO17/18 centroid-outside-polygon precedent). Radius/level combination for the UI settled by
+a 258-city density check, not the initial 4-probe guess that looked like an L08-wide problem: it
+isn't — L06 stays under the ~5,000-basin WebGL budget at every radius; L08 does too through
+1000km, but 99.2% of a geographically diverse sample exceeds budget at L08/2500km specifically.
+**Locked:** both levels offered at 250/500/1000km; 2500km available at L06 only, enforced
+server-side.
+
+### Part C — Context tab UI
+
+Table (value + two percentiles per row) + radius control + MapLibre choropleth of the radius
+population, colored by whichever row is selected. Color ramps aligned with the existing Map tab's
+`applyBasinVar` convention after Karl caught a real inversion (moisture variables were backwards —
+dry mapped to blue, should be red) and requested dedicated ramps for non-climate axes: a terrain
+(hypsometric) palette for elevation/slope, a light-grey-to-purple sequential scale for seasonal
+temperature range (a magnitude of swing, not a warm/cold axis). Left-column Map-tab legend now
+hidden while any other right-column tab is active — previously stayed visible regardless of tab,
+a state-management gap Karl caught by inspection.
+
+Plausibility-checked against San Francisco: confirmed a second, independent container-problem
+instance (11,378 km² L06 basin, elevation range −14m to 1,588m, nothing like the city itself).
+**Karl's correction, worth keeping over the WO4-era framing of this same effect:** the
+container/basin-size effect is not a measurement problem — a basin-scale average is a correct,
+direct read of the source data; there is nothing to fix, because there is nothing wrong. Context's
+design (no ranking, no composite score) is the right instrument for surfacing that fact honestly.
+Verdict: Context "does its advertised job more effectively than Similarity."
+
+### Part D — Blurb
+
+Rule-based, no API call, computed client-side from data the table already fetched. Selection rule
+reverse-engineered from the WO's own worked example (three distinct cases, not one template —
+local-extreme gets exact numbers, global-extreme gets a rounded bucket, a material-but-not-extreme
+gap gets a directional clause with no number; everything else drops rather than burying the
+finding under a sentence per row). Two real bugs found via Karl's live testing and fixed: (1) the
+flagship Tbilisi finding silently missing at the tab's own default radius (500km) because the
+local percentile sat a hair above the strict extreme cutoff — fixed by splitting the threshold,
+global stays strict at 10 (matches the WO's literal wording), local loosened to 15; (2) the
+basin-naming/disambiguation sentence only fired from the one template that happened to trigger it,
+so L08 blurbs (whose percentiles rarely reach either extreme bar) never said what they were
+describing — defeating the entire point of naming the basin. Fixed by making the disambiguating
+lead sentence unconditional, independent of which findings follow.
+
+### Part E — not blocked, deliberately set aside
+
+Karl wants further discussion with Opus before deciding what happens to the Similarity tab —
+WO5 answered the WO4 reconsideration one way (Context, a structurally different instrument), but
+a parallel thread is still open: a percentile-vector instrument with modality as a hard
+eligibility gate rather than a weighted axis, discussed mid-WO5 and logged as a detour in
+`wo5_findings.md`, not built. Similarity stays live, unhidden, exactly as before. Revisit once
+that conversation lands.
 
 ---
 
@@ -301,16 +395,26 @@ investigation. Not made here; needs Karl/Opus review.
 | `climate.precip` features: continuous (a1,b1,a2,b2) | Identities verified to machine epsilon; Mombasa top-5 all East African with no modality filter; Abidjan recovered (R_dbl=0.246 < 0.30 threshold, continuous correct). No threshold inside feature construction. `pre_concentration` and `R_dbl` are redundant once components included — do not add. `same_modality` dropped. From WO2a Part B. |
 | `climate.phase` lens retired | The lens was never one question: it bundled how-many-wet-seasons (now in precip lens), hemisphere-blind phase relation, and hemisphere-aware seasonal timing. Questions 2 and 3 cannot share a lens — each fix breaks the other's repair. Undefined across the equatorial belt where D-PLACE work is concentrated. Retired, not redesigned. Phase fork recorded in deferred register. From WO3 spec. |
 | Phase fork recorded, not planned | Hemisphere-blind relation and hemisphere-aware timing are two distinct lenses. Neither is built until a use case asks for it. Analysis is done; do not re-derive. From `wo3_retire-phase.md` deferred register. |
+| `climate.temp` composite distance lets shape compensate for level | At `moderate` threshold Tbilisi's admitted set spans −3.9°C to +14.9°C — a basin can be ~10°C off in either direction and still register as "moderately similar" if `tmp_seas_amp`/`tmp_concentration` agree. Not a bad threshold or bad variable; a Mahalanobis composite over a genuinely-correlated-but-noisy variable pair admits this at wide radii by construction. From WO5 Part A. |
+| Context ships as a second instrument, not a Similarity fix | Context (percentiles, no ranking, no composite score) answers the WO4 four-instruments reconsideration one way; it does not replace, recalibrate, or redesign `climate.temp`/`climate.precip`. Similarity stays live, unhidden. From WO5 Parts A–D. |
+| Context radius set: L06 all four, L08 capped at 1000km | 258-city geographically diverse density check (not the initial 4-probe guess, which looked like a general L08 problem and wasn't): L06 stays under the ~5,000-basin WebGL budget at every radius including 2500km; L08 does too through 1000km (worst case 4,579/5,000), but 99.2% of the same sample exceeds budget at L08/2500km specifically. From WO5 Part B. |
+| Basin representative point: `ST_PointOnSurface`, not `ST_Centroid` | A plain centroid can fall outside a concave/crescent-shaped basin polygon — the exact WO17/18 failure mode (centroid-outside-polygon silently resolving to the wrong basin). Raised by Karl during WO5 Part B design review. |
+| The container/basin-size effect is not a measurement problem | A basin-scale average is a correct, direct read of the source data — there is nothing to fix, because there is nothing wrong. Confirmed on a second, independent case (San Francisco, 11,378 km² L06 basin) beyond Tbilisi. Same shape of correction as WO4's locality reframe, applied to a different topic. Karl's correction, WO5 Part C. |
 
 ---
 
 ## Deferred / out of scope
 
-- Overall instrument validity — **answered by WO4** (four genuinely different instruments;
-  see WO4 section above); implementation decision still pending, not further investigation
-- Mahalanobis vs Euclidean for climate.temp; L06 container problem for mountain cities;
-  threshold CDF calibration for all active lenses; wiring level toggle into sandbox similarity
-  tab (2-line fix, held)
+- Overall instrument validity — **answered by WO4** (four instruments by output shape; see WO4
+  section above). WO5 answered part of the implementation question (Context ships as a second
+  instrument). **What happens to Similarity itself is still open** — Part E deliberately set
+  aside pending further Karl/Opus discussion, not a technical blocker; see WO5 section.
+- Mahalanobis vs Euclidean for climate.temp; threshold CDF calibration for all active lenses —
+  WO5 Part A found a real, evidenced mechanism (composite-distance compensation, see Locked
+  decisions) but recalibrating or redesigning the metric was explicitly out of WO5's scope
+- Wiring level toggle into the sandbox **Similarity** tab specifically (2-line fix, held) —
+  Context's own level toggle was built correctly from the start (WO5 Part C), this bullet is
+  about Similarity's still-inert one
 - WO3 Parts C+D — scalar hygiene + monthly profile glyph (suspended pending approach decision)
 - L08 threshold recalibration
 - Semantic-similarity calibration
@@ -318,3 +422,6 @@ investigation. Not made here; needs Karl/Opus review.
 - Retiring or redirecting the old Workbench page
 - Terrain lens group (open; decide after WO1)
 - Any new tab, dataset, or UI restructuring
+- A percentile-vector similarity instrument with modality as a hard eligibility gate — raised by
+  Karl mid-WO5, logged as a detour in `wo5_findings.md`, not built; candidate for whatever comes
+  out of the further Karl/Opus similarity-architecture discussion
