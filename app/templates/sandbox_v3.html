@@ -365,6 +365,12 @@
           </div>
         </div>
 
+        <!-- Context blurb -- Context-tab-only, mirrors #v3-choropleth's Map-tab-only visibility -->
+        <div id="v3-ctx-blurb-panel" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">Regional context</label>
+          <p class="mb-0" style="font-size:0.85rem;" id="v3-ctx-blurb-text"></p>
+        </div>
+
       </div><!-- /v3-intro -->
 
     </div><!-- /left col -->
@@ -811,20 +817,25 @@
   }
 
   // ── Lower panel reveal (on first scope render) ────────────────────────────
-  // #v3-choropleth (left column: variable selector + legend) is Map-tab-only —
-  // it configures the world choropleth, which is meaningless while looking at
-  // Signature/Analysis/Seasonality/Context/Similarity. _choroplethRevealed
-  // tracks the existing "has a scope ever been rendered" gate; _syncChoroplethVisibility
-  // additionally requires the Map tab to be the one currently shown.
+  // The left column's lower area shows different content depending on which
+  // right-column tab is active: #v3-choropleth (variable selector + legend)
+  // configures the world choropleth, meaningless off the Map tab;
+  // #v3-ctx-blurb-panel (Part D) summarizes Context's table, meaningless off
+  // the Context tab. _choroplethRevealed tracks the existing "has a scope
+  // ever been rendered" gate; _syncLeftColumnPanel additionally requires the
+  // matching tab to be the one currently shown, and the two panels are
+  // mutually exclusive (only one tab is active at a time).
   let _choroplethRevealed = false;
   function _revealLowerPanel() {
     document.getElementById('v3-intro-text').style.display = 'none';
     _choroplethRevealed = true;
-    _syncChoroplethVisibility();
+    _syncLeftColumnPanel();
   }
-  function _syncChoroplethVisibility() {
+  function _syncLeftColumnPanel() {
     const onMap = document.getElementById('v3-tab-map-btn').classList.contains('active');
+    const onCtx = document.getElementById('v3-tab-context-btn').classList.contains('active');
     document.getElementById('v3-choropleth').style.display = (_choroplethRevealed && onMap) ? '' : 'none';
+    document.getElementById('v3-ctx-blurb-panel').style.display = (_ctxRows.length && onCtx) ? '' : 'none';
   }
 
   // ── WHG settlement lookup ─────────────────────────────────────────────────
@@ -1551,6 +1562,8 @@
         _ctxCurrentVariable = _ctxRows.length ? _ctxRows[0].variable : 'pre_mm_syr';
       }
       _renderContextTable(ctxData.query_basin_id);
+      document.getElementById('v3-ctx-blurb-text').textContent = _buildContextBlurb(_ctxRows, radius, lv, _currentPlaceName);
+      _syncLeftColumnPanel();
 
       const ids = popData.basins.map(b => b.hybas_id);
       if (!ids.length) {
@@ -1601,6 +1614,96 @@
                  : (n % 10 === 2 && n !== 12) ? 'nd'
                  : (n % 10 === 3 && n !== 13) ? 'rd' : 'th';
     return `${n}${suffix}`;
+  }
+
+  // Part D -- rule-based blurb, no API call (computed from _ctxRows, already
+  // fetched by renderContext). Reports only rows that are globally extreme or
+  // where global/radius diverge materially -- a sentence per row would bury
+  // the finding (WO5 proviso). Six of seven variables share one phrasing
+  // scheme (comparative + bucket words below); tmp_seas_amp is handled
+  // separately since "wider/narrower" doesn't fit the same sentence shape as
+  // the others cleanly enough to be worth forcing into one template.
+  const CONTEXT_VAR_WORDS = {
+    pre_mm_syr: { loComp: 'drier',       hiComp: 'wetter'        },
+    tmp_dc_syr: { loComp: 'colder',      hiComp: 'warmer'        },
+    ele_mt_sav: { loComp: 'lower-lying', hiComp: 'higher'        },
+    slp_dg_sav: { loComp: 'gentler',     hiComp: 'steeper'       },
+    ari_ix_sav: { loComp: 'more arid',   hiComp: 'more humid'    },
+    run_mm_syr: { loComp: 'lower-runoff',hiComp: 'higher-runoff' },
+  };
+  // Global bar kept strict (matches the WO's own "top 10% worldwide" wording).
+  // Local bar loosened to 15 -- found via Tbilisi/500km, a real case, not a
+  // hypothetical: temperature sits at the 11.2 local percentile, a hair
+  // above a strict 10, and silently dropped the flagship container-problem
+  // finding this tab exists to surface, at the tab's own default radius.
+  const CTX_EXTREME_PCTL_GLOBAL = 10;
+  const CTX_EXTREME_PCTL_LOCAL  = 15;
+  const CTX_MATERIAL_GAP  = 25;  // |global - radius| this large, absent extremity, still worth a sentence
+  // Calibrated against WO5's own worked example (Tbilisi temperature: global
+  // 29.9, radius 2.6 -- "colder than 97%... though close to the global
+  // median"). [35,65] excluded 29.9 and failed to reproduce that sentence;
+  // [25,75] does.
+  const CTX_NEAR_MEDIAN   = [25, 75];
+
+  function _buildContextBlurb(rows, radiusKm, level, placeName) {
+    // Disambiguation (this describes the containing basin, not the settlement
+    // itself) is the entire reason to name the basin at all -- it must not
+    // depend on which case fires below. Always leads, unconditionally, so a
+    // Case-2/3-only or "nothing stands out" result still says it. Case 1
+    // sentences can therefore just say "The basin" -- the lead sentence has
+    // already established what that refers to.
+    const lead = placeName
+      ? `This describes the Level ${level} basin ${placeName} sits in, not ${placeName} itself.`
+      : `This describes the Level ${level} basin containing this point.`;
+
+    const sentences = [];
+    for (const r of rows) {
+      const g = r.global_percentile, loc = r.radius_percentile;
+      if (g == null || loc == null) continue;
+      const gExtremeLo = g <= CTX_EXTREME_PCTL_GLOBAL, gExtremeHi = g >= 100 - CTX_EXTREME_PCTL_GLOBAL;
+      const locExtremeLo = loc <= CTX_EXTREME_PCTL_LOCAL, locExtremeHi = loc >= 100 - CTX_EXTREME_PCTL_LOCAL;
+      const gap = Math.abs(g - loc);
+      const nearMedian = g >= CTX_NEAR_MEDIAN[0] && g <= CTX_NEAR_MEDIAN[1];
+
+      if (r.variable === 'tmp_seas_amp') {
+        if ((locExtremeLo || locExtremeHi) && !gExtremeLo && !gExtremeHi) {
+          const word = locExtremeLo ? 'narrower' : 'wider';
+          const num  = locExtremeLo ? Math.round(100 - loc) : Math.round(loc);
+          sentences.push(`The basin has a ${word} seasonal temperature swing than ${num}% of ` +
+            `basins within ${radiusKm} km${nearMedian ? ', though close to the global median' : ''}.`);
+        } else if (gExtremeLo || gExtremeHi) {
+          sentences.push(`Seasonal temperature range is in the ${gExtremeLo ? 'bottom' : 'top'} 10% worldwide.`);
+        } else if (gap >= CTX_MATERIAL_GAP) {
+          sentences.push(`Seasonal temperature range is unremarkable globally but ` +
+            `${loc > g ? 'wider' : 'narrower'} than typical for its region.`);
+        }
+        continue;
+      }
+
+      const words = CONTEXT_VAR_WORDS[r.variable];
+      if (!words) continue;  // no phrasing config -- skip rather than guess
+
+      if ((locExtremeLo || locExtremeHi) && !gExtremeLo && !gExtremeHi) {
+        // Case 1: local extreme, global unremarkable -- exact numbers, the flagship story
+        const comp = locExtremeLo ? words.loComp : words.hiComp;
+        const num  = locExtremeLo ? Math.round(100 - loc) : Math.round(loc);
+        sentences.push(`The basin is ${comp} than ${num}% of basins within ${radiusKm} km` +
+          `${nearMedian ? ', though close to the global median' : ''}.`);
+      } else if (gExtremeLo || gExtremeHi) {
+        // Case 2: global extreme -- rounded bucket, stated plainly
+        sentences.push(`${r.label} is in the ${gExtremeLo ? 'bottom' : 'top'} 10% worldwide.`);
+      } else if (gap >= CTX_MATERIAL_GAP) {
+        // Case 3: neither extreme, but a real gap -- directional, no number quoted
+        const comp = loc > g ? words.hiComp : words.loComp;
+        sentences.push(`${r.label} is unremarkable globally but ${comp} for its region.`);
+      }
+      // else: dropped -- nothing here clears the bar
+    }
+
+    if (!sentences.length) {
+      return `${lead} Nothing here stands out — the basin looks broadly typical, both globally and against its regional neighbors.`;
+    }
+    return `${lead} ${sentences.join(' ')}`;
   }
 
   function _repaintContextMap(queryBasinId) {
@@ -1845,6 +1948,7 @@
     hideLMRLayer();
     _choroplethRevealed = false;
     document.getElementById('v3-choropleth').style.display  = 'none';
+    document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
     map.flyTo({ center: [10, 20], zoom: 1 });
     // Reset bands to A–E checked, T unchecked
@@ -2609,6 +2713,7 @@
     hideLMRLayer();
     _choroplethRevealed = false;
     document.getElementById('v3-choropleth').style.display  = 'none';
+    document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
     map.flyTo({ center: [10, 20], zoom: 1 });
   }
@@ -3286,7 +3391,7 @@
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
   ['v3-tab-map-btn', 'v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn',
    'v3-tab-context-btn', 'v3-tab-similarity-btn'].forEach(id => {
-    document.getElementById(id).addEventListener('shown.bs.tab', _syncChoroplethVisibility);
+    document.getElementById(id).addEventListener('shown.bs.tab', _syncLeftColumnPanel);
   });
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
   document.getElementById('v3-tab-context-btn').addEventListener('shown.bs.tab', renderContext);

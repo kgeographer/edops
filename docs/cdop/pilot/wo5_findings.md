@@ -451,8 +451,93 @@ part.
 
 ### Not yet done
 
-Part D (rule-based blurb) and Part E (hide Similarity tab — hide only, not remove markup/code/
-route, per Karl's explicit correction to the WO's "retire" framing) remain open.
+Part E (hide Similarity tab — hide only, not remove markup/code/route, per Karl's explicit
+correction to the WO's "retire" framing) remains open.
+
+---
+
+## Part D — Blurb
+
+Rule-based, no API call — computed client-side from `_ctxRows` (already fetched by
+`renderContext()` for the table), consistent with the WO's own "same pattern as Seasonality,
+no API call" instruction. New function `_buildContextBlurb(rows, radiusKm, level, placeName)` in
+`sandbox_v3.html`, rendered into a new left-column panel (`#v3-ctx-blurb-panel`, inside the same
+`#v3-intro` div the Map tab's choropleth legend lives in) — placement was Karl's call: the
+left-column area is otherwise dead space while the Context tab is active, once Part C's
+visibility fix (`_syncChoroplethVisibility` → generalized to `_syncLeftColumnPanel`) hid the
+Map-only legend for every other tab.
+
+### Selection rule
+
+Reverse-engineered from the WO's own three-sentence worked example, which turned out to encode
+three distinct cases, not one template:
+
+1. **Local extreme, global unremarkable** (the flagship container-problem story) — exact numbers:
+   "The basin is colder than 89% of basins within 500 km, though close to the global median."
+2. **Global extreme** — rounded bucket, no exact number: "{Label} is in the top 10% worldwide."
+3. **Neither extreme, but a real gap** — directional only, no number: "{Label} is unremarkable
+   globally but warmer for its region."
+4. Nothing clears either bar: dropped — a sentence per row would bury the finding (WO's own
+   proviso).
+
+Six of seven variables share one phrasing scheme (`CONTEXT_VAR_WORDS`: comparative word pairs,
+e.g. precipitation drier/wetter, temperature colder/warmer). `tmp_seas_amp` (seasonal range) is
+handled separately — "wider/narrower" doesn't fit the "This basin is {comp} than X%" template
+grammatically without the possessive breaking (see below), so it gets its own small set of
+sentence builders.
+
+### Calibration against real data, not just the WO's illustrative example
+
+Traced the logic against Tbilisi's actual L06/1000km percentiles (already known from Part B)
+before treating it as done. The temperature sentence reproduced the WO's own worked example
+almost verbatim once `CTX_NEAR_MEDIAN` — the band supporting "though close to the global median"
+— was widened from an initial guess of [35,65] to [25,75], calibrated directly against the WO's
+own example (global=29.9 needed to qualify; [35,65] excluded it and failed to reproduce their
+target sentence). Not a blind guess — grounded in reproducing the one authoritative worked
+example available.
+
+That same trace surfaced a real gap, flagged but not fixed at the time (per Karl's "let's go with
+this and see how it plays"): several genuinely notable rows sat just under the extreme/gap bars
+(seasonal range at 11.8%, runoff at 88.2%) and were silently dropped or under-stated.
+
+### Two real bugs found via Karl's live testing, both fixed
+
+**Bug 1 — the flagship finding silently missing at the tab's own default radius.** Karl reported
+the live Tbilisi blurb didn't match what had been traced. Checked directly: Karl was viewing the
+tab's default radius (500km), not the 1000km used in the earlier trace. At 500km, Tbilisi's
+temperature sits at the 11.2th local percentile — a hair above the strict `<=10` extreme cutoff —
+so the "colder than 89%" story silently dropped, exactly the boundary-brittleness pattern flagged
+as a known risk but not yet observed. This wasn't a hypothetical edge case; it was the single most
+load-bearing example behind the entire WO4/WO5 container-problem investigation failing to surface
+at the feature's own default view. Fixed by splitting the single extreme threshold into two:
+`CTX_EXTREME_PCTL_GLOBAL=10` (kept strict, matches the WO's literal "top 10% worldwide" wording)
+and `CTX_EXTREME_PCTL_LOCAL=15` (loosened, catches this and similar near-misses). Re-verified
+against live data post-fix: the flagship sentence now surfaces correctly at 500km.
+
+**Bug 2 (design gap, not a threshold miss) — basin-naming depended on which case fired, defeating
+its own purpose.** Karl noticed the L08 blurb never named the basin or place at all. Traced: at
+L08/Tbilisi, no row at any radius clears either extreme bar (L08's smaller, more locally
+representative basin is genuinely less distorted — consistent with WO4 Part 0's finding that L08
+roughly halves the container-problem gap), so only Case 3 sentences fired, and the basin-naming
+intro — originally built only into Case 1's own sentence — never appeared. Karl's correction: the
+entire point of naming the basin is to flag that the blurb describes a containing area, not the
+settlement itself — that disambiguation cannot be conditional on which finding happens to fire.
+Restructured: the disambiguating lead sentence ("This describes the Level {N} basin {place} sits
+in, not {place} itself.") is now unconditional, always first, built once outside the per-row loop,
+independent of whether any row produces a finding at all (including the "nothing stands out"
+fallback). This also simplified the code — Case 1 no longer needs first-reference-vs-subsequent
+tracking (`nextSubject()` removed); it can just always say "The basin," since the lead sentence
+already established the referent.
+
+No-place-name fallback (raw lat/lon entry, no WHG resolution): "This describes the Level {N} basin
+containing this point."
+
+### Verification
+
+Traced against live `/api/context` data for both L06 (500km: flagship sentence present, matches
+Karl's confirmed report) and L08 (500km: disambiguating lead present despite an all-Case-3 body,
+matches Karl's confirmed report) after each fix. Brace/paren counts balanced at every step, page
+renders (HTTP 200), full app test suite green throughout (213 passed, 14 skipped, 0 failures).
 
 ---
 
