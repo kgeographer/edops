@@ -8,6 +8,7 @@ from app.api.routes import router as api_router
 from app.web.pages import router as page_router
 from app.db.connection import db_connect
 from app.db.seasonality import load_similarity_index
+from app.db.context import load_context_index
 
 
 @asynccontextmanager
@@ -16,6 +17,8 @@ async def lifespan(app: FastAPI):
     try:
         load_similarity_index(conn, level=6)
         load_similarity_index(conn, level=8)
+        load_context_index(conn, level=6)
+        load_context_index(conn, level=8)
     finally:
         conn.close()
     yield

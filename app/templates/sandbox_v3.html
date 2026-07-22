@@ -390,6 +390,10 @@
                   data-bs-target="#v3-pane-seasonality" type="button" role="tab">Seasonality</button>
         </li>
         <li class="nav-item" role="presentation">
+          <button class="nav-link disabled" id="v3-tab-context-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-context" type="button" role="tab">Context</button>
+        </li>
+        <li class="nav-item" role="presentation">
           <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
         </li>
@@ -427,6 +431,54 @@
         <div class="tab-pane fade" id="v3-pane-seasonality" role="tabpanel">
           <p class="text-muted mt-3 px-1" id="v3-seas-placeholder">Click a location and run <strong>Get signature</strong> to load seasonality.</p>
           <div id="v3-seas-content" style="display:none;"></div>
+        </div>
+
+        <!-- Context pane -->
+        <div class="tab-pane fade" id="v3-pane-context" role="tabpanel">
+          <p class="text-muted mt-3 px-1" id="v3-ctx-placeholder">Click a location and run <strong>Get signature</strong> to load context.</p>
+          <div id="v3-ctx-content" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
+              <div class="d-flex align-items-baseline gap-2">
+                <div id="v3-ctx-title"></div>
+                <span class="text-muted small" id="v3-ctx-count"></span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small fw-semibold">Within:</span>
+                <div class="btn-group btn-group-sm" role="group" id="v3-ctx-radius-group">
+                  <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-250" value="250" autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-250" style="font-size:0.75rem; line-height:1.6;">250 km</label>
+                  <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-500" value="500" autocomplete="off" checked>
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-500" style="font-size:0.75rem; line-height:1.6;">500 km</label>
+                  <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-1000" value="1000" autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-1000" style="font-size:0.75rem; line-height:1.6;">1000 km</label>
+                  <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-2500" value="2500" autocomplete="off">
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-2500" style="font-size:0.75rem; line-height:1.6;">2500 km</label>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive px-1">
+              <table class="table table-sm table-hover mb-2" id="v3-ctx-table" style="font-size:0.85rem;">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th class="text-muted" style="font-weight:500;">vs. all basins</th>
+                    <th class="text-muted" id="v3-ctx-radius-col-label" style="font-weight:500;">vs. within 500 km</th>
+                  </tr>
+                </thead>
+                <tbody id="v3-ctx-tbody"></tbody>
+              </table>
+            </div>
+            <p class="text-muted px-1" style="font-size:0.72rem;">
+              "All basins" includes the full land surface at this level — deserts, ice sheets,
+              and uninhabited terrain alongside settled regions.
+            </p>
+            <div id="v3-ctx-map" style="height:420px; border-radius:6px;"></div>
+            <div class="d-flex align-items-center gap-2 px-1 pt-2" id="v3-ctx-legend" style="display:none;">
+              <span class="text-muted" id="v3-ctx-legend-low" style="font-size:0.75rem;"></span>
+              <div id="v3-ctx-legend-bar" style="width:120px; height:8px; border-radius:3px; border:1px solid #ddd;"></div>
+              <span class="text-muted" id="v3-ctx-legend-high" style="font-size:0.75rem;"></span>
+            </div>
+          </div>
         </div>
 
         <!-- Similarity pane -->
@@ -501,6 +553,39 @@
   let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
   let _simQueryStringency    = null;               // stringency of last rendered fetch
 
+  let _ctxMap           = null;  // MapLibre instance for Context tab (lazy-initialized)
+  let _ctxPopup         = null;
+  let _ctxMarker        = null;  // query-location marker on context map
+  let _ctxQueryLat      = null;  // coords + level + radius of last context fetch — skip refetch if unchanged
+  let _ctxQueryLon      = null;
+  let _ctxQueryLevel    = null;
+  let _ctxQueryRadius   = null;
+  let _ctxRows          = [];    // last /api/context response rows — drives table + row-click variable selection
+  let _ctxPopulation    = null;  // last /api/context/population response — cached so variable switch repaints without refetch
+  let _ctxGeomByBasin   = null;  // hybas_id -> GeoJSON geometry string, for the current population
+  let _ctxCurrentVariable = 'pre_mm_syr';  // which row's variable currently paints the map
+
+  const CONTEXT_RADII_BY_LEVEL = { 6: [250, 500, 1000, 2500], 8: [250, 500, 1000] };
+
+  // Ramp per variable -- aligned to the Map tab's BASIN_VARS convention
+  // (aridity_index/precipitation_annual: reverse:false = dry low/red, wet
+  // high/blue; temperature_annual: reverse:true = cold low/blue, warm
+  // high/red). Elevation/slope aren't a climate axis at all -- diverging
+  // RdBu doesn't apply -- so they get a terrain (hypsometric) palette instead.
+  // tmp_seas_amp is a magnitude of swing, not warm/cold -- its own light-grey
+  // to purple sequential scale (narrow = grey, wide = purple).
+  // _ctxColorFor/_ctxLegendGradientCss (which need TERRAIN_PAL/AMPLITUDE_PAL)
+  // are defined later, next to the Map tab's own palette constants.
+  const CONTEXT_VAR_RAMP = {
+    pre_mm_syr:   { type: 'rdbu',      reverse: false },
+    ari_ix_sav:   { type: 'rdbu',      reverse: false },
+    run_mm_syr:   { type: 'rdbu',      reverse: false },
+    tmp_dc_syr:   { type: 'rdbu',      reverse: true  },
+    tmp_seas_amp: { type: 'amplitude' },
+    ele_mt_sav:   { type: 'terrain' },
+    slp_dg_sav:   { type: 'terrain' },
+  };
+
   // ── Level helpers ─────────────────────────────────────────────────────────
   function _activeLevel() {
     const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
@@ -518,6 +603,28 @@
       if (scope && currentLat != null) _drawScopePreview(scope);  // redraw geometry at new level
     }
     _silentResig();  // re-derive _sigMemberIds at new level, repaint choropleth
+    _ctxOnLevelChange();  // Context tab: adjust radius options for the new level, refetch if visible
+  }
+
+  // Context tab must actually respond to the level toggle — the Similarity tab's
+  // level control is a known-inert no-op (WO5 proviso: do not reproduce that).
+  function _ctxOnLevelChange() {
+    const lv = _activeLevel();
+    const allowed = CONTEXT_RADII_BY_LEVEL[lv];
+    [250, 500, 1000, 2500].forEach(r => {
+      const input = document.getElementById(`v3ctx-radius-${r}`);
+      if (!input) return;
+      const ok = allowed.includes(r);
+      input.disabled = !ok;
+      input.closest('.btn-group').querySelector(`label[for="v3ctx-radius-${r}"]`)
+        .classList.toggle('disabled', !ok);
+      if (!ok && input.checked) {
+        input.checked = false;
+        document.getElementById(`v3ctx-radius-1000`).checked = true;
+      }
+    });
+    const contextVisible = document.getElementById('v3-tab-context-btn').classList.contains('active');
+    if (contextVisible) renderContext();
   }
 
   async function _silentResig() {
@@ -704,9 +811,20 @@
   }
 
   // ── Lower panel reveal (on first scope render) ────────────────────────────
+  // #v3-choropleth (left column: variable selector + legend) is Map-tab-only —
+  // it configures the world choropleth, which is meaningless while looking at
+  // Signature/Analysis/Seasonality/Context/Similarity. _choroplethRevealed
+  // tracks the existing "has a scope ever been rendered" gate; _syncChoroplethVisibility
+  // additionally requires the Map tab to be the one currently shown.
+  let _choroplethRevealed = false;
   function _revealLowerPanel() {
     document.getElementById('v3-intro-text').style.display = 'none';
-    document.getElementById('v3-choropleth').style.display = '';
+    _choroplethRevealed = true;
+    _syncChoroplethVisibility();
+  }
+  function _syncChoroplethVisibility() {
+    const onMap = document.getElementById('v3-tab-map-btn').classList.contains('active');
+    document.getElementById('v3-choropleth').style.display = (_choroplethRevealed && onMap) ? '' : 'none';
   }
 
   // ── WHG settlement lookup ─────────────────────────────────────────────────
@@ -1323,6 +1441,216 @@
     }
   }
 
+  // ── Context tab ───────────────────────────────────────────────────────────
+  // No ranking, no candidate list, no composite distance -- each of the 7
+  // variables is reported independently against two populations (all basins /
+  // within-radius). Contrast with Similarity's whitened distance, which can
+  // let variables compensate for one another (wo5_findings.md Part A Check 3).
+
+  function _ctxCurrentRadius() {
+    const checked = document.querySelector('input[name="v3ctx-radius"]:checked');
+    return checked ? parseInt(checked.value) : 500;
+  }
+
+  async function renderContext() {
+    if (currentLat == null || currentLon == null) return;
+    const lv     = _activeLevel();
+    const radius = _ctxCurrentRadius();
+
+    document.getElementById('v3-ctx-radius-col-label').textContent = `vs. within ${radius} km`;
+
+    if (_ctxQueryLat === currentLat && _ctxQueryLon === currentLon &&
+        _ctxQueryLevel === lv && _ctxQueryRadius === radius) {
+      if (_ctxMap) _ctxMap.resize();
+      return;
+    }
+    _ctxQueryLat    = currentLat;
+    _ctxQueryLon    = currentLon;
+    _ctxQueryLevel  = lv;
+    _ctxQueryRadius = radius;
+
+    if (!_ctxMap) {
+      _ctxMap = new maplibregl.Map({
+        container: 'v3-ctx-map',
+        center: [10, 20],
+        zoom: 1,
+        attributionControl: true,
+        style: {
+          version: 8,
+          sources: {
+            carto: {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            },
+          },
+          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+        },
+      });
+      _ctxPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
+      await new Promise(r => _ctxMap.on('load', r));
+      _ctxMap.addSource('ctx-basins', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _ctxMap.addLayer({
+        id: 'ctx-fill', type: 'fill', source: 'ctx-basins',
+        paint: { 'fill-color': ['coalesce', ['get', 'fc'], '#e8e8e8'], 'fill-opacity': 0.8 },
+      });
+      _ctxMap.addLayer({
+        id: 'ctx-outline', type: 'line', source: 'ctx-basins',
+        paint: {
+          'line-color': ['case', ['get', 'is_query'], '#1a1a2e', '#ffffff'],
+          'line-width': ['case', ['get', 'is_query'], 2.5, 0.4],
+          'line-opacity': ['case', ['get', 'is_query'], 1, 0.5],
+        },
+      });
+      _ctxMap.on('mouseenter', 'ctx-fill', (e) => {
+        _ctxMap.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const spec = _ctxRows.find(r => r.variable === _ctxCurrentVariable) || {};
+        const val = p.value;
+        _ctxPopup.setLngLat(e.lngLat)
+          .setHTML(`<span style="font-size:0.8rem;">${spec.label || _ctxCurrentVariable}: ` +
+                    `${val == null ? 'no data' : val + ' ' + (spec.unit || '')}</span>`)
+          .addTo(_ctxMap);
+      });
+      _ctxMap.on('mouseleave', 'ctx-fill', () => {
+        _ctxMap.getCanvas().style.cursor = '';
+        _ctxPopup.remove();
+      });
+    } else {
+      _ctxMap.resize();
+    }
+
+    document.getElementById('v3-ctx-title').innerHTML = _currentPlaceName
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+
+    if (_ctxMarker) _ctxMarker.remove();
+    _ctxMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+      .setLngLat([currentLon, currentLat])
+      .addTo(_ctxMap);
+
+    try {
+      const [ctxR, popR] = await Promise.all([
+        fetch(`/api/context?lat=${currentLat}&lon=${currentLon}&level=${lv}&radius_km=${radius}`),
+        fetch(`/api/context/population?lat=${currentLat}&lon=${currentLon}&level=${lv}&radius_km=${radius}`),
+      ]);
+      if (!ctxR.ok) throw new Error(`context ${ctxR.status}`);
+      if (!popR.ok) throw new Error(`context/population ${popR.status}`);
+      const ctxData = await ctxR.json();
+      const popData = await popR.json();
+
+      _ctxRows = ctxData.rows || [];
+      _ctxPopulation = popData;
+      document.getElementById('v3-ctx-count').textContent =
+        `${popData.radius_count} basins within ${radius} km`;
+
+      if (!_ctxRows.find(r => r.variable === _ctxCurrentVariable)) {
+        _ctxCurrentVariable = _ctxRows.length ? _ctxRows[0].variable : 'pre_mm_syr';
+      }
+      _renderContextTable(ctxData.query_basin_id);
+
+      const ids = popData.basins.map(b => b.hybas_id);
+      if (!ids.length) {
+        _ctxGeomByBasin = {};
+        _ctxMap.getSource('ctx-basins').setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+      const geomR = await fetch('/api/basin-geom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, level: lv }),
+      });
+      if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
+      _ctxGeomByBasin = await geomR.json();
+
+      _repaintContextMap(ctxData.query_basin_id);
+    } catch (err) {
+      console.error('[context]', err);
+    }
+  }
+
+  function _renderContextTable(queryBasinId) {
+    const tbody = document.getElementById('v3-ctx-tbody');
+    tbody.innerHTML = _ctxRows.map(r => {
+      const active = r.variable === _ctxCurrentVariable;
+      const valueStr = r.value == null ? '—' : `${r.value} ${r.unit}`;
+      return `
+        <tr class="v3-ctx-row${active ? ' table-primary' : ''}" data-variable="${r.variable}"
+            style="cursor:pointer;">
+          <td>${escapeHtml(r.label)} <span class="text-muted" style="font-size:0.78rem;">(${escapeHtml(valueStr)})</span></td>
+          <td>${r.global_percentile == null ? '—' : _ctxOrdinal(r.global_percentile)}</td>
+          <td>${r.radius_percentile == null ? '—' : _ctxOrdinal(r.radius_percentile)}</td>
+        </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('.v3-ctx-row').forEach(tr => {
+      tr.addEventListener('click', () => {
+        _ctxCurrentVariable = tr.getAttribute('data-variable');
+        _renderContextTable(queryBasinId);
+        _repaintContextMap(queryBasinId);
+      });
+    });
+  }
+
+  function _ctxOrdinal(pctl) {
+    const n = Math.round(pctl);
+    const suffix = (n % 10 === 1 && n !== 11) ? 'st'
+                 : (n % 10 === 2 && n !== 12) ? 'nd'
+                 : (n % 10 === 3 && n !== 13) ? 'rd' : 'th';
+    return `${n}${suffix}`;
+  }
+
+  function _repaintContextMap(queryBasinId) {
+    if (!_ctxMap || !_ctxPopulation || !_ctxGeomByBasin) return;
+
+    const variable = _ctxCurrentVariable;
+    const values = _ctxPopulation.basins
+      .map(b => b[variable])
+      .filter(v => v != null);
+    const minV = values.length ? Math.min(...values) : 0;
+    const maxV = values.length ? Math.max(...values) : 1;
+    const degenerate = minV === maxV;  // every basin shares one value (e.g. slope=0 across a plain)
+
+    const features = _ctxPopulation.basins
+      .filter(b => _ctxGeomByBasin[b.hybas_id])
+      .map(b => {
+        const v = b[variable];
+        const t = (v == null) ? null : (degenerate ? 0.5 : (v - minV) / (maxV - minV));
+        return {
+          type: 'Feature',
+          geometry: JSON.parse(_ctxGeomByBasin[b.hybas_id]),
+          properties: {
+            hybas_id: b.hybas_id,
+            value:    v,
+            fc:       (t == null) ? null : _ctxColorFor(variable, t),
+            is_query: b.hybas_id === queryBasinId,
+          },
+        };
+      });
+
+    _ctxMap.getSource('ctx-basins').setData({ type: 'FeatureCollection', features });
+
+    const spec = _ctxRows.find(r => r.variable === variable) || {};
+    document.getElementById('v3-ctx-legend').style.display = '';
+    document.getElementById('v3-ctx-legend-bar').style.background =
+      `linear-gradient(to right, ${_ctxLegendGradientCss(variable)})`;
+    document.getElementById('v3-ctx-legend-low').textContent  = `${minV} ${spec.unit || ''}`;
+    document.getElementById('v3-ctx-legend-high').textContent = `${maxV} ${spec.unit || ''}`;
+
+    if (features.length) {
+      const bounds = new maplibregl.LngLatBounds();
+      features.forEach(f => {
+        const g = f.geometry;
+        const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
+        rings.forEach(ring => ring.forEach(c => bounds.extend(c)));
+      });
+      _ctxMap.fitBounds(bounds, { padding: 30, maxZoom: 6 });
+    }
+  }
+
   // ── Analysis tab helpers ──────────────────────────────────────────────────
 
   function sigVal(sig, key) {
@@ -1473,13 +1801,26 @@
     _simQueryLon        = null;
     _simQueryLens       = null;
     _simQueryStringency = null;
+    _ctxQueryLat    = null;
+    _ctxQueryLon    = null;
+    _ctxQueryLevel  = null;
+    _ctxQueryRadius = null;
+    _ctxRows        = [];
+    _ctxPopulation  = null;
+    _ctxGeomByBasin = null;
     document.getElementById('v3-pane-analysis').innerHTML =
       '<p class="text-muted mt-3 px-1">Run <strong>Get signature</strong> to populate analysis.</p>';
     document.getElementById('v3-sig-content').innerHTML = '';
-    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn', 'v3-tab-similarity-btn'].forEach(id =>
+    ['v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn', 'v3-tab-context-btn', 'v3-tab-similarity-btn'].forEach(id =>
       document.getElementById(id).classList.add('disabled'));
     document.getElementById('v3-seas-content').style.display = 'none';
     document.getElementById('v3-seas-placeholder').style.display = '';
+    document.getElementById('v3-ctx-content').style.display = 'none';
+    document.getElementById('v3-ctx-placeholder').style.display = '';
+    if (_ctxMarker) { _ctxMarker.remove(); _ctxMarker = null; }
+    if (_ctxMap) _ctxMap.getSource('ctx-basins')?.setData({ type: 'FeatureCollection', features: [] });
+    document.getElementById('v3-ctx-count').textContent = '';
+    document.getElementById('v3-ctx-legend').style.display = 'none';
     document.getElementById('v3-sim-content').style.display = 'none';
     document.getElementById('v3-sim-placeholder').style.display = '';
     if (_simMarker) { _simMarker.remove(); _simMarker = null; }
@@ -1502,6 +1843,7 @@
     const sid = _layers['basin-choropleth']?.sourceId;
     if (sid) map.removeFeatureState({ source: sid, sourceLayer: _sl });
     hideLMRLayer();
+    _choroplethRevealed = false;
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
     map.flyTo({ center: [10, 20], zoom: 1 });
@@ -1879,6 +2221,9 @@
             document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
             renderSeasonality(_pointSig);
             document.getElementById('v3-tab-seasonality-btn').classList.remove('disabled');
+            document.getElementById('v3-ctx-placeholder').style.display = 'none';
+            document.getElementById('v3-ctx-content').style.display = '';
+            document.getElementById('v3-tab-context-btn').classList.remove('disabled');
             document.getElementById('v3-sim-placeholder').style.display = 'none';
             document.getElementById('v3-sim-content').style.display = '';
             document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
@@ -2262,6 +2607,7 @@
     document.getElementById('v3-basin-status').textContent     = '';
     // source already removed by shell.clear() — removeFeatureState is a no-op
     hideLMRLayer();
+    _choroplethRevealed = false;
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
     map.flyTo({ center: [10, 20], zoom: 1 });
@@ -2556,6 +2902,42 @@
     if (i >= n) return RDBU_PAL[n];
     const a = parseInt(RDBU_PAL[i].slice(1), 16), b = parseInt(RDBU_PAL[i+1].slice(1), 16);
     return `rgb(${Math.round(((a>>16)&0xff)*(1-f)+((b>>16)&0xff)*f)},${Math.round(((a>>8)&0xff)*(1-f)+((b>>8)&0xff)*f)},${Math.round((a&0xff)*(1-f)+(b&0xff)*f)})`;
+  }
+
+  // Terrain (hypsometric) palette for elevation/slope -- these aren't a
+  // warmer/colder or wetter/drier axis, so the RdBu diverging scheme doesn't
+  // apply; green-to-tan-to-white reads as "terrain" the way RdBu reads as
+  // "climate" (Google Maps terrain layer convention).
+  const TERRAIN_PAL = ['#4d7c4d', '#8fae67', '#c9b579', '#a97d54', '#e8e4e0'];
+
+  // Seasonal amplitude isn't warm/cold (RdBu) or terrain -- it's a magnitude
+  // of swing, so a plain sequential light-grey-to-purple scale (narrow range
+  // = grey, wide range = purple) reads as its own thing rather than
+  // borrowing mean-temperature's semantics.
+  const AMPLITUDE_PAL = ['#f0f0f0', '#9e9ac8', '#54278f'];
+
+  // General N-stop palette interpolator (interpRdbu is RDBU_PAL-specific and
+  // left as-is to avoid touching Map-tab-tested code; this covers any palette).
+  function interpPalette(pal, t) {
+    t = Math.max(0, Math.min(1, t));
+    const n = pal.length - 1, i = Math.min(Math.floor(t * n), n - 1), f = t * n - i;
+    const a = parseInt(pal[i].slice(1), 16), b = parseInt(pal[i + 1].slice(1), 16);
+    return `rgb(${Math.round(((a>>16)&0xff)*(1-f)+((b>>16)&0xff)*f)},${Math.round(((a>>8)&0xff)*(1-f)+((b>>8)&0xff)*f)},${Math.round((a&0xff)*(1-f)+(b&0xff)*f)})`;
+  }
+
+  // Context tab ramp lookup (CONTEXT_VAR_RAMP declared earlier; kept here
+  // because it needs TERRAIN_PAL/AMPLITUDE_PAL/RDBU_PAL, all defined above).
+  const CONTEXT_RAMP_PALETTES = { terrain: TERRAIN_PAL, amplitude: AMPLITUDE_PAL };
+  function _ctxColorFor(variable, t) {
+    const ramp = CONTEXT_VAR_RAMP[variable] || { type: 'rdbu', reverse: false };
+    if (ramp.type in CONTEXT_RAMP_PALETTES) return interpPalette(CONTEXT_RAMP_PALETTES[ramp.type], t);
+    return interpRdbu(ramp.reverse ? 1 - t : t);
+  }
+  function _ctxLegendGradientCss(variable) {
+    const ramp = CONTEXT_VAR_RAMP[variable] || { type: 'rdbu', reverse: false };
+    const pal = CONTEXT_RAMP_PALETTES[ramp.type] || RDBU_PAL;
+    const ordered = (ramp.type === 'rdbu' && ramp.reverse) ? [...pal].reverse() : pal;
+    return ordered.map((c, i) => `${c} ${(i / (ordered.length - 1) * 100).toFixed(1)}%`).join(', ');
   }
 
   const BASIN_VARS = [
@@ -2902,7 +3284,15 @@
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');
+  ['v3-tab-map-btn', 'v3-tab-sig-btn', 'v3-tab-analysis-btn', 'v3-tab-seasonality-btn',
+   'v3-tab-context-btn', 'v3-tab-similarity-btn'].forEach(id => {
+    document.getElementById(id).addEventListener('shown.bs.tab', _syncChoroplethVisibility);
+  });
   document.getElementById('v3-tab-map-btn').addEventListener('shown.bs.tab', () => map.resize());
+  document.getElementById('v3-tab-context-btn').addEventListener('shown.bs.tab', renderContext);
+  document.querySelectorAll('input[name="v3ctx-radius"]').forEach(input => {
+    input.addEventListener('change', renderContext);
+  });
   document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderSimilarity);
   document.getElementById('v3-sim-group').addEventListener('change', function () {
     _populateSubLensSelect(this.value);

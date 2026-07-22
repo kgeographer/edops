@@ -121,8 +121,10 @@ back null. Not every basin-linked EA society has a valid L06 gap.
 
 ## Part 1 — Analogue (top-10, L08, no exclusions)
 
-Six of seven probes are **entirely local** in their top-10 — the "blob around the query carries
-no information" failure mode Part 2 exists to test for:
+Six of seven probes are **entirely local** in their top-10. That is a measurement of those
+places' spatial structure, not a shortfall — it means the result is largely predictable from the
+query's coordinates alone, which is exactly what Part 2 exists to make visible, not evidence that
+Part 1 "failed":
 
 | Probe | Farthest match in top-10 |
 |---|---|
@@ -211,9 +213,14 @@ Margi) at nearly identical distances; Nomlaki also separately matches Tsonga, it
 Tswana. The construction enforces independence *within* each pair (different family, far apart)
 but not *across* the matched set — nothing currently collapses near-duplicate clusters on either
 side. Rough eyeball: more like 30–32 genuinely distinct matches once duplicates are collapsed,
-not 37. Left as a noted limitation rather than fixed now; a dedup pass (collapse same-family,
-geographically-close societies before counting) would be the natural next step if this number
-needs to be load-bearing later.
+not 37. What the construction actually needs to exclude is non-independence, of which
+geographic distance is only a proxy: two societies 1,500 km apart in the same language family
+are less independent than two 900 km apart in unrelated families. Read that way, the
+Bobo/Mandara-Mountains cluster is the proxy leaking — four societies that are one family-level
+fact, not four, slipping through because distance alone can't see it. Left as a noted limitation
+rather than fixed now; a dedup pass (collapse same-family, geographically-close societies before
+counting) — which this reframing points at directly, not a tighter radius — would be the natural
+next step if this number needs to be load-bearing later.
 
 ---
 
@@ -339,37 +346,57 @@ disagreed.
 
 ## Overall WO4 verdict
 
-**Part 1 (raw analogue, no exclusion) and Part 2 (geography-excluded) are genuinely different
-instruments for most locations, not two settings of one — and whether they converge is itself
-probe-dependent, which is the real finding.** For six of seven probes, Part 1 alone measures
-spatial autocorrelation, not analogy — its "nearest neighbours" are just the query's own
-backyard, exactly the failure mode the WO's own Part 2 spec predicted ("a similarity map that
-shows a blob around the query is a correct result carrying no information"). Part 2 doesn't
-refine Part 1's answer in these cases; it replaces it with a completely disjoint one. The two
-instruments only agree when a distant analogue is strong enough to dominate the unrestricted
-search on its own (Santiago) — there, Part 2 becomes confirmatory rather than revealing.
+**Locality is a measurement, not a judgement.** Six of seven probes return entirely local
+top-10s at L08 (≤516 km); Santiago's reach 13,072 km. Both are true statements about those
+places, and the contrast between them — not a verdict that the local ones "failed" — is the
+finding. A result dominated by nearby basins is what an accurate instrument returns when a
+basin's true nearest neighbours are, in fact, local; reporting that faithfully is the tool
+working. Locality does mean something narrower and real: a local result is largely predictable
+from the query's coordinates alone, so it adds comparatively little *beyond* geography — a
+different claim from adding nothing, and one that varies by probe rather than a fixed property
+of analogue search.
 
-**Practical implication for CDOP**: a plain "nearest similar place" search with no geography
-control is close to useless as an analogue finder at most real locations — it will almost
-always just restate the query's own region back to the user. The "exclusion radius as a UI
-slider" idea, flagged in Part 2's own spec as a candidate not designed there, now has direct
-empirical support: it isn't a nice-to-have refinement, it's close to necessary for the feature
-to mean anything.
+**Part 6's six zero-Jaccard cells are not independent evidence of anything.** Part 2 is defined
+as the complement of Part 1's neighbourhood by construction, so once Part 1 returns an all-local
+top-10, disjointness at 5000 km follows mechanically — it cannot be read as two instruments
+disagreeing. Santiago's Jaccard of 0.25 is the one cell where the two methods could have
+diverged and didn't; it is the only informative result in that table.
 
-**Parts 3 and 4 independently reinforce the same underlying theme from different angles.**
-Part 3 showed the matched-control-set instrument (Galton's problem) works but needs care
-(dedup, data-quality filtering) — a genuinely different question from either Part 1 or Part 2,
-answered with a different output shape (a set with a balance table, not a ranked list). Part 4
-showed a categorical instrument (typological position) can disagree sharply with the continuous
-lens on the same two probes (Mombasa/George Town, same bioclimate bucket, different R_dbl and
-T_amp) and that its own confidence measure can be actively misleading (Timbuktu's known-artifact
-bimodal reading looking more confident than Mombasa's validated real one). Part 5 (local
-anomaly) independently triangulated the exact same container-problem probes (Tbilisi, Augsburg)
-that Part 0 and the original visual review had already flagged, via a third, unrelated method.
+**Analogue with and without geography exclusion is one instrument with a parameter, not two.**
+Part 1 and Part 2 share output shape (ranked list), feature set, and metric — excluding a radius
+around the query is a setting, not a different kind of question. The genuinely distinct
+instruments are the ones with different output shapes: ranked analogue (Parts 1–2, unified),
+matched set with a balance table (Part 3), and positional statement with no instance list
+(Parts 4 and 5 — typological position against the global population, and against the local
+region, respectively). Four instruments survives as the conclusion; the membership changes from
+the WO's original split (analogue / analogue-excluded / matched-set / typology) to this one
+(analogue-with-radius-parameter / matched-set / global-typology / local-typology).
 
-**So: four instruments, not one — but the degree to which any two of them agree is itself
-data-dependent, and that data-dependence (not a fixed yes/no) is the honest shape of the answer**
-this WO set out to test for.
+**Practical implication for CDOP**: geography exclusion is a second question a user may ask, not
+a precondition for the first one to mean anything. Report the result set's spatial spread (e.g.
+distance to the farthest of the top-N) alongside the ranked list so locality is visible rather
+than implied, and make an exclusion-radius control available, default off, for the user who
+wants the second question answered. The "exclusion radius as a UI slider" idea, flagged in Part
+2's own spec as a candidate not designed there, still has empirical support for being built —
+the reframe changes why it matters, not whether it's worth building.
+
+**Parts 3, 4, and 5 confirm that output shape, not variable set, is what distinguishes
+instruments.** Part 3 showed the matched-control-set instrument (Galton's problem) works but
+needs care — a genuinely different question from ranked analogue, answered with a different
+output shape (a set with a balance table, not a ranked list). Part 4 showed a categorical
+instrument (typological position) can disagree sharply with the continuous lens on the same two
+probes (Mombasa/George Town, same bioclimate bucket, different R_dbl and T_amp) and that its own
+confidence measure can be actively misleading (Timbuktu's known-artifact bimodal reading looking
+more confident than Mombasa's validated real one). Part 5 (local anomaly) independently
+triangulated the exact same container-problem probes (Tbilisi, Augsburg) that Part 0 and the
+original visual review had already flagged, via a third, unrelated method — and stands as its
+own instrument alongside Part 4 once output shape, not reference population, is the criterion:
+both produce a positional statement with no instance list, differing only in which population
+they're positioned against.
+
+**So: four instruments by output shape — ranked analogue, matched set, global-typological
+position, local-typological position. Geography exclusion is a parameter of the first, not a
+fifth instrument, and its value answers a second question, not a repair to the first.**
 
 ---
 
@@ -386,3 +413,12 @@ this WO set out to test for.
   Parts 1/2/3/4/5 here are the empirical basis for what that argument would need to
   distinguish: geography-inclusion (Part 1 vs 2), corpus/dedup semantics (Part 3), categorical
   vs. continuous representation (Part 4), and reference population (Part 5's local vs. global).
+- **L06→L08 support change may explain the WO2a/WO4 Mombasa discrepancy — unconfirmed.** WO2a
+  found Mombasa's L06 top-5 reaching the Ghana coast, thousands of km out; WO4 Part 1 at L08
+  finds nothing beyond 152 km, recovering Guitri (Ivory Coast) only once geography is excluded
+  at 5000 km. Same lens, same query, different answer in kind. Candidate mechanism: L08 has
+  11.6x more basins than L06, so the query's own neighbourhood supplies far more near-identical
+  competitors at finer support, crowding distant analogues out of any fixed top-N. If that
+  holds, moving to finer support for the container fix and running a plain top-N analogue search
+  work against each other on the same query — confirmable by running Part 1 at both L06 and L08
+  for the same probes, not yet done.

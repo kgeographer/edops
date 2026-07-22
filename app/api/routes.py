@@ -14,6 +14,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.db.seasonality import find_similar, get_lens_registry
+from app.db.context import get_context, get_context_population
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -405,11 +406,12 @@ def health():
     return {"status": "ok"}
 
 
-def _resolve_basin(conn, lat: float, lon: float) -> int:
-    """Return the L06 hybas_id containing (lat, lon); raises 404 if none found."""
+def _resolve_basin(conn, lat: float, lon: float, level: int = 6) -> int:
+    """Return the hybas_id at the given level containing (lat, lon); raises 404 if none found."""
+    table = "basin06" if level == 6 else "basin08"
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT hybas_id FROM public.basin06 "
+            f"SELECT hybas_id FROM public.{table} "
             "WHERE ST_Within(ST_SetSRID(ST_MakePoint(%s, %s), 4326), geom) "
             "ORDER BY ST_Area(geom::geography) ASC LIMIT 1",
             (lon, lat),
@@ -533,6 +535,106 @@ def similarity(
         conn.close()
 
 
+# Radius options per level (WO5 Part B): 2500km excluded at L08 -- across a
+# 258-city geographically diverse sample, 99.2% exceed the ~5,000-basin WebGL
+# render budget at that radius/level combination (median count 13,845, vs.
+# L06's max of 2,163 at the same radius). All other radius/level combinations
+# stay comfortably under budget (worst case L08/1000km: 4,579 of 5,000).
+_CONTEXT_RADII_BY_LEVEL: Dict[int, List[int]] = {
+    6: [250, 500, 1000, 2500],
+    8: [250, 500, 1000],
+}
+
+
+@router.get("/context")
+def context(lat: float, lon: float, level: int = 6, radius_km: int = 500):
+    """Return a basin's position against two reference populations: all basins
+    at the level, and basins within radius_km of (lat, lon).
+
+    No ranking, no candidate list, no composite distance -- each variable is
+    reported independently (contrast with /api/similarity's whitened distance,
+    which can let variables compensate for one another; see wo5_findings.md
+    Part A Check 3).
+
+    Parameters
+    ----------
+    lat, lon   : query coordinates
+    level      : 6 (default) or 8
+    radius_km  : one of _CONTEXT_RADII_BY_LEVEL[level] -- 2500 is excluded at
+                 level=8 (see comment above)
+
+    Response
+    --------
+    {
+      "level": int, "query_basin_id": int, "radius_km": int, "radius_count": int,
+      "rows": [
+        { "variable": str, "label": str, "unit": str, "value": float|null,
+          "global_percentile": float|null, "radius_percentile": float|null },
+        ...
+      ]
+    }
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    allowed_radii = _CONTEXT_RADII_BY_LEVEL[level]
+    if radius_km not in allowed_radii:
+        raise HTTPException(
+            status_code=400,
+            detail=f"radius_km must be one of {allowed_radii} for level={level}",
+        )
+
+    conn = db_connect()
+    try:
+        query_hybas_id = _resolve_basin(conn, lat, lon, level=level)
+        try:
+            result = get_context(query_hybas_id, lat, lon, level, radius_km)
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        return {
+            "level":          result["level"],
+            "query_basin_id": result["query_hybas_id"],
+            "radius_km":      result["radius_km"],
+            "radius_count":   result["radius_count"],
+            "rows":           result["rows"],
+        }
+    finally:
+        conn.close()
+
+
+@router.get("/context/population")
+def context_population(lat: float, lon: float, level: int = 6, radius_km: int = 500):
+    """Return raw per-variable values for every basin within radius_km of
+    (lat, lon) -- the population the Context tab's map choropleths. Pair with
+    POST /api/basin-geom (same hybas_id list) for geometry.
+
+    No basin resolution needed (unlike /api/context) -- purely an in-memory
+    radius query against the query point, no DB round trip.
+
+    Response
+    --------
+    {
+      "level": int, "radius_km": int, "radius_count": int,
+      "basins": [ { "hybas_id": int, "<variable>": float|null, ... }, ... ]
+    }
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    allowed_radii = _CONTEXT_RADII_BY_LEVEL[level]
+    if radius_km not in allowed_radii:
+        raise HTTPException(
+            status_code=400,
+            detail=f"radius_km must be one of {allowed_radii} for level={level}",
+        )
+
+    try:
+        return get_context_population(lat, lon, level, radius_km)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 def _fetch_basin_geom(hybas_ids: list, level: int) -> dict:
     """Query basin geometries at precision 3 (~100 m). Shared by GET and POST handlers."""
     table = "basin06" if level == 6 else "basin08"
@@ -573,7 +675,7 @@ class BasinGeomRequest(BaseModel):
 
 @router.post("/basin-geom")
 def basin_geom_post(body: BasinGeomRequest):
-    """Return GeoJSON geometry strings for a list of basin hybas_ids (POST, max 2000).
+    """Return GeoJSON geometry strings for a list of basin hybas_ids (POST, max 6000).
 
     Body: {"ids": [hybas_id, ...], "level": 6}
     Returns: {"<hybas_id>": "<GeoJSON geometry string>", ...}

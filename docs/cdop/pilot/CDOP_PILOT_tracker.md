@@ -6,7 +6,9 @@ stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
 - **Last updated:** 2026-07-21 (WO4 complete — all six parts run, findings logged, overall
-  verdict delivered; next decision is what to build in response, not more investigation)
+  verdict delivered; verdict language corrected same day — locality reframed as measurement not
+  deficiency, four-instrument membership corrected; next decision is what to build in response,
+  not more investigation)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -50,11 +52,12 @@ WO branches cut from `cdop`, merged back on accept.
 A+B complete and merged to `cdop_pilot`. Parts C+D (scalar hygiene, glyph) remain suspended —
 WO4 (`wo4_similarity-studies.md`, approved 2026-07-20) was the similarity-approach
 reconsideration this was waiting on: `notebooks/cdop/wo4_similarity-studies.ipynb`, testing
-whether "similarity" is one instrument or four (analogue, geography-excluded analogue, matched
-control set, typological position) on seven probe basins, ran to completion. **Verdict: four
-genuinely different instruments, not one — convergence between any two is probe-dependent, not
-fixed.** Practical implication: a plain "nearest similar place" search with no geography control
-is close to useless as an analogue finder at most locations. Full findings:
+whether "similarity" is one instrument or four, ran to completion. **Verdict: four instruments
+distinguished by output shape — ranked analogue (geography-exclusion is a parameter of this one
+instrument, not a separate instrument), matched control set, global-typological position,
+local-typological position.** Locality in a ranked-analogue result is a measurement of the
+place, not a deficiency in the instrument; geography exclusion answers a second, different
+question, available as a control rather than a default. Full findings:
 `docs/cdop/pilot/wo4_findings.md`. **Next step is a design decision** (what WO3 Parts C+D and
 WO1's accept gate should actually do in response), not more investigation — see WO4 section.
 
@@ -68,7 +71,7 @@ WO1's accept gate should actually do in response), not more investigation — se
 | WO2 — Rainfall modality investigation | `cdop_wo2` | **complete** | Bimodal characterization; continuous (a1,b1,a2,b2) representation validated |
 | WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
 | WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
-| WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four genuinely different instruments, convergence is probe-dependent. Design decision on architecture now pending. |
+| WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four instruments by output shape (ranked analogue w/ exclusion parameter, matched set, global/local typology). Design decision on architecture now pending. |
 
 ---
 
@@ -278,14 +281,17 @@ the app shows 1,291 against the table's 6,684.
   independently rediscovers the same distant Western Australia matches Part 1 found
   unprompted).
 
-**Overall verdict**: four genuinely different instruments, not one — Part 1 (raw) and Part 2
-(geography-excluded) return completely disjoint answers for most locations, converging only
-when a distant analogue is strong enough to dominate the unrestricted search on its own.
-Practical implication: a plain "nearest similar place" search with no geography control is
-close to useless as an analogue finder at most real locations. **Next step is a design
-decision** on what this means for the lens registry / similarity architecture (e.g. whether a
-lens needs a declared geography-inclusion argument, not just a variable set) — not further
-investigation. Not made here; needs Karl/Opus review.
+**Overall verdict**: four instruments distinguished by output shape, not by whether geography is
+excluded — ranked analogue (Parts 1–2 unified; exclusion radius is a parameter of this one
+instrument), matched control set (Part 3), global-typological position (Part 4),
+local-typological position (Part 5). Six of seven probes returning all-local top-10s at L08 is a
+measurement of those places, not a failure of the instrument; Part 6's six zero-Jaccard cells
+follow mechanically from Part 1's own results and aren't independent evidence for anything
+(Santiago's 0.25 is the one informative cell). Geography exclusion answers a second question a
+user may ask — worth a control, default off — not a precondition for the first question to mean
+anything. **Next step is a design decision** on what this means for the lens registry /
+similarity architecture (e.g. whether a lens needs a declared geography-inclusion argument, not
+just a variable set) — not further investigation. Not made here; needs Karl/Opus review.
 
 ---
 
@@ -306,8 +312,8 @@ investigation. Not made here; needs Karl/Opus review.
 
 ## Deferred / out of scope
 
-- Overall instrument validity — **answered by WO4** (four genuinely different instruments;
-  see WO4 section above); implementation decision still pending, not further investigation
+- Overall instrument validity — **answered by WO4** (four instruments by output shape; see WO4
+  section above); implementation decision still pending, not further investigation
 - Mahalanobis vs Euclidean for climate.temp; L06 container problem for mountain cities;
   threshold CDF calibration for all active lenses; wiring level toggle into sandbox similarity
   tab (2-line fix, held)
