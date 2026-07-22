@@ -1,10 +1,16 @@
 # WO5 findings — Context tab; temperature lens diagnostic; hide Similarity
 
 **Work order:** `docs/cdop/pilot/wo5_context-panel.md`
-**Branch:** `cdop_pilot`
+**Branch:** `cdop_wo5` (cut from `cdop_pilot`)
 **Scripts:** `scripts/cdop/wo5_part_a_temp_lens_diagnostic.py` (live-API quartile/correlation probe),
 `scripts/cdop/wo5_part_a2_temp_covariance_check.py` (direct-DB corpus-wide covariance check)
 **Date:** 2026-07-21
+**Status:** Parts A–D complete. **Part E (hide Similarity tab) deliberately set aside, not
+blocked** — Karl has more to explore on the similarity-architecture question (the WO4
+reconsideration this WO answered one way; a parallel thread — a percentile-vector instrument with
+modality as a hard gate rather than a weighted axis, discussed mid-session and logged as a detour
+below — is still open) and wants further discussion with Opus before deciding what, if anything,
+happens to the Similarity tab. Not a technical blocker; a genuinely open design question.
 
 ---
 
