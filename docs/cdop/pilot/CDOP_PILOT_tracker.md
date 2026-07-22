@@ -5,9 +5,9 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-21 (WO5 Parts A–D complete — Context tab shipped on `cdop_wo5`; Part
-  E deliberately set aside, not blocked, pending further similarity-architecture discussion with
-  Opus)
+- **Last updated:** 2026-07-22 (WO6a complete — non-compensatory similarity notebook, all four
+  parts run; percentile bands locked in over absolute; `climate.precip` compensation defect
+  confirmed alongside `climate.temp`'s)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -68,6 +68,38 @@ were — the similarity approach is still being decided, now with two candidate 
 (Context, already shipped; the gated percentile-vector idea, not yet built) instead of one
 undecided one.
 
+**WO6a took up that gated percentile-vector idea directly, and is complete.** `cdop_wo5` merged
+back to `cdop_pilot`; `cdop_wo6` cut for this step. `notebooks/cdop/wo6a_noncompensatory.ipynb`
+ran all four parts from `wo6a_notebook.md`. Headline results (full detail:
+`docs/cdop/pilot/wo6a_findings.md`):
+
+- **Part A** — corpus-wide prominence-sweep peak-counting (vectorized reimplementation of WO5's
+  4-probe script, validated exact-match before scaling up) beats `R_dbl` on every mechanism
+  checked, including a new one (`R_dbl` can't see bimodality whose two peaks aren't ~6 months
+  apart — a real Tennessee case it misses that peak-counting catches). But there is no
+  data-driven prominence threshold (the corpus-wide sweep never plateaus) and no absolute-floor
+  value that avoids trading arid-noise false positives (a 20mm floor fixes desert-noise
+  false-bimodal calls) against real-modest-signal false negatives (that same 20mm floor misses
+  Somalia's genuine Gu/Deyr two-monsoon pattern; loosening to 10mm fixes Somalia but partially
+  reopens the arid-noise problem). Open candidate for WO6b: a relative-to-annual-total floor
+  instead of a fixed mm value.
+- **Part B** — percentile bands beat absolute bands. Both predicted failure modes were confirmed
+  with real numbers (absolute: ~7–21× count swings at fixed physical width; percentile: 8–50×
+  swings in physical width at roughly fixed count, worst for precipitation's right-skew). The
+  WO's hoped-for resolution — that conjoining all three variables might let absolute "win
+  outright" — didn't happen.
+- **Part C** — the proposed instrument (3 percentile conditions + modality gate) does not
+  collapse to an empty result set even at its tightest tested tolerance (sparsest case: 3
+  matches). But the modality gate's restrictiveness is highly asymmetric — it barely restricts a
+  query in the common ~82%-of-globe unimodal class, and restricts a rare bimodal query (George
+  Town) hard — not a uniform k+1 tightening, and WO6b needs to account for that explicitly.
+- **Part D** — `climate.precip` has the same composite-distance compensation defect WO5 Part A
+  found in `climate.temp` (loose stringency admits basins at 0.27×–3.87× the query's actual
+  rainfall because harmonic shape agrees). Locked as a decision below — this is now confirmed on
+  both active Climate lenses, not just `climate.temp`.
+
+Next: WO6b, informed directly by Part B's percentile-bands decision.
+
 ---
 
 ## Roadmap
@@ -79,7 +111,8 @@ undecided one.
 | WO2a — Continuous harmonic representation | `cdop_wo2` | **complete** | Part B pass; Part C clean on own-top-5 evidence; phase lens retired |
 | WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
 | WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four instruments by output shape (ranked analogue w/ exclusion parameter, matched set, global/local typology). Design decision on architecture now pending. |
-| WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
+| WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` → merged to `cdop_pilot` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
+| WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. Next: WO6b, informed by Part B's percentile-bands decision. |
 
 ---
 
@@ -400,6 +433,9 @@ that conversation lands.
 | Context radius set: L06 all four, L08 capped at 1000km | 258-city geographically diverse density check (not the initial 4-probe guess, which looked like a general L08 problem and wasn't): L06 stays under the ~5,000-basin WebGL budget at every radius including 2500km; L08 does too through 1000km (worst case 4,579/5,000), but 99.2% of the same sample exceeds budget at L08/2500km specifically. From WO5 Part B. |
 | Basin representative point: `ST_PointOnSurface`, not `ST_Centroid` | A plain centroid can fall outside a concave/crescent-shaped basin polygon — the exact WO17/18 failure mode (centroid-outside-polygon silently resolving to the wrong basin). Raised by Karl during WO5 Part B design review. |
 | The container/basin-size effect is not a measurement problem | A basin-scale average is a correct, direct read of the source data — there is nothing to fix, because there is nothing wrong. Confirmed on a second, independent case (San Francisco, 11,378 km² L06 basin) beyond Tbilisi. Same shape of correction as WO4's locality reframe, applied to a different topic. Karl's correction, WO5 Part C. |
+| `climate.precip` has the same compensation defect as `climate.temp` | At `loose` stringency Timbuktu's admitted set spans 51–736 mm/yr against a 190 mm/yr query (0.27×–3.87×); George Town and Mombasa show the same pattern. Same mechanism as `climate.temp` (Locked decisions, above): level (`log_pre_mm_syr`) and shape (`a1,b1,a2,b2`) bundled into one composite Euclidean distance, so shape agreement buys tolerance on magnitude. Confirms the composite-distance problem is not `climate.temp`-specific. From WO6a Part D. |
+| Percentile bands over absolute bands for a non-compensatory instrument | Both predicted failure modes confirmed with real numbers: absolute bands hold physical width fixed (~7–21× count swings across 8 probes); percentile bands hold count roughly fixed (8–50× swings in physical width, worst for precipitation's right-skew). Conjunction across all three variables did not resolve in absolute's favor as hypothesized — percentile is the more generous rule in 6/8 probes, and specifically more generous where the query point is unusual. From WO6a Part B. |
+| No data-driven prominence threshold or absolute-floor value for peak-counting modality | Corpus-wide sweep (5–50% prominence, both levels) never plateaus — `RECOMMENDED_FRAC=0.20` is precedent-only. A fixed absolute floor cannot both reject arid-noise false-bimodal calls and accept real modest-magnitude bimodal signal (20mm floor fixes noise, misses Somalia's Gu/Deyr pattern; 10mm floor fixes Somalia, partially reopens noise). Untested candidate: a relative-to-annual-total floor instead of a fixed mm value. From WO6a Part A. |
 
 ---
 
@@ -422,6 +458,7 @@ that conversation lands.
 - Retiring or redirecting the old Workbench page
 - Terrain lens group (open; decide after WO1)
 - Any new tab, dataset, or UI restructuring
-- A percentile-vector similarity instrument with modality as a hard eligibility gate — raised by
-  Karl mid-WO5, logged as a detour in `wo5_findings.md`, not built; candidate for whatever comes
-  out of the further Karl/Opus similarity-architecture discussion
+- Building the non-compensatory instrument itself (WO6b) — WO6a (raised by Karl mid-WO5, logged as
+  a detour in `wo5_findings.md`) tested the idea exploratory-only in a notebook and closed with a
+  recommendation (percentile bands) plus two open design points (no clean prominence/floor value;
+  the modality gate's asymmetric bite); building it as an actual lens is WO6b, not done here
