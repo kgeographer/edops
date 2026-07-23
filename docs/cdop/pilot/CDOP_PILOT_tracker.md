@@ -5,9 +5,12 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-22 (WO6a **and** WO6b complete. WO6b found the backbone: correlation on
-  the raw twelve monthly values discriminates, returns right-looking neighbours, and produces
-  modality emergently. WO6c drafted by Opus — rebuild the Similarity panel on the conjunction.)
+- **Last updated:** 2026-07-23 (WO6c started on `cdop_wo6c`, scope = sandbox_v3 Similarity tab only.
+  Conjunction lens schema drafted and approved (typed conditions, `AND` membership, no composite
+  distance). **Part D run first and settled: temperature gets NO shape term** — temp-curve
+  correlation saturates within hemisphere (same-hemi median 0.963; a 0.95 cut admits ~9,000 basins),
+  and the tropical low-amplitude exception is noise not signal (2–5 °C band mean r 0.02). Temperature
+  lens = `temp_level` + `temp_range`. Findings + schema: `wo6c_findings.md`.)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -154,7 +157,7 @@ conjunction; engine + UI, ranked list → conjunction output.
 | WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` → merged to `cdop_pilot` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
 | WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. |
 | WO6b — Compare the curve, not its summaries | `cdop_wo6` | **complete (Opus-passed)** | Exploratory notebook. Compares the raw twelve-value curve directly (correlation) instead of scalars. Backbone found: correlation discriminates (A), modality is emergent not classified (B, the headline), Knoben ΔE agrees independently (C), the conjunction's load-bearing condition rotates by query (D), `s_d`/direct precip×temp correlation handle the phase question (E). No amplitude *scalar* survives; `cv`-band does. Corrected WO6a's Somalia flagship → low-*range* cause. Karl reframed the target to two discrete classes. Findings: `wo6b_findings.md`; handoff: `wo6_status_CC.md`. |
-| WO6c — Similarity panel, rebuilt on the conjunction | (branch TBD off `cdop_wo6`/`cdop_pilot`) | **drafted (Opus), not started** | Engine + UI. Replace the shipped composite-distance panel with the correlation-backed conjunction; output changes from ranked list to conjunction result. WO: `wo6c_similarity-redux.md`. |
+| WO6c — Similarity panel, rebuilt on the conjunction | `cdop_wo6c` (cut from `cdop_wo6`) | **in progress — Part D done** | Engine + UI. Scope: sandbox_v3 Similarity tab only (cdop_pilot WH Cities is a later WO). Conjunction schema approved (typed conditions, `AND` membership). Part D settled the temp lens: **no shape term** (temp-curve correlation saturates within hemisphere; tropical exception is noise). Parts A/B/C/E (engine conjunction path, painted-set UI, container line) not yet built. WO: `wo6c_similarity-redux.md`; findings: `wo6c_findings.md`. |
 
 ---
 
@@ -481,6 +484,7 @@ that conversation lands.
 | Compare the raw twelve-value curve, do not compress to scalars | Every prior similarity attempt compressed 12 monthly values to 2–5 scalars and failed *in the compression*. Correlation on the mean-centred twelve-value curve discriminates (Part A), passes every known-answer probe (Part B), and produces modality emergently — 92–100% same-modality neighbours vs a 17.4% base rate, with nothing about peak count in the metric (Part B). This is the backbone WO6c builds on. From WO6b Parts A–B. |
 | Modality is emergent from shape, not classified by a threshold | The prominence-threshold problem WO6a Part A could not solve is dissolved: correlation returns same-modality neighbours without any modality term. WO6c may leave modality emergent rather than gate on it. Independently corroborated by Knoben ΔE agreeing with peak-counting on 9/11 probes (Part C). From WO6b Parts B–C. |
 | No amplitude *scalar* works; `cv` as a per-query *band* does | Two dimensionless amplitude scalars both fail as global measures: `delta_P`/`rel_amp` collapse on bimodal curves (harmonic underfit), `cv` explodes on dry-season zeros. But `cv` as a ±band around the query's own value is self-protecting and non-redundant with the magnitude band (cuts hard *after* ratio). No single scalar means "how seasonal" across a Congo double-peak and a Sahel monsoon. From WO6b Part D. |
+| Temperature lens has no shape term | WO6c Part D: temperature-curve correlation saturates within hemisphere (same-hemi pairwise median 0.963; 55% of pairs > 0.95; per-probe rank-decay spread ~0.003 extratropically, a 0.95 cut admitting ~9,000 basins). Where the seasonal swing is large the curve is the same July/January sinusoid everywhere — redundant with `temp_range` (amplitude) + hemisphere (phase). Where the swing is small (tropics, ~11% under 3 °C) the curve is noise (2–5 °C amplitude band: mean r 0.02, median −0.027). No amplitude regime is both meaningful and discriminating. Temperature lens = `temp_level` + `temp_range`. Contrast precipitation, whose curve genuinely varies in shape (WO6b). From WO6c Part D. |
 | Target is two discrete classifications, not a continuous similarity score | Karl's WO6b reframe: EDOPS needs {aseasonal / 1-season / 2-season} and {warm-wet / cool-dry / neither}, not a continuous "how similar / how seasonal" number. WO6b already reaches both. The precip–temp phase axis is served cleanly by **direct precip×temp correlation** (verified, Cell 19: 7/7 sign agreement with `s_d`, and defined for the 2,694 bimodal basins `s_d` cannot handle). From WO6b Part E + Karl reframe. |
 
 ---
