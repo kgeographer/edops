@@ -13,7 +13,9 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
-from app.db.seasonality import find_similar, get_lens_registry
+from app.db.seasonality import (
+    find_similar, get_lens_registry, find_conjunction, get_conjunction_registry,
+)
 from app.db.context import get_context, get_context_population
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
@@ -531,6 +533,105 @@ def similarity(
             resp["result_count"] = query_meta["result_count"]
         return resp
 
+    finally:
+        conn.close()
+
+
+@router.get("/similarity/conjunction/lenses")
+def similarity_conjunction_lenses():
+    """Return the conjunction lens registry (WO6c) for the panel's lens selector."""
+    return {"lenses": get_conjunction_registry()}
+
+
+@router.get("/similarity/conjunction")
+def similarity_conjunction(
+    lat: float,
+    lon: float,
+    lens: str = "climate.precip",
+    level: int = 6,
+    corr: Optional[float] = None,
+    ratio: Optional[float] = None,
+    cv: Optional[float] = None,
+    t_level: Optional[float] = None,
+    t_range: Optional[float] = None,
+):
+    """Return the set of basins that satisfy EVERY condition of the lens (WO6c).
+
+    Non-compensatory conjunction on the raw twelve-value precipitation curve (WO6b backbone).
+    Output is a painted set, not a ranked list: membership is binary, empty is honest scarcity.
+
+    Bands (all optional; per-variable units, fall back to the schema default):
+      corr     — precip shape correlation cut (e.g. 0.85 / 0.90 / 0.95)
+      ratio    — precip magnitude ratio band (e.g. 1.25 / 1.5 / 2.0)
+      cv       — precip amplitude cv band (e.g. 0.10 / 0.15 / 0.25)
+      t_level  — temperature level band, °C (e.g. 2 / 3 / 4)
+      t_range  — temperature range band, °C (e.g. 2 / 4 / 6)
+
+    Response
+    --------
+    {
+      "lens_id", "lens_label", "level", "query_basin_id", "shade_by",
+      "bands": {condition: value, ...},        # effective band values
+      "set_size": int,
+      "query_values": {...},
+      "per_condition": {condition: count, ...}, # each condition alone
+      "attrition": [{condition, remaining}, ...],
+      "spatial": {"max_dist_from_query_km", "diameter_km"},
+      "members": [{basin_id, corr, lat, lon, place_id, place_name, ccodes}, ...]
+    }
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    bands = {
+        "precip_shape":        corr,
+        "precip_magnitude":    ratio,
+        "precip_amplitude_cv": cv,
+        "temp_level":          t_level,
+        "temp_range":          t_range,
+    }
+    bands = {k: v for k, v in bands.items() if v is not None}
+
+    conn = db_connect()
+    try:
+        query_hybas_id = _resolve_basin(conn, lat, lon, level=level)
+        try:
+            meta, members = find_conjunction(
+                query_hybas_id, lens_id=lens, bands=bands, level=level,
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        gaz_by_basin = _gaz_join(conn, [m["hybas_id"] for m in members]) if members else {}
+        out_members = []
+        for m in members:
+            place = gaz_by_basin.get(m["hybas_id"])
+            out_members.append({
+                "basin_id":     m["hybas_id"],
+                "corr":         m["corr"],
+                "pre_total_mm": m["pre_total_mm"],
+                "lat":          m["lat"],
+                "lon":          m["lon"],
+                "place_id":   place[1] if place else None,
+                "place_name": place[2] if place else None,
+                "ccodes":     place[3] if place else None,
+            })
+
+        return {
+            "lens_id":        meta["lens_id"],
+            "lens_label":     meta["lens_label"],
+            "level":          meta["level"],
+            "query_basin_id": meta["query_hybas_id"],
+            "shade_by":       meta["shade_by"],
+            "bands":          meta["bands"],
+            "set_size":       meta["set_size"],
+            "query_values":   meta["query_values"],
+            "per_condition":  meta["per_condition"],
+            "attrition":      meta["attrition"],
+            "spatial":        meta["spatial"],
+            "members":        out_members,
+        }
     finally:
         conn.close()
 
