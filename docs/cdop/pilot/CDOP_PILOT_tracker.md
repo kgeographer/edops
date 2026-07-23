@@ -5,12 +5,13 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-23 (WO6c started on `cdop_wo6c`, scope = sandbox_v3 Similarity tab only.
-  Conjunction lens schema drafted and approved (typed conditions, `AND` membership, no composite
-  distance). **Part D run first and settled: temperature gets NO shape term** — temp-curve
-  correlation saturates within hemisphere (same-hemi median 0.963; a 0.95 cut admits ~9,000 basins),
-  and the tropical low-amplitude exception is noise not signal (2–5 °C band mean r 0.02). Temperature
-  lens = `temp_level` + `temp_range`. Findings + schema: `wo6c_findings.md`.)
+- **Last updated:** 2026-07-23 (WO6c engine + UI built and browser-reviewed on `cdop_wo6c`, scope =
+  sandbox_v3 Similarity tab only. Conjunction schema (typed conditions, `AND` membership, no composite
+  distance); Part D settled temperature has NO shape term (saturates within hemisphere). Painted-set
+  panel shipped for review: declared per-variable bands, size + spatial-spread readout, honest-empty,
+  container line, L06/L08-aware. Two deferred candidates surfaced in review — `precip_temp_phase`
+  lens condition and a global climate-class map (both use precip×temp correlation). Findings +
+  schema: `wo6c_findings.md`.)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -157,7 +158,7 @@ conjunction; engine + UI, ranked list → conjunction output.
 | WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` → merged to `cdop_pilot` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
 | WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. |
 | WO6b — Compare the curve, not its summaries | `cdop_wo6` | **complete (Opus-passed)** | Exploratory notebook. Compares the raw twelve-value curve directly (correlation) instead of scalars. Backbone found: correlation discriminates (A), modality is emergent not classified (B, the headline), Knoben ΔE agrees independently (C), the conjunction's load-bearing condition rotates by query (D), `s_d`/direct precip×temp correlation handle the phase question (E). No amplitude *scalar* survives; `cv`-band does. Corrected WO6a's Somalia flagship → low-*range* cause. Karl reframed the target to two discrete classes. Findings: `wo6b_findings.md`; handoff: `wo6_status_CC.md`. |
-| WO6c — Similarity panel, rebuilt on the conjunction | `cdop_wo6c` (cut from `cdop_wo6`) | **in progress — Part D + engine done** | Scope: sandbox_v3 Similarity tab only. Part D settled the temp lens: **no shape term**. **Engine built** (`find_conjunction` in `seasonality.py`, separate from the untouched `find_similar`; raw-curve index + arid gate; `/api/similarity/conjunction`), pinned to WO6b Cell 16 (all 33 union counts, Timbuktu attrition 2148→…→102, accept-gate magnitude band; `tests/test_conjunction.py`, 6 green). Also removed dead `sandbox_v2` (template + `/sandbox/lookup2` route + its tests). **Remaining: painted-set UI (Parts A/B/C/E rendering) + container line.** WO: `wo6c_similarity-redux.md`; findings: `wo6c_findings.md`. |
+| WO6c — Similarity panel, rebuilt on the conjunction | `cdop_wo6c` (cut from `cdop_wo6`) | **engine + UI built, Karl-reviewed** | Scope: sandbox_v3 Similarity tab only. Part D: temp lens has **no shape term**. **Engine** (`find_conjunction`, separate from untouched `find_similar`; raw-curve index + arid gate; `/api/similarity/conjunction`), pinned to WO6b Cell 16 (`tests/test_conjunction.py`, 6 green). **UI**: painted set (shape-shaded members, unpainted non-members), declared per-variable bands (no ladder), size + spatial-spread readout, honest-empty, container line; respects L06/L08 toggle (feature-flagged `SIM_CONJUNCTION`, old panel kept). Removed dead `sandbox_v2`. Reviewed in browser 2026-07-23 (Tbilisi union, container toggle, SF shape hemisphere-blindness, SF equable-coast temp). **Deferred candidates:** `precip_temp_phase` condition + global climate-class map (both use the precip×temp correlation). WO: `wo6c_similarity-redux.md`; findings: `wo6c_findings.md`. |
 
 ---
 
@@ -458,6 +459,39 @@ a parallel thread is still open: a percentile-vector instrument with modality as
 eligibility gate rather than a weighted axis, discussed mid-WO5 and logged as a detour in
 `wo5_findings.md`, not built. Similarity stays live, unhidden, exactly as before. Revisit once
 that conversation lands.
+
+---
+
+## Proposed next instrument — global climate-class map (for Opus goal-setting)
+
+**Not a WO yet — a proposal surfaced during the WO6c UI review (2026-07-23), queued for the next
+goal-setting session.** Design ownership is Opus's; logged here so it is not lost.
+
+**The idea.** Every similarity instrument so far is *query-relative* ("here is a place, paint its
+kin"). This proposes the *class-relative* inverse: "here is a climate *type*, paint its global
+footprint" — no query point. It is exactly Karl's two-discrete-classes target rendered as geography,
+and the version of climate that lines up against cultural classifications for **Phase 4 D-PLACE
+correspondence**, which makes it a natural bridge rather than a detour.
+
+**Two axes, both already computable from the curves in the conjunction index:**
+- **Modality** {aseasonal / 1-season / 2-season} — emergent from shape / Knoben ΔE / peak-count
+  (WO6b B–C). *"All bimodal basins"* = the 2-season class (single-axis category).
+- **Phase** {warm-wet / cool-dry / neither} — sign/strength of the direct precip×temp correlation,
+  one dot product per basin (WO6b Cell 19). *"All Mediterranean basins"* = the cool-wet/warm-dry
+  pole × unimodal × seasonal (a **named cell in the two-axis grid**, not a single category). Other
+  named cells: monsoon (warm-wet unimodal), twin-rains (bimodal), aseasonal-wet, etc.
+
+**The rendering tech already exists.** This is the Explorer's categorical pattern verbatim:
+`/api/explorer/categorical?var=…` returns `{hybas_id: cat_id}` + a category list, painted on
+`basin06.pmtiles` (geometry served once, flat dict, sub-second global choropleth). Modality-class and
+phase-class become two new categorical "variables"; "show only bimodal" is a one-line MapLibre filter
+expression. **New work is small**: compute the per-basin class at index load (cheap, from curves
+already retained), expose it as a categorical variable, add a legend. Natural home: the Explorer
+(the global-choropleth surface), or a small dedicated "Climate classes" view.
+
+**Note on `precip_temp_phase`.** The same precip×temp correlation is also the deferred WO6c candidate
+condition (see below / `wo6c_findings.md` § Candidate next lens condition). The class map and that
+lens condition are two uses of one quantity — worth deciding together.
 
 ---
 

@@ -200,10 +200,68 @@ deferred until the variable set is confirmed (WO6c Part C).
 
 ---
 
-## Parts A, B, C, E — not yet started
+## Parts A, B, C, E — engine + UI built (in review)
 
-Output shape (sets not rankings), declared-band controls, lens composition, and container
-disclosure remain to be built. The engine (`find_similar` conjunction path, raw-curve retention in
-the index) and the sandbox_v3 Similarity-tab rebuild follow. Accept gate: Timbuktu's precipitation
-set contains no basin outside the declared magnitude band, and the WO6b probe set returns the same
-basins through the panel as the notebook produced (regression fixture = WO6b Cell 16 band values).
+- **Engine** (`app/db/seasonality.py`): `find_conjunction` + `CONJ_LENSES`/`CONJ_CONDITIONS`, separate
+  from the untouched `find_similar`. Conjunction index retains the mean-centred precip curve `Z`,
+  `pre_total`, `cv`, `tmp_mean`, `tmp_rng`, rep points, arid mask (shape condition only). Route
+  `GET /api/similarity/conjunction` (+ `/lenses`). Accept gate met: `tests/test_conjunction.py`
+  reproduces all 33 WO6b Cell 16 union counts, Timbuktu attrition [2148,645,119,113,102], the
+  magnitude-band gate, empty-is-honest, spatial spread. 6 tests green.
+- **UI** (`sandbox_v3.html`, feature-flagged `SIM_CONJUNCTION`): painted set (members shaded by shape
+  correlation; non-members unpainted — no pale outer wash), declared per-variable band controls
+  (no strict/moderate/loose ladder), set-size + spatial-spread readout, honest-empty message,
+  container line matching the Context tab. **Respects the L06/L08 toggle** (retires the old inert
+  level control). Old composite panel stays in the DOM behind the flag.
+
+## Review observations (browser + stats, 2026-07-23)
+
+Held up under Karl's walkthrough; three things worth keeping:
+
+- **The temp lens's selectivity rotates by query — it is not uniformly coarse.** SF's L08 basin has a
+  *low* seasonal range (8.5 °C, the equable California coast), which is distinctive, so the ±4 °C
+  range band is load-bearing and carves out a coherent global family — California, Baja, central
+  Chile, the Cape, SW/SE Australia, New Zealand, Mediterranean Europe (2,366 basins). Tbilisi's L08
+  range (22.3 °C) is common-continental, so its range band cuts little and the set is broad (6,338).
+  WO6b Part D's "load-bearing condition rotates by query", now visible *inside a single lens*.
+- **The L06/L08 toggle makes the container problem legible.** Tbilisi's temp set migrates south and
+  contracts from L06 (basin mean 5.33 °C, Caucasus-dragged) to L08 (10.76 °C, more city-like) — the
+  container effect shown as a before/after rather than stated as a caveat. The old panel ignored the
+  level toggle; wiring it in turns the mountain-drag into a demonstrable affordance.
+- **Large sets at L08 (render consideration, not a bug).** Temp-only at L08 can exceed the ~5,000
+  WebGL budget WO5 set for the Context choropleth (Tbilisi 6,338). It renders, but the coarsest lens
+  at the finest level is the worst case; precip/union stay small at any level. If it ever feels
+  sluggish, the clean fix is a cap with a "showing N of M — tighten a band" note rather than
+  auto-widening (which the honest-scarcity rule forbids). Logged; not capped.
+
+## Candidate next lens condition — `precip_temp_phase` (surfaced in review, logged not built)
+
+Karl's review of San Francisco under Precipitation regime at r≥0.95 exposed the honest limitation of
+a calendar-locked shape term, and points to the condition that would complete it. **Logged here as a
+candidate for the WO author (Opus) to weigh — not added to the schema; the design reasoning is
+Opus's to make.**
+
+**What was seen.** SF's L08 basin peaks in **January** (wet Nov–Mar, dry Jun–Aug — Mediterranean).
+The r≥0.95 set spans 18,301 km and includes Southern-Hemisphere basins at lat −24° to −26° (southern
+Africa, Paraguay/N. Argentina) that **also peak in January with r ≈ +0.995** — but there January is
+high summer. These are *austral-summer-rain* basins, not Mediterranean. Verified directly on the
+twelve-value curves (SF `[149,117,109,53,11,5,2,3,9,42,105,118]`; SH members peak-month J, r_vs_SF
++0.994…+0.995).
+
+**Why.** Shape correlation is calendar-locked (no circular shift — WO6b Part E) and therefore
+**hemisphere-blind**: it cannot separate SF's cool-season (winter) rain from the Kalahari's
+warm-season (summer) rain, because both fall in Dec–Feb. Not a defect — the documented behaviour of
+a shape measure. The union lens does not fix it either: `temp_level`/`temp_range` are level/range
+bands, not the rain-relative-to-warmth phase, so a summer-rain SH basin with SF-like temperature
+level and range still passes.
+
+**The condition that would separate them** is the precip×temp phase — Karl's own
+**{warm-wet / cool-dry / neither}** axis — served by the direct correlation of the 12-month precip
+curve against the 12-month temperature curve (WO6b Part E, Cell 19; verified there: 7/7 sign
+agreement with `s_d`, defined for the 2,694 bimodal basins `s_d` cannot handle). SF scores strongly
+**negative** (rain against warmth → cool-wet Mediterranean); the SH summer-rain twins score strongly
+**positive** (rain with warmth). A `precip_temp_phase` condition — a band or sign gate on that
+correlation — would collapse the SF set to genuine cool-season-rain basins and drop the hemisphere
+doubles. It is the natural completion of the two-discrete-classes target; deferred to Opus.
+
+See also `docs/design/deferred_items_register.md` § CDOP — similarity.
