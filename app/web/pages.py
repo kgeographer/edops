@@ -60,10 +60,6 @@ def workbench(request: Request):
 def cdop_pilot(request: Request):
     return _render(request, "cdop_pilot.html")
 
-@router.get("/sandbox/lookup2")
-def sandbox_v2(request: Request):
-    return _render(request, "sandbox_v2.html")
-
 @router.get("/sandbox/lookup3")
 def sandbox_v3(request: Request):
     return _render(request, "sandbox_v3.html")

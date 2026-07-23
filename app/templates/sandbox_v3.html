@@ -516,6 +516,70 @@
             <div id="v3-sim-map" style="height:445px; border-radius:6px;"></div>
             <div id="v3-sim-blurb" class="px-1 pt-2" style="font-size:0.88rem; max-width:680px;"></div>
           </div>
+
+          <!-- Conjunction panel (WO6c) — painted set, declared bands. Feature-flagged (SIM_CONJUNCTION). -->
+          <div id="v3-cj-content" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
+              <div id="v3-cj-title"></div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-muted small fw-semibold">Lens:</span>
+                <select id="v3-cj-lens" class="form-select form-select-sm" style="width:auto;">
+                  <option value="climate.precip" selected>Precipitation regime</option>
+                  <option value="climate.temp">Temperature regime</option>
+                  <option value="climate.union">Climate (precip + temp)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Declared bands, per-variable units. No strict/moderate/loose ladder. -->
+            <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.75rem;">
+              <div class="cj-band" data-cond="precip_shape">
+                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)</label>
+                <select id="v3-cj-corr" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="0.85">0.85 · broad</option>
+                  <option value="0.90" selected>0.90</option>
+                  <option value="0.95">0.95 · tight</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="precip_magnitude">
+                <label class="text-muted d-block mb-0">Annual total (×/÷)</label>
+                <select id="v3-cj-ratio" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="1.25">1.25 · tight</option>
+                  <option value="1.5" selected>1.5</option>
+                  <option value="2.0">2.0 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="precip_amplitude_cv">
+                <label class="text-muted d-block mb-0">Amplitude (±cv)</label>
+                <select id="v3-cj-cv" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="0.10">0.10 · tight</option>
+                  <option value="0.15" selected>0.15</option>
+                  <option value="0.25">0.25 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="temp_level">
+                <label class="text-muted d-block mb-0">Temp level (±°C)</label>
+                <select id="v3-cj-tlevel" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="2">2 · tight</option>
+                  <option value="3" selected>3</option>
+                  <option value="4">4 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="temp_range">
+                <label class="text-muted d-block mb-0">Temp range (±°C)</label>
+                <select id="v3-cj-trange" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="2">2 · tight</option>
+                  <option value="4" selected>4</option>
+                  <option value="6">6 · broad</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="v3-cj-readout" class="px-1 pb-2" style="font-size:0.9rem;"></div>
+            <div id="v3-cj-legend" class="d-flex align-items-center gap-2 px-1 pb-1" style="font-size:0.75rem;"></div>
+            <div id="v3-cj-map" style="height:420px; border-radius:6px;"></div>
+            <p id="v3-cj-container" class="text-muted px-1 pt-2 mb-0" style="font-size:0.78rem;"></p>
+          </div>
         </div>
 
       </div>
@@ -558,6 +622,21 @@
   let _simCurrentStringency  = 'moderate';         // strict | moderate | loose
   let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
   let _simQueryStringency    = null;               // stringency of last rendered fetch
+
+  // WO6c conjunction panel — paint the non-compensatory set. Flip SIM_CONJUNCTION to false to
+  // fall back to the old composite-distance panel (v3-sim-content), which stays wired and reachable.
+  const SIM_CONJUNCTION = true;
+  const CJ_LENS_CONDS = {
+    'climate.precip': ['precip_shape', 'precip_magnitude', 'precip_amplitude_cv'],
+    'climate.temp':   ['temp_level', 'temp_range'],
+    'climate.union':  ['precip_shape', 'precip_magnitude', 'precip_amplitude_cv', 'temp_level', 'temp_range'],
+  };
+  const CJ_SHADE_BY = { 'climate.precip': 'precip_shape', 'climate.temp': null, 'climate.union': 'precip_shape' };
+  let _cjMap         = null;   // MapLibre instance for the conjunction panel (lazy-initialized)
+  let _cjPopup       = null;
+  let _cjMarker      = null;
+  let _cjCurrentLens = 'climate.precip';
+  let _cjQueryKey    = null;   // dedupe: lat|lon|lens|level|bands — skip refetch if unchanged
 
   let _ctxMap           = null;  // MapLibre instance for Context tab (lazy-initialized)
   let _ctxPopup         = null;
@@ -610,10 +689,18 @@
     }
     _silentResig();  // re-derive _sigMemberIds at new level, repaint choropleth
     _ctxOnLevelChange();  // Context tab: adjust radius options for the new level, refetch if visible
+    _cjOnLevelChange();   // Conjunction panel: refetch at new level if visible (engine supports L06+L08)
   }
 
-  // Context tab must actually respond to the level toggle — the Similarity tab's
-  // level control is a known-inert no-op (WO5 proviso: do not reproduce that).
+  // WO6c: the conjunction panel refetches at the toggled level (the engine has both L06 and L08
+  // indexes), retiring the old Similarity tab's known-inert level control.
+  function _cjOnLevelChange() {
+    if (!SIM_CONJUNCTION) return;
+    const simVisible = document.getElementById('v3-tab-similarity-btn').classList.contains('active');
+    if (simVisible && currentLat != null) { _cjQueryKey = null; renderConjunction(); }
+  }
+
+  // Context tab must actually respond to the level toggle.
   function _ctxOnLevelChange() {
     const lv = _activeLevel();
     const allowed = CONTEXT_RADII_BY_LEVEL[lv];
@@ -1452,6 +1539,215 @@
     }
   }
 
+  // ── Conjunction panel (WO6c) ──────────────────────────────────────────────
+  // Paint the set of basins that satisfy EVERY condition of the lens (non-compensatory).
+  // Membership is binary: members are painted (shaded by shape agreement where the lens has a
+  // shape term), non-members are unpainted — no pale outer wash. Backend: /api/similarity/conjunction.
+
+  function _cjShowContent(show) {
+    document.getElementById('v3-sim-placeholder').style.display = show ? 'none' : '';
+    const oldC = document.getElementById('v3-sim-content');
+    const newC = document.getElementById('v3-cj-content');
+    if (SIM_CONJUNCTION) { newC.style.display = show ? '' : 'none'; oldC.style.display = 'none'; }
+    else                 { oldC.style.display = show ? '' : 'none'; newC.style.display = 'none'; }
+  }
+
+  function _cjUpdateBandVisibility() {
+    const conds = CJ_LENS_CONDS[_cjCurrentLens] || [];
+    document.querySelectorAll('#v3-cj-content .cj-band').forEach(el => {
+      el.style.display = conds.includes(el.dataset.cond) ? '' : 'none';
+    });
+  }
+
+  function _cjBands() {
+    return {
+      corr:    document.getElementById('v3-cj-corr').value,
+      ratio:   document.getElementById('v3-cj-ratio').value,
+      cv:      document.getElementById('v3-cj-cv').value,
+      t_level: document.getElementById('v3-cj-tlevel').value,
+      t_range: document.getElementById('v3-cj-trange').value,
+    };
+  }
+
+  function _cjRenderReadout(data) {
+    const el = document.getElementById('v3-cj-readout');
+    const n  = data.set_size ?? 0;
+    const label = data.lens_label || _cjCurrentLens;
+    if (n === 0) {
+      el.innerHTML = `<span class="fw-semibold">No basins match</span> under <em>${escapeHtml(label)}</em> `
+                   + `at these bands — honest scarcity, not an error. This place is rare; loosen a band to widen the net.`;
+      return;
+    }
+    const sp = data.spatial || {};
+    let spread = '';
+    if (sp.max_dist_from_query_km != null) {
+      const far = Math.round(sp.max_dist_from_query_km);
+      if (far <= 500)                  spread = ` — all within&nbsp;${far.toLocaleString()}&nbsp;km`;
+      else if (sp.diameter_km != null) spread = ` — spanning&nbsp;${Math.round(sp.diameter_km).toLocaleString()}&nbsp;km`;
+      else                             spread = ` — reaching&nbsp;${far.toLocaleString()}&nbsp;km out`;
+    }
+    el.innerHTML = `Your query matches <span class="fw-semibold">${n.toLocaleString()}</span> `
+                 + `basin${n === 1 ? '' : 's'} under <em>${escapeHtml(label)}</em>${spread}.`;
+  }
+
+  function _cjRenderLegend(data) {
+    const el = document.getElementById('v3-cj-legend');
+    if (!data.set_size) { el.innerHTML = ''; return; }
+    if (CJ_SHADE_BY[_cjCurrentLens] === 'precip_shape') {
+      el.innerHTML = `<span class="text-muted">weaker shape match</span>`
+        + `<div style="width:110px;height:8px;background:linear-gradient(to right,#dadaeb,#54278f);border-radius:3px;border:1px solid #ddd;"></div>`
+        + `<span class="text-muted">stronger</span>`
+        + `<span class="text-muted ms-2" style="border-left:1px solid #dee2e6;padding-left:0.6rem;">basins outside the set are unpainted</span>`;
+    } else {
+      el.innerHTML = `<span style="display:inline-block;width:14px;height:10px;background:#3182bd;border:1px solid #ddd;border-radius:2px;"></span>`
+        + `<span class="text-muted">in the set</span>`
+        + `<span class="text-muted ms-2" style="border-left:1px solid #dee2e6;padding-left:0.6rem;">basins outside the set are unpainted</span>`;
+    }
+  }
+
+  async function renderConjunction() {
+    if (currentLat == null || currentLon == null) return;
+    const lv = _activeLevel();
+    const b  = _cjBands();
+    const conds = CJ_LENS_CONDS[_cjCurrentLens] || [];
+    const key = [currentLat, currentLon, _cjCurrentLens, lv, b.corr, b.ratio, b.cv, b.t_level, b.t_range].join('|');
+    if (key === _cjQueryKey && _cjMap) { _cjMap.resize(); return; }
+    _cjQueryKey = key;
+
+    if (!_cjMap) {
+      _cjMap = new maplibregl.Map({
+        container: 'v3-cj-map',
+        center: [10, 20], zoom: 1, attributionControl: true,
+        style: {
+          version: 8,
+          sources: {
+            carto: {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              ],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            },
+          },
+          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+        },
+      });
+      _cjPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
+      await new Promise(r => _cjMap.on('load', r));
+      _cjMap.addSource('cj-basins', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _cjMap.addLayer({
+        id: 'cj-fill', type: 'fill', source: 'cj-basins',
+        paint: { 'fill-color': '#54278f', 'fill-opacity': 0.72 },
+      });
+      _cjMap.addLayer({
+        id: 'cj-outline', type: 'line', source: 'cj-basins',
+        paint: { 'line-color': '#3f007d', 'line-width': 0.4, 'line-opacity': 0.5 },
+      });
+      _cjMap.on('mouseenter', 'cj-fill', (e) => {
+        _cjMap.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const ccodes   = JSON.parse(p.ccodes || '[]').join(', ');
+        const nameHtml = p.place_name ? `<strong>${escapeHtml(p.place_name)}</strong><br>` : '';
+        const ccHtml   = ccodes ? `${escapeHtml(ccodes)}<br>` : '';
+        const corrHtml = (p.corr != null && p.corr !== 'null')
+          ? `shape r ${parseFloat(p.corr).toFixed(3)}<br>` : '';
+        _cjPopup.setLngLat(e.lngLat)
+          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">`
+                 + `${corrHtml}${Math.round(parseFloat(p.pre_total_mm)).toLocaleString()}&nbsp;mm/yr</span>`)
+          .addTo(_cjMap);
+      });
+      _cjMap.on('mouseleave', 'cj-fill', () => {
+        _cjMap.getCanvas().style.cursor = '';
+        _cjPopup.remove();
+      });
+    } else {
+      _cjMap.resize();
+    }
+
+    document.getElementById('v3-cj-title').innerHTML = _currentPlaceName
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+
+    if (_cjMarker) _cjMarker.remove();
+    _cjMarker = new maplibregl.Marker({ color: '#2c5f8a' })
+      .setLngLat([currentLon, currentLat]).addTo(_cjMap);
+
+    // Container disclosure — matches the Context tab (WO6c Part E).
+    document.getElementById('v3-cj-container').textContent = _currentPlaceName
+      ? `This describes the Level ${lv} basin ${_currentPlaceName} sits in, not ${_currentPlaceName} itself.`
+      : `This describes the Level ${lv} basin containing this point.`;
+
+    try {
+      const params = new URLSearchParams({ lat: currentLat, lon: currentLon, lens: _cjCurrentLens, level: lv });
+      if (conds.includes('precip_shape'))        params.set('corr', b.corr);
+      if (conds.includes('precip_magnitude'))    params.set('ratio', b.ratio);
+      if (conds.includes('precip_amplitude_cv')) params.set('cv', b.cv);
+      if (conds.includes('temp_level'))          params.set('t_level', b.t_level);
+      if (conds.includes('temp_range'))          params.set('t_range', b.t_range);
+
+      const r = await fetch(`/api/similarity/conjunction?${params.toString()}`);
+      if (!r.ok) throw new Error(`conjunction ${r.status}`);
+      const data = await r.json();
+      const members = data.members || [];
+
+      _cjRenderReadout(data);
+      _cjRenderLegend(data);
+
+      if (!members.length) {
+        _cjMap.getSource('cj-basins').setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+
+      const ids = members.map(m => m.basin_id);
+      const geomR = await fetch('/api/basin-geom', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, level: lv }),
+      });
+      if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
+      const geom = await geomR.json();
+
+      const features = members
+        .filter(m => geom[m.basin_id])
+        .map(m => ({
+          type: 'Feature',
+          geometry: JSON.parse(geom[m.basin_id]),
+          properties: {
+            basin_id:     m.basin_id,
+            corr:         m.corr,
+            pre_total_mm: m.pre_total_mm,
+            place_name:   m.place_name || '',
+            ccodes:       JSON.stringify(m.ccodes || []),
+          },
+        }));
+
+      _cjMap.getSource('cj-basins').setData({ type: 'FeatureCollection', features });
+
+      // Shade within the set by shape agreement (shape lenses); flat fill for temperature.
+      if (CJ_SHADE_BY[_cjCurrentLens] === 'precip_shape') {
+        const cut = parseFloat(b.corr);
+        _cjMap.setPaintProperty('cj-fill', 'fill-color',
+          ['interpolate', ['linear'], ['to-number', ['get', 'corr']],
+            cut, '#dadaeb', 1.0, '#54278f']);
+      } else {
+        _cjMap.setPaintProperty('cj-fill', 'fill-color', '#3182bd');
+      }
+
+      if (features.length) {
+        const bounds = new maplibregl.LngLatBounds();
+        bounds.extend([currentLon, currentLat]);
+        features.forEach(f => {
+          const g = f.geometry;
+          const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
+          rings.forEach(ring => ring.forEach(c => bounds.extend(c)));
+        });
+        _cjMap.fitBounds(bounds, { padding: 30, maxZoom: 5 });
+      }
+    } catch (err) {
+      console.error('[conjunction]', err);
+    }
+  }
+
   // ── Context tab ───────────────────────────────────────────────────────────
   // No ranking, no candidate list, no composite distance -- each of the 7
   // variables is reported independently against two populations (all basins /
@@ -1924,10 +2220,12 @@
     if (_ctxMap) _ctxMap.getSource('ctx-basins')?.setData({ type: 'FeatureCollection', features: [] });
     document.getElementById('v3-ctx-count').textContent = '';
     document.getElementById('v3-ctx-legend').style.display = 'none';
-    document.getElementById('v3-sim-content').style.display = 'none';
-    document.getElementById('v3-sim-placeholder').style.display = '';
+    _cjShowContent(false);
     if (_simMarker) { _simMarker.remove(); _simMarker = null; }
     if (_simMap) _simMap.getSource('sim-basins')?.setData({ type: 'FeatureCollection', features: [] });
+    if (_cjMarker) { _cjMarker.remove(); _cjMarker = null; }
+    if (_cjMap) _cjMap.getSource('cj-basins')?.setData({ type: 'FeatureCollection', features: [] });
+    _cjQueryKey = null;
     document.getElementById('v3-sim-blurb').innerHTML = '';
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
   }
@@ -2328,8 +2626,7 @@
             document.getElementById('v3-ctx-placeholder').style.display = 'none';
             document.getElementById('v3-ctx-content').style.display = '';
             document.getElementById('v3-tab-context-btn').classList.remove('disabled');
-            document.getElementById('v3-sim-placeholder').style.display = 'none';
-            document.getElementById('v3-sim-content').style.display = '';
+            _cjShowContent(true);
             document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
           }
         } catch (_) { /* analysis/seasonality tabs stay at placeholder */ }
@@ -3398,7 +3695,24 @@
   document.querySelectorAll('input[name="v3ctx-radius"]').forEach(input => {
     input.addEventListener('change', renderContext);
   });
-  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderSimilarity);
+  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab',
+    SIM_CONJUNCTION ? renderConjunction : renderSimilarity);
+
+  // Conjunction panel controls (WO6c)
+  document.getElementById('v3-cj-lens').addEventListener('change', function () {
+    _cjCurrentLens = this.value;
+    _cjUpdateBandVisibility();
+    _cjQueryKey = null;
+    renderConjunction();
+  });
+  ['v3-cj-corr', 'v3-cj-ratio', 'v3-cj-cv', 'v3-cj-tlevel', 'v3-cj-trange'].forEach(id => {
+    document.getElementById(id).addEventListener('change', function () {
+      _cjQueryKey = null;
+      renderConjunction();
+    });
+  });
+  _cjUpdateBandVisibility();
+
   document.getElementById('v3-sim-group').addEventListener('change', function () {
     _populateSubLensSelect(this.value);
     const first = _simLensRegistry.find(l => l.group === this.value && l.status === 'active');

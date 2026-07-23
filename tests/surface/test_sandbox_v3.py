@@ -39,11 +39,6 @@ class TestRoute:
         assert r.status_code == 200
         assert "text/html" in r.headers["content-type"]
 
-    def test_v2_still_200(self, client):
-        """Confirm sandbox_v2 is untouched."""
-        r = client.get("/sandbox/lookup2")
-        assert r.status_code == 200
-
 
 # ---------------------------------------------------------------------------
 # Structure — fork tabs present
