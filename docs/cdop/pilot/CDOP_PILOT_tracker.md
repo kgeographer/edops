@@ -5,9 +5,9 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-22 (WO6a complete — non-compensatory similarity notebook, all four
-  parts run; percentile bands locked in over absolute; `climate.precip` compensation defect
-  confirmed alongside `climate.temp`'s)
+- **Last updated:** 2026-07-22 (WO6a **and** WO6b complete. WO6b found the backbone: correlation on
+  the raw twelve monthly values discriminates, returns right-looking neighbours, and produces
+  modality emergently. WO6c drafted by Opus — rebuild the Similarity panel on the conjunction.)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -98,7 +98,47 @@ ran all four parts from `wo6a_notebook.md`. Headline results (full detail:
   rainfall because harmonic shape agrees). Locked as a decision below — this is now confirmed on
   both active Climate lenses, not just `climate.temp`.
 
-Next: WO6b, informed directly by Part B's percentile-bands decision.
+**WO6b took a different tack and it is the one that worked** — the first thing in the whole
+similarity arc that mostly did. Rather than tune the non-compensatory instrument's parameters, WO6b
+stopped compressing the twelve monthly values into scalars and compared the **raw twelve-value curve
+directly** (Pearson correlation on mean-centred monthly precipitation). `cdop_wo6` continued;
+notebook `notebooks/cdop/wo6b_compare_curves.ipynb`, all five parts run. Full findings:
+`docs/cdop/pilot/wo6b_findings.md`. Opus reviewed and passed WO6b complete. Headlines:
+
+- **Part A — profile correlation discriminates.** U-shaped pairwise distribution (not massed near
+  1.0); rank-decay splits cleanly by modality — distinctive-shape queries rank strongly, generic
+  single-peaked queries land in dense near-tie neighbourhoods (shape-space autocorrelation, WO4
+  Part 1 restated). Ranks 1–10 are near-ties for every probe: the signal is "~100 vs ~1000", not "a
+  single best match" — same conclusion Context reached from the other direction.
+- **Part B — modality is emergent, not classified. The strongest result.** With nothing about peak
+  count in the metric, correlation returns same-modality neighbours anyway (top-50 same-class share
+  92–100% vs a 17.4% base rate). The prominence-threshold problem WO6a Part A could not solve is here
+  **dissolved** for the cases that matter. All known-answer probes pass (Timbuktu→single-monsoon,
+  George Town→twin-peaked, Somalia→two-rains highlands, Tennessee→coherent local).
+- **Part C — Knoben ΔE (published, threshold-free) agrees with peak-counting on 9/11 probes**,
+  independently. Faithful implementation, validated on synthetics. Made three-way (adds ASEASONAL /
+  UNDETERMINED). The WO's own predictions that Mombasa/George Town would fail were wrong — both come
+  out bimodal; the equal-amplitude breakdown lands past 2:1 asymmetry.
+- **Part D — the conjunction's load-bearing condition rotates by query.** Every condition (shape,
+  magnitude, temperature level/range, amplitude) is the tightest one for some probe and none for
+  all — the anti-fragile property a non-compensatory checklist should have, and the strongest single
+  argument the design is right. No amplitude *scalar* survived (`cv` explodes on dry zeros,
+  `delta_P`/`rel_amp` collapse on bimodal), but `cv` as a per-query *band* is sound and non-redundant
+  with magnitude.
+- **Part E — `s_d` (precip–temp phase) is the hemisphere instrument; the shift-max trick is dead
+  weight** (best shift is always 0). And Karl's session reframe: the target EDOPS needs is two small
+  *discrete* classifications, not a continuous similarity score — {aseasonal / 1-season / 2-season}
+  and {warm-wet / cool-dry / neither}. WO6b already reaches both; the second is served cleanly by
+  **direct precip×temp correlation** (verified Cell 19: 7/7 sign agreement with `s_d`, and defined
+  for the 2,694 bimodal basins where `s_d` is not). Handoff to Opus: `docs/cdop/pilot/wo6_status_CC.md`.
+
+WO6b also **corrected `wo6a_findings.md`**: Part A's "no correct floor value" conclusion stands, but
+Somalia was the wrong flagship (its L06 basin is 87 mm/yr, arid-gated), the binding condition is low
+seasonal *range* not aridity (Tennessee is the right example), and Mombasa's miss is a *fraction*
+problem not a floor one. Amendment applied to `wo6a_findings.md`.
+
+Next: **WO6c** (drafted by Opus, `wo6c_similarity-redux.md`) — rebuild the Similarity panel on the
+conjunction; engine + UI, ranked list → conjunction output.
 
 ---
 
@@ -112,7 +152,9 @@ Next: WO6b, informed directly by Part B's percentile-bands decision.
 | WO3 — Continuous precip lens + retire phase lens | `cdop_wo3` | **stasis** | A+B complete (merged); C+D suspended; similarity approach under reconsideration |
 | WO4 — Four similarity instruments on shared probes | `cdop_pilot` | **complete** | All six parts run; verdict: four instruments by output shape (ranked analogue w/ exclusion parameter, matched set, global/local typology). Design decision on architecture now pending. |
 | WO5 — Context tab; temperature lens diagnostic; hide Similarity | `cdop_wo5` → merged to `cdop_pilot` | **A–D complete, E set aside** | Context tab shipped (percentiles, no ranking, no composite score). Part E waits on further similarity-architecture discussion with Opus, not a technical blocker. |
-| WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. Next: WO6b, informed by Part B's percentile-bands decision. |
+| WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. |
+| WO6b — Compare the curve, not its summaries | `cdop_wo6` | **complete (Opus-passed)** | Exploratory notebook. Compares the raw twelve-value curve directly (correlation) instead of scalars. Backbone found: correlation discriminates (A), modality is emergent not classified (B, the headline), Knoben ΔE agrees independently (C), the conjunction's load-bearing condition rotates by query (D), `s_d`/direct precip×temp correlation handle the phase question (E). No amplitude *scalar* survives; `cv`-band does. Corrected WO6a's Somalia flagship → low-*range* cause. Karl reframed the target to two discrete classes. Findings: `wo6b_findings.md`; handoff: `wo6_status_CC.md`. |
+| WO6c — Similarity panel, rebuilt on the conjunction | (branch TBD off `cdop_wo6`/`cdop_pilot`) | **drafted (Opus), not started** | Engine + UI. Replace the shipped composite-distance panel with the correlation-backed conjunction; output changes from ranked list to conjunction result. WO: `wo6c_similarity-redux.md`. |
 
 ---
 
@@ -436,6 +478,10 @@ that conversation lands.
 | `climate.precip` has the same compensation defect as `climate.temp` | At `loose` stringency Timbuktu's admitted set spans 51–736 mm/yr against a 190 mm/yr query (0.27×–3.87×); George Town and Mombasa show the same pattern. Same mechanism as `climate.temp` (Locked decisions, above): level (`log_pre_mm_syr`) and shape (`a1,b1,a2,b2`) bundled into one composite Euclidean distance, so shape agreement buys tolerance on magnitude. Confirms the composite-distance problem is not `climate.temp`-specific. From WO6a Part D. |
 | Percentile bands over absolute bands for a non-compensatory instrument | Both predicted failure modes confirmed with real numbers: absolute bands hold physical width fixed (~7–21× count swings across 8 probes); percentile bands hold count roughly fixed (8–50× swings in physical width, worst for precipitation's right-skew). Conjunction across all three variables did not resolve in absolute's favor as hypothesized — percentile is the more generous rule in 6/8 probes, and specifically more generous where the query point is unusual. From WO6a Part B. |
 | No data-driven prominence threshold or absolute-floor value for peak-counting modality | Corpus-wide sweep (5–50% prominence, both levels) never plateaus — `RECOMMENDED_FRAC=0.20` is precedent-only. A fixed absolute floor cannot both reject arid-noise false-bimodal calls and accept real modest-magnitude bimodal signal (20mm floor fixes noise, misses Somalia's Gu/Deyr pattern; 10mm floor fixes Somalia, partially reopens noise). Untested candidate: a relative-to-annual-total floor instead of a fixed mm value. From WO6a Part A. |
+| Compare the raw twelve-value curve, do not compress to scalars | Every prior similarity attempt compressed 12 monthly values to 2–5 scalars and failed *in the compression*. Correlation on the mean-centred twelve-value curve discriminates (Part A), passes every known-answer probe (Part B), and produces modality emergently — 92–100% same-modality neighbours vs a 17.4% base rate, with nothing about peak count in the metric (Part B). This is the backbone WO6c builds on. From WO6b Parts A–B. |
+| Modality is emergent from shape, not classified by a threshold | The prominence-threshold problem WO6a Part A could not solve is dissolved: correlation returns same-modality neighbours without any modality term. WO6c may leave modality emergent rather than gate on it. Independently corroborated by Knoben ΔE agreeing with peak-counting on 9/11 probes (Part C). From WO6b Parts B–C. |
+| No amplitude *scalar* works; `cv` as a per-query *band* does | Two dimensionless amplitude scalars both fail as global measures: `delta_P`/`rel_amp` collapse on bimodal curves (harmonic underfit), `cv` explodes on dry-season zeros. But `cv` as a ±band around the query's own value is self-protecting and non-redundant with the magnitude band (cuts hard *after* ratio). No single scalar means "how seasonal" across a Congo double-peak and a Sahel monsoon. From WO6b Part D. |
+| Target is two discrete classifications, not a continuous similarity score | Karl's WO6b reframe: EDOPS needs {aseasonal / 1-season / 2-season} and {warm-wet / cool-dry / neither}, not a continuous "how similar / how seasonal" number. WO6b already reaches both. The precip–temp phase axis is served cleanly by **direct precip×temp correlation** (verified, Cell 19: 7/7 sign agreement with `s_d`, and defined for the 2,694 bimodal basins `s_d` cannot handle). From WO6b Part E + Karl reframe. |
 
 ---
 

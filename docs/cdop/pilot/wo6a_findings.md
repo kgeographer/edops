@@ -94,6 +94,40 @@ fraction of the basin's own annual precipitation total, not a fixed mm figure) i
 worth raising for WO6b — untested here — since a fixed mm number can't scale between Somalia's
 ~250mm/yr regime and a much wetter one's noise floor.
 
+### Amendment (2026-07-22, from WO6b Cells 3 / 18 / 18b) — conclusion stands, cause relocated
+
+WO6b measured the corpus directly and the "no correct floor value" conclusion above **holds** —
+but two of its supporting specifics were wrong and are corrected here:
+
+1. **Somalia (hybas 1060006860) was the wrong flagship, and the "~250mm/yr" figure above is
+   wrong.** Its L06 basin is **87 mm/yr** — below the well-evidenced `THRESH_ARID = 100 mm/yr`
+   (`wo2_findings.md`), so it should never have been classified for modality at all. It was
+   described above as "a textbook two-monsoon climate" on the strength of the *region's* Gu/Deyr
+   reputation, without checking the basin's own annual total — the WO-framing-bias failure mode
+   (`feedback_wo_framing_bias`) in our own writing.
+
+2. **The binding condition is low seasonal *range*, not aridity.** The floor binds exactly when
+   `range < abs_floor / frac`. Across the 1,543 non-arid basins that flip class between the 10mm
+   and 20mm floors, median range is 29 mm but **37.8% are wetter than 500 mm/yr** — wet, low-range
+   basins. `THRESH_ARID` gates on *total* and cannot screen these. So the tension is real and
+   general, but its driver is seasonal range; the correct in-corpus example is **Tennessee**
+   (1335 mm/yr, range 52 mm — wet, flat, and genuinely ambiguous), not Somalia.
+
+3. **Mombasa is a separate, cleaner correction.** Its validated second peak fails peak-counting at
+   *both* floors, because `0.20 × range (217) = 43.4 mm` dominates both the 10mm and 20mm floors —
+   so the floor is irrelevant to it, and the miss is driven by the **0.20 fraction being too
+   high**, not by the floor value. Three independent methods (WO6b correlation, WO6b Knoben ΔE,
+   WO2a `R_dbl`) call Mombasa bimodal; the peak-counter is the lone dissenter, on the fraction.
+   Neither of Part A's two knobs (fraction, floor) is right for it.
+
+**The candidate fix named above (relative-to-annual-total floor) is superseded, not confirmed.**
+WO6b found no single dimensionless scalar (`cv`, `rel_amp`, `delta_P`) that means "how seasonal"
+across both a Congo double-peak and a Sahel monsoon — each fails in mirror image. What WO6b *did*
+establish is that modality need not be classified by any floor at all: profile correlation returns
+same-modality neighbours emergently (WO6b Part B, 5–6× enrichment on the bimodal probes with
+modality nowhere in the metric), which dissolves the threshold problem for the cases that matter
+rather than solving it. Full detail: `docs/cdop/pilot/wo6b_findings.md`.
+
 **Vs. `R_dbl`:** 73.8% agreement at L06 (`RECOMMENDED_FRAC=0.20`, 20mm floor — run once, before
 the 10mm retry above; not re-run at 10mm). Peak-counting is
 markedly more conservative overall (1,951 basins flagged vs. `R_dbl`'s 2,953). Drawn disagreement
