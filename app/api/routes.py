@@ -17,6 +17,7 @@ from app.db.seasonality import (
     find_similar, get_lens_registry, find_conjunction, get_conjunction_registry,
 )
 from app.db.context import get_context, get_context_population
+from app.db import climate_classes as cc
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -632,6 +633,50 @@ def similarity_conjunction(
             "spatial":        meta["spatial"],
             "members":        out_members,
         }
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# WO7 — climate classes (two discrete axes + composed cell). In-memory index
+# in app/db/climate_classes.py; L06 eager at startup, L08 lazy on first use.
+# ---------------------------------------------------------------------------
+@router.get("/explorer/climate-class", include_in_schema=False)
+def explorer_climate_class(axis: str, level: int = 6):
+    """Flat {hybas_id: cat_id} + category list for one climate-class axis (WO7).
+
+    axis: 'modality' (5 classes) or 'phase' (4 classes), each a clean choropleth. The composed
+    cell is a client-side picker over the two axes (WO7a Issue 2), not a separate choropleth.
+    Response: {meta: {axis, level, n_total, conventions}, categories: [...], values: {id: cat_id}}
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    try:
+        categories, values = cc.axis_values(level, axis)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {
+        "meta": {"axis": axis, "level": level, "n_total": len(values),
+                 "conventions": cc.CONVENTIONS},
+        "categories": categories,
+        "values": values,
+    }
+
+
+@router.get("/similarity/climate-class", include_in_schema=False)
+def similarity_climate_class(lat: float, lon: float, level: int = 6):
+    """Same-climate-class set for the basin containing (lat, lon) — the coarse, hemisphere-blind
+    Similarity lens (WO7a). Paints every basin sharing the query's cell; reports size + spatial
+    spread. Contrast the conjunction lens: this is calendar-blind and coarser (hundreds, not ~14).
+    """
+    if level not in (6, 8):
+        raise HTTPException(status_code=400, detail="level must be 6 or 8")
+    conn = db_connect()
+    try:
+        qid = _resolve_basin(conn, lat, lon, level=level)   # raises 404 if no basin
+        return cc.class_lens(level, qid, conn=conn)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     finally:
         conn.close()
 
