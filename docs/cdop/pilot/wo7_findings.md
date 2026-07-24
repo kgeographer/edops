@@ -1,10 +1,10 @@
 # WO7 findings — Climate classes: the class-relative inverse
 
 **Work order:** `docs/cdop/pilot/wo7_climate-classes.md`
-**Branch:** `cdop_pilot`.
-**Notebook:** `notebooks/cdop/wo7_climate_classes.ipynb` (Cells 1–12, all run 2026-07-23).
+**Branch:** `cdop_pilot` (investigation), `cdop_wo7a` (WO7a label-lock + build).
+**Notebook:** `notebooks/cdop/wo7_climate_classes.ipynb` (Cells 1–13, run 2026-07-23/24).
 **Prior:** `wo6b_findings.md` (Knoben ΔE = Cell 12; precip×temp corr = Cell 19), `wo6c_findings.md` (Part D — temp has no shape term).
-**Status:** investigation complete (Parts A–D + two diagnostics). Verdict: **sound instrument, over-broad names — Option A (honest rename).** UI/engine extraction not yet built (pending label lock at the Opus goal-setting session).
+**Status:** **complete.** Investigation (Parts A–D + three diagnostics) → verdict **sound instrument, over-broad names → Option A (honest rename)**. WO7a (`wo7a_label-lock-build.md`) locked the composed labels and shipped the engine + the **Atlas** surface (2026-07-24, Karl visually signed off). Sandbox similarity/climate-class track closed here; `cdop_pilot` similarity (WH Cities) is a separate future thread with Opus.
 
 Two independent axes, computed and painted separately (the WO's "it joins nothing"), with named cells at their cross-product (Option A cross-product variable, per Karl):
 - **Modality** {arid / aseasonal / 1-season / 2-season / undetermined} — arid gate → cv gate → Knoben ΔE.
@@ -119,9 +119,32 @@ absent). The WO cautioned "a class holding 48% is carrying too much"; here it is
 measurement defect — a **naming** defect. Renamed in the notebook to **"summer-rain (thermally
 coupled)."** This is the template for the whole verdict.
 
-**Surface build (Explorer categorical + same-cell Similarity lens) is not yet built** — it is the
-extraction step, held pending the label lock (below), since wiring class definitions that are about to
-be renamed would be wasted work.
+### Surface as built (WO7a, 2026-07-24) — the Atlas tab
+
+The WO's "Explorer categorical" framing was superseded twice, both times correctly:
+
+- **explorer.html is frozen** — nothing new goes there. And a class distribution is **not
+  place-specific**, so it does not belong on the sandbox's place-centric tabs (Map, Signature,
+  Similarity, …) either. It needed its own home.
+- **New `Atlas` tab in `sandbox_v3.html`** — a global-views surface (climate classes first,
+  extensible). Place-independent: no Resolve, no signature; the left column swaps from the
+  Settlements/Polities controls to a global-context info panel while it is active. Flush-right,
+  cyan-tinted tab to signal it is the one non-place-centred feature.
+- **Rendering = the Map-tab pattern, not GeoJSON.** Paints the basin PMTiles
+  (`/static/explorer/basin0{6,8}.pmtiles`) via **feature-state**, fed by the flat `{hybas_id:
+  class_id}` dict from `axis_values` (`GET /api/explorer/climate-class?axis=modality|phase&level=`).
+  No `/basin-geom`, no 6000-id cap, no query — ~0.3 MB, instant at L06, fine at L08 (~190k
+  feature-states, no place-scoping since the Atlas is global by design).
+- **Views:** *Modality* (5-class choropleth), *Phase* (4-class choropleth), and two named-class
+  highlights — *Two wet seasons* (`2-season`) and *One wet season, cool-season rain*
+  (`1-season × cool-wet`, intersected client-side from the two axis dicts). Legend + a view-aware
+  explanatory panel carrying the declared conventions and the "subsets, not Köppen" note.
+
+**Render decision (WO7a Issue 2):** two axis choropleths + a client-side compose/highlight, **not** a
+~20-colour cell choropleth (which overflows a qualitative palette). Supersedes the WO's "three
+variables (modality, phase, cell)" wording. Karl visually signed off 2026-07-24. The place-anchored
+`class_lens` / `GET /api/similarity/climate-class` also exist and are tested, but no UI consumes them
+yet — kept as a valid "class of this place + its cohort" query for the future `cdop_pilot` thread.
 
 ---
 

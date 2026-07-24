@@ -11,6 +11,9 @@
   <style>
     body { font-size: 1rem; }
     #left-col { position: sticky; top: 1rem; }
+    /* Atlas tab is the one place-independent tab — tint it so it reads as different. */
+    #v3-tab-atlas-btn { background-color: #e0f7fa; }
+    #v3-tab-atlas-btn:hover { background-color: #cbeff5; }
     #v3-band-checks .form-check,
     #v3-polity-band-checks .form-check { margin-bottom: 0; }
     #v3-band-checks .form-check-label,
@@ -45,6 +48,9 @@
 
     <!-- ===================== LEFT COLUMN ===================== -->
     <div class="col-md-4" id="left-col">
+
+      <!-- Place-input mode: the Settlements/Polities controls. Hidden when the Atlas tab is active. -->
+      <div id="v3-left-place">
 
       <!-- Fork tab strip + Reset button (same horizontal level) -->
       <div class="d-flex align-items-end">
@@ -373,6 +379,22 @@
 
       </div><!-- /v3-intro -->
 
+      </div><!-- /v3-left-place -->
+
+      <!-- Atlas mode: global-view context (WO7a). Replaces the place controls when the Atlas tab is
+           active — a global distribution is the one feature not tied to a resolved place. -->
+      <div id="v3-left-atlas" class="d-none">
+        <div class="card border-top-0">
+          <div class="card-body p-2">
+            <h5 class="mb-1">Atlas — global climate classes</h5>
+            <p class="text-muted small mb-2">A worldwide view, independent of any resolved place. Every
+              basin is coloured by a discrete climate class computed from its monthly rainfall and
+              temperature curves.</p>
+            <div id="v3-atlas-info" class="small"></div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /left col -->
 
     <!-- ===================== RIGHT COLUMN ===================== -->
@@ -402,6 +424,11 @@
         <li class="nav-item" role="presentation">
           <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
+        </li>
+        <li class="nav-item ms-auto" role="presentation">
+          <button class="nav-link" id="v3-tab-atlas-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-atlas" type="button" role="tab"
+                  title="Global climate-class distributions — not tied to the resolved place">Atlas</button>
         </li>
       </ul>
 
@@ -580,6 +607,29 @@
             <div id="v3-cj-map" style="height:420px; border-radius:6px;"></div>
             <p id="v3-cj-container" class="text-muted px-1 pt-2 mb-0" style="font-size:0.78rem;"></p>
           </div>
+        </div>
+
+        <!-- Atlas pane (WO7a) — global climate-class distributions; place-independent. -->
+        <div class="tab-pane fade" id="v3-pane-atlas" role="tabpanel">
+          <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
+            <h5 class="mb-0" id="v3-atlas-title">Global climate classes</h5>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="text-muted small fw-semibold">View:</span>
+              <select id="v3-atlas-view" class="form-select form-select-sm" style="width:auto;">
+                <option value="mod" selected>Modality — all classes</option>
+                <option value="pha">Phase — all classes</option>
+                <option value="twin">Two wet seasons</option>
+                <option value="med">One wet season, cool-season rain</option>
+              </select>
+              <select id="v3-atlas-level" class="form-select form-select-sm" style="width:auto;">
+                <option value="6" selected>L6</option>
+                <option value="8">L8</option>
+              </select>
+            </div>
+          </div>
+          <div id="v3-atlas-legend" class="d-flex align-items-center gap-3 px-1 pb-2 flex-wrap" style="font-size:0.78rem;"></div>
+          <div id="v3-atlas-map" style="height:460px; border-radius:6px;"></div>
+          <p id="v3-atlas-note" class="text-muted px-1 pt-2 mb-0" style="font-size:0.75rem;">A global view — no place is queried. Colours are declared climate classes.</p>
         </div>
 
       </div>
@@ -1745,6 +1795,132 @@
       }
     } catch (err) {
       console.error('[conjunction]', err);
+    }
+  }
+
+  // ── Atlas tab (WO7a) — global climate-class distributions, place-independent ──
+  // Paints the basin PMTiles via feature-state from the flat class dict
+  // (/api/explorer/climate-class). No query, no place, no /basin-geom. L6 + L8.
+  const ATLAS_VIEWS = {
+    mod:  { kind:'axis', axis:'modality', title:'Modality — all classes',
+            blurb:'Every basin coloured by how its rainfall is spread through the year — from arid, through one or two wet seasons, to even year-round.' },
+    pha:  { kind:'axis', axis:'phase', title:'Phase — all classes',
+            blurb:'Every basin coloured by when its rain falls relative to warmth: with the warm season, against it (cool-season rain), weakly, or with no temperature cycle at all.' },
+    twin: { kind:'hi', axis:'modality', match:'2-season', color:'#8E44AD', title:'Two wet seasons',
+            blurb:'Basins with two distinct wet seasons a year. The tropical core (East Africa, Colombia, Sri Lanka, the Guinea coast, the maritime continent) is the classic bimodal “twin-rains”; the mid-latitude patches (SW USA, the Anatolia–Central Asia belt) are real spring-and-autumn bimodality — this class is the honest superset, not just the tropics.' },
+    med:  { kind:'hi2', mod:'1-season', pha:'cool-wet', color:'#2166AC', title:'One wet season, cool-season rain',
+            blurb:'A single wet season falling in the cool half of the year — the cool/cold-winter-wet family. The five classical Mediterranean regions are its mild-winter subset; it also includes the colder winter-rain belt through Iran and Central Asia.' },
+  };
+  let _atlasMap = null;
+  let _atlasView = 'mod';
+  let _atlasLevel = 6;
+  let _atlasBasinLevel = null;
+  const _atlasDicts = {};   // `${axis}${level}` -> {values, idToColor, idToCount, keyToId, categories, conventions}
+
+  async function _atlasEnsureDicts(axis, level) {
+    const k = `${axis}${level}`;
+    if (_atlasDicts[k]) return _atlasDicts[k];
+    const r = await fetch(`/api/explorer/climate-class?axis=${axis}&level=${level}`);
+    if (!r.ok) throw new Error(`climate-class ${r.status}`);
+    const data = await r.json();
+    const idToColor = {}, idToCount = {}, keyToId = {};
+    data.categories.forEach(c => { idToColor[c.id] = c.color; idToCount[c.id] = c.count; keyToId[c.key] = c.id; });
+    _atlasDicts[k] = { values:data.values, idToColor, idToCount, keyToId,
+                       categories:data.categories, conventions:data.meta.conventions };
+    return _atlasDicts[k];
+  }
+
+  async function _atlasEnsureMap() {
+    if (_atlasMap) { _atlasMap.resize(); return; }
+    _atlasMap = new maplibregl.Map({
+      container:'v3-atlas-map', center:[12, 25], zoom:1.1, attributionControl:true,
+      style:{ version:8,
+        sources:{ carto:{ type:'raster',
+          tiles:['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
+          tileSize:256,
+          attribution:'&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } },
+        layers:[{ id:'carto-bg', type:'raster', source:'carto' }] },
+    });
+    await new Promise(res => _atlasMap.on('load', res));
+  }
+
+  function _atlasBasinLayer(level) {
+    const sl = `basin0${level}`;
+    if (_atlasBasinLevel === level && _atlasMap.getSource('atlas-basins')) return sl;
+    ['atlas-basin-fill', 'atlas-basin-line'].forEach(id => { if (_atlasMap.getLayer(id)) _atlasMap.removeLayer(id); });
+    if (_atlasMap.getSource('atlas-basins')) _atlasMap.removeSource('atlas-basins');
+    _atlasMap.addSource('atlas-basins', { type:'vector', url:`pmtiles:///static/explorer/${sl}.pmtiles` });
+    _atlasMap.addLayer({ id:'atlas-basin-fill', type:'fill', source:'atlas-basins', 'source-layer':sl,
+      paint:{ 'fill-color':['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity':0.85 } });
+    _atlasMap.addLayer({ id:'atlas-basin-line', type:'line', source:'atlas-basins', 'source-layer':sl,
+      paint:{ 'line-color':'rgba(90,90,90,0.12)', 'line-width':0.3 } });
+    _atlasBasinLevel = level;
+    return sl;
+  }
+
+  function _atlasLegendAxis(d) {
+    document.getElementById('v3-atlas-legend').innerHTML = d.categories.filter(c => c.count > 0).map(c =>
+      `<span class="d-inline-flex align-items-center gap-1"><span style="display:inline-block;width:14px;height:10px;background:${c.color};border:1px solid #ccc;border-radius:2px;"></span>`
+      + `${escapeHtml(c.label)} <span class="text-muted">(${c.count.toLocaleString()})</span></span>`).join('');
+  }
+  function _atlasLegendHi(v, n) {
+    document.getElementById('v3-atlas-legend').innerHTML =
+      `<span class="d-inline-flex align-items-center gap-1"><span style="display:inline-block;width:14px;height:10px;background:${v.color};border:1px solid #ccc;border-radius:2px;"></span>`
+      + `${escapeHtml(v.title)} <span class="text-muted">(${n.toLocaleString()} basins)</span></span>`
+      + `<span class="text-muted" style="border-left:1px solid #dee2e6;padding-left:0.6rem;">all other basins in grey</span>`;
+  }
+
+  function _atlasRenderInfo(v, conventions) {
+    const el = document.getElementById('v3-atlas-info');
+    if (!el) return;
+    el.innerHTML = `<p class="mb-2"><strong>${escapeHtml(v.title)}</strong></p>`
+      + `<p class="mb-2">${escapeHtml(v.blurb)}</p>`
+      + (conventions ? `<p class="text-muted mb-0" style="font-size:0.72rem;">${escapeHtml(conventions)}</p>` : '');
+  }
+
+  async function renderAtlas() {
+    try {
+      await _atlasEnsureMap();
+      const sl = _atlasBasinLayer(_atlasLevel);
+      const v  = ATLAS_VIEWS[_atlasView];
+      document.getElementById('v3-atlas-title').textContent = v.title;
+      _atlasMap.removeFeatureState({ source:'atlas-basins', sourceLayer:sl });
+      let conventions = '';
+
+      if (v.kind === 'axis') {
+        const d = await _atlasEnsureDicts(v.axis, _atlasLevel);
+        conventions = d.conventions;
+        for (const [id, cat] of Object.entries(d.values))
+          _atlasMap.setFeatureState({ source:'atlas-basins', sourceLayer:sl, id:Number(id) }, { fc: d.idToColor[cat] || '#ccc' });
+        _atlasLegendAxis(d);
+
+      } else if (v.kind === 'hi') {
+        const d = await _atlasEnsureDicts(v.axis, _atlasLevel);
+        conventions = d.conventions;
+        const matchId = d.keyToId[v.match]; let n = 0;
+        for (const [id, cat] of Object.entries(d.values)) {
+          const hit = (cat === matchId); if (hit) n++;
+          _atlasMap.setFeatureState({ source:'atlas-basins', sourceLayer:sl, id:Number(id) }, { fc: hit ? v.color : '#e9e9e9' });
+        }
+        _atlasLegendHi(v, n);
+
+      } else if (v.kind === 'hi2') {
+        const dm = await _atlasEnsureDicts('modality', _atlasLevel);
+        const dp = await _atlasEnsureDicts('phase', _atlasLevel);
+        conventions = dm.conventions;
+        const modId = dm.keyToId[v.mod], phaId = dp.keyToId[v.pha]; let n = 0;
+        for (const [id, cat] of Object.entries(dm.values)) {
+          const hit = (cat === modId && dp.values[id] === phaId); if (hit) n++;
+          _atlasMap.setFeatureState({ source:'atlas-basins', sourceLayer:sl, id:Number(id) }, { fc: hit ? v.color : '#e9e9e9' });
+        }
+        _atlasLegendHi(v, n);
+      }
+      _atlasRenderInfo(v, conventions);
+    } catch (err) {
+      console.error('[atlas]', err);
+      document.getElementById('v3-atlas-legend').innerHTML =
+        '<span class="text-danger">Could not load climate classes.</span>';
     }
   }
 
@@ -3712,6 +3888,24 @@
     });
   });
   _cjUpdateBandVisibility();
+
+  // Atlas tab (WO7a) — global class distributions; place-independent.
+  document.getElementById('v3-atlas-view').addEventListener('change', function () {
+    _atlasView = this.value; renderAtlas();
+  });
+  document.getElementById('v3-atlas-level').addEventListener('change', function () {
+    _atlasLevel = parseInt(this.value, 10); renderAtlas();
+  });
+  // Entering Atlas: swap the left column to global-context text; leaving: restore place controls.
+  document.getElementById('v3-tab-atlas-btn').addEventListener('shown.bs.tab', function () {
+    document.getElementById('v3-left-place').classList.add('d-none');
+    document.getElementById('v3-left-atlas').classList.remove('d-none');
+    renderAtlas();
+  });
+  document.getElementById('v3-tab-atlas-btn').addEventListener('hide.bs.tab', function () {
+    document.getElementById('v3-left-atlas').classList.add('d-none');
+    document.getElementById('v3-left-place').classList.remove('d-none');
+  });
 
   document.getElementById('v3-sim-group').addEventListener('change', function () {
     _populateSubLensSelect(this.value);
