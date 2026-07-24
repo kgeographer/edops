@@ -9,6 +9,7 @@ from app.web.pages import router as page_router
 from app.db.connection import db_connect
 from app.db.seasonality import load_similarity_index
 from app.db.context import load_context_index
+from app.db.climate_classes import load_class_index
 
 
 @asynccontextmanager
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
         load_similarity_index(conn, level=8)
         load_context_index(conn, level=6)
         load_context_index(conn, level=8)
+        load_class_index(conn, level=6)   # L06 eager (~1.5 s); L08 lazy on first use (WO7a)
     finally:
         conn.close()
     yield

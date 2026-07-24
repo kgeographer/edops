@@ -5,13 +5,18 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-23 (WO6c engine + UI built and browser-reviewed on `cdop_wo6c`, scope =
-  sandbox_v3 Similarity tab only. Conjunction schema (typed conditions, `AND` membership, no composite
-  distance); Part D settled temperature has NO shape term (saturates within hemisphere). Painted-set
-  panel shipped for review: declared per-variable bands, size + spatial-spread readout, honest-empty,
-  container line, L06/L08-aware. Two deferred candidates surfaced in review — `precip_temp_phase`
-  lens condition and a global climate-class map (both use precip×temp correlation). Findings +
-  schema: `wo6c_findings.md`.)
+- **Last updated:** 2026-07-23 (WO7 investigation complete + WO7a build backend on `cdop_wo7a`, cut
+  from `cdop_pilot`. WO7 built the class-relative **climate-class** instrument — two discrete axes
+  (modality {arid/even-year-round/one/two-wet-seasons/undetermined}; phase {warm-/cool-season rain,
+  weak coupling, no temperature cycle}) + a composed cell. Verdict: **sound instrument, over-broad
+  labels** — the five Köppen-Med regions / Knoben twin-rains cores all appear but as *subsets* of
+  correct broader classes; both candidate sharpening dials (winter temp, aridity) tested and neither
+  isolates Köppen-Med cleanly → **Option A (honest rename)**. WO7a locked the labels (composed from
+  axes, modality-first, aseasonal drops the phase term, classic names as legend annotation only) and
+  built the backend: in-memory startup index in `app/db/climate_classes.py` (persist-view sourced,
+  L06 eager / L08 lazy), routes `/api/explorer/climate-class` + `/api/similarity/climate-class`,
+  `tests/test_climate_classes.py` (8 green). UI (Explorer two-axis choropleths + picker; sandbox
+  same-cell lens) not yet built. Findings: `wo7_findings.md`. Data-source map added to CLAUDE.md.)
 - **Rule:** when a decision is locked or a gap is resolved, remove the corresponding
   forward-walking note in the same edit — never leave a resolved item as an open question
   elsewhere in the file.
@@ -141,8 +146,11 @@ Somalia was the wrong flagship (its L06 basin is 87 mm/yr, arid-gated), the bind
 seasonal *range* not aridity (Tennessee is the right example), and Mombasa's miss is a *fraction*
 problem not a floor one. Amendment applied to `wo6a_findings.md`.
 
-Next: **WO6c** (drafted by Opus, `wo6c_similarity-redux.md`) — rebuild the Similarity panel on the
-conjunction; engine + UI, ranked list → conjunction output.
+**WO6c merged to `cdop_pilot`.** Then **WO7** (`wo7_climate-classes.md`) built the class-relative
+climate-class instrument and **WO7a** (`wo7a_label-lock-build.md`) locked labels + built the backend,
+both on `cdop_pilot` (WO7 notebook-first, then `cdop_wo7a` cut for the build). See the header and the
+WO7/WO7a roadmap rows. **Next: the WO7a UI** — Explorer two-axis choropleths + compose picker;
+sandbox same-cell Similarity lens (hemisphere-blind, coarser than the conjunction).
 
 ---
 
@@ -159,6 +167,8 @@ conjunction; engine + UI, ranked list → conjunction output.
 | WO6a — Non-compensatory similarity: notebook | `cdop_wo6` (cut from `cdop_pilot`) | **complete** | Exploratory only — no engine/API/UI change. All four parts run; verdict: percentile bands over absolute (Part B); instrument doesn't collapse to empty even at k=4 (Part C), but no data-driven prominence threshold or absolute-floor value exists (Part A) and `climate.precip` carries the same composite-distance compensation defect as `climate.temp` (Part D). Full findings: `docs/cdop/pilot/wo6a_findings.md`. |
 | WO6b — Compare the curve, not its summaries | `cdop_wo6` | **complete (Opus-passed)** | Exploratory notebook. Compares the raw twelve-value curve directly (correlation) instead of scalars. Backbone found: correlation discriminates (A), modality is emergent not classified (B, the headline), Knoben ΔE agrees independently (C), the conjunction's load-bearing condition rotates by query (D), `s_d`/direct precip×temp correlation handle the phase question (E). No amplitude *scalar* survives; `cv`-band does. Corrected WO6a's Somalia flagship → low-*range* cause. Karl reframed the target to two discrete classes. Findings: `wo6b_findings.md`; handoff: `wo6_status_CC.md`. |
 | WO6c — Similarity panel, rebuilt on the conjunction | `cdop_wo6c` (cut from `cdop_wo6`) | **engine + UI built, Karl-reviewed** | Scope: sandbox_v3 Similarity tab only. Part D: temp lens has **no shape term**. **Engine** (`find_conjunction`, separate from untouched `find_similar`; raw-curve index + arid gate; `/api/similarity/conjunction`), pinned to WO6b Cell 16 (`tests/test_conjunction.py`, 6 green). **UI**: painted set (shape-shaded members, unpainted non-members), declared per-variable bands (no ladder), size + spatial-spread readout, honest-empty, container line; respects L06/L08 toggle (feature-flagged `SIM_CONJUNCTION`, old panel kept). Removed dead `sandbox_v2`. Reviewed in browser 2026-07-23 (Tbilisi union, container toggle, SF shape hemisphere-blindness, SF equable-coast temp). **Deferred candidates:** `precip_temp_phase` condition + global climate-class map (both use the precip×temp correlation). WO: `wo6c_similarity-redux.md`; findings: `wo6c_findings.md`. |
+| WO7 — Climate classes (class-relative instrument) | `cdop_pilot` (notebook) | **investigation complete** | Notebook `wo7_climate_classes.ipynb` (Cells 1–13). Two discrete axes computed per basin: **modality** (arid gate → cv gate → vectorized Knoben ΔE, validated grid==exact==WO6b on 9/9 synthetics + 11/11 probes) and **phase** (precip×temp correlation + 5 °C thermal gate). Phase map is textbook (equatorial gold, winter-rain belt, summer-rain). Verdict: **sound instrument, over-broad names** — the five Köppen-Med regions all appear (Med cell 63.5% "leak" into the Iran/C-Asia winter-rain belt), twin-rains cores right (Indonesia was L06 aggregation, returns 8× at L08; mid-latitude bimodal is real & scale-stable). Both sharpening dials tested (Cell 12 winter temp, Cell 13 aridity) — neither isolates Köppen-Med cleanly. WO: `wo7_climate-classes.md`; findings: `wo7_findings.md`. |
+| WO7a — Label lock + build | `cdop_wo7a` (cut from `cdop_pilot`) | **labels locked; backend built; UI pending** | Scope: sandbox + Explorer (NOT `cdop_pilot`). **Labels (Option A):** cells compose from axis names (modality-first), aseasonal drops the phase term, classic names annotation-only — a test enforces no Köppen/Knoben name in any label. **Storage:** in-memory startup index (similarity/context family), persist-view sourced, L06 eager (~1.9 s) / L08 lazy (~20 s, never at boot) — see CLAUDE.md § "How runtime data reaches the app". **Backend:** `app/db/climate_classes.py` (compute + index + `axis_values`/`class_lens`), `main.py` L06 load, routes `/api/explorer/climate-class` + `/api/similarity/climate-class`, `tests/test_climate_classes.py` (8 green). **Render decision (Issue 2):** two axis choropleths + a client-side compose picker — NOT a 20-color cell choropleth (supersedes the WO's "three variables" wording). **UI not yet built:** Explorer choropleths + picker + legend/convention note; sandbox same-cell lens (hemisphere-blind, coarser). WO: `wo7a_label-lock-build.md`; findings: `wo7_findings.md`. |
 
 ---
 
@@ -462,36 +472,24 @@ that conversation lands.
 
 ---
 
-## Proposed next instrument — global climate-class map (for Opus goal-setting)
+## Climate-class instrument — realized as WO7 + WO7a
 
-**Not a WO yet — a proposal surfaced during the WO6c UI review (2026-07-23), queued for the next
-goal-setting session.** Design ownership is Opus's; logged here so it is not lost.
+**Built.** The class-relative climate-class map proposed at the WO6c review is now WO7 (investigation)
++ WO7a (labels + backend); see the roadmap rows and `wo7_findings.md`. Three corrections to the
+original proposal, recorded so the stale version is not re-derived:
 
-**The idea.** Every similarity instrument so far is *query-relative* ("here is a place, paint its
-kin"). This proposes the *class-relative* inverse: "here is a climate *type*, paint its global
-footprint" — no query point. It is exactly Karl's two-discrete-classes target rendered as geography,
-and the version of climate that lines up against cultural classifications for **Phase 4 D-PLACE
-correspondence**, which makes it a natural bridge rather than a detour.
+- The negative phase pole is **`cool-wet`** (Mediterranean), not "cool-dry" (that names the *warm-wet*
+  pole). Med vs monsoon is separated by phase *sign*; the one-wet-season condition separates both from
+  twin-rains.
+- Rendering is **not** the `/explorer/categorical` DB pattern and **not** at index-load. The classes
+  are a derived per-basin quantity from the persist-view curves; they live in an **in-memory startup
+  index** (the similarity/context family), served by `/api/explorer/climate-class` +
+  `/api/similarity/climate-class`. The Knoben grid is ~18 s at L08, so L08 loads lazily, not at boot.
+- The cell is **not** a 20-color choropleth. Two axis choropleths + a client-side compose picker
+  (WO7a Issue 2).
 
-**Two axes, both already computable from the curves in the conjunction index:**
-- **Modality** {aseasonal / 1-season / 2-season} — emergent from shape / Knoben ΔE / peak-count
-  (WO6b B–C). *"All bimodal basins"* = the 2-season class (single-axis category).
-- **Phase** {warm-wet / cool-dry / neither} — sign/strength of the direct precip×temp correlation,
-  one dot product per basin (WO6b Cell 19). *"All Mediterranean basins"* = the cool-wet/warm-dry
-  pole × unimodal × seasonal (a **named cell in the two-axis grid**, not a single category). Other
-  named cells: monsoon (warm-wet unimodal), twin-rains (bimodal), aseasonal-wet, etc.
-
-**The rendering tech already exists.** This is the Explorer's categorical pattern verbatim:
-`/api/explorer/categorical?var=…` returns `{hybas_id: cat_id}` + a category list, painted on
-`basin06.pmtiles` (geometry served once, flat dict, sub-second global choropleth). Modality-class and
-phase-class become two new categorical "variables"; "show only bimodal" is a one-line MapLibre filter
-expression. **New work is small**: compute the per-basin class at index load (cheap, from curves
-already retained), expose it as a categorical variable, add a legend. Natural home: the Explorer
-(the global-choropleth surface), or a small dedicated "Climate classes" view.
-
-**Note on `precip_temp_phase`.** The same precip×temp correlation is also the deferred WO6c candidate
-condition (see below / `wo6c_findings.md` § Candidate next lens condition). The class map and that
-lens condition are two uses of one quantity — worth deciding together.
+**`precip_temp_phase` as a conjunction condition** stays deferred — WO7 validated the precip×temp
+quantity as a *map*; wiring it as a WO6c lens condition is a separate decision (`wo6c_findings.md`).
 
 ---
 
@@ -520,6 +518,10 @@ lens condition are two uses of one quantity — worth deciding together.
 | No amplitude *scalar* works; `cv` as a per-query *band* does | Two dimensionless amplitude scalars both fail as global measures: `delta_P`/`rel_amp` collapse on bimodal curves (harmonic underfit), `cv` explodes on dry-season zeros. But `cv` as a ±band around the query's own value is self-protecting and non-redundant with the magnitude band (cuts hard *after* ratio). No single scalar means "how seasonal" across a Congo double-peak and a Sahel monsoon. From WO6b Part D. |
 | Temperature lens has no shape term | WO6c Part D: temperature-curve correlation saturates within hemisphere (same-hemi pairwise median 0.963; 55% of pairs > 0.95; per-probe rank-decay spread ~0.003 extratropically, a 0.95 cut admitting ~9,000 basins). Where the seasonal swing is large the curve is the same July/January sinusoid everywhere — redundant with `temp_range` (amplitude) + hemisphere (phase). Where the swing is small (tropics, ~11% under 3 °C) the curve is noise (2–5 °C amplitude band: mean r 0.02, median −0.027). No amplitude regime is both meaningful and discriminating. Temperature lens = `temp_level` + `temp_range`. Contrast precipitation, whose curve genuinely varies in shape (WO6b). From WO6c Part D. |
 | Target is two discrete classifications, not a continuous similarity score | Karl's WO6b reframe: EDOPS needs {aseasonal / 1-season / 2-season} and {warm-wet / cool-dry / neither}, not a continuous "how similar / how seasonal" number. WO6b already reaches both. The precip–temp phase axis is served cleanly by **direct precip×temp correlation** (verified, Cell 19: 7/7 sign agreement with `s_d`, and defined for the 2,694 bimodal basins `s_d` cannot handle). From WO6b Part E + Karl reframe. |
+| Climate-class instrument is sound; the Köppen/Knoben names over-promise → Option A | The two axes produce climatologically-coherent classes, but *broader* than the named types: the five Köppen-Med regions all appear inside a bigger cool-season-rain belt (63.5% "leak" to Iran/C-Asia), the twin-rains cores inside a real mid-latitude-bimodal superset. Both sharpening dials tested — winter temp (Cell 12) and aridity (Cell 13) — and neither isolates Köppen-Med without discarding too much of the genuine article. Rename honestly, keep the two minimal axes. From WO7 Parts A–D + Diagnostics 1–3. |
+| Class labels compose from the axes; classic names are annotation only | Cells get no prose name of their own — they comma-join the axis labels, modality-first (`One wet season, cool-season rain`); the phase term is dropped for `aseasonal` (flat rain → timing meaningless → `Even year-round`). Köppen-Mediterranean / monsoon / twin-rains appear only in the legend note as *subsets*, never as class names — a composed name cannot over-promise by construction. A test enforces no Köppen/Knoben name in any label. From WO7a label lock. |
+| Climate classes live in an in-memory startup index, not parquet/table | They are a derived per-basin quantity from the persist-view curves (like the similarity/context/conjunction indices), so they join that family: computed at startup from `v_basin0{6,8}_persist_rev2`, held in RAM, served fast. L06 eager (~1.9 s); L08 lazy on first use (~18 s Knoben never at boot). Not parquet (that's for big cubes, e.g. LISA 107 MB) and not a DB table. Source map recorded in CLAUDE.md § "How runtime data reaches the app". From the WO7a data-source review. |
+| Cell rendered as two axis choropleths + a compose picker, not a 20-color map | 5 modality × 4 phase ≈ 17 populated cells overflows a qualitative palette and is unreadable. The two axes each render as a clean choropleth (5- and 4-class); the combined cell is a client-side picker ("pick a modality + a phase, highlight it") — the same shape as the same-cell lens. Supersedes WO7a's "three variables (modality, phase, cell)" wording (Issue 2, Karl-approved). From WO7a build. |
 
 ---
 

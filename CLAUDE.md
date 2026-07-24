@@ -220,6 +220,18 @@ NOTE: see documentation/API_guide.md (master, public)
 - PostGIS geometries: pass as WKT via `ST_GeomFromText()`, not EWKB hex (psycopg3 endian issue)
 - BasinATLAS NoData sentinel: `−9999` — mask before any analysis
 
+### How runtime data reaches the app (source map)
+
+| Source | Serves | Read by |
+|---|---|---|
+| **Base tables** `basin06`/`basin08` (direct SQL) | raw stored BasinATLAS columns + `geom` + point resolution | `routes.py` only — Explorer choropleths (`/explorer/values`, `/explorer/categorical`), `_resolve_basin`, basin-preview |
+| **Persist views** `v_basin0{6,8}_persist_rev2` | monthly **arrays** `pre_mm_monthly`/`tmp_dc_monthly` (°C, not ×10) — the **only** path to the twelve-month curves; base tables have only the 12 separate `×10` scalar columns | `signature.py`, `seasonality.py`, `context.py`, `climate_classes.py` |
+| **In-memory indices** built at startup (`main.py` lifespan) from the persist views | similarity + conjunction + context instruments; numpy per request | `seasonality.py`, `context.py` |
+| **Parquet** (read once → cached in a module global) | large precomputed analysis **cubes** only | LISA (`output/edop/esda/lisa_classifications.parquet`, 107 MB) via `routes.py` |
+| **PMTiles** (static, client-rendered) | geometry | templates (`basin06/08.pmtiles`, `rivers.pmtiles`) |
+
+**Rule of thumb:** anything needing the monthly curves or a derived field goes through the **persist views** (never the base tables). Base tables give raw columns + geometry. Parquet is reserved for large cubes (LISA); small per-basin derived results belong in an **in-memory startup index** (the similarity/context family) or a DB table, not a loose parquet.
+
 ---
 
 ## Deployment
