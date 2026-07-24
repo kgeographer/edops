@@ -32,12 +32,19 @@ def live_server_url():
     thread.start()
 
     base = f"http://{_TEST_HOST}:{_TEST_PORT}"
-    for _ in range(30):
+    # Wait generously: uvicorn accepts connections only after lifespan startup, which loads
+    # five in-memory indices (similarity + context L6/L8, class L6) from 190k-basin views —
+    # ~8 s cold. Too short a budget yields ERR_CONNECTION_REFUSED for every browser test.
+    ready = False
+    for _ in range(150):   # up to ~30 s
         try:
             httpx.get(f"{base}/api/health", timeout=1.0)
+            ready = True
             break
         except Exception:
             time.sleep(0.2)
+    if not ready:
+        raise RuntimeError(f"test server at {base} did not become ready within ~30 s")
 
     yield base
 

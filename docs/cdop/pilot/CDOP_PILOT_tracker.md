@@ -58,7 +58,9 @@ consult at every step resumption, add rows there (`docs/design/deferred_items_re
 
 Phase opened 2026-07-18. Integration branch: `cdop` (cut from `main` after DEMO merge).
 WO branches cut from `cdop`, merged back on accept.
-**584 tests pass, 50 skipped.**
+**460 tests pass, 14 skipped, 0 failed** (full suite, 2026-07-24, WO7a merge gate — incl. the 51
+Playwright surface tests; readiness budget in `tests/surface/conftest.py` widened to ~30 s since the
+lifespan now loads five in-memory indices).
 
 **WO5 Parts A–D complete; Part E deliberately set aside.** WO4's four-instruments verdict
 (previous entry, still holds — see WO4 section) prompted WO5 as one concrete response: rather than
