@@ -5,7 +5,19 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-23 (WO7 investigation complete + WO7a build backend on `cdop_wo7a`, cut
+- **Last updated:** 2026-07-25 (**WO8a complete** on `cdop_wo8a`, cut from `cdop_pilot` — the first
+  environment↔culture correspondence step: a descriptive notebook, no engine/API/UI. Built the shared
+  society→basin→signature substrate (1,133 EA societies at L08, matches WO4) and drew nested-bet PCoAs.
+  **Accept gate PASSED:** EA042 subsistence visibly separates, cleanest in the **Climate envelope** bet
+  (aridity+precip+runoff+temp+seasonal-amplitude). Three decisions locked — (1) bet = Climate envelope;
+  (2) seasonality representation = raw 12-value curve *if any*, but non-load-bearing (rainfall
+  timing/shape/modality is orthogonal to subsistence — refuted the WO's modality-class expectation);
+  (3) keep the modality-standalone bet as a categorical corroborator, read via the crosstab
+  (pastoralism→25% arid, intensive-ag→arid=irrigation, fishers→cool-wet). **Headline: environment sets
+  bounds, it does not determine** — one near-hard constraint (water for rain-fed agriculture), one soft
+  gradient (temperature), broad adaptability otherwise; so a contested trait (EA034, 8c) should couple
+  weakly. Substrate persisted `output/cdop/wo8a_substrate.parquet`. Next: WO8b (PERMANOVA/PERMDISP,
+  within-family restricted permutation). Findings: `wo8a_findings.md`. Prior: WO7 investigation complete + WO7a build backend on `cdop_wo7a`, cut
   from `cdop_pilot`. WO7 built the class-relative **climate-class** instrument — two discrete axes
   (modality {arid/even-year-round/one/two-wet-seasons/undetermined}; phase {warm-/cool-season rain,
   weak coupling, no temperature cycle}) + a composed cell. Verdict: **sound instrument, over-broad
@@ -160,6 +172,18 @@ place-independent global-views surface in `sandbox_v3.html`, climate classes fir
 similarity / climate-class track is closed.** `cdop_pilot` similarity (WH Cities) is a separate
 future thread Karl will take up with Opus.
 
+**WO8a (2026-07-25, `cdop_wo8a`) opened the correspondence-testing arc** — the first environment↔culture
+probe, and the first CDOP work to touch the D-PLACE societies since WO4. A descriptive notebook only
+(no engine/API/UI): the shared society→basin→signature substrate + nested-bet PCoAs of EA042
+subsistence. **Accept gate PASSED** (EA042 separates cleanest in the Climate envelope bet); the
+instrument is calibrated. Standout finding — **environment sets outer bounds on culture, it does not
+determine it**: one near-hard constraint (water for rain-fed agriculture), one soft gradient
+(temperature), broad adaptability otherwise; rainfall seasonality is orthogonal to subsistence. Three
+decisions locked (bet = Climate envelope; seasonality = raw curve if any, non-load-bearing; keep the
+modality-standalone bet as a crosstab corroborator). **Next: WO8b** — the actual test (PERMANOVA/PERMDISP
+with within-language-family restricted permutation for Galton's problem), Opus drafting. Findings:
+`wo8a_findings.md`; exec summary for Opus: `wo8a_exec_summary.md`.
+
 ---
 
 ## Roadmap
@@ -177,6 +201,7 @@ future thread Karl will take up with Opus.
 | WO6c — Similarity panel, rebuilt on the conjunction | `cdop_wo6c` (cut from `cdop_wo6`) | **engine + UI built, Karl-reviewed** | Scope: sandbox_v3 Similarity tab only. Part D: temp lens has **no shape term**. **Engine** (`find_conjunction`, separate from untouched `find_similar`; raw-curve index + arid gate; `/api/similarity/conjunction`), pinned to WO6b Cell 16 (`tests/test_conjunction.py`, 6 green). **UI**: painted set (shape-shaded members, unpainted non-members), declared per-variable bands (no ladder), size + spatial-spread readout, honest-empty, container line; respects L06/L08 toggle (feature-flagged `SIM_CONJUNCTION`, old panel kept). Removed dead `sandbox_v2`. Reviewed in browser 2026-07-23 (Tbilisi union, container toggle, SF shape hemisphere-blindness, SF equable-coast temp). **Deferred candidates:** `precip_temp_phase` condition + global climate-class map (both use the precip×temp correlation). WO: `wo6c_similarity-redux.md`; findings: `wo6c_findings.md`. |
 | WO7 — Climate classes (class-relative instrument) | `cdop_pilot` (notebook) | **investigation complete** | Notebook `wo7_climate_classes.ipynb` (Cells 1–13). Two discrete axes computed per basin: **modality** (arid gate → cv gate → vectorized Knoben ΔE, validated grid==exact==WO6b on 9/9 synthetics + 11/11 probes) and **phase** (precip×temp correlation + 5 °C thermal gate). Phase map is textbook (equatorial gold, winter-rain belt, summer-rain). Verdict: **sound instrument, over-broad names** — the five Köppen-Med regions all appear (Med cell 63.5% "leak" into the Iran/C-Asia winter-rain belt), twin-rains cores right (Indonesia was L06 aggregation, returns 8× at L08; mid-latitude bimodal is real & scale-stable). Both sharpening dials tested (Cell 12 winter temp, Cell 13 aridity) — neither isolates Köppen-Med cleanly. WO: `wo7_climate-classes.md`; findings: `wo7_findings.md`. |
 | WO7a — Label lock + build | `cdop_wo7a` (cut from `cdop_pilot`) | **complete — backend + Atlas UI, Karl-signed-off 2026-07-24** | Scope: sandbox only (`explorer.html` frozen; NOT `cdop_pilot`). **Labels (Option A):** cells compose from axis names (modality-first), aseasonal drops the phase term, classic names annotation-only — a test enforces no Köppen/Knoben name in any label. **Storage:** in-memory startup index (similarity/context family), persist-view sourced, L06 eager (~1.9 s) / L08 lazy (~18 s, never at boot) — CLAUDE.md § "How runtime data reaches the app". **Backend:** `app/db/climate_classes.py` (compute + index + `axis_values`/`class_lens`), `main.py` L06 load, routes `/api/explorer/climate-class` (Atlas) + `/api/similarity/climate-class` (place-anchored, tested, no UI yet), `tests/test_climate_classes.py` (8 green). **UI = the Atlas tab** (`sandbox_v3.html`): a place-independent global-views surface (climate classes first, extensible); flush-right cyan tab, left column swaps to a global-context panel; paints basin PMTiles via feature-state from the flat class dict (Map-tab pattern, no GeoJSON/`basin-geom`); views = Modality / Phase choropleths + Two-wet-seasons / cool-season-rain highlights. **Render decision (Issue 2):** two axis choropleths + client-side compose, NOT a ~20-colour cell choropleth (supersedes the WO's "three variables" wording). Sandbox similarity/climate-class track **closed**; UI/UX polish + example smoke tests deferred to a review pass. WO: `wo7a_label-lock-build.md`; findings: `wo7_findings.md`. |
+| WO8a — Environment↔culture correspondence: descriptive probes (Societies) | `cdop_wo8a` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Descriptive notebook only (no engine/API/UI). Shared substrate (1,133 EA societies→L08 basin→`s`-signature, persisted `output/cdop/wo8a_substrate.parquet`); nested-bet PCoAs (Water⊂Climate envelope⊂Landscape) coloured by EA042 subsistence + WO7 modality. **EA042 separates cleanest in Climate envelope** (temperature opens the 2nd axis; Landscape's terrain smears). Part C: seasonality shape orthogonal to subsistence (refutes the WO's modality-class expectation; raw curve is the faithful rep). Part D crosstab corroborates (pastoralism→25% arid; fishers/gatherers→cool-wet). **Headline: environment sets bounds, not determination.** Decisions: bet=Climate envelope; seasonality=raw curve if any (non-load-bearing); keep Part D via crosstab. Next=WO8b (PERMANOVA/PERMDISP, within-family). WO: `wo8a_culture-probes.md`; findings: `wo8a_findings.md`. |
 
 ---
 
