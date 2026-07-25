@@ -48,8 +48,20 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** WO6a **and** WO6b complete on `cdop_wo6` (2026-07-22; Opus passed WO6b). Both are exploratory notebooks — no engine/API/UI change yet. **WO6b is the breakthrough:** stop compressing the twelve monthly values into scalars and compare the *raw twelve-value curve directly* (correlation). It discriminates, passes every known-answer probe, and produces **modality emergently** — same-modality neighbours fall out with nothing about peak count in the metric, dissolving the threshold problem WO6a couldn't solve. The conjunction built on it is anti-fragile (load-bearing condition rotates by query). Karl reframed the target: EDOPS needs two *discrete* classes — {aseasonal / 1 / 2} and {warm-wet / cool-dry / neither} — not a continuous score; the second is served by direct precip×temp correlation (verified). Findings: `wo6b_findings.md`; handoff to Opus: `wo6_status_CC.md`. WO6a's floor conclusion amended (Somalia was the wrong flagship; cause is low seasonal *range*, not aridity). **Next: WO6c** (drafted by Opus, `wo6c_similarity-redux.md`) — rebuild the Similarity panel on the correlation-backed conjunction (engine + UI). Prior context (Context tab shipped in WO5; WO3 C+D suspended) in tracker.
-- **Tests:** 584 pass, 50 skipped
+- **Current step:** **WO8a complete — accept gate PASSED** (2026-07-25, `cdop_wo8a`). The first
+  environment↔culture correspondence probe: a descriptive notebook (no engine/API/UI) that builds the
+  shared society→basin→signature substrate (1,133 EA societies at L08) and draws nested-bet PCoAs of
+  EA042 subsistence. **EA042 separates cleanest in the Climate envelope bet** (aridity+precip+runoff+
+  temperature+seasonal-amplitude); the instrument is calibrated on the positive control. Key result:
+  **environment sets outer bounds on culture, it does not determine it** — one near-hard constraint
+  (water for rain-fed agriculture), one soft gradient (temperature), broad adaptability otherwise;
+  rainfall seasonality is orthogonal to subsistence. Substrate persisted
+  `output/cdop/wo8a_substrate.parquet`. **Next: WO8b** (the actual test — PERMANOVA/PERMDISP on the
+  Climate envelope bet, with within-language-family restricted permutation for Galton's problem;
+  Opus drafting). Findings: `wo8a_findings.md`; exec summary: `wo8a_exec_summary.md`. Prior context —
+  WO7 climate-class instrument + WO7a Atlas tab (shipped, sandbox); WO6c Similarity panel; the WO6b
+  raw-curve breakthrough — in the tracker.
+- **Tests:** 460 pass, 14 skipped (WO8a is a notebook; added no tests)
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
