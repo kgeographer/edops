@@ -5,7 +5,22 @@ and locked decisions. If any other CDOP document disagrees with this one about *
 stand*, this one wins — for CDOP Pilot scope only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-25 (**WO8a complete** on `cdop_wo8a`, cut from `cdop_pilot` — the first
+- **Last updated:** 2026-07-25 (**WO8b complete** on `cdop_wo8b`, cut from `cdop_pilot` — the first
+  correspondence *test*: EA030 settlement fixity, 918 basin-linked EA societies, on the hand-rolled
+  distance-based stats engine `scripts/cdop/dbperm.py` (PERMANOVA / db-RDA / Freedman–Lane partial /
+  PERMDISP; `tests/cdop/test_dbperm.py` 10 green). **Accept gate PASSED.** Two headlines: (a) the
+  **instrument validation** — the phylogenetic control (restricted permutation within language family)
+  demonstrably bit, deflating exactly the predicted axis (temperature's family-restricted p → 0.020 while
+  aridity holds); defensible on method grounds alone, and the carry-forward result. (b) the **substantive**
+  finding — settlement **concentrates in a narrow favorable band**: sedentary societies cluster in
+  wet/warm/low-seasonality country (breadth 1.06), while mobile societies range widely (breadth 1.76)
+  across the dry/cold/seasonal margins the band excludes — a target, not a floor; gated chiefly by water. ~84% of fixity↔environment is subsistence;
+  the nested residual (R²≈0.01–0.03) is **no interpretable independent effect**. **Collinearity caveat:**
+  fixity↔subsistence near-collinear, so the 84% is partly an overlap artifact — recurs in 8c. **Decided
+  reporting stance:** confound-share is the headline; sub-floor residuals are 'no interpretable independent
+  effect', never 'small real'. **Open (Karl to set before 8c's number is seen):** the effect-size floor.
+  Findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. Next: **8c — EA033 political complexity**
+  (WO arrives 2026-07-26). Prior: **WO8a complete** on `cdop_wo8a`, cut from `cdop_pilot` — the first
   environment↔culture correspondence step: a descriptive notebook, no engine/API/UI. Built the shared
   society→basin→signature substrate (1,133 EA societies at L08, matches WO4) and drew nested-bet PCoAs.
   **Accept gate PASSED:** EA042 subsistence visibly separates, cleanest in the **Climate envelope** bet
@@ -16,8 +31,7 @@ stand*, this one wins — for CDOP Pilot scope only.
   (pastoralism→25% arid, intensive-ag→arid=irrigation, fishers→cool-wet). **Headline: environment sets
   bounds, it does not determine** — one near-hard constraint (water for rain-fed agriculture), one soft
   gradient (temperature), broad adaptability otherwise; so a contested trait (EA034, 8c) should couple
-  weakly. Substrate persisted `output/cdop/wo8a_substrate.parquet`. Next: WO8b (PERMANOVA/PERMDISP,
-  within-family restricted permutation). Findings: `wo8a_findings.md`. Prior: WO7 investigation complete + WO7a build backend on `cdop_wo7a`, cut
+  weakly. Substrate persisted `output/cdop/wo8a_substrate.parquet`. Findings: `wo8a_findings.md`. Prior: WO7 investigation complete + WO7a build backend on `cdop_wo7a`, cut
   from `cdop_pilot`. WO7 built the class-relative **climate-class** instrument — two discrete axes
   (modality {arid/even-year-round/one/two-wet-seasons/undetermined}; phase {warm-/cool-season rain,
   weak coupling, no temperature cycle}) + a composed cell. Verdict: **sound instrument, over-broad
@@ -180,9 +194,24 @@ instrument is calibrated. Standout finding — **environment sets outer bounds o
 determine it**: one near-hard constraint (water for rain-fed agriculture), one soft gradient
 (temperature), broad adaptability otherwise; rainfall seasonality is orthogonal to subsistence. Three
 decisions locked (bet = Climate envelope; seasonality = raw curve if any, non-load-bearing; keep the
-modality-standalone bet as a crosstab corroborator). **Next: WO8b** — the actual test (PERMANOVA/PERMDISP
-with within-language-family restricted permutation for Galton's problem), Opus drafting. Findings:
-`wo8a_findings.md`; exec summary for Opus: `wo8a_exec_summary.md`.
+modality-standalone bet as a crosstab corroborator). Findings: `wo8a_findings.md`; exec summary for Opus:
+`wo8a_exec_summary.md`.
+
+**WO8b (2026-07-25, `cdop_wo8b`) is the first real test** — EA030 settlement fixity — and the first to run
+the two controls WO8a deferred: the phylogenetic null (restricted permutation within language family) and
+the metric decision. Built the hand-rolled, unit-tested distance-based stats engine `scripts/cdop/dbperm.py`
+(PERMANOVA / db-RDA / Freedman–Lane partial / PERMDISP; `tests/cdop/test_dbperm.py`, 10 green) *before* the
+notebook, validating pseudo-F against closed-form ANOVA/regression F. **Accept gate PASSED.** The
+carry-forward headline is the **instrument validation** — the family control demonstrably bit, deflating
+exactly the predicted axis (temperature's family-restricted p → 0.020, aridity holds); a method claim,
+defensible with no anthropology. The substantive finding: settlement **concentrates in a narrow favorable band** — sedentary societies
+cluster in wet/warm/low-seasonality country (breadth 1.06), while mobile societies range widely (breadth
+1.76) across the dry/cold/seasonal margins the band excludes; a target, not a floor. ~84% of fixity↔environment is subsistence; the nested
+residual is **no interpretable independent effect** (fixity↔subsistence near-collinear, so the 84% is partly
+an overlap artifact — recurs in 8c). Decided reporting stance: confound-share is the headline, sub-floor
+residuals are not "small real"; the effect-size floor is Karl's to set **before** 8c's number is seen.
+Findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. **Next: 8c — EA033 political complexity**, WO
+arriving 2026-07-26.
 
 ---
 
@@ -202,6 +231,7 @@ with within-language-family restricted permutation for Galton's problem), Opus d
 | WO7 — Climate classes (class-relative instrument) | `cdop_pilot` (notebook) | **investigation complete** | Notebook `wo7_climate_classes.ipynb` (Cells 1–13). Two discrete axes computed per basin: **modality** (arid gate → cv gate → vectorized Knoben ΔE, validated grid==exact==WO6b on 9/9 synthetics + 11/11 probes) and **phase** (precip×temp correlation + 5 °C thermal gate). Phase map is textbook (equatorial gold, winter-rain belt, summer-rain). Verdict: **sound instrument, over-broad names** — the five Köppen-Med regions all appear (Med cell 63.5% "leak" into the Iran/C-Asia winter-rain belt), twin-rains cores right (Indonesia was L06 aggregation, returns 8× at L08; mid-latitude bimodal is real & scale-stable). Both sharpening dials tested (Cell 12 winter temp, Cell 13 aridity) — neither isolates Köppen-Med cleanly. WO: `wo7_climate-classes.md`; findings: `wo7_findings.md`. |
 | WO7a — Label lock + build | `cdop_wo7a` (cut from `cdop_pilot`) | **complete — backend + Atlas UI, Karl-signed-off 2026-07-24** | Scope: sandbox only (`explorer.html` frozen; NOT `cdop_pilot`). **Labels (Option A):** cells compose from axis names (modality-first), aseasonal drops the phase term, classic names annotation-only — a test enforces no Köppen/Knoben name in any label. **Storage:** in-memory startup index (similarity/context family), persist-view sourced, L06 eager (~1.9 s) / L08 lazy (~18 s, never at boot) — CLAUDE.md § "How runtime data reaches the app". **Backend:** `app/db/climate_classes.py` (compute + index + `axis_values`/`class_lens`), `main.py` L06 load, routes `/api/explorer/climate-class` (Atlas) + `/api/similarity/climate-class` (place-anchored, tested, no UI yet), `tests/test_climate_classes.py` (8 green). **UI = the Atlas tab** (`sandbox_v3.html`): a place-independent global-views surface (climate classes first, extensible); flush-right cyan tab, left column swaps to a global-context panel; paints basin PMTiles via feature-state from the flat class dict (Map-tab pattern, no GeoJSON/`basin-geom`); views = Modality / Phase choropleths + Two-wet-seasons / cool-season-rain highlights. **Render decision (Issue 2):** two axis choropleths + client-side compose, NOT a ~20-colour cell choropleth (supersedes the WO's "three variables" wording). Sandbox similarity/climate-class track **closed**; UI/UX polish + example smoke tests deferred to a review pass. WO: `wo7a_label-lock-build.md`; findings: `wo7_findings.md`. |
 | WO8a — Environment↔culture correspondence: descriptive probes (Societies) | `cdop_wo8a` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Descriptive notebook only (no engine/API/UI). Shared substrate (1,133 EA societies→L08 basin→`s`-signature, persisted `output/cdop/wo8a_substrate.parquet`); nested-bet PCoAs (Water⊂Climate envelope⊂Landscape) coloured by EA042 subsistence + WO7 modality. **EA042 separates cleanest in Climate envelope** (temperature opens the 2nd axis; Landscape's terrain smears). Part C: seasonality shape orthogonal to subsistence (refutes the WO's modality-class expectation; raw curve is the faithful rep). Part D crosstab corroborates (pastoralism→25% arid; fishers/gatherers→cool-wet). **Headline: environment sets bounds, not determination.** Decisions: bet=Climate envelope; seasonality=raw curve if any (non-load-bearing); keep Part D via crosstab. Next=WO8b (PERMANOVA/PERMDISP, within-family). WO: `wo8a_culture-probes.md`; findings: `wo8a_findings.md`. |
+| WO8b — Environment↔culture correspondence: the first test (EA030 settlement fixity) | `cdop_wo8b` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook + hand-rolled stats engine `scripts/cdop/dbperm.py` (PERMANOVA / db-RDA / Freedman–Lane partial / PERMDISP; `tests/cdop/test_dbperm.py` 10 green, validated vs closed-form ANOVA/regression F). Marginal fixity R²=0.213 (family-restricted); **nested \| subsistence R²=0.033 — 84% collapse into subsistence** (residual = no interpretable independent effect; fixity↔subsistence near-collinear). PERMDISP flags a breadth difference (mobile wider, breadth 1.76; sedentary narrower, breadth 1.06). Part D: rainfall timing dilutes (dR²=−0.084), not load-bearing. **Prediction confirmed** — temperature phylogeny-inflated (family p→0.020), aridity robust: the instrument-validation carry-forward headline. Substantive: settlement concentrates in a narrow favorable band — a target, not a floor (mobility the wide fallback across the margins it excludes). Reporting stance decided; effect-size floor open (Karl, before 8c). WO: `wo8b_fixity-test.md`; findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. |
 
 ---
 
