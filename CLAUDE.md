@@ -10,6 +10,14 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/pilot/wo{nn}_findings.md` — per-WO findings
 
+**Logging convention (all phases).** The detailed, technical record of a work order lives in its
+`wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
+file**, not a re-derivation of it. When closing a WO: update the phase tracker's roadmap row, add/replace
+a short WO subsection, reset the one-line "Last updated" stamp, and fold any settled forward-looking note
+into the tracker's *Locked decisions* / *Deferred* **in the same edit** — never leave a resolved question
+live elsewhere. Keep each tracker's "You are here" to the current WO only. (Older tracker sections that
+predate this convention are grandfathered; new WOs get summary + `findings:` link.)
+
 ---
 
 ## What this project is
