@@ -129,3 +129,56 @@ def test_permdisp_equal_dispersion_not_significant_on_average():
         X = rng.normal(0, 1, (40, 3)); g = np.array(["a", "b"] * 20)
         ps.append(permdisp(_euclid(X), g, n_perm=199, seed=s).p)
     assert 0.3 <= np.mean(ps) <= 0.7
+
+
+# ── return_null (WO8c effect-size floor) ─────────────────────────────────────────────────────
+def test_return_null_default_false_matches_prior_behaviour():
+    # return_null omitted must reproduce the exact pre-existing return shape and values.
+    rng = np.random.default_rng(9)
+    X, g = _clustered(rng, [20, 25, 15], sep=0.8)
+    D = _euclid(X)
+    res_plain = permanova(D, g, n_perm=49, seed=0)
+    res_explicit = permanova(D, g, n_perm=49, seed=0, return_null=False)
+    assert not isinstance(res_plain, tuple)
+    assert res_plain == res_explicit
+
+
+def test_return_null_shape_and_range():
+    # Permutation draws are random relabellings, not guaranteed to include the identity, so the
+    # observed R2 need not appear in the null array -- check shape and a sane, finite range instead.
+    rng = np.random.default_rng(10)
+    X, g = _clustered(rng, [20, 25, 15], sep=0.8)
+    D = _euclid(X)
+    res, null_R2 = permanova(D, g, n_perm=199, seed=0, return_null=True)
+    assert null_R2.shape == (199,)
+    assert np.all(np.isfinite(null_R2))
+    assert np.all(null_R2 >= -1e-9)
+
+
+def test_return_null_separates_signal_from_noise():
+    # A well-separated effect's observed R2 should clear its own null's 95th percentile;
+    # a shuffled (no-effect) version of the same data should not.
+    rng = np.random.default_rng(11)
+    X, g = _clustered(rng, [25, 25, 25], sep=3.0, spread=0.5)
+    D = _euclid(X)
+    res, null_R2 = permanova(D, g, n_perm=499, seed=0, return_null=True)
+    floor = np.percentile(null_R2, 95)
+    assert res.R2 > floor
+
+    g_shuffled = rng.permutation(g)
+    res0, null_R2_0 = permanova(D, g_shuffled, n_perm=499, seed=1, return_null=True)
+    floor0 = np.percentile(null_R2_0, 95)
+    assert res0.R2 <= floor0
+
+
+def test_return_null_propagates_through_adonis_and_dbrda():
+    rng = np.random.default_rng(12)
+    X, g = _clustered(rng, [15, 15, 15], sep=1.0)
+    D = _euclid(X)
+    res_a, null_a = adonis_term(D, g, n_perm=49, seed=0, return_null=True)
+    assert null_a.shape == (49,)
+
+    score = np.arange(45, dtype=float)
+    y = 0.05 * score + rng.normal(0, 1, 45)
+    res_t, null_t = dbrda_trend(_euclid(y), score, n_perm=49, seed=0, return_null=True)
+    assert null_t.shape == (49,)
