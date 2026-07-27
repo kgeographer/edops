@@ -56,20 +56,24 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** **WO8a complete — accept gate PASSED** (2026-07-25, `cdop_wo8a`). The first
-  environment↔culture correspondence probe: a descriptive notebook (no engine/API/UI) that builds the
-  shared society→basin→signature substrate (1,133 EA societies at L08) and draws nested-bet PCoAs of
-  EA042 subsistence. **EA042 separates cleanest in the Climate envelope bet** (aridity+precip+runoff+
-  temperature+seasonal-amplitude); the instrument is calibrated on the positive control. Key result:
-  **environment sets outer bounds on culture, it does not determine it** — one near-hard constraint
-  (water for rain-fed agriculture), one soft gradient (temperature), broad adaptability otherwise;
-  rainfall seasonality is orthogonal to subsistence. Substrate persisted
-  `output/cdop/wo8a_substrate.parquet`. **Next: WO8b** (the actual test — PERMANOVA/PERMDISP on the
-  Climate envelope bet, with within-language-family restricted permutation for Galton's problem;
-  Opus drafting). Findings: `wo8a_findings.md`; exec summary: `wo8a_exec_summary.md`. Prior context —
-  WO7 climate-class instrument + WO7a Atlas tab (shipped, sandbox); WO6c Similarity panel; the WO6b
-  raw-curve breakthrough — in the tracker.
-- **Tests:** 460 pass, 14 skipped (WO8a is a notebook; added no tests)
+- **Current step:** **WO8c complete — accept gate PASSED** (2026-07-26, `cdop_wo8c`). The third rung of
+  the environment↔culture correspondence arc (EA033 political complexity) — the first trait without a
+  pre-checkable answer. **Headline:** complexity's raw climate link is weak (the real finding, given how
+  strongly subsistence/fixity tracked climate); the residual surviving subsistence(+fixity) control
+  clears its own permutation-null floor but not the near-total collinearity documented in the findings
+  (state tail ~92% concentrated in one subsistence category, ~92% in one fixity category) — read as **no
+  strong independent environmental signal**, not a positive finding. Built the effect-size floor rule
+  WO8b deferred (`dbperm.py`'s `return_null=True`, 95th-percentile permutation-null R²) plus a
+  stability-check discipline (second seed + 5× permutations on any near-margin verdict) that caught one
+  real false positive. A retroactive floor cross-check on WO8b's fixity residual got the identical
+  necessary-not-sufficient reading — **WO8b's record is unchanged**. New infra: `dplace.society_elevation`
+  (point elevation, all 6,408 coordinate-bearing `dplace.societies`), `dplace.society_terrain`
+  (point-window local relief, 1,133 EA societies). Findings: `wo8c_findings.md`; exec summary:
+  `wo8c_exec_summary.md`. **Next step undecided** — may pivot to a new phase rather than WO8d (EA034
+  high-gods); see the tracker's *You are here*. Prior context — WO7 climate-class instrument + WO7a Atlas
+  tab (shipped, sandbox); WO6c Similarity panel; the WO6b raw-curve breakthrough — in the tracker.
+- **Tests:** 473 pass, 14 skipped, 1 pre-existing fail (`test_codebook_alignment.py`, confirmed unrelated
+  to CDOP work, not fixed) — plus `tests/cdop/test_dbperm.py`, 14 green
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:

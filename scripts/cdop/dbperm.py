@@ -24,6 +24,11 @@ Public API:
   dbrda_trend(D, score, ...)             -> ordinal/monotonic 1-df test (adonis_term with ordinal term)
   permdisp(D, groups, ...)               -> betadisper: homogeneity of dispersions (Anderson 2006)
 
+  All three DBResult-returning functions take `return_null=False`; with `return_null=True` they
+  return `(DBResult, null_R2)` where `null_R2` is the array of R^2 values realised at each
+  permutation — the family-restricted null distribution of R^2 under "the term means nothing".
+  WO8c's effect-size floor (95th percentile of this distribution) reads off `null_R2`, not `p`.
+
 Validated in tests/cdop/test_dbperm.py against closed-form ANOVA/regression F and the Anderson
 sum-of-squared-distances identity. Referenced by notebooks/cdop/wo8b_fixity_test.ipynb.
 """
@@ -127,8 +132,13 @@ def _n_restricted_perms(blocks: Optional[np.ndarray]) -> Optional[int]:
 
 
 def _dblm(G: np.ndarray, Xfull: np.ndarray, X0: np.ndarray,
-          blocks: Optional[np.ndarray], n_perm: int, seed: int) -> DBResult:
-    """Test the extra columns of Xfull beyond X0 on centred G (Freedman–Lane residual permutation)."""
+          blocks: Optional[np.ndarray], n_perm: int, seed: int,
+          return_null: bool = False):
+    """Test the extra columns of Xfull beyond X0 on centred G (Freedman–Lane residual permutation).
+
+    return_null=True additionally returns the array of per-permutation R^2 values (the
+    family-restricted null distribution of R^2), alongside the usual DBResult.
+    """
     n = G.shape[0]
     H, rank_f = _hat(Xfull)
     H0, rank_0 = _hat(X0)
@@ -143,41 +153,45 @@ def _dblm(G: np.ndarray, Xfull: np.ndarray, X0: np.ndarray,
     R0 = (R0 + R0.T) / 2
     ss_total = np.trace(G)
 
-    def F_of(Rp: np.ndarray) -> float:
+    def stats_of(Rp: np.ndarray):
         num = np.einsum("ij,ij->", Hdiff, Rp)      # tr(Hdiff · Rp), both symmetric
         den = np.einsum("ij,ij->", Imh, Rp)
-        return (num / df1) / (den / df2)
+        return (num / df1) / (den / df2), num / ss_total   # (F, R2)
 
-    F_obs = F_of(R0)
-    R2 = float(np.einsum("ij,ij->", Hdiff, R0) / ss_total)
+    F_obs, R2 = stats_of(R0)
 
     rng = np.random.default_rng(seed)
     ge = 0
+    null_R2 = [] if return_null else None
     for pi in _perm_indices(n, blocks, n_perm, rng):
         Rp = R0[np.ix_(pi, pi)]
-        if F_of(Rp) >= F_obs - 1e-12:
+        Fp, R2p = stats_of(Rp)
+        if Fp >= F_obs - 1e-12:
             ge += 1
+        if return_null:
+            null_R2.append(R2p)
     p = (ge + 1) / (n_perm + 1)
-    return DBResult(F=float(F_obs), p=float(p), R2=R2, df1=int(df1), df2=int(df2),
-                    n_perm=n_perm, n_used_perms=_n_restricted_perms(blocks))
+    result = DBResult(F=float(F_obs), p=float(p), R2=R2, df1=int(df1), df2=int(df2),
+                      n_perm=n_perm, n_used_perms=_n_restricted_perms(blocks))
+    return (result, np.array(null_R2)) if return_null else result
 
 
 # ── public wrappers ──────────────────────────────────────────────────────────────────────────
 def permanova(D: np.ndarray, groups: _ArrayLike, blocks: Optional[_ArrayLike] = None,
-              n_perm: int = 999, seed: int = 0) -> DBResult:
+              n_perm: int = 999, seed: int = 0, return_null: bool = False):
     """One-factor PERMANOVA (McArdle–Anderson). `blocks` restricts permutation to within-family."""
     G = gower_G(D)
     n = G.shape[0]
     Xfull = _stack(n, [_design(groups)])
     X0 = np.ones((n, 1))
     b = None if blocks is None else np.asarray(blocks)
-    return _dblm(G, Xfull, X0, b, n_perm, seed)
+    return _dblm(G, Xfull, X0, b, n_perm, seed, return_null=return_null)
 
 
 def adonis_term(D: np.ndarray, term: _ArrayLike,
                 covars: Optional[Union[_ArrayLike, Sequence[_ArrayLike]]] = None,
                 term_ordinal: bool = False, blocks: Optional[_ArrayLike] = None,
-                n_perm: int = 999, seed: int = 0) -> DBResult:
+                n_perm: int = 999, seed: int = 0, return_null: bool = False):
     """Test `term` adjusted for `covars` (Freedman–Lane). term_ordinal=True -> 1-df monotonic test.
 
     covars may be one array or a list of arrays; each categorical unless float dtype. With
@@ -194,15 +208,16 @@ def adonis_term(D: np.ndarray, term: _ArrayLike,
     X0 = _stack(n, cov_blocks)
     Xfull = _stack(n, cov_blocks + [_design(term, ordinal=term_ordinal)])
     b = None if blocks is None else np.asarray(blocks)
-    return _dblm(G, Xfull, X0, b, n_perm, seed)
+    return _dblm(G, Xfull, X0, b, n_perm, seed, return_null=return_null)
 
 
 def dbrda_trend(D: np.ndarray, score: _ArrayLike,
                 covars: Optional[Union[_ArrayLike, Sequence[_ArrayLike]]] = None,
-                blocks: Optional[_ArrayLike] = None, n_perm: int = 999, seed: int = 0) -> DBResult:
+                blocks: Optional[_ArrayLike] = None, n_perm: int = 999, seed: int = 0,
+                return_null: bool = False):
     """Ordinal/monotonic 1-df test: does environment march along `score` (fixity as 1..k)."""
     return adonis_term(D, score, covars=covars, term_ordinal=True,
-                       blocks=blocks, n_perm=n_perm, seed=seed)
+                       blocks=blocks, n_perm=n_perm, seed=seed, return_null=return_null)
 
 
 # ── PERMDISP (betadisper, Anderson 2006) ─────────────────────────────────────────────────────
