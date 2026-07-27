@@ -14,12 +14,13 @@ detail.) On each WO close: (1) add/replace that WO's subsection under *Work orde
 Keep *You are here* to the current WO only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-26 — WO8c complete, accept gate PASSED (EA033 political complexity).
-  Headline: complexity's raw climate link is weak, and the residual surviving subsistence(+fixity)
-  control clears its own noise floor but not the collinearity bar — read as no strong independent
-  environmental signal, not a positive finding. WO8b's record is unchanged (a retroactive floor
-  cross-check on its fixity residual got the same necessary-not-sufficient reading, not a reversal).
-  Next step undecided — may pivot to a new phase rather than WO8d; see *You are here*.
+- **Last updated:** 2026-07-27 — WO8d complete, accept gate PASSED (EA034 high-gods, the arc's first
+  **exploratory**, not confirmatory, instrument). Headline: whole-group cohesion is substantially a
+  two-lineage story (Atlantic-Congo + Nilo-Saharan, both related and environmentally coherent); outside
+  that, a strong cross-family convergence case (three unrelated Siberian peoples, the tightest sub-group
+  in the set) and an unexplained singleton residual (~14 societies) that is the arc's real carried-
+  forward question. New infra: `scripts/cdop/distance_core.py` (factored distance module, first real
+  consumer). Next step undecided — see *You are here*.
 
 ## Table of contents
 
@@ -28,7 +29,7 @@ Keep *You are here* to the current WO only.
 - Roadmap
 - You are here
 - Work orders (reverse chronological):
-  - WO8 — Environment↔culture correspondence testing (8a, 8b, 8c)
+  - WO8 — Environment↔culture correspondence testing (8a, 8b, 8c, 8d)
   - WO7 — Climate classes (instrument + Atlas tab)
   - WO6 — Similarity: non-compensatory → raw-curve backbone (6a, 6b, 6c)
   - WO5 — Context tab; temperature lens diagnostic; hide Similarity
@@ -86,34 +87,37 @@ consult at every step resumption, add rows there (`docs/design/deferred_items_re
 | WO8a — Environment↔culture correspondence: descriptive probes (Societies) | `cdop_wo8a` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Descriptive notebook only (no engine/API/UI). Shared substrate (1,133 EA societies→L08 basin→`s`-signature, persisted `output/cdop/wo8a_substrate.parquet`); nested-bet PCoAs (Water⊂Climate envelope⊂Landscape) coloured by EA042 subsistence + WO7 modality. **EA042 separates cleanest in Climate envelope** (temperature opens the 2nd axis; Landscape's terrain smears). Part C: seasonality shape orthogonal to subsistence (refutes the WO's modality-class expectation; raw curve is the faithful rep). Part D crosstab corroborates (pastoralism→25% arid; fishers/gatherers→cool-wet). **Headline: environment sets bounds, not determination.** Decisions: bet=Climate envelope; seasonality=raw curve if any (non-load-bearing); keep Part D via crosstab. Next=WO8b (PERMANOVA/PERMDISP, within-family). WO: `wo8a_culture-probes.md`; findings: `wo8a_findings.md`. |
 | WO8b — Environment↔culture correspondence: the first test (EA030 settlement fixity) | `cdop_wo8b` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook + hand-rolled stats engine `scripts/cdop/dbperm.py` (PERMANOVA / db-RDA / Freedman–Lane partial / PERMDISP; `tests/cdop/test_dbperm.py` 10 green, validated vs closed-form ANOVA/regression F). Marginal fixity R²=0.213 (family-restricted); **nested \| subsistence R²=0.033 — 84% collapse into subsistence** (residual = no interpretable independent effect; fixity↔subsistence near-collinear). PERMDISP flags a breadth difference (mobile wider, breadth 1.76; sedentary narrower, breadth 1.06). Part D: rainfall timing dilutes (dR²=−0.084), not load-bearing. **Prediction confirmed** — temperature phylogeny-inflated (family p→0.020), aridity robust: the instrument-validation carry-forward headline. Substantive: settlement concentrates in a narrow favorable band — a target, not a floor (mobility the wide fallback across the margins it excludes). Reporting stance decided; effect-size floor open (Karl, before 8c) — **now set** (WO8c); a retroactive check confirmed this residual clears its own floor by 3.2–3.6× but reads the same way as WO8c's own numbers (necessary-not-sufficient; collinearity stands) — no change to this row's verdict. WO: `wo8b_fixity-test.md`; findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. |
 | WO8c — Environment↔culture correspondence: political complexity (EA033) | `cdop_wo8c` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook, `dbperm.py` extended with `return_null=True` (permutation-null R² distribution — the machinery behind the effect-size floor; `tests/cdop/test_dbperm.py` 14 green). New infra: `dplace.society_elevation` (point elevation, all 6,408 coordinate-bearing `dplace.societies`), `dplace.society_terrain` (point-window local relief, 1,133 EA societies). **Headline: complexity's raw climate link is weak** (unlike subsistence/fixity) — the real finding. **Nested \| subsistence(+fixity) R²≈0.017–0.018 (factor) / 0.010 (ordinal)** clears its own permutation-null floor (stability-checked at a second seed + 5× perms) but **not the collinearity bar**: the state tail is ~92% concentrated in one subsistence category and ~92% in one fixity category (Part A), so read as *no strong independent environmental signal*, not a positive finding — floor-clearing is necessary, not sufficient. Fixity as a covariate barely moves the residual either way (mediator concern moot for this trait). **Terrain (ruggedness) is a clean null** on both formulations once stability-checked (one apparent positive, R²=0.0078 vs floor=0.0077, flipped to null under the recheck — exactly the guard doing its job). A retroactive floor cross-check on WO8b's fixity residual (Cell 12) got the same necessary-not-sufficient reading — **no change to WO8b's record**. WO: `wo8c_political complexity-EA033.md`; findings: `wo8c_findings.md`; exec: `wo8c_exec_summary.md`. |
+| WO8d — Environment↔culture correspondence: the high-gods look (EA034, exploratory) | `cdop_wo8d` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | The arc's first **exploratory, not confirmatory** instrument — no predicted result, no effect-size floor; language family is **labeled, not permuted away** so transmission/convergence read directly, against a whole-sample backdrop. New infra: `scripts/cdop/distance_core.py` (factored distance module — 4 lenses, cohesion statistic, fully-random + family-restricted resampling baselines; `tests/cdop/test_distance_core.py` 10 green), first real consumer, not yet a named shared core. **Headline: substantially a two-lineage story.** Atlantic-Congo (n=15, 37.5% of the 40-society focus set) and Nilo-Saharan (n=4) are both genealogically related *and* environmentally coherent (100%/94% tighter than random); Sino-Tibetan (n=3) is a counter-example — related but not coherent (46%, chance). No per-lens whole-group cohesion clears both the random and family-restricted baselines at once (water: 95.25% vs random, 42.25% vs cousins — the Atlantic-Congo effect). **Two things sit outside that story**: a strong cross-family convergence case (3 unrelated Siberian peoples — Chukchi/Yakut/Yurak-Samoyeds — the tightest sub-group in the whole set) and an **unexplained singleton residual (~14 societies)** explained by neither lineage, whole-group climate, nor proximity — promoted to the primary carried-forward item after Karl/Opus review (framing-only revision, no numbers changed). **Hopi check** (sanity anchor, not a focus-class member) surfaced Hano/Navajo as nearest climate-space neighbors — two independently documented cross-family contact cases, unprompted — the strongest instrument-validation evidence in the WO, paralleled to WO8b's differential-deflation result. One bug caught and fixed mid-session (a family lookup queried the whole backdrop instead of the focus class; caught by row-count mismatch, fixed, verified against actual PCoA positions). WO: `wo8d_env-culture-highgods.md`; findings: `wo8d_findings.md`; exec: `wo8d_exec_summary.md`. |
 
 ---
 
 ## You are here
 
 Phase opened 2026-07-18. Integration branch `cdop_pilot`; WO branches cut from it, merged back on accept.
-**473 app tests pass / 14 skipped / 1 pre-existing fail** (full suite, 2026-07-26 WO8c gate;
-`test_codebook_alignment.py::test_implemented_fields_accessible` — confirmed unrelated to CDOP/WO8c work,
-last touched by WO7/7a, not fixed here) plus the `dbperm` suite (`tests/cdop/test_dbperm.py`, 14 green,
-WO8c added `return_null` coverage).
+**483 app tests pass / 14 skipped / 1 pre-existing fail** (full suite, 2026-07-27 WO8d gate;
+`test_codebook_alignment.py::test_implemented_fields_accessible` — confirmed unrelated to CDOP work
+across two sessions now, last touched by WO7/7a, not fixed here) plus `tests/cdop/` (24 green:
+`test_dbperm.py` 14 + `test_distance_core.py` 10, new this WO).
 
-**WO8, environment↔culture correspondence testing, 8a–8c complete.** 8a (descriptive), 8b (fixity), and
-8c (EA033 political complexity — the first trait without a pre-checkable answer) all passed their accept
-gates. **8c's headline, after a language correction from Opus (WO author):** complexity's raw climate
-link is weak; what survives controlling for subsistence(+fixity) clears its own permutation-null floor
-but not the collinearity bar documented in Part A (the state tail is ~92% concentrated in a single
-subsistence category and a single fixity category) — read as *no strong independent environmental
-signal*, not a positive finding. The effect-size floor rule (95th percentile of the permutation null, set
-before 8c's number was seen) is now built and applied (`dbperm.py`'s `return_null=True`), plus a
-stability-check discipline (second seed + 5× permutations on any near-margin verdict) that caught one
-real false positive (terrain's ordinal trend). A retroactive application of the same floor rule to WO8b's
-fixity residual got the identical necessary-not-sufficient reading — **no change to WO8b's record**.
-Full detail: `wo8c_findings.md`; plain-English: `wo8c_exec_summary.md`.
+**WO8, environment↔culture correspondence testing, 8a–8d complete.** 8a (descriptive), 8b (fixity), 8c
+(political complexity), and 8d (high-gods — the arc's first **exploratory**, not confirmatory,
+instrument) all passed their accept gates. **8d's headline:** whole-group cohesion among the 40
+"active-but-not-supporting-morality" societies is substantially a two-lineage story (Atlantic-Congo +
+Nilo-Saharan, both related and environmentally coherent; Sino-Tibetan a counter-example). Outside that: a
+strong cross-family convergence case (3 unrelated Siberian peoples, tightest sub-group in the whole set)
+and — the arc's real carried-forward question, per Karl's own framing after review — an **unexplained
+singleton residual (~14 societies)** explained by neither lineage, whole-group climate, nor proximity,
+with an explicit epistemic boundary (unexplained by environment and *shallow* — language-family —
+ancestry; deep descent and undocumented diffusion remain un-subtracted). The Hopi check surfaced Hano/
+Navajo as nearest neighbors — two independently documented cross-family contact cases, unprompted — the
+strongest instrument-validation evidence in the WO. New infra: `scripts/cdop/distance_core.py` (factored
+distance module, first real consumer, not yet a named shared core). Full detail: `wo8d_findings.md`;
+plain-English: `wo8d_exec_summary.md`.
 
-**Next step undecided.** Karl has flagged the arc may pivot to a new phase rather than continuing
-straight to WO8d (EA034 high-gods) — not decided as of this update. Prior arcs are complete: the
-similarity instruments (WO1–WO6c) and the climate-class instrument (WO7/7a; Atlas tab shipped) — see
-their sections below.
+**Next step undecided.** No WO8e drafted; options on the table include a residual-characterization
+follow-up on the singleton group (per 8d's own carried-forward item), a further EA034 sub-question, or a
+pivot to a different phase. Prior arcs are complete: the similarity instruments (WO1–WO6c) and the
+climate-class instrument (WO7/7a; Atlas tab shipped) — see their sections below.
 
 ---
 
@@ -194,7 +198,58 @@ stands, unchanged. **No edits to `wo8b_findings.md`, `wo8b_exec_summary.md`, or 
 section or row.**
 
 Findings: `wo8c_findings.md`; exec: `wo8c_exec_summary.md`. WO: `wo8c_political complexity-EA033.md`.
-**Next step undecided** — may pivot to a new phase rather than WO8d (EA034 high-gods); see *You are
+**Next: 8d — EA034 high-gods**, reframed exploratory rather than confirmatory (Karl + Opus).
+
+### WO8d — the high-gods look: EA034, exploratory · `cdop_wo8d`, gate passed
+
+**WO8d (2026-07-27, `cdop_wo8d`) is the arc's first genuinely exploratory instrument.** Karl pushed back
+on continuing the confirmatory-PERMANOVA pattern for EA034 and, with Opus, reframed the WO around
+instance-hunting: "is there an environmental thread among these societies, and is it more than shared
+ancestry" — no predicted result, no effect-size floor. Two corrections to the confirmatory frame:
+language family is **labeled, not permuted away** (transmission and convergence read directly, not
+inferred from a residual), and a whole-sample backdrop makes "tight"/"distinctive" measurable. New infra:
+`scripts/cdop/distance_core.py` (factored distance module — 4 lenses, whole-sample-fit standardization, a
+cohesion statistic, fully-random + family-restricted resampling baselines; `tests/cdop/
+test_distance_core.py`, 10 green) — the module's first real consumer, not yet promoted to a named shared
+core (CITYKIN/TRACE remain forward references only). **Accept gate PASSED.**
+
+**Headline: substantially a two-lineage story.** Of the 40 basin-joined focus-class societies (EA034
+"active, but not supporting morality"), one lineage — Atlantic-Congo — is 37.5% of the entire set (15/40)
+and is both genealogically related *and* environmentally coherent (100% tighter than random draws of the
+same size); a second, smaller lineage (Nilo-Saharan, n=4) shows the same pattern (94%). A third
+(Sino-Tibetan, n=3) is a useful counter-example — related but **not** environmentally coherent (46%,
+chance) — shared descent does not uniformly predict shared environment. No per-lens whole-group cohesion
+clears both the fully-random and family-restricted baselines at once (water: 95.25% vs random collapses
+to 42.25% vs cousins — the Atlantic-Congo effect, same Galton-control logic as WO8b/8c applied without a
+formal floor).
+
+**Two things sit outside the two-lineage story, and matter more than a flat verdict would suggest.** A
+strong cross-family convergence case: three genealogically unrelated peoples across Arctic Siberia
+(Chukchi, Yakut, Yurak-Samoyeds — three different families, no shared ancestry) form the **single
+tightest sub-group in the entire 40-society set** — real convergence or areal contact, not confirmed
+which, a candidate for a domain-expert (Ruth) follow-up. And — per Karl's own reframing during review,
+now the arc's primary carried-forward item — an **unexplained singleton residual**: ~14 societies sharing
+the trait but explained by neither the dominant lineages, whole-group climate, nor proximity to each
+other. **Epistemic boundary, stated explicitly in both docs:** "unexplained by environment and *shallow*
+(language-family, ~6–10k yr) ancestry," never "unexplained by everything mundane" — deep descent and
+undocumented diffusion remain un-subtracted candidates. Same scoping discipline as WO8c's circumscription
+boundary.
+
+**The Hopi check (a sanity anchor, not a focus-class member) produced the strongest instrument-validation
+evidence in the WO.** Hopi's nearest non-family climate-space neighbors are Hano and Navajo — two real,
+independently documented cases of cross-family cultural contact driven by shared geography — with no
+history or contact information fed into the metric. Paralleled to WO8b's differential-deflation result as
+the credibility asset licensing trust in the rest of the WO's spatial reads.
+
+**One real bug, caught and fixed mid-session:** a named-family cohesion lookup first queried the whole
+~1,133-society backdrop instead of the 40 focus-class members (Atlantic-Congo alone has 289 members
+corpus-wide). Caught via row-count mismatch against the named cluster membership, fixed, and verified a
+second way per Opus's review request — actual PCoA positions plotted per group, confirming the cohesion
+numbers reflect real visual clustering/scatter, not just a corrected count.
+
+Findings: `wo8d_findings.md`; exec: `wo8d_exec_summary.md`. WO: `wo8d_env-culture-highgods.md`.
+**Next step undecided** — options include a residual-characterization follow-up on the singleton group
+(8d's own primary carried-forward item), a further EA034 sub-question, or a phase pivot; see *You are
 here*.
 
 ---
@@ -641,6 +696,7 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 | Cell rendered as two axis choropleths + a compose picker, not a 20-color map | 5 modality × 4 phase ≈ 17 populated cells overflows a qualitative palette and is unreadable. The two axes each render as a clean choropleth (5- and 4-class); the combined cell is a client-side picker ("pick a modality + a phase, highlight it") — the same shape as the same-cell lens. Supersedes WO7a's "three variables (modality, phase, cell)" wording (Issue 2, Karl-approved). From WO7a build. |
 | Global class distributions live on their own `Atlas` tab, not the Similarity tab | A class distribution is **not place-specific** — unlike every other sandbox feature — so it cannot sit in the place-centric Similarity dropdown (which means "similar to *this* place"). `explorer.html` is frozen and off-limits for new work. Resolution: a new place-independent `Atlas` tab in `sandbox_v3.html` — a global-views surface (climate classes first, extensible to other global paintings; a friendlier home than the Explorer). On entry the left column swaps from place controls to a global-context panel; no Resolve/signature needed. Rendered via the Map-tab tile + feature-state pattern (not the Similarity panel's GeoJSON/`basin-geom` path, which is place-specific and caps at 6000 ids). From WO7a UI, Karl 2026-07-24. |
 | Effect-size floor rule, set and built (WO8c) | The floor = the 95th percentile of each test's own family-restricted permutation-null R² distribution (`dbperm.py`'s `return_null=True`), committed before 8c's number was seen. **Clearing it is necessary, not sufficient** — it means a result is distinguishable from noise, not that it is big enough or clean enough of collinearity to interpret as an independent effect (Opus correction, WO8c review, 2026-07-26). Any near-margin verdict gets a stability check (second seed + 5× permutations) before being trusted — it caught one real false positive in WO8c (terrain's ordinal trend). A collinearity read (cell counts, concentration at trait extremes) is required alongside every floor verdict, not optional. From WO8b (the deferred item) + WO8c (the build + the correction). |
+| Exploratory instrument for instance-hunting traits: label family, don't null it; no floor (WO8d) | Confirmatory PERMANOVA (WO8a–c) permutes language family away and reports only the residual — correct for testing whether a trait generalizes, wrong for hunting *instances* of environment↔culture coupling. WO8d's instrument instead **labels** family (colors by it, tests each named lineage's own cohesion) so transmission and convergence are read directly rather than inferred from what a null hides, and reports cohesion **descriptively** against a whole-sample backdrop — no effect-size floor, no significance verdict, by design. Use this instrument (not the confirmatory PERMANOVA one) whenever the question is "is there a lead worth chasing," not "does this generalize." From WO8d, Karl + Opus reframe. |
 
 ---
 
@@ -669,3 +725,11 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
   the modality gate's asymmetric bite); building it as an actual lens is WO6b, not done here
 - CDOP — D-PLACE enrichment (pool the other six samples onto EA societies), and CDOP — similarity
   (`precip_temp_phase` lens condition): both parked in `docs/design/deferred_items_register.md`.
+- **WO8d's singleton-residual follow-up** — a residual-characterization query (distinct in kind from the
+  cohesion look done in WO8d) on the ~14 EA034 focus-class societies unexplained by lineage, whole-group
+  climate, or proximity: does that specific set cohere on anything else (a different environmental
+  dimension, another EA variable, or nothing)? Not started; Karl's own framing names this as the arc's
+  real next question (`wo8d_findings.md` § Carried forward).
+- **WO8d's Siberian-trio lead** — three unrelated peoples (Chukchi, Yakut, Yurak-Samoyeds), tightest
+  cross-family sub-group in the WO8d set; candidate for a domain-expert (Ruth) check on independently
+  documented areal contact before any confirmatory follow-up. Not started.
