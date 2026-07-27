@@ -56,24 +56,28 @@ Research framing: `docs/edop/project_summary_20260606.md`
 
 - **Goto:** `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** **WO8c complete — accept gate PASSED** (2026-07-26, `cdop_wo8c`). The third rung of
-  the environment↔culture correspondence arc (EA033 political complexity) — the first trait without a
-  pre-checkable answer. **Headline:** complexity's raw climate link is weak (the real finding, given how
-  strongly subsistence/fixity tracked climate); the residual surviving subsistence(+fixity) control
-  clears its own permutation-null floor but not the near-total collinearity documented in the findings
-  (state tail ~92% concentrated in one subsistence category, ~92% in one fixity category) — read as **no
-  strong independent environmental signal**, not a positive finding. Built the effect-size floor rule
-  WO8b deferred (`dbperm.py`'s `return_null=True`, 95th-percentile permutation-null R²) plus a
-  stability-check discipline (second seed + 5× permutations on any near-margin verdict) that caught one
-  real false positive. A retroactive floor cross-check on WO8b's fixity residual got the identical
-  necessary-not-sufficient reading — **WO8b's record is unchanged**. New infra: `dplace.society_elevation`
-  (point elevation, all 6,408 coordinate-bearing `dplace.societies`), `dplace.society_terrain`
-  (point-window local relief, 1,133 EA societies). Findings: `wo8c_findings.md`; exec summary:
-  `wo8c_exec_summary.md`. **Next step undecided** — may pivot to a new phase rather than WO8d (EA034
-  high-gods); see the tracker's *You are here*. Prior context — WO7 climate-class instrument + WO7a Atlas
-  tab (shipped, sandbox); WO6c Similarity panel; the WO6b raw-curve breakthrough — in the tracker.
-- **Tests:** 473 pass, 14 skipped, 1 pre-existing fail (`test_codebook_alignment.py`, confirmed unrelated
-  to CDOP work, not fixed) — plus `tests/cdop/test_dbperm.py`, 14 green
+- **Current step:** **WO8d complete — accept gate PASSED** (2026-07-27, `cdop_wo8d`). The fourth rung of
+  the environment↔culture correspondence arc (EA034 high-gods) — and the arc's first **exploratory, not
+  confirmatory** instrument: no predicted result, no effect-size floor, language family **labeled** (not
+  permuted away) so transmission and convergence read directly. **Headline:** whole-group cohesion among
+  the 40 focus-class societies is substantially a two-lineage story (Atlantic-Congo n=15 + Nilo-Saharan
+  n=4, both related and environmentally coherent; Sino-Tibetan n=3 a counter-example — related but not
+  coherent). Outside that: a strong cross-family convergence case (3 unrelated Siberian peoples, tightest
+  sub-group in the whole set) and — the arc's real carried-forward question — an **unexplained singleton
+  residual (~14 societies)**, explained by neither lineage, whole-group climate, nor proximity (with an
+  explicit epistemic boundary: unexplained by environment + *shallow* language-family ancestry, not
+  everything mundane). The Hopi check surfaced Hano/Navajo as nearest neighbors — two independently
+  documented cross-family contact cases, unprompted — the strongest instrument-validation evidence in the
+  WO. New infra: `scripts/cdop/distance_core.py` (factored distance module — 4 lenses, cohesion statistic,
+  fully-random + family-restricted resampling; first real consumer, not yet a named shared core). Findings:
+  `wo8d_findings.md`; exec summary: `wo8d_exec_summary.md`. **Next step undecided** — options include a
+  residual-characterization follow-up on the singleton group, a further EA034 sub-question, or a phase
+  pivot; see the tracker's *You are here*. Prior context — WO8a–c (subsistence/fixity/complexity, the
+  confirmatory calibration rungs); WO7 climate-class instrument + WO7a Atlas tab (shipped, sandbox); WO6c
+  Similarity panel; the WO6b raw-curve breakthrough — in the tracker.
+- **Tests:** 483 pass, 14 skipped, 1 pre-existing fail (`test_codebook_alignment.py`, confirmed unrelated
+  to CDOP work across two sessions, not fixed) — plus `tests/cdop/` 24 green (`test_dbperm.py` 14 +
+  `test_distance_core.py` 10, new this WO)
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
