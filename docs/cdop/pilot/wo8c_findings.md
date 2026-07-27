@@ -17,21 +17,26 @@ near-margin verdict was re-run at a second seed and 5× the permutations before 
 
 ---
 
-## Headline — a small, real signal survives, net of both subsistence and settlement fixity
+## Headline — a weak raw link, and what survives control clears noise but not interpretability
 
-Contrary to the WO's own stated expectation (the modal predicted outcome was a null), **political
-complexity shows a small but robustly-above-floor independent environmental signal**, net of subsistence
-*and* net of subsistence+fixity together. It is real by the pre-committed rule and confirmed stable under
-a second permutation run — but it is small in absolute terms (R² ≈ 0.017–0.018 for the group contrast,
-≈ 0.010 for the ordinal trend, roughly 1–2% of environmental variance), smaller than settlement fixity's
-own residual once that number is corrected (see below). Settlement **fixity turns out not to matter at
-all** as a covariate here — adding it barely moves the residual either direction, so the WO's concern that
-fixity might be a confound-eating mediator turned out to be moot for this trait. **Ruggedness (terrain)
-shows no interpretable signal**, on either formulation, once checked at a second seed — narrowing the
-terrain channel, not the different, unbuilt "enclosure" (circumscription) variable, which remains
-untested. A secondary, unplanned result of building this WO's floor machinery: **retroactively applying
-the same rule to WO8b's fixity residual reverses that WO's original verdict** — flagged below, not yet
-applied to WO8b's closed record.
+Complexity's raw, uncontrolled link to climate is weak — itself the real surprise, given how strongly
+both subsistence (WO8a) and settlement fixity (WO8b) tracked climate. What survives controlling for
+subsistence (and for subsistence+fixity together) is small (R² ≈ 0.017–0.018 for the group contrast,
+≈ 0.010 for the ordinal trend), sits at the edge of its own permutation-noise floor, and — the crux — is
+estimated on very little independent variation: the state end of the ladder is ~92% concentrated in a
+single subsistence category and ~92% in a single settlement category (Part A), so there is almost no
+complexity-variation left at fixed subsistence/fixity for a "net of" test to actually measure. **Clearing
+the noise floor is a necessary condition for a result to be worth reading, not a sufficient one** — it
+says a number probably isn't pure chance; it says nothing about whether it is big enough, or clean enough
+of the collinearity documented in Part A, to interpret as an independent effect. Read through that lens,
+the honest verdict is: **no strong independent environmental signal — a small residual that clears noise
+but not interpretability.** Settlement fixity is not the mechanism absorbing that residual either way —
+adding it as a covariate barely moves the number, so the WO's concern that fixity might be a
+confound-eating mediator turns out to be moot for this trait; there is simply little room left for any
+covariate to move. Ruggedness (terrain) shows no signal on either formulation once checked at a second
+seed. A cross-check applying the same floor logic to WO8b's fixity residual (Cell 12) shows it also
+clears its own floor by a wide margin — but the same necessary-not-sufficient reading applies there too,
+so this is **not** read as reversing WO8b; that record stands unchanged (see below).
 
 ---
 
@@ -109,7 +114,13 @@ same story to two decimal places. The WO's own methodological concern (fixity mi
 removing real signal, not just noise) turns out not to bite for this trait: whatever complexity's
 residual environmental signal is, fixity doesn't touch it.
 
-**The effect-size floor (Cell 9, stability-checked in Cell 11 at a second seed + 5× permutations):**
+**The effect-size floor (Cell 9, stability-checked in Cell 11 at a second seed + 5× permutations).**
+Clearing this floor is a *necessary* condition for a result to be worth reading — it means the number is
+not indistinguishable from pure permutation noise. It is **not sufficient** to call the result a clean
+independent finding; that additionally requires the residual not to be an artifact of the collinearity
+documented in Part A. The table below reports the floor read the notebook computed (its "interpretable" /
+"sub-floor" labels mean exactly "clears / doesn't clear the noise floor" — nothing stronger); the
+paragraph after it is the actual reading, once the second bar is applied.
 
 | test | R² | floor (orig) | verdict (orig) | floor (stability check) | verdict (stability check) |
 |---|---|---|---|---|---|
@@ -118,11 +129,13 @@ residual environmental signal is, fixity doesn't touch it.
 | SPEC2 factor | 0.0181 | 0.0153 | interpretable (18.3% clear) | 0.0153 | **interpretable — holds** |
 | SPEC2 ordinal | 0.0102 | 0.0090 | interpretable (13.3% clear) | 0.0091 | **interpretable — holds (12.1%)** |
 
-Three of four nested verdicts are robustly interpretable; SPEC1's ordinal trend alone is a clean null.
-**Collinearity caveat stands alongside every one of these numbers**: with the state tail 92% concentrated
-in one subsistence/fixity combination, the surviving residual is real by the floor rule but is not immune
-to the overlap problem the WO named — it should be read as "a small signal survives the near-total
-overlap," not as clean independent evidence.
+Three of four nested verdicts clear their own noise floor — a real, stability-confirmed statement that
+these numbers are not chance. **That is where the floor rule's authority ends.** The state tail's 92%
+concentration in a single subsistence category and a single fixity category (Part A) means there is very
+little independent complexity-variation for these tests to have measured in the first place — the
+surviving R²≈0.018 is close to what a residual would look like whether or not a genuine independent
+effect exists. The collinearity caveat is not a footnote to this result; **it is the frame the result has
+to be read through.** Best read: distinguishable from noise, not separable from confound.
 
 ## Part D — the cheap terrain lens (Cell 10, stability-checked in Cell 11)
 
@@ -147,30 +160,35 @@ basin-neighborhood property), not local ruggedness (a fragmentation property wit
 sign) — that variable is unbuilt (see Forward, WO text). A null here leaves circumscription exactly as
 untested as it was going in.
 
-## Retroactive check on WO8b's fixity residual (Cell 12) — flagged, not yet applied
+## Cross-check on WO8b's fixity residual (Cell 12) — no change to WO8b's record
 
 Building this WO's floor machinery made it cheap to check something that couldn't be checked when WO8b
-closed: was WO8b's own "no interpretable independent effect" call (fixity net of subsistence, R²=0.0334
-factor / 0.0108 ordinal) actually checked against *its own* permutation-null floor? It wasn't —
-`return_null` didn't exist yet, so WO8b's verdict was a judgment call, not a floor-rule read.
+closed: does WO8b's fixity residual (net of subsistence, R²=0.0334 factor / 0.0108 ordinal) clear *its
+own* permutation-null floor? `return_null` didn't exist at the time, so this was never actually computed.
 
 Reconstructing WO8b's exact design (its own 918-society universe, same REP3 metric, same fixity4 collapse,
 same seed/n_perm) from the untouched `wo8b_substrate.parquet` confirms the reconstruction is faithful
 (R²=0.0334 / 0.0108, matching WO8b's reported numbers exactly) and then applies the floor:
 
-| test | R² | floor (WO8b's own null) | verdict |
+| test | R² | floor (WO8b's own null) | clears floor by |
 |---|---|---|---|
-| factor | 0.0334 | 0.0104 | **interpretable — clears by 3.2×** |
-| ordinal | 0.0108 | 0.0030 | **interpretable — clears by 3.6×** |
+| factor | 0.0334 | 0.0104 | 3.2× |
+| ordinal | 0.0108 | 0.0030 | 3.6× |
 
-Neither result is close — this is not a borderline case like terrain-ordinal above. **Under the rule
-WO8c committed to, WO8b's own fixity residual was a real, interpretable independent effect, not "no
-interpretable independent effect."** This does not change WO8b's confound-share arithmetic (marginal
-R²=0.213 → nested R²=0.033/0.011 is still an ~84% collapse — subsistence still absorbs the great majority
-of fixity's raw environmental correlation); it changes the characterization of what is left over. WO8b's
-`wo8b_findings.md`, `wo8b_exec_summary.md`, and the tracker's WO8b subsection all currently assert the
-now-contradicted framing and need a coordinated amendment — **held pending Karl's decision on when/how to
-apply it**, not made unilaterally here.
+WO8b's fixity residual clears its own floor comfortably — more comfortably than any of WO8c's own
+residuals, in fact. **But the same necessary-not-sufficient logic that governs WO8c's own reading above
+applies here too**: clearing the floor confirms the number isn't chance; it says nothing about whether it
+survives the same heavy cultural collinearity WO8b's own findings already documented (fixity × subsistence
+is a near-block-diagonal grid — WO8b Part A, 15/48 empty cells). So the correct reading is not "WO8b's
+verdict was wrong" — it is: **fixity's residual, like complexity's, is distinguishable from noise but
+small and confounded; neither upgrades to an interpretable independent effect.** WO8b's original instinct
+to characterize the residual as not independently meaningful was closer to right than a
+floor-clears-therefore-real reading would be. **No change to WO8b's record** — `wo8b_findings.md`,
+`wo8b_exec_summary.md`, and the tracker's WO8b subsection all stand as written. The ~84% subsistence-share
+arithmetic there (marginal R²=0.213 → nested R²=0.033/0.011) was always correct and is untouched by any of
+this; this section is recorded as a cross-check confirming the floor rule works as intended (WO8b's larger,
+more collinear residual clears its floor by a wider margin than WO8c's — internally consistent), not as a
+correction owed anywhere.
 
 ---
 
@@ -179,30 +197,37 @@ apply it**, not made unilaterally here.
 Per the WO's own framing, the gate is not "is it significant" — it is a defensible, reported effect size
 across marginal / nested×2 / terrain, interpretable whichever way it comes out, with the procedural
 requirements met: pre-test cell counts reported (Part A); the residual read against the committed floor
-with the fixity cross-check reported alongside (Part C, and the retroactive correction above); the
-collinearity caveat stated with the confound-share (Part C); SPEC 1 and SPEC 2 reported side by side,
-never SPEC 2 alone (Part C); the terrain-lens result reported and interpretable (Part D); and an explicit
-statement of what the terrain null does and does not rule out (Part D). All met. **The substantive answer
-is not the modal null the WO predicted** — a small, robustness-confirmed independent effect survives — but
-that is a legitimate outcome under the WO's own stated logic (a null was the expected result, not a
-requirement).
+with the fixity cross-check reported alongside (Part C, and the WO8b cross-check above); the
+collinearity caveat stated with the confound-share, and read as the frame the result requires, not a
+footnote beside it (Part C); SPEC 1 and SPEC 2 reported side by side, never SPEC 2 alone (Part C); the
+terrain-lens result reported and interpretable (Part D); and an explicit statement of what the terrain
+null does and does not rule out (Part D). All met. **The substantive answer is close to the modal null
+the WO predicted, not a departure from it**: the raw link is weak, and what survives the subsistence(+
+fixity) control clears its own noise floor but not the collinearity bar — read as no strong independent
+environmental signal, not as the small positive finding a floor-clears-therefore-real reading would
+suggest.
 
 ## Carried forward / notes for WO8d
 
-- **Three-point calibration scale, corrected:** subsistence (strong, WO8a) > fixity (moderate, R²≈0.033/
-  0.011, **now confirmed real** pending the WO8b amendment) > complexity (smaller but real, R²≈0.018/
-  0.010). A coherent gradient, not the flat "everything collapses to nothing" picture the pre-WO8c
-  expectation implied.
+- **Calibration scale, softened, not inflated:** subsistence is strong and clean (WO8a). Fixity and
+  complexity are both small once properly controlled — each clears its own noise floor (WO8b R²≈0.033/
+  0.011, WO8c R²≈0.018/0.010) but neither clears the collinearity bar, so neither is an independent
+  finding in the strong sense. Carry **"subsistence strong; fixity and complexity both weak and confounded
+  net of it"** into 8d — not a "strong > moderate > small-but-real" gradient a floor-only reading would
+  suggest.
 - **The stability-check discipline (second seed, 5× permutations) is now standard practice for any
   near-margin floor verdict** — it caught the one result (terrain ordinal) that needed catching. Recommend
   carrying it into 8d as a required step, not an optional add-on.
-- **The retroactive-floor-check technique (Cell 12) is now cheap for any prior WO's residual** — worth a
-  pass over WO8a's numbers too if WO8a ever computed a nested residual near a floor (it didn't; WO8a was
-  descriptive only, so likely moot, but worth a one-line confirmation before 8d).
+- **The floor-vs-collinearity discipline (Cell 12's real lesson) applies to any future residual, not just
+  this WO's:** clearing the floor is a necessary-not-sufficient check — cheap to run on any prior WO's
+  residual (worth a one-line confirmation on WO8a too, though it was descriptive-only and likely moot),
+  but it never substitutes for reading the collinearity structure documented in Part A of whichever WO.
 - **Collinearity gets worse, not better, at 8d.** High-gods (EA034) is tightly coupled to complexity in the
   literature (the big-gods debate) — expect a fourth near-collinear cultural variable, and the same
   concentration-at-the-extreme pattern this WO found at the state tail.
-- **Enclosure/circumscription remains the real open terrain question**, unbuilt. This WO's null (on
-  ruggedness) plus WO's own named trigger (an ambiguous complexity null, which did *not* happen here) means
-  the enclosure build is not urgently triggered by this result — the climate-envelope test came back
-  positive, so there's no "ambiguous null" calling for it yet.
+- **Enclosure/circumscription remains the real open terrain question**, unbuilt. The WO's named trigger for
+  building it is "an ambiguous 8c null (climate null + ruggedness null) plus reason to believe
+  circumscription specifically." Ruggedness is a clean null; the climate-envelope result, under the
+  corrected reading above, is itself ambiguous (clears its noise floor, doesn't clear collinearity) rather
+  than cleanly positive or cleanly null — so whether this WO's result actually satisfies the named trigger
+  is a live question for Karl/Opus, not resolved here.
