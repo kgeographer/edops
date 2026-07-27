@@ -14,8 +14,12 @@ detail.) On each WO close: (1) add/replace that WO's subsection under *Work orde
 Keep *You are here* to the current WO only.
 
 - **Location:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`
-- **Last updated:** 2026-07-26 — WO8b merged to `cdop_pilot` (first correspondence test, EA030 fixity,
-  gate passed). Current arc: WO8; next is 8c.
+- **Last updated:** 2026-07-26 — WO8c complete, accept gate PASSED (EA033 political complexity).
+  Headline: complexity's raw climate link is weak, and the residual surviving subsistence(+fixity)
+  control clears its own noise floor but not the collinearity bar — read as no strong independent
+  environmental signal, not a positive finding. WO8b's record is unchanged (a retroactive floor
+  cross-check on its fixity residual got the same necessary-not-sufficient reading, not a reversal).
+  Next step undecided — may pivot to a new phase rather than WO8d; see *You are here*.
 
 ## Table of contents
 
@@ -24,7 +28,7 @@ Keep *You are here* to the current WO only.
 - Roadmap
 - You are here
 - Work orders (reverse chronological):
-  - WO8 — Environment↔culture correspondence testing (8a, 8b)
+  - WO8 — Environment↔culture correspondence testing (8a, 8b, 8c)
   - WO7 — Climate classes (instrument + Atlas tab)
   - WO6 — Similarity: non-compensatory → raw-curve backbone (6a, 6b, 6c)
   - WO5 — Context tab; temperature lens diagnostic; hide Similarity
@@ -80,20 +84,34 @@ consult at every step resumption, add rows there (`docs/design/deferred_items_re
 | WO7 — Climate classes (class-relative instrument) | `cdop_pilot` (notebook) | **investigation complete** | Notebook `wo7_climate_classes.ipynb` (Cells 1–13). Two discrete axes computed per basin: **modality** (arid gate → cv gate → vectorized Knoben ΔE, validated grid==exact==WO6b on 9/9 synthetics + 11/11 probes) and **phase** (precip×temp correlation + 5 °C thermal gate). Phase map is textbook (equatorial gold, winter-rain belt, summer-rain). Verdict: **sound instrument, over-broad names** — the five Köppen-Med regions all appear (Med cell 63.5% "leak" into the Iran/C-Asia winter-rain belt), twin-rains cores right (Indonesia was L06 aggregation, returns 8× at L08; mid-latitude bimodal is real & scale-stable). Both sharpening dials tested (Cell 12 winter temp, Cell 13 aridity) — neither isolates Köppen-Med cleanly. WO: `wo7_climate-classes.md`; findings: `wo7_findings.md`. |
 | WO7a — Label lock + build | `cdop_wo7a` (cut from `cdop_pilot`) | **complete — backend + Atlas UI, Karl-signed-off 2026-07-24** | Scope: sandbox only (`explorer.html` frozen; NOT `cdop_pilot`). **Labels (Option A):** cells compose from axis names (modality-first), aseasonal drops the phase term, classic names annotation-only — a test enforces no Köppen/Knoben name in any label. **Storage:** in-memory startup index (similarity/context family), persist-view sourced, L06 eager (~1.9 s) / L08 lazy (~18 s, never at boot) — CLAUDE.md § "How runtime data reaches the app". **Backend:** `app/db/climate_classes.py` (compute + index + `axis_values`/`class_lens`), `main.py` L06 load, routes `/api/explorer/climate-class` (Atlas) + `/api/similarity/climate-class` (place-anchored, tested, no UI yet), `tests/test_climate_classes.py` (8 green). **UI = the Atlas tab** (`sandbox_v3.html`): a place-independent global-views surface (climate classes first, extensible); flush-right cyan tab, left column swaps to a global-context panel; paints basin PMTiles via feature-state from the flat class dict (Map-tab pattern, no GeoJSON/`basin-geom`); views = Modality / Phase choropleths + Two-wet-seasons / cool-season-rain highlights. **Render decision (Issue 2):** two axis choropleths + client-side compose, NOT a ~20-colour cell choropleth (supersedes the WO's "three variables" wording). Sandbox similarity/climate-class track **closed**; UI/UX polish + example smoke tests deferred to a review pass. WO: `wo7a_label-lock-build.md`; findings: `wo7_findings.md`. |
 | WO8a — Environment↔culture correspondence: descriptive probes (Societies) | `cdop_wo8a` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Descriptive notebook only (no engine/API/UI). Shared substrate (1,133 EA societies→L08 basin→`s`-signature, persisted `output/cdop/wo8a_substrate.parquet`); nested-bet PCoAs (Water⊂Climate envelope⊂Landscape) coloured by EA042 subsistence + WO7 modality. **EA042 separates cleanest in Climate envelope** (temperature opens the 2nd axis; Landscape's terrain smears). Part C: seasonality shape orthogonal to subsistence (refutes the WO's modality-class expectation; raw curve is the faithful rep). Part D crosstab corroborates (pastoralism→25% arid; fishers/gatherers→cool-wet). **Headline: environment sets bounds, not determination.** Decisions: bet=Climate envelope; seasonality=raw curve if any (non-load-bearing); keep Part D via crosstab. Next=WO8b (PERMANOVA/PERMDISP, within-family). WO: `wo8a_culture-probes.md`; findings: `wo8a_findings.md`. |
-| WO8b — Environment↔culture correspondence: the first test (EA030 settlement fixity) | `cdop_wo8b` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook + hand-rolled stats engine `scripts/cdop/dbperm.py` (PERMANOVA / db-RDA / Freedman–Lane partial / PERMDISP; `tests/cdop/test_dbperm.py` 10 green, validated vs closed-form ANOVA/regression F). Marginal fixity R²=0.213 (family-restricted); **nested \| subsistence R²=0.033 — 84% collapse into subsistence** (residual = no interpretable independent effect; fixity↔subsistence near-collinear). PERMDISP flags a breadth difference (mobile wider, breadth 1.76; sedentary narrower, breadth 1.06). Part D: rainfall timing dilutes (dR²=−0.084), not load-bearing. **Prediction confirmed** — temperature phylogeny-inflated (family p→0.020), aridity robust: the instrument-validation carry-forward headline. Substantive: settlement concentrates in a narrow favorable band — a target, not a floor (mobility the wide fallback across the margins it excludes). Reporting stance decided; effect-size floor open (Karl, before 8c). WO: `wo8b_fixity-test.md`; findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. |
+| WO8b — Environment↔culture correspondence: the first test (EA030 settlement fixity) | `cdop_wo8b` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook + hand-rolled stats engine `scripts/cdop/dbperm.py` (PERMANOVA / db-RDA / Freedman–Lane partial / PERMDISP; `tests/cdop/test_dbperm.py` 10 green, validated vs closed-form ANOVA/regression F). Marginal fixity R²=0.213 (family-restricted); **nested \| subsistence R²=0.033 — 84% collapse into subsistence** (residual = no interpretable independent effect; fixity↔subsistence near-collinear). PERMDISP flags a breadth difference (mobile wider, breadth 1.76; sedentary narrower, breadth 1.06). Part D: rainfall timing dilutes (dR²=−0.084), not load-bearing. **Prediction confirmed** — temperature phylogeny-inflated (family p→0.020), aridity robust: the instrument-validation carry-forward headline. Substantive: settlement concentrates in a narrow favorable band — a target, not a floor (mobility the wide fallback across the margins it excludes). Reporting stance decided; effect-size floor open (Karl, before 8c) — **now set** (WO8c); a retroactive check confirmed this residual clears its own floor by 3.2–3.6× but reads the same way as WO8c's own numbers (necessary-not-sufficient; collinearity stands) — no change to this row's verdict. WO: `wo8b_fixity-test.md`; findings: `wo8b_findings.md`; exec: `wo8b_exec_summary.md`. |
+| WO8c — Environment↔culture correspondence: political complexity (EA033) | `cdop_wo8c` (cut from `cdop_pilot`) | **complete — accept gate PASSED** | Notebook, `dbperm.py` extended with `return_null=True` (permutation-null R² distribution — the machinery behind the effect-size floor; `tests/cdop/test_dbperm.py` 14 green). New infra: `dplace.society_elevation` (point elevation, all 6,408 coordinate-bearing `dplace.societies`), `dplace.society_terrain` (point-window local relief, 1,133 EA societies). **Headline: complexity's raw climate link is weak** (unlike subsistence/fixity) — the real finding. **Nested \| subsistence(+fixity) R²≈0.017–0.018 (factor) / 0.010 (ordinal)** clears its own permutation-null floor (stability-checked at a second seed + 5× perms) but **not the collinearity bar**: the state tail is ~92% concentrated in one subsistence category and ~92% in one fixity category (Part A), so read as *no strong independent environmental signal*, not a positive finding — floor-clearing is necessary, not sufficient. Fixity as a covariate barely moves the residual either way (mediator concern moot for this trait). **Terrain (ruggedness) is a clean null** on both formulations once stability-checked (one apparent positive, R²=0.0078 vs floor=0.0077, flipped to null under the recheck — exactly the guard doing its job). A retroactive floor cross-check on WO8b's fixity residual (Cell 12) got the same necessary-not-sufficient reading — **no change to WO8b's record**. WO: `wo8c_political complexity-EA033.md`; findings: `wo8c_findings.md`; exec: `wo8c_exec_summary.md`. |
 
 ---
 
 ## You are here
 
 Phase opened 2026-07-18. Integration branch `cdop_pilot`; WO branches cut from it, merged back on accept.
-**460 app tests pass / 14 skipped** (full suite, 2026-07-24 WO7a gate — incl. the 51 Playwright surface
-tests) plus the `dbperm` suite (`tests/cdop/test_dbperm.py`, 10 green, WO8b).
+**473 app tests pass / 14 skipped / 1 pre-existing fail** (full suite, 2026-07-26 WO8c gate;
+`test_codebook_alignment.py::test_implemented_fields_accessible` — confirmed unrelated to CDOP/WO8c work,
+last touched by WO7/7a, not fixed here) plus the `dbperm` suite (`tests/cdop/test_dbperm.py`, 14 green,
+WO8c added `return_null` coverage).
 
-**Current arc — WO8, environment↔culture correspondence testing.** 8a (descriptive, gate passed) and 8b
-(first real test — EA030 settlement fixity, gate passed) are complete and merged. **8c — EA033 political
-complexity is next** (WO arriving 2026-07-26). *Open for Karl:* set the effect-size floor **before** 8c's
-number is seen (the guard against slivers accreting into an overclaim). Prior arcs are complete: the
+**WO8, environment↔culture correspondence testing, 8a–8c complete.** 8a (descriptive), 8b (fixity), and
+8c (EA033 political complexity — the first trait without a pre-checkable answer) all passed their accept
+gates. **8c's headline, after a language correction from Opus (WO author):** complexity's raw climate
+link is weak; what survives controlling for subsistence(+fixity) clears its own permutation-null floor
+but not the collinearity bar documented in Part A (the state tail is ~92% concentrated in a single
+subsistence category and a single fixity category) — read as *no strong independent environmental
+signal*, not a positive finding. The effect-size floor rule (95th percentile of the permutation null, set
+before 8c's number was seen) is now built and applied (`dbperm.py`'s `return_null=True`), plus a
+stability-check discipline (second seed + 5× permutations on any near-margin verdict) that caught one
+real false positive (terrain's ordinal trend). A retroactive application of the same floor rule to WO8b's
+fixity residual got the identical necessary-not-sufficient reading — **no change to WO8b's record**.
+Full detail: `wo8c_findings.md`; plain-English: `wo8c_exec_summary.md`.
+
+**Next step undecided.** Karl has flagged the arc may pivot to a new phase rather than continuing
+straight to WO8d (EA034 high-gods) — not decided as of this update. Prior arcs are complete: the
 similarity instruments (WO1–WO6c) and the climate-class instrument (WO7/7a; Atlas tab shipped) — see
 their sections below.
 
@@ -141,6 +159,43 @@ arriving 2026-07-26.
 > looked at; it propagated into findings, exec, and this tracker before Karl's cell run caught it. The
 > direction above is the corrected, verified one (Cell 10 per-group means). Process lesson logged: no
 > value is stated as a finding until read off actual output.
+
+### WO8c — political complexity: EA033 · `cdop_wo8c`, gate passed
+
+**WO8c (2026-07-26, `cdop_wo8c`) is the arc's first genuinely speculative test** — EA033 jurisdictional
+hierarchy — the first trait with no pre-checkable answer (8a/8b were calibration). Built the effect-size
+floor WO8b deferred to Karl: `dbperm.py` extended with `return_null=True` (the permutation-null R²
+distribution), so the pre-committed rule (95th-percentile of that distribution) could actually be
+computed, not eyeballed. Also built, on Karl's go-ahead mid-WO: `dplace.society_elevation` (point
+elevation for all 6,408 coordinate-bearing `dplace.societies`) and `dplace.society_terrain` (point-window
+local relief for the 1,133 EA societies), after confirming no local DEM raster exists but OpenTopoData's
+batch API makes a grid sample cheap. **Accept gate PASSED.**
+
+**Headline, after a language correction from Opus (WO author) on the first draft:** complexity's raw,
+uncontrolled climate link is weak (R²=0.050, not even conventionally significant) — itself the real
+finding, given how strongly subsistence and fixity tracked climate. What survives controlling for
+subsistence (R²=0.017) and subsistence+fixity together (R²=0.018 factor / 0.010 ordinal) clears its own
+permutation-null floor — stability-checked at a second seed and 5× the permutations, which is exactly
+what caught the one false positive in this WO (terrain's ordinal trend, a 1.3% floor margin that flipped
+to null on recheck) — but **clearing the floor is necessary, not sufficient**. The state tail is ~92%
+concentrated in a single subsistence category and ~92% in a single fixity category, so there is almost no
+independent complexity-variation left for a "net of" test to measure; the surviving residual should be
+read as *distinguishable from noise, not separable from confound* — **no strong independent
+environmental signal**, not a small positive finding. Fixity as a covariate barely moves the residual
+either direction (the WO's mediator-vs-confound concern turned out moot for this trait). **Terrain
+(ruggedness) is a clean null** on both formulations once stability-checked — narrows the terrain channel,
+does not test circumscription (a different, unbuilt, relational variable).
+
+**A cross-check, not a correction:** building the floor machinery made it cheap to retroactively apply
+the same rule to WO8b's fixity residual (R²=0.0334/0.0108) — it clears its own floor by 3.2–3.6×, a wider
+margin than WO8c's own numbers. Applying the identical necessary-not-sufficient logic, this does **not**
+upgrade WO8b's residual to an interpretable independent effect either — WO8b's original characterization
+stands, unchanged. **No edits to `wo8b_findings.md`, `wo8b_exec_summary.md`, or this tracker's WO8b
+section or row.**
+
+Findings: `wo8c_findings.md`; exec: `wo8c_exec_summary.md`. WO: `wo8c_political complexity-EA033.md`.
+**Next step undecided** — may pivot to a new phase rather than WO8d (EA034 high-gods); see *You are
+here*.
 
 ---
 
@@ -585,7 +640,7 @@ limitation is a different problem. See `wo1_findings.md` for full analysis.
 | Climate classes live in an in-memory startup index, not parquet/table | They are a derived per-basin quantity from the persist-view curves (like the similarity/context/conjunction indices), so they join that family: computed at startup from `v_basin0{6,8}_persist_rev2`, held in RAM, served fast. L06 eager (~1.9 s); L08 lazy on first use (~18 s Knoben never at boot). Not parquet (that's for big cubes, e.g. LISA 107 MB) and not a DB table. Source map recorded in CLAUDE.md § "How runtime data reaches the app". From the WO7a data-source review. |
 | Cell rendered as two axis choropleths + a compose picker, not a 20-color map | 5 modality × 4 phase ≈ 17 populated cells overflows a qualitative palette and is unreadable. The two axes each render as a clean choropleth (5- and 4-class); the combined cell is a client-side picker ("pick a modality + a phase, highlight it") — the same shape as the same-cell lens. Supersedes WO7a's "three variables (modality, phase, cell)" wording (Issue 2, Karl-approved). From WO7a build. |
 | Global class distributions live on their own `Atlas` tab, not the Similarity tab | A class distribution is **not place-specific** — unlike every other sandbox feature — so it cannot sit in the place-centric Similarity dropdown (which means "similar to *this* place"). `explorer.html` is frozen and off-limits for new work. Resolution: a new place-independent `Atlas` tab in `sandbox_v3.html` — a global-views surface (climate classes first, extensible to other global paintings; a friendlier home than the Explorer). On entry the left column swaps from place controls to a global-context panel; no Resolve/signature needed. Rendered via the Map-tab tile + feature-state pattern (not the Similarity panel's GeoJSON/`basin-geom` path, which is place-specific and caps at 6000 ids). From WO7a UI, Karl 2026-07-24. |
-| Effect-size floor for the correspondence scale (WO8→) | Sub-floor nested residuals are reported as **no interpretable independent effect**, never "small real"; the confound-share is the headline. The numeric floor is Karl's to fix **before** 8c's number is seen, so it can't be motivated by the result — the guard against a multi-rung probe accreting slivers into an overclaim. From WO8b + Opus review. |
+| Effect-size floor rule, set and built (WO8c) | The floor = the 95th percentile of each test's own family-restricted permutation-null R² distribution (`dbperm.py`'s `return_null=True`), committed before 8c's number was seen. **Clearing it is necessary, not sufficient** — it means a result is distinguishable from noise, not that it is big enough or clean enough of collinearity to interpret as an independent effect (Opus correction, WO8c review, 2026-07-26). Any near-margin verdict gets a stability check (second seed + 5× permutations) before being trusted — it caught one real false positive in WO8c (terrain's ordinal trend). A collinearity read (cell counts, concentration at trait extremes) is required alongside every floor verdict, not optional. From WO8b (the deferred item) + WO8c (the build + the correction). |
 
 ---
 
