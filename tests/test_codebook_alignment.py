@@ -91,13 +91,23 @@ def test_implemented_fields_accessible(timbuktu_sig):
     # only — not emitted by point signature").
     AREAL_ONLY = {"coast_fraction", "outlet_type"}
 
+    # Climate-class derived variables (WO7/7a): computed in app/db/climate_classes.py and
+    # genuinely served, but deliberately NOT wired into the point signature -- WO7a built them
+    # as a place-independent Atlas-tab instrument (/api/explorer/climate-class,
+    # /api/similarity/climate-class), a documented architecture decision (CLAUDE.md, CDOP_PILOT
+    # tracker locked decisions), not an omission. The codebook's own row notes say so ("Served
+    # by /api/explorer/climate-class... Atlas tab") but status=implemented was set without
+    # accounting for this test's assumption that "implemented" means "in the /api/signature
+    # payload." Exempt for the same reason as AREAL_ONLY, not fixed by wiring into signature.py.
+    ATLAS_ONLY = {"modality", "phase", "climate_class", "pt_corr"}
+
     accessible = _all_accessible_keys(timbuktu_sig)
     missing = []
 
     for row in _codebook_implemented(exclude_bands=["T", "output"]):
         for col in ("api_key_s", "api_key_u"):
             key = (row.get(col) or "").strip()
-            if key and key not in accessible and key not in AREAL_ONLY:
+            if key and key not in accessible and key not in AREAL_ONLY and key not in ATLAS_ONLY:
                 missing.append(
                     f"  {row['schema_key']:35s} {col}='{key}'"
                 )
