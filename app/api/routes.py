@@ -14,7 +14,7 @@ from app.db.hyde import get_hyde_land_use
 from app.db.narrative import get_narrative
 from app.db.connection import db_connect
 from app.db.seasonality import (
-    find_similar, get_lens_registry, find_conjunction, get_conjunction_registry,
+    find_similar, find_conjunction, get_conjunction_registry,
 )
 from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
@@ -441,103 +441,6 @@ def _gaz_join(conn, hybas_ids: list) -> dict:
         return {int(r[0]): r for r in cur.fetchall()}
 
 
-@router.get("/similarity/lenses")
-def similarity_lenses():
-    """Return the full lens registry (active and disabled lenses)."""
-    return {"lenses": get_lens_registry()}
-
-
-@router.get("/similarity")
-def similarity(
-    lat: float,
-    lon: float,
-    lens: str = "climate.precip",
-    mode: str = "threshold",
-    stringency: str = "moderate",
-    n: int = 200,
-):
-    """Return basins similar to (lat, lon) under the given similarity lens.
-
-    Parameters
-    ----------
-    lat, lon    : query coordinates
-    lens        : lens_id from the registry (e.g. 'climate.precip', 'climate.temp')
-    mode        : 'threshold' (default) — all basins within the calibrated radius;
-                  'topn' — the n nearest basins regardless of radius
-    stringency  : 'strict' | 'moderate' (default) | 'loose' — used in threshold mode
-    n           : top-N count used only when mode='topn' (default 200, max 2000)
-
-    Response
-    --------
-    {
-      "lens_id": str, "lens_label": str, "metric": str,
-      "mode": str,
-      "query_basin_id": int,
-      "query_values": {var: value, ...},
-      # threshold mode only:
-      "stringency": str, "radius": float, "result_count": int,
-      "results": [
-        { "rank": int, "basin_id": int, "distance": float,
-          "values": {var: value, ...},
-          "place_id": int|null, "place_name": str|null,
-          "ccodes": str|null, "lat": float|null, "lon": float|null },
-        ...
-      ]
-    }
-    """
-    if mode not in ("threshold", "topn"):
-        raise HTTPException(status_code=400, detail="mode must be 'threshold' or 'topn'")
-    if mode == "threshold" and stringency not in ("strict", "moderate", "loose"):
-        raise HTTPException(status_code=400, detail="stringency must be 'strict', 'moderate', or 'loose'")
-    n = min(max(1, n), 2000)
-    conn = db_connect()
-    try:
-        query_hybas_id = _resolve_basin(conn, lat, lon)
-        try:
-            query_meta, ranked = find_similar(
-                query_hybas_id, lens_id=lens, n=n, mode=mode, stringency=stringency,
-            )
-        except RuntimeError as e:
-            raise HTTPException(status_code=503, detail=str(e))
-        except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
-
-        gaz_by_basin = _gaz_join(conn, [r["hybas_id"] for r in ranked]) if ranked else {}
-
-        results = []
-        for r in ranked:
-            place = gaz_by_basin.get(r["hybas_id"])
-            results.append({
-                "rank":       r["rank"],
-                "basin_id":   r["hybas_id"],
-                "distance":   r["distance"],
-                "values":     r["values"],
-                "place_id":   place[1] if place else None,
-                "place_name": place[2] if place else None,
-                "ccodes":     place[3] if place else None,
-                "lat":        float(place[4]) if place else None,
-                "lon":        float(place[5]) if place else None,
-            })
-
-        resp = {
-            "lens_id":        query_meta["lens_id"],
-            "lens_label":     query_meta["lens_label"],
-            "metric":         query_meta["metric"],
-            "mode":           query_meta["mode"],
-            "query_basin_id": query_meta["query_hybas_id"],
-            "query_values":   query_meta["query_values"],
-            "results":        results,
-        }
-        if query_meta["mode"] == "threshold":
-            resp["stringency"]   = query_meta["stringency"]
-            resp["radius"]       = query_meta["radius"]
-            resp["result_count"] = query_meta["result_count"]
-        return resp
-
-    finally:
-        conn.close()
-
-
 @router.get("/similarity/conjunction/lenses")
 def similarity_conjunction_lenses():
     """Return the conjunction lens registry (WO6c) for the panel's lens selector."""
@@ -698,9 +601,9 @@ def context(lat: float, lon: float, level: int = 6, radius_km: int = 500):
     at the level, and basins within radius_km of (lat, lon).
 
     No ranking, no candidate list, no composite distance -- each variable is
-    reported independently (contrast with /api/similarity's whitened distance,
-    which can let variables compensate for one another; see wo5_findings.md
-    Part A Check 3).
+    reported independently (contrast with a composite/whitened distance, which
+    can let variables compensate for one another; see wo5_findings.md Part A
+    Check 3).
 
     Parameters
     ----------

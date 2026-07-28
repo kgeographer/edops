@@ -517,34 +517,9 @@
         <!-- Similarity pane -->
         <div class="tab-pane fade" id="v3-pane-similarity" role="tabpanel">
           <p class="text-muted mt-3 px-1" id="v3-sim-placeholder">Click a location and run <strong>Get signature</strong> to find similar basins.</p>
-          <div id="v3-sim-content" style="display:none;">
-            <div class="d-flex align-items-center justify-content-between px-1 py-2">
-              <div id="v3-sim-title"></div>
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="text-muted small fw-semibold">Lens:</span>
-                <select id="v3-sim-group" class="form-select form-select-sm" style="width:auto;"></select>
-                <select id="v3-sim-sublens" class="form-select form-select-sm" style="width:auto;"></select>
-                <span class="text-muted small ms-1" style="border-left:1px solid #dee2e6; padding-left:0.6rem;">Threshold:</span>
-                <div class="btn-group btn-group-sm" role="group">
-                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-strict"   value="strict"   autocomplete="off">
-                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-strict"   style="font-size:0.75rem; line-height:1.6;">Strict</label>
-                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-moderate" value="moderate" autocomplete="off" checked>
-                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-moderate" style="font-size:0.75rem; line-height:1.6;">Moderate</label>
-                  <input type="radio" class="btn-check" name="v3sim-str" id="v3sim-str-loose"    value="loose"    autocomplete="off">
-                  <label class="btn btn-outline-secondary py-0" for="v3sim-str-loose"    style="font-size:0.75rem; line-height:1.6;">Loose</label>
-                </div>
-              </div>
-            </div>
-            <div class="d-flex align-items-center gap-2 px-1 pb-1">
-              <span class="text-muted" style="font-size:0.75rem;">Most similar</span>
-              <div style="width:120px; height:8px; background:linear-gradient(to right,#b2182b,#f4a582,#fddbc7); border-radius:3px; border:1px solid #ddd;"></div>
-              <span class="text-muted" style="font-size:0.75rem;">Least similar</span>
-            </div>
-            <div id="v3-sim-map" style="height:445px; border-radius:6px;"></div>
-            <div id="v3-sim-blurb" class="px-1 pt-2" style="font-size:0.88rem; max-width:680px;"></div>
-          </div>
 
-          <!-- Conjunction panel (WO6c) — painted set, declared bands. Feature-flagged (SIM_CONJUNCTION). -->
+          <!-- Conjunction panel (WO6c) — painted set, declared bands. The validated instrument;
+               the pre-WO6 composite-distance panel this replaced was retired in CITYKIN WO1. -->
           <div id="v3-cj-content" style="display:none;">
             <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
               <div id="v3-cj-title"></div>
@@ -662,20 +637,9 @@
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
   let _pointSig         = null;  // /api/signature response for current point — powers Analysis tab
   let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
-  let _simMap           = null;  // MapLibre instance for Similarity tab (lazy-initialized)
-  let _simPopup         = null;
-  let _simMarker        = null;  // query-location marker on similarity map
-  let _simQueryLat      = null;  // coords + lens of last similarity fetch — skip refetch if unchanged
-  let _simQueryLon      = null;
-  let _simQueryLens     = null;
-  let _simCurrentLens        = 'climate.precip';  // active lens id
-  let _simCurrentStringency  = 'moderate';         // strict | moderate | loose
-  let _simLensRegistry       = [];                 // [{lens_id, group, label, status, thresholds, ...}]
-  let _simQueryStringency    = null;               // stringency of last rendered fetch
 
-  // WO6c conjunction panel — paint the non-compensatory set. Flip SIM_CONJUNCTION to false to
-  // fall back to the old composite-distance panel (v3-sim-content), which stays wired and reachable.
-  const SIM_CONJUNCTION = true;
+  // WO6c conjunction panel — paint the non-compensatory set. The validated instrument; the old
+  // composite-distance panel it replaced was retired outright in CITYKIN WO1.
   const CJ_LENS_CONDS = {
     'climate.precip': ['precip_shape', 'precip_magnitude', 'precip_amplitude_cv'],
     'climate.temp':   ['temp_level', 'temp_range'],
@@ -745,7 +709,6 @@
   // WO6c: the conjunction panel refetches at the toggled level (the engine has both L06 and L08
   // indexes), retiring the old Similarity tab's known-inert level control.
   function _cjOnLevelChange() {
-    if (!SIM_CONJUNCTION) return;
     const simVisible = document.getElementById('v3-tab-similarity-btn').classList.contains('active');
     if (simVisible && currentLat != null) { _cjQueryKey = null; renderConjunction(); }
   }
@@ -1352,243 +1315,6 @@
       <div class="px-1 pt-3">${scalarHtml}</div>`;
   }
 
-  // ── Similarity tab ────────────────────────────────────────────────────────
-
-  function _simBlurb(simData) {
-    const n          = simData.result_count ?? (simData.results || []).length;
-    const stringency = simData.stringency || _simCurrentStringency;
-    const countLine  = `Showing all ${n.toLocaleString()} basins within the ${stringency} threshold.`;
-    const lensId = simData.lens_id || 'climate.precip';
-    const qv     = simData.query_values || {};
-
-    if (lensId === 'climate.precip') {
-      const log_pre = qv.log_pre_mm_syr;
-      const a1 = qv.a1, b1 = qv.b1, a2 = qv.a2, b2 = qv.b2;
-      if (log_pre == null || a1 == null) return '';
-      const pre_mm = Math.round(Math.expm1(log_pre));
-      const R_std  = Math.hypot(a1, b1);  // annual cycle strength (= old pre_concentration)
-      const R_dbl  = Math.hypot(a2, b2);  // semi-annual cycle strength
-      let seasDesc;
-      if (R_std < 0.15)      seasDesc = 'distributed year-round (no dominant wet season)';
-      else if (R_std < 0.35) seasDesc = 'weakly seasonal (a modest peak season)';
-      else if (R_std < 0.55) seasDesc = 'moderately seasonal';
-      else                   seasDesc = 'strongly seasonal (concentrated in a short wet season)';
-      const bimodalNote = R_dbl > 0.20 ? ' with a secondary peak (bimodal structure)' : '';
-      return `<p class="text-muted mb-0">The containing basin receives `
-           + `${pre_mm.toLocaleString()}&nbsp;mm/year of precipitation, ${seasDesc}${bimodalNote}. `
-           + `${countLine}</p>`;
-    }
-
-    if (lensId === 'climate.temp') {
-      const tmp_mean = qv.tmp_dc_syr;
-      const amp      = qv.tmp_seas_amp;
-      if (tmp_mean == null || amp == null) return '';
-      let thermalDesc;
-      if (tmp_mean > 20)       thermalDesc = 'a hot tropical regime';
-      else if (tmp_mean > 12)  thermalDesc = 'a warm temperate regime';
-      else if (tmp_mean > 4)   thermalDesc = 'a cool temperate regime';
-      else if (tmp_mean > -5)  thermalDesc = 'a cold continental or high-elevation regime';
-      else                     thermalDesc = 'a polar or extreme continental regime';
-      let ampDesc;
-      if (amp < 10)       ampDesc = 'low seasonal amplitude (equable, maritime-influenced)';
-      else if (amp < 20)  ampDesc = 'moderate seasonal amplitude';
-      else if (amp < 35)  ampDesc = 'high seasonal amplitude (continental)';
-      else                ampDesc = 'extreme seasonal amplitude (deep continental or high-latitude)';
-      return `<p class="text-muted mb-0">The containing basin has a mean annual temperature of `
-           + `${tmp_mean.toFixed(1)}&nbsp;°C — ${thermalDesc} — with ${ampDesc} `
-           + `(${amp.toFixed(1)}&nbsp;°C range). `
-           + `${countLine}</p>`;
-    }
-
-    // Generic fallback for future lenses
-    const label = simData.lens_label || lensId;
-    return `<p class="text-muted mb-0">${countLine}</p>`;
-  }
-
-  function _populateGroupSelect() {
-    const sel = document.getElementById('v3-sim-group');
-    sel.innerHTML = '';
-    const seen = new Set();
-    _simLensRegistry.forEach(l => {
-      if (seen.has(l.group)) return;
-      seen.add(l.group);
-      const hasActive = _simLensRegistry.some(m => m.group === l.group && m.status === 'active');
-      const opt = document.createElement('option');
-      opt.value       = l.group;
-      opt.textContent = hasActive ? l.group : `${l.group}`;
-      opt.disabled    = !hasActive;
-      sel.appendChild(opt);
-    });
-  }
-
-  function _populateSubLensSelect(group) {
-    const sel = document.getElementById('v3-sim-sublens');
-    sel.innerHTML = '';
-    _simLensRegistry.filter(l => l.group === group).forEach(l => {
-      const opt = document.createElement('option');
-      opt.value       = l.lens_id;
-      opt.textContent = l.status === 'active' ? l.label : `${l.label} (coming soon)`;
-      opt.disabled    = l.status !== 'active';
-      if (l.lens_id === _simCurrentLens) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
-
-  async function _loadSimLensRegistry() {
-    try {
-      const r = await fetch('/api/similarity/lenses');
-      if (!r.ok) return;
-      const data = await r.json();
-      _simLensRegistry = data.lenses || [];
-      _populateGroupSelect();
-      const defaultGroup = (_simLensRegistry.find(l => l.lens_id === _simCurrentLens) || {}).group || 'Climate';
-      document.getElementById('v3-sim-group').value = defaultGroup;
-      _populateSubLensSelect(defaultGroup);
-      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
-    } catch (e) {
-      console.warn('[similarity] registry load failed', e);
-    }
-  }
-
-  async function renderSimilarity() {
-    if (currentLat == null || currentLon == null) return;
-    if (_simQueryLat === currentLat && _simQueryLon === currentLon &&
-        _simQueryLens === _simCurrentLens && _simQueryStringency === _simCurrentStringency) {
-      if (_simMap) _simMap.resize();
-      return;
-    }
-    _simQueryLat        = currentLat;
-    _simQueryLon        = currentLon;
-    _simQueryLens       = _simCurrentLens;
-    _simQueryStringency = _simCurrentStringency;
-
-    // Init MapLibre instance on first call (tab must already be visible)
-    if (!_simMap) {
-      _simMap = new maplibregl.Map({
-        container: 'v3-sim-map',
-        center: [10, 20],
-        zoom: 1,
-        attributionControl: true,
-        style: {
-          version: 8,
-          sources: {
-            carto: {
-              type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              ],
-              tileSize: 256,
-              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            },
-          },
-          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
-        },
-      });
-      _simPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
-      await new Promise(r => _simMap.on('load', r));
-      _simMap.addSource('sim-basins', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      _simMap.addLayer({
-        id: 'sim-fill', type: 'fill', source: 'sim-basins',
-        paint: {
-          'fill-color': ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
-            0, '#b2182b', 1, '#fddbc7'],
-          'fill-opacity': 0.75,
-        },
-      });
-      _simMap.addLayer({
-        id: 'sim-outline', type: 'line', source: 'sim-basins',
-        paint: { 'line-color': '#7f0000', 'line-width': 0, 'line-opacity': 0 },
-      });
-      _simMap.on('mouseenter', 'sim-fill', (e) => {
-        _simMap.getCanvas().style.cursor = 'pointer';
-        const p = e.features[0].properties;
-        const ccodes   = JSON.parse(p.ccodes || '[]').join(', ');
-        const nameHtml = p.place_name ? `<strong>${escapeHtml(p.place_name)}</strong><br>` : '';
-        const ccHtml   = ccodes ? `${escapeHtml(ccodes)}<br>` : '';
-        _simPopup.setLngLat(e.lngLat)
-          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">dist ${parseFloat(p.distance).toFixed(3)}</span>`)
-          .addTo(_simMap);
-      });
-      _simMap.on('mouseleave', 'sim-fill', () => {
-        _simMap.getCanvas().style.cursor = '';
-        _simPopup.remove();
-      });
-    } else {
-      _simMap.resize();
-    }
-
-    document.getElementById('v3-sim-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
-
-    // Place query-location marker
-    if (_simMarker) _simMarker.remove();
-    _simMarker = new maplibregl.Marker({ color: '#2c5f8a' })
-      .setLngLat([currentLon, currentLat])
-      .addTo(_simMap);
-
-    try {
-      const simR = await fetch(`/api/similarity?lat=${currentLat}&lon=${currentLon}&lens=${_simCurrentLens}&mode=threshold&stringency=${_simCurrentStringency}`);
-      if (!simR.ok) throw new Error(`similarity ${simR.status}`);
-      const simData = await simR.json();
-      const results = simData.results || [];
-      if (!results.length) {
-        _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features: [] });
-        return;
-      }
-
-      const ids = results.map(r => r.basin_id);
-      const geomR = await fetch('/api/basin-geom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, level: 6 }),
-      });
-      if (!geomR.ok) throw new Error(`basin-geom ${geomR.status}`);
-      const geomData = await geomR.json();
-
-      const features = results
-        .filter(r => geomData[r.basin_id])
-        .map(r => ({
-          type: 'Feature',
-          geometry: JSON.parse(geomData[r.basin_id]),
-          properties: {
-            rank:       r.rank,
-            basin_id:   r.basin_id,
-            distance:   r.distance,
-            place_name: r.place_name || '',
-            ccodes:     JSON.stringify(r.ccodes || []),
-          },
-        }));
-
-      _simMap.getSource('sim-basins').setData({ type: 'FeatureCollection', features });
-
-      // Scale ramp to actual distance range of returned results
-      const dists   = results.map(r => r.distance);
-      const minDist = Math.min(...dists);
-      const maxDist = Math.max(...dists);
-      const mid     = minDist + (maxDist - minDist) * 0.5;
-      _simMap.setPaintProperty('sim-fill', 'fill-color',
-        ['interpolate', ['linear'], ['to-number', ['get', 'distance']],
-          minDist, '#b2182b',
-          mid,     '#f4a582',
-          maxDist, '#fddbc7']);
-
-      document.getElementById('v3-sim-blurb').innerHTML = _simBlurb(simData);
-
-      if (features.length) {
-        const bounds = new maplibregl.LngLatBounds();
-        features.forEach(f => {
-          const g = f.geometry;
-          const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
-          rings.forEach(ring => ring.forEach(c => bounds.extend(c)));
-        });
-        _simMap.fitBounds(bounds, { padding: 30, maxZoom: 5 });
-      }
-    } catch (err) {
-      console.error('[similarity]', err);
-    }
-  }
-
   // ── Conjunction panel (WO6c) ──────────────────────────────────────────────
   // Paint the set of basins that satisfy EVERY condition of the lens (non-compensatory).
   // Membership is binary: members are painted (shaded by shape agreement where the lens has a
@@ -1596,10 +1322,7 @@
 
   function _cjShowContent(show) {
     document.getElementById('v3-sim-placeholder').style.display = show ? 'none' : '';
-    const oldC = document.getElementById('v3-sim-content');
-    const newC = document.getElementById('v3-cj-content');
-    if (SIM_CONJUNCTION) { newC.style.display = show ? '' : 'none'; oldC.style.display = 'none'; }
-    else                 { oldC.style.display = show ? '' : 'none'; newC.style.display = 'none'; }
+    document.getElementById('v3-cj-content').style.display = show ? '' : 'none';
   }
 
   function _cjUpdateBandVisibility() {
@@ -2372,10 +2095,6 @@
   function _resetRightColumn() {
     _pointSig = null;
     _currentPlaceName = '';
-    _simQueryLat        = null;
-    _simQueryLon        = null;
-    _simQueryLens       = null;
-    _simQueryStringency = null;
     _ctxQueryLat    = null;
     _ctxQueryLon    = null;
     _ctxQueryLevel  = null;
@@ -2397,12 +2116,9 @@
     document.getElementById('v3-ctx-count').textContent = '';
     document.getElementById('v3-ctx-legend').style.display = 'none';
     _cjShowContent(false);
-    if (_simMarker) { _simMarker.remove(); _simMarker = null; }
-    if (_simMap) _simMap.getSource('sim-basins')?.setData({ type: 'FeatureCollection', features: [] });
     if (_cjMarker) { _cjMarker.remove(); _cjMarker = null; }
     if (_cjMap) _cjMap.getSource('cj-basins')?.setData({ type: 'FeatureCollection', features: [] });
     _cjQueryKey = null;
-    document.getElementById('v3-sim-blurb').innerHTML = '';
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-map-btn')).show();
   }
 
@@ -3871,8 +3587,7 @@
   document.querySelectorAll('input[name="v3ctx-radius"]').forEach(input => {
     input.addEventListener('change', renderContext);
   });
-  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab',
-    SIM_CONJUNCTION ? renderConjunction : renderSimilarity);
+  document.getElementById('v3-tab-similarity-btn').addEventListener('shown.bs.tab', renderConjunction);
 
   // Conjunction panel controls (WO6c)
   document.getElementById('v3-cj-lens').addEventListener('change', function () {
@@ -3907,29 +3622,6 @@
     document.getElementById('v3-left-place').classList.remove('d-none');
   });
 
-  document.getElementById('v3-sim-group').addEventListener('change', function () {
-    _populateSubLensSelect(this.value);
-    const first = _simLensRegistry.find(l => l.group === this.value && l.status === 'active');
-    if (first) {
-      _simCurrentLens = first.lens_id;
-      document.getElementById('v3-sim-sublens').value = _simCurrentLens;
-      _simQueryLens = null;
-      renderSimilarity();
-    }
-  });
-  document.getElementById('v3-sim-sublens').addEventListener('change', function () {
-    _simCurrentLens = this.value;
-    _simQueryLens   = null;
-    renderSimilarity();
-  });
-  document.querySelectorAll('input[name="v3sim-str"]').forEach(radio => {
-    radio.addEventListener('change', function () {
-      _simCurrentStringency = this.value;
-      _simQueryStringency   = null;
-      renderSimilarity();
-    });
-  });
-  _loadSimLensRegistry();
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
   window._v3map = map;
 
