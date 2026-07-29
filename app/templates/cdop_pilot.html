@@ -8,13 +8,13 @@
     <div class="col-12 col-lg-6">
       <ul class="nav nav-tabs" id="edopTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
+          <button class="nav-link" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="false">Societies</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
+          <button class="nav-link active" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="true">WH Cities</button>
         </li>
       </ul>
 
@@ -22,7 +22,7 @@
 
 
         <!-- WH CITIES TAB (258 cities) -->
-        <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
+        <div class="tab-pane fade show active" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">258 World Heritage Cities</h4>
           <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a> — 254 of 258 have a basin assignment</p>
 
@@ -42,6 +42,8 @@
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
                 <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
                 <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-lens="terrain">Terrain regime</a></li>
               </ul>
             </div>
 
@@ -58,6 +60,39 @@
                 <li><a class="dropdown-item" href="#" data-band="culture">Culture</a></li>
                 <li><a class="dropdown-item" href="#" data-band="modern">Modern</a></li>
               </ul>
+            </div>
+          </div>
+
+          <!-- Terrain regime knobs (CITYKIN WO1a) — query-relative tolerance bands, shown only when
+               the Terrain regime lens is active. Three-level tight/default/broad steps, same pattern
+               as the sandbox Similarity panel's conjunction bands (#v3-cj-corr etc.) — each level is a
+               round fraction of the facet's own corpus std (elev std ~696m, relief std ~404m, position
+               std ~0.115): tight ~0.5std, default ~0.7-0.9std (WO1a-locked, fixture-validated), broad
+               ~1.0std. Auto-applies on change, no separate button, matching the sandbox convention. -->
+          <div class="mt-2 gap-2 align-items-end flex-wrap" id="terrain-knobs" style="display:none;">
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-elev">Elevation (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-elev" style="width:auto; font-size:0.8rem;">
+                <option value="350">350 · tight</option>
+                <option value="500" selected>500</option>
+                <option value="700">700 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-relief">Relief (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-relief" style="width:auto; font-size:0.8rem;">
+                <option value="200">200 · tight</option>
+                <option value="300" selected>300</option>
+                <option value="400">400 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-pos">Landform position (±) <i class="bi bi-question-circle text-muted" id="terrain-info-position" style="cursor:help;"></i></label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-pos" style="width:auto; font-size:0.8rem;">
+                <option value="0.05">0.05 · tight</option>
+                <option value="0.10" selected>0.10</option>
+                <option value="0.15">0.15 · broad</option>
+              </select>
             </div>
           </div>
 
@@ -89,7 +124,7 @@
         </div>
 
         <!-- SOCIETIES TAB (D-PLACE) -->
-        <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
+        <div class="tab-pane fade" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
           <p class="text-muted" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
@@ -337,16 +372,34 @@
       const data = await resp.json();
       whcCities = (data && data.cities) ? data.cities : [];
 
+      // Tbilisi (CITYKIN WO1a/WO1's terrain acceptance fixture) is pinned at the top of the dropdown,
+      // above the region groups -- not because it's a bigger city, but because it's the instrument's
+      // own reference case. Pulled out of the region grouping so it appears exactly once.
+      const pinned = whcCities.filter((c) => c.city === 'Tbilisi');
+      const rest = whcCities.filter((c) => c.city !== 'Tbilisi');
+
       // Group by region
       const byRegion = {};
-      whcCities.forEach((c) => {
+      rest.forEach((c) => {
         const region = c.region || 'Other';
         if (!byRegion[region]) byRegion[region] = [];
         byRegion[region].push(c);
       });
 
-      // Build grouped dropdown
+      // Build grouped dropdown, pinned city/cities first
       sel.innerHTML = '<option value="">Select a city…</option>';
+      pinned.forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        opt.textContent = `${c.city}, ${c.country}`;
+        sel.appendChild(opt);
+      });
+      if (pinned.length) {
+        const sep = document.createElement('option');
+        sep.disabled = true;
+        sep.textContent = '──────────';
+        sel.appendChild(sep);
+      }
       Object.keys(byRegion).sort().forEach((region) => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region;
@@ -376,6 +429,8 @@
     // Clear previous state
     clearSimilarResults();
     whcSetStatus('');
+    const terrainKnobs = document.getElementById('terrain-knobs');
+    if (terrainKnobs) terrainKnobs.style.display = 'none';
 
     if (!whcSelected) {
       if (btnSimilarEnv) btnSimilarEnv.disabled = true;
@@ -390,6 +445,12 @@
     // Enable Similar dropdown buttons
     if (btnSimilarEnv) btnSimilarEnv.disabled = false;
     if (btnSimilarText) btnSimilarText.disabled = false;
+
+    // Tbilisi (CITYKIN's terrain fixture, added to gaz.wh_cities for terrain-lens purposes only) has
+    // no scraped Wikipedia summaries/embeddings, unlike the true WH Cities -- hide "Similar (semantic)"
+    // entirely for it rather than leave a dead control enabled.
+    const textDropdown = btnSimilarText ? btnSimilarText.closest('.dropdown') : null;
+    if (textDropdown) textDropdown.style.display = (whcSelected.city === 'Tbilisi') ? 'none' : '';
 
     // Clear Resolved place (this is not WHG resolution)
     renderResolvedPlace(null);
@@ -435,6 +496,28 @@
     return await resp.json();
   }
 
+  function getTerrainTolerances() {
+    const elev = parseFloat(document.getElementById('terrain-tol-elev')?.value);
+    const relief = parseFloat(document.getElementById('terrain-tol-relief')?.value);
+    const pos = parseFloat(document.getElementById('terrain-tol-pos')?.value);
+    return {
+      elev_tol: Number.isFinite(elev) ? elev : 500,
+      relief_tol: Number.isFinite(relief) ? relief : 300,
+      pos_tol: Number.isFinite(pos) ? pos : 0.10,
+    };
+  }
+
+  async function fetchWhcSimilarTerrain(cityId, tol, limit = 8) {
+    const url = `/api/whc-similar-terrain?city_id=${encodeURIComponent(cityId)}`
+      + `&elev_tol=${tol.elev_tol}&relief_tol=${tol.relief_tol}&pos_tol=${tol.pos_tol}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`WH terrain request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
   async function fetchWhcSimilarText(cityId, band = 'composite', limit = 5) {
     const url = `/api/whc-similar-text?city_id=${encodeURIComponent(cityId)}&band=${encodeURIComponent(band)}&limit=${limit}`;
     const resp = await fetch(url);
@@ -456,12 +539,18 @@
     const ENV_LENS_LABELS = {
       'climate.precip': 'Precipitation regime',
       'climate.temp':   'Temperature regime',
+      'terrain':        'Terrain regime',
     };
+    const isTerrain = band === 'terrain';
     if (heading && description) {
       if (similarityType === 'text') {
         const bandLabel = SEMANTIC_BAND_LABELS[band] || band;
         heading.textContent = `5 most similar cities in this collection (${bandLabel})`;
         description.textContent = 'corpus-relative ranking by Wikipedia text embeddings (cosine similarity)';
+      } else if (isTerrain) {
+        const n = data.eligible_count ?? (data.similar || []).length;
+        heading.textContent = `${n} cities within tolerance (Terrain regime), showing top ${(data.similar || []).length}`;
+        description.textContent = 'query-relative tolerance bands on point-window elevation/relief/landform-position (CITYKIN WO1a)';
       } else {
         const lensLabel = ENV_LENS_LABELS[band] || band;
         heading.textContent = `5 most similar cities in this collection (${lensLabel})`;
@@ -482,7 +571,10 @@
       const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
       const sameCluster = site.env_cluster === sourceSite.env_cluster;
       let clusterNote = '';
-      if (!isText) {
+      if (isTerrain) {
+        clusterNote = `<span class="text-muted small">elev ${Math.round(site.grid_elev_mean)}m · `
+          + `relief ${Math.round(site.relief_range_m)}m · pos ${site.landform_position.toFixed(2)}</span>`;
+      } else if (!isText) {
         // For env similarity, show cluster label
         clusterNote = sameCluster
           ? `<span class="text-success small">same cluster</span>`
@@ -569,6 +661,27 @@
       whcSetStatus('Finding environmentally similar cities…');
       const data = await fetchWhcSimilarEnv(whcSelected.id, lensId, 5);
       renderWhcSimilarSites(data, whcSelected, 'env', lensId);
+      whcSetStatus('');
+    } catch (e) {
+      whcSetStatus(String(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function whcShowSimilarTerrain() {
+    if (!whcSelected) return;
+
+    const btn = document.getElementById('whc-similar-env-btn');
+    if (btn) btn.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whcSetStatus('Finding terrain-similar cities…');
+      const tol = getTerrainTolerances();
+      const data = await fetchWhcSimilarTerrain(whcSelected.id, tol, 8);
+      renderWhcSimilarSites(data, whcSelected, 'env', 'terrain');
       whcSetStatus('');
     } catch (e) {
       whcSetStatus(String(e));
@@ -1070,6 +1183,17 @@
     // WH Cities: load cities now
     whcLoadCities();
 
+    // Terrain knobs: landform-position tooltip (0=floor/valley, 1=ridge/peak)
+    const posInfoIcon = document.getElementById('terrain-info-position');
+    if (posInfoIcon) {
+      new bootstrap.Tooltip(posInfoIcon, {
+        title: '0 = floor (surrounded by higher ground); 1 = ridge/peak (surrounded by lower ground). '
+             + 'Ratio of (mean − min) to (max − min) elevation across the sampled window.',
+        placement: 'top',
+        trigger: 'hover',
+      });
+    }
+
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
     if (whcSel) {
@@ -1085,9 +1209,27 @@
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
+        // Close explicitly -- Bootstrap's own auto-close doesn't fire reliably here, because the
+        // handlers below synchronously disable this same toggle button while the menu is still open.
+        const envToggle = document.getElementById('whc-similar-env-btn');
+        if (envToggle) bootstrap.Dropdown.getOrCreateInstance(envToggle).hide();
         const lensId = item.getAttribute('data-lens');
-        whcShowSimilarEnv(lensId);
+        const knobs = document.getElementById('terrain-knobs');
+        if (lensId === 'terrain') {
+          if (knobs) knobs.style.display = 'flex';
+          whcShowSimilarTerrain();
+        } else {
+          if (knobs) knobs.style.display = 'none';
+          whcShowSimilarEnv(lensId);
+        }
       });
+    });
+
+    // WH Cities: terrain knobs — auto-apply on change, same convention as the sandbox's
+    // conjunction bands (#v3-cj-corr etc.), no separate Apply button.
+    ['terrain-tol-elev', 'terrain-tol-relief', 'terrain-tol-pos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => whcShowSimilarTerrain());
     });
 
     // WH Cities: semantic similarity dropdown
@@ -1095,6 +1237,8 @@
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
+        const textToggle = document.getElementById('whc-similar-text-btn');
+        if (textToggle) bootstrap.Dropdown.getOrCreateInstance(textToggle).hide();
         const band = item.getAttribute('data-band');
         whcShowSimilarText(band);
       });

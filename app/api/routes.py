@@ -1462,6 +1462,99 @@ def whc_similar_env_lens(city_id: int, lens_id: str = "climate.precip", limit: i
             conn.close()
 
 
+@router.get("/whc-similar-terrain", include_in_schema=False)
+def whc_similar_terrain(
+    city_id: Optional[int] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    elev_tol: float = 500.0,
+    relief_tol: float = 300.0,
+    pos_tol: float = 0.10,
+    limit: int = 8,
+):
+    """CITYKIN WO1a terrain lens: query-relative tolerance knobs, ranked retrieval.
+
+    Query by `city_id` (a gaz.wh_cities row) OR by `lat`+`lon` (any point — e.g. Tbilisi, which is
+    not itself a corpus city; fetched live via terrain_grid, ~1-2s). Tolerances are query-relative
+    (WO1a Part B): each knob is a +/- band around the QUERY's own facet value, not a global threshold.
+    Locked defaults (wo1a_findings.md): elev_tol=500, relief_tol=300, pos_tol=0.10, elev_weight=1.0.
+    """
+    from scripts.cdop.citykin.terrain_lens import rank_by_terrain, FACETS
+    from scripts.cdop.citykin.terrain_grid import point_window_terrain
+    import pandas as pd
+
+    if city_id is None and (lat is None or lon is None):
+        raise HTTPException(status_code=400, detail="Provide city_id, or both lat and lon")
+
+    tolerances = {"grid_elev_mean": elev_tol, "relief_range_m": relief_tol, "landform_position": pos_tol}
+
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT c.id, c.city, c.country, c.region, ST_X(c.geom) AS lon, ST_Y(c.geom) AS lat,
+                       t.grid_elev_mean, t.relief_range_m, t.landform_position
+                FROM gaz.wh_cities c JOIN gaz.wh_cities_terrain t ON t.city_id = c.id
+                WHERE c.basin_id IS NOT NULL
+                  AND t.grid_elev_mean IS NOT NULL AND t.relief_range_m IS NOT NULL
+                  AND t.landform_position IS NOT NULL
+            """)
+            rows = cur.fetchall()
+        corpus = pd.DataFrame(rows, columns=["id", "city", "country", "region", "lon", "lat"] + FACETS)
+
+        exclude_idx = None
+        if city_id is not None:
+            match = corpus.index[corpus["id"] == city_id]
+            if len(match) == 0:
+                raise HTTPException(status_code=404,
+                                    detail=f"City {city_id} not found, has no L08 basin, or has no resolved terrain")
+            exclude_idx = match[0]
+            query = {f: corpus.loc[exclude_idx, f] for f in FACETS}
+            source = {"source_city_id": city_id}
+        else:
+            terrain = point_window_terrain(lat, lon)
+            if terrain["grid_elev_mean"] is None:
+                raise HTTPException(status_code=422,
+                                    detail="Not enough land in this point's sampling window to characterize terrain")
+            query = {f: terrain[f] for f in FACETS}
+            source = {"source_lat": lat, "source_lon": lon}
+
+        ranked = rank_by_terrain(query, corpus, tolerances, elev_weight=1.0, exclude_index=exclude_idx)
+
+        results = []
+        for _, r in ranked.head(limit).iterrows():
+            results.append({
+                "id":      int(r["id"]),
+                "city":    r["city"],
+                "country": r["country"],
+                "region":  r["region"],
+                "lon":     float(r["lon"]),
+                "lat":     float(r["lat"]),
+                "distance": round(float(r["terrain_dist"]), 4),
+                "grid_elev_mean":     round(float(r["grid_elev_mean"]), 1),
+                "relief_range_m":     round(float(r["relief_range_m"]), 1),
+                "landform_position":  round(float(r["landform_position"]), 3),
+            })
+
+        return {
+            **source,
+            "lens_id":     "terrain",
+            "tolerances":  tolerances,
+            "query_facets": {k: round(float(v), 2) for k, v in query.items()},
+            "corpus_size": len(corpus) + (1 if exclude_idx is not None else 0),
+            "eligible_count": len(ranked),
+            "similar":     results,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if "conn" in locals():
+            conn.close()
+
+
 @router.get("/whc-similar-env-by-coord", include_in_schema=False)
 def whc_similar_env_by_coord(lon: float, lat: float, limit: int = 5):
     """Return most similar WH cities by environmental signature for any coordinate.
