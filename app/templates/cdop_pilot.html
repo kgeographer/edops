@@ -151,7 +151,10 @@
                   <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
                 </div>
-                <div class="form-check form-check-inline mb-0">
+                <!-- Retired 2026-07-28 (docs/cdop/pilot/note_societies-tab-vs-wo8.md): pre-CDOP-Pilot
+                     PCA-cluster coloring, disconnected from WO8's actual correspondence-testing work.
+                     Hidden, not removed -- supporting code left in place, cleanup deferred. -->
+                <div class="form-check form-check-inline mb-0" style="display:none;">
                   <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-basin" value="basins">
                   <label class="form-check-label" for="soc-mode-basin">Basin clusters</label>
                 </div>
@@ -172,7 +175,8 @@
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
-                <div class="form-check form-check-inline mb-0">
+                <!-- Retired 2026-07-28, see note above -->
+                <div class="form-check form-check-inline mb-0" style="display:none;">
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-basin" value="basins">
                   <label class="form-check-label" for="soc-rel-mode-basin">Basin clusters</label>
                 </div>
@@ -1146,6 +1150,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // base.html's shared site-title defaults to "Computing Place Workbench" (this page was cloned
+    // from workbench.html); override it here rather than in the shared template, which every page uses.
+    const siteTitleEl = document.getElementById('site-title');
+    if (siteTitleEl) siteTitleEl.textContent = 'Computing Place CDOP Pilot';
+
     function setMapTitle(text) {
       const el = document.getElementById('map-title');
       if (el) el.textContent = text;

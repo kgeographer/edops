@@ -22,6 +22,15 @@ Keep *You are here* to the current WO only.
   forward question. New infra: `scripts/cdop/distance_core.py` (factored distance module, first real
   consumer). Next step undecided — see *You are here*.
 
+**Addendum, 2026-07-28 (post-freeze housekeeping, not a WO close — added from CITYKIN).** Before
+revisiting this phase, read `note_societies-tab-vs-wo8.md` first: the Societies tab's EA042/EA034
+filter + PCA-based "Basin clusters" coloring is pre-CDOP-Pilot legacy (built in `workbench.html`,
+2026-01-18, inherited unchanged when `cdop_pilot.html` was cloned from it) and was never touched by or
+connected to WO8a–d's correspondence-testing research, which was scoped notebook-only from WO8a's own
+accept gate onward. Two tracks that happen to share variable names, not one stalled feature. The real
+open question for a resumed CDOP Pilot — what the Societies tab should actually show now that WO8's
+findings exist — is unspec'ed, not answered here.
+
 ## Table of contents
 
 - What CDOP Pilot is
