@@ -54,6 +54,8 @@ docs/edop/*
 docs/cdop/*
 !docs/cdop/pilot/
 !docs/cdop/pilot/**
+!docs/cdop/citykin/
+!docs/cdop/citykin/**
 
 # Office temp/lock files
 ~$*
