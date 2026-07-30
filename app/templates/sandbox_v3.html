@@ -529,6 +529,7 @@
                   <option value="climate.precip" selected>Precipitation regime</option>
                   <option value="climate.temp">Temperature regime</option>
                   <option value="climate.union">Climate (precip + temp)</option>
+                  <option value="terrain.regime">Terrain regime</option>
                 </select>
               </div>
             </div>
@@ -573,6 +574,22 @@
                   <option value="2">2 · tight</option>
                   <option value="4" selected>4</option>
                   <option value="6">6 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="terrain_elev">
+                <label class="text-muted d-block mb-0">Elevation (±m)</label>
+                <select id="v3-cj-elev" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="25">25 · tight</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="terrain_relief">
+                <label class="text-muted d-block mb-0">Relief range (±m)</label>
+                <select id="v3-cj-relief" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="50">50 · tight</option>
+                  <option value="100" selected>100</option>
+                  <option value="200">200 · broad</option>
                 </select>
               </div>
             </div>
@@ -644,8 +661,9 @@
     'climate.precip': ['precip_shape', 'precip_magnitude', 'precip_amplitude_cv'],
     'climate.temp':   ['temp_level', 'temp_range'],
     'climate.union':  ['precip_shape', 'precip_magnitude', 'precip_amplitude_cv', 'temp_level', 'temp_range'],
+    'terrain.regime': ['terrain_elev', 'terrain_relief'],
   };
-  const CJ_SHADE_BY = { 'climate.precip': 'precip_shape', 'climate.temp': null, 'climate.union': 'precip_shape' };
+  const CJ_SHADE_BY = { 'climate.precip': 'precip_shape', 'climate.temp': null, 'climate.union': 'precip_shape', 'terrain.regime': null };
   let _cjMap         = null;   // MapLibre instance for the conjunction panel (lazy-initialized)
   let _cjPopup       = null;
   let _cjMarker      = null;
@@ -1339,6 +1357,8 @@
       cv:      document.getElementById('v3-cj-cv').value,
       t_level: document.getElementById('v3-cj-tlevel').value,
       t_range: document.getElementById('v3-cj-trange').value,
+      elev:    document.getElementById('v3-cj-elev').value,
+      relief:  document.getElementById('v3-cj-relief').value,
     };
   }
 
@@ -1383,7 +1403,7 @@
     const lv = _activeLevel();
     const b  = _cjBands();
     const conds = CJ_LENS_CONDS[_cjCurrentLens] || [];
-    const key = [currentLat, currentLon, _cjCurrentLens, lv, b.corr, b.ratio, b.cv, b.t_level, b.t_range].join('|');
+    const key = [currentLat, currentLon, _cjCurrentLens, lv, b.corr, b.ratio, b.cv, b.t_level, b.t_range, b.elev, b.relief].join('|');
     if (key === _cjQueryKey && _cjMap) { _cjMap.resize(); return; }
     _cjQueryKey = key;
 
@@ -1424,11 +1444,20 @@
         const ccodes   = JSON.parse(p.ccodes || '[]').join(', ');
         const nameHtml = p.place_name ? `<strong>${escapeHtml(p.place_name)}</strong><br>` : '';
         const ccHtml   = ccodes ? `${escapeHtml(ccodes)}<br>` : '';
-        const corrHtml = (p.corr != null && p.corr !== 'null')
-          ? `shape r ${parseFloat(p.corr).toFixed(3)}<br>` : '';
+        let detailHtml;
+        if (_cjCurrentLens === 'terrain.regime') {
+          const elevTxt   = (p.elev_m != null && p.elev_m !== 'null')
+            ? `${Math.round(parseFloat(p.elev_m)).toLocaleString()}&nbsp;m elev` : '';
+          const reliefTxt = (p.relief_range_m != null && p.relief_range_m !== 'null')
+            ? `${Math.round(parseFloat(p.relief_range_m)).toLocaleString()}&nbsp;m relief` : '';
+          detailHtml = [elevTxt, reliefTxt].filter(Boolean).join(' · ');
+        } else {
+          const corrHtml = (p.corr != null && p.corr !== 'null')
+            ? `shape r ${parseFloat(p.corr).toFixed(3)}<br>` : '';
+          detailHtml = `${corrHtml}${Math.round(parseFloat(p.pre_total_mm)).toLocaleString()}&nbsp;mm/yr`;
+        }
         _cjPopup.setLngLat(e.lngLat)
-          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">`
-                 + `${corrHtml}${Math.round(parseFloat(p.pre_total_mm)).toLocaleString()}&nbsp;mm/yr</span>`)
+          .setHTML(`${nameHtml}${ccHtml}<span class="text-muted" style="font-size:0.8rem;">${detailHtml}</span>`)
           .addTo(_cjMap);
       });
       _cjMap.on('mouseleave', 'cj-fill', () => {
@@ -1446,10 +1475,19 @@
     _cjMarker = new maplibregl.Marker({ color: '#2c5f8a' })
       .setLngLat([currentLon, currentLat]).addTo(_cjMap);
 
-    // Container disclosure — matches the Context tab (WO6c Part E).
-    document.getElementById('v3-cj-container').textContent = _currentPlaceName
+    // Container disclosure — matches the Context tab (WO6c Part E). Terrain regime (WO3) extends
+    // this same footnote with its own coarse-floor caveat rather than a separate blurb widget: it's
+    // basin-level elevation/relief, not fine-grained ruggedness, and it says nothing about where
+    // within the basin a place actually sits — the WH Cities point-window terrain lens (a different
+    // instrument) is what answers that question. Stated here because "no one reads anything" — this
+    // line is the one visible spot that survives that rule.
+    const containerBase = _currentPlaceName
       ? `This describes the Level ${lv} basin ${_currentPlaceName} sits in, not ${_currentPlaceName} itself.`
       : `This describes the Level ${lv} basin containing this point.`;
+    const terrainCaveat = _cjCurrentLens === 'terrain.regime'
+      ? ` It's the basin's overall elevation and relief range — not fine-grained ruggedness, and it doesn't reflect where within the basin a place sits.`
+      : '';
+    document.getElementById('v3-cj-container').textContent = containerBase + terrainCaveat;
 
     try {
       const params = new URLSearchParams({ lat: currentLat, lon: currentLon, lens: _cjCurrentLens, level: lv });
@@ -1458,6 +1496,8 @@
       if (conds.includes('precip_amplitude_cv')) params.set('cv', b.cv);
       if (conds.includes('temp_level'))          params.set('t_level', b.t_level);
       if (conds.includes('temp_range'))          params.set('t_range', b.t_range);
+      if (conds.includes('terrain_elev'))        params.set('elev_band', b.elev);
+      if (conds.includes('terrain_relief'))      params.set('relief_band', b.relief);
 
       const r = await fetch(`/api/similarity/conjunction?${params.toString()}`);
       if (!r.ok) throw new Error(`conjunction ${r.status}`);
@@ -1486,11 +1526,13 @@
           type: 'Feature',
           geometry: JSON.parse(geom[m.basin_id]),
           properties: {
-            basin_id:     m.basin_id,
-            corr:         m.corr,
-            pre_total_mm: m.pre_total_mm,
-            place_name:   m.place_name || '',
-            ccodes:       JSON.stringify(m.ccodes || []),
+            basin_id:       m.basin_id,
+            corr:           m.corr,
+            pre_total_mm:   m.pre_total_mm,
+            elev_m:         m.elev_m,
+            relief_range_m: m.relief_range_m,
+            place_name:     m.place_name || '',
+            ccodes:         JSON.stringify(m.ccodes || []),
           },
         }));
 
@@ -3596,7 +3638,7 @@
     _cjQueryKey = null;
     renderConjunction();
   });
-  ['v3-cj-corr', 'v3-cj-ratio', 'v3-cj-cv', 'v3-cj-tlevel', 'v3-cj-trange'].forEach(id => {
+  ['v3-cj-corr', 'v3-cj-ratio', 'v3-cj-cv', 'v3-cj-tlevel', 'v3-cj-trange', 'v3-cj-elev', 'v3-cj-relief'].forEach(id => {
     document.getElementById(id).addEventListener('change', function () {
       _cjQueryKey = null;
       renderConjunction();

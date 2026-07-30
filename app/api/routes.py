@@ -458,18 +458,23 @@ def similarity_conjunction(
     cv: Optional[float] = None,
     t_level: Optional[float] = None,
     t_range: Optional[float] = None,
+    elev_band: Optional[float] = None,
+    relief_band: Optional[float] = None,
 ):
-    """Return the set of basins that satisfy EVERY condition of the lens (WO6c).
+    """Return the set of basins that satisfy EVERY condition of the lens (WO6c; terrain.regime WO3).
 
-    Non-compensatory conjunction on the raw twelve-value precipitation curve (WO6b backbone).
-    Output is a painted set, not a ranked list: membership is binary, empty is honest scarcity.
+    Non-compensatory conjunction on the raw twelve-value precipitation curve (WO6b backbone), or on
+    basin-aggregate elevation/relief for terrain.regime (WO3). Output is a painted set, not a ranked
+    list: membership is binary, empty is honest scarcity.
 
     Bands (all optional; per-variable units, fall back to the schema default):
-      corr     — precip shape correlation cut (e.g. 0.85 / 0.90 / 0.95)
-      ratio    — precip magnitude ratio band (e.g. 1.25 / 1.5 / 2.0)
-      cv       — precip amplitude cv band (e.g. 0.10 / 0.15 / 0.25)
-      t_level  — temperature level band, °C (e.g. 2 / 3 / 4)
-      t_range  — temperature range band, °C (e.g. 2 / 4 / 6)
+      corr        — precip shape correlation cut (e.g. 0.85 / 0.90 / 0.95)
+      ratio       — precip magnitude ratio band (e.g. 1.25 / 1.5 / 2.0)
+      cv          — precip amplitude cv band (e.g. 0.10 / 0.15 / 0.25)
+      t_level     — temperature level band, °C (e.g. 2 / 3 / 4)
+      t_range     — temperature range band, °C (e.g. 2 / 4 / 6)
+      elev_band   — terrain elevation band, ±m (e.g. 25 / 50 / 100 — WO3 Part B)
+      relief_band — terrain relief-range band, ±m (e.g. 50 / 100 / 200 — WO3 Part B)
 
     Response
     --------
@@ -481,7 +486,8 @@ def similarity_conjunction(
       "per_condition": {condition: count, ...}, # each condition alone
       "attrition": [{condition, remaining}, ...],
       "spatial": {"max_dist_from_query_km", "diameter_km"},
-      "members": [{basin_id, corr, lat, lon, place_id, place_name, ccodes}, ...]
+      "members": [{basin_id, corr, pre_total_mm, elev_m, relief_range_m, lat, lon,
+                    place_id, place_name, ccodes}, ...]
     }
     """
     if level not in (6, 8):
@@ -492,6 +498,8 @@ def similarity_conjunction(
         "precip_amplitude_cv": cv,
         "temp_level":          t_level,
         "temp_range":          t_range,
+        "terrain_elev":        elev_band,
+        "terrain_relief":      relief_band,
     }
     bands = {k: v for k, v in bands.items() if v is not None}
 
@@ -512,11 +520,13 @@ def similarity_conjunction(
         for m in members:
             place = gaz_by_basin.get(m["hybas_id"])
             out_members.append({
-                "basin_id":     m["hybas_id"],
-                "corr":         m["corr"],
-                "pre_total_mm": m["pre_total_mm"],
-                "lat":          m["lat"],
-                "lon":          m["lon"],
+                "basin_id":       m["hybas_id"],
+                "corr":           m["corr"],
+                "pre_total_mm":   m["pre_total_mm"],
+                "elev_m":         m["elev_m"],
+                "relief_range_m": m["relief_range_m"],
+                "lat":            m["lat"],
+                "lon":            m["lon"],
                 "place_id":   place[1] if place else None,
                 "place_name": place[2] if place else None,
                 "ccodes":     place[3] if place else None,

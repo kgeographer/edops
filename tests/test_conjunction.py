@@ -48,11 +48,12 @@ UNION_COUNTS = {
 # ---------------------------------------------------------------------------
 
 def test_conjunction_registry_shape():
-    """Three Climate lenses; temperature carries NO shape term (WO6c Part D)."""
+    """Three Climate lenses + Terrain regime (WO3); temperature and terrain carry NO shape term
+    (WO6c Part D; WO2a/WO2b — neither terrain facet has a shape term, both bands query-relative)."""
     from app.db.seasonality import get_conjunction_registry
 
     reg = {l["lens_id"]: l for l in get_conjunction_registry()}
-    assert set(reg) == {"climate.precip", "climate.temp", "climate.union"}
+    assert set(reg) == {"climate.precip", "climate.temp", "climate.union", "terrain.regime"}
 
     precip = [c["condition"] for c in reg["climate.precip"]["conditions"]]
     assert precip == ["precip_shape", "precip_magnitude", "precip_amplitude_cv"]
@@ -68,6 +69,11 @@ def test_conjunction_registry_shape():
     union = [c["condition"] for c in reg["climate.union"]["conditions"]]
     assert union == precip + temp
     assert reg["climate.union"]["shade_by"] == "precip_shape"
+
+    # Terrain regime (WO3): elevation + relief, no shape term, no shading correlation.
+    terrain = [c["condition"] for c in reg["terrain.regime"]["conditions"]]
+    assert terrain == ["terrain_elev", "terrain_relief"]
+    assert reg["terrain.regime"]["shade_by"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +165,42 @@ def test_empty_is_honest_not_widened(conj_conn, probe_ids):
         bands={"precip_shape": 0.95}, level=6)
     assert meta["set_size"] == 0
     assert members == []
+
+
+def test_terrain_regime_structural(conj_conn, probe_ids):
+    """WO3 Part A: the terrain regime lens runs end-to-end on the family-generalized validity
+    path and returns query-relative, per-facet query values. No count/size assertions here — the
+    knob defaults are still WO3 Part B placeholders; Part C's two-fixture check verifies actual
+    membership plausibility once real defaults are derived."""
+    from app.db.seasonality import find_conjunction
+
+    meta, members = find_conjunction(probe_ids["Tbilisi"], lens_id="terrain.regime", level=6)
+    assert meta["set_size"] == len(members)
+    assert meta["shade_by"] is None
+    assert set(meta["bands"]) == {"terrain_elev", "terrain_relief"}
+    assert meta["query_values"]["elev_m"] is not None
+    assert meta["query_values"]["relief_range_m"] is not None
+
+    # Monotonicity contract, not a frozen count: a much broader band admits at least as many
+    # basins as a much tighter one, for the same query.
+    tight, _ = find_conjunction(
+        probe_ids["Tbilisi"], lens_id="terrain.regime", level=6,
+        bands={"terrain_elev": 1.0, "terrain_relief": 1.0})
+    broad, _ = find_conjunction(
+        probe_ids["Tbilisi"], lens_id="terrain.regime", level=6,
+        bands={"terrain_elev": 5000.0, "terrain_relief": 5000.0})
+    assert tight["set_size"] <= broad["set_size"]
+
+
+def test_climate_lenses_unaffected_by_terrain_family(conj_conn, probe_ids):
+    """WO3's per-lens family validity generalization must not change climate-lens behavior —
+    regression pin against the existing WO6b Cell 16 numbers, run again after the change."""
+    from app.db.seasonality import find_conjunction
+
+    meta, _ = find_conjunction(
+        probe_ids["Timbuktu"], lens_id="climate.union",
+        bands={"precip_shape": 0.90}, level=6)
+    assert meta["set_size"] == 102
 
 
 def test_spatial_spread_reported(conj_conn, probe_ids):

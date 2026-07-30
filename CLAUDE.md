@@ -5,10 +5,11 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- `docs/cdop/pilot/CDOP_PILOT_tracker.md` — authoritative current state, roadmap, locked decisions ← active
+- `docs/cdop/citykin/CITYKIN_tracker.md` — authoritative current state, roadmap, locked decisions ← active
+- `docs/cdop/pilot/CDOP_PILOT_tracker.md` — frozen reference (CDOP Pilot closed 2026-07-27)
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
-- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/pilot/wo{nn}_findings.md` — per-WO findings
+- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/citykin/wo{nn}_findings.md` — per-WO findings
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -46,7 +47,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 | Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
 | Demo | complete 2026-07-18 | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
 | CDOP1 — pilot | complete 2026-07-27 | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
-| **CDOP2 — CITYKIN** | **active** | WH Cities retrieval head — validated raw-curve distance + terrain lens; see `CITYKIN_tracker.md` |
+| **CDOP2 — CITYKIN** | **active** | WH Cities retrieval head (raw-curve distance + point-window terrain lens) and a 4th sandbox Similarity-panel lens, basin-scale Terrain regime; see `CITYKIN_tracker.md` |
 | 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
@@ -59,26 +60,19 @@ their own WO-child branches, merged back on accept.
 
 - **Goto:** `docs/cdop/citykin/CITYKIN_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** CITYKIN WO1/WO1a — migrating the WH Cities "Similar (env)" dropdown from pre-WO6
-  machinery to CDOP Pilot's WO6b-validated raw-curve distance, plus a new point-window terrain lens.
-  **Terrain lens is done and wired**: WO1's first design (an `elevation >= 400m` eligibility gate)
-  passed its own Tbilisi fixture but didn't generalize (a flat query city would be excluded by its own
-  gate) — Karl + Opus caught it, and WO1a rebuilt the lens as three **query-relative tolerance knobs**
-  (elevation/relief/landform-position, each anchored to the selected city's own values, factored into
-  `scripts/cdop/citykin/terrain_lens.py`). Live on `cdop_pilot.html`: `GET /api/whc-similar-terrain`,
-  a "Terrain regime" dropdown option with tight/default/broad knobs matching the sandbox conjunction
-  panel's own UI convention. Tbilisi is now a real `gaz.wh_cities` row (id 259, pinned atop the city
-  picker) rather than a coordinate-only exception. A real data bug was caught and fixed along the way:
-  OpenTopoData returns bathymetric depths (not null) for grid points landing in open water, contaminating
-  88/254 cities' terrain data before the fix. **Not yet done:** precip/temp regime + aridity lenses still
-  need UI wiring before the old `/api/whc-similar-env-lens` path can be deleted (WO1 Part A's deferred
-  half). A situation report (not a WO) went to Opus on the much bigger, longstanding question of
-  basin-scale terrain for the sandbox's own future Similarity-panel lens (`docs/cdop/citykin/
-  note_to_opus_terrain-scale.md`) — full detail, all locked decisions, and the day's narrative in
-  `docs/cdop/citykin/CITYKIN_tracker.md` and `logs/session_log_20260728.md`.
+- **Current step:** WO1/WO1a/WO2a/WO2b/WO3 all complete as of 2026-07-29. The WH Cities retrieval head
+  has a validated raw-curve distance and a query-relative point-window terrain lens
+  (`GET /api/whc-similar-terrain`), live on `cdop_pilot.html`. The sandbox Similarity panel
+  (`sandbox_v3.html`) gained a 4th lens, basin-scale **Terrain regime** (`ele_mt_sav` + `relief_range`,
+  a non-compensatory tolerance-band conjunction in `app/db/seasonality.py`), Karl-reviewed live in the
+  browser. Full detail, every locked decision, and day-by-day narrative:
+  `docs/cdop/citykin/CITYKIN_tracker.md`, `logs/session_log_20260728.md`, `logs/session_log_20260729.md`.
+- **Next:** wire the remaining WH Cities retrieval lenses (precip regime, temp regime, aridity) to the
+  same ranked-retrieval UI, then delete the old `/api/whc-similar-env-lens` path (WO1 Part A's
+  long-deferred half). L08 terrain knobs and a residual-facet design idea are named, not started.
 - **Tests:** 480 pass, 14 skipped, 0 fail confirmed clean on `cdop_citykin` at phase open (2026-07-27);
-  not rerun since (only additive route/module changes, no engine/test-covered paths touched) — run
-  before any merge gate.
+  targeted tests on every module touched since have stayed green (`tests/test_conjunction.py` + 2
+  adjacent files, 25/25, 2026-07-29). Full suite not rerun this phase — run before any merge gate.
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **CDOP Pilot (WO1–WO8d) is closed, frozen reference:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`. Headline
@@ -376,6 +370,11 @@ Cross-phase deferred items → `docs/design/deferred_items_register.md`.
 
 Standing cross-phase notes:
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
-- **Dead API routes** — `/wh-sites`, `/similar`, `/whc-*` in `routes.py` are orphaned
+- **`/wh-sites` and `/similar`** — not dead: called by `workbench.html`, a real, actively-used page
+  (registered at `/workbench` plus host-based subdomain routing), just undocumented elsewhere in this
+  file.
+- **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a, wired into
+  `cdop_pilot.html`); `/api/whc-similar-env-lens` is deprecated-pending-deletion, not dead — see
+  `CITYKIN_tracker.md`.
 - **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review

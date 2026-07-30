@@ -106,6 +106,23 @@ CONJ_CONDITIONS: Dict[str, Dict[str, Any]] = {
     "temp_level":          {"kind": "abs_band", "field": "tmp_mean", "default": 3.0},
     # temp_range — seasonal amplitude (max-min monthly) within ±degrees.
     "temp_range":          {"kind": "abs_band", "field": "tmp_rng",  "default": 4.0},
+    # terrain_elev — mean basin elevation (ele_mt_sav) within ±m of the query basin's own value.
+    #   WO3 Part B: a std-fraction guess (following WO1a's point-window pattern) was tried first and
+    #   was wrong by ~50-100x -- elevation's std (775m) sits ABOVE its own IQR (617m) because the
+    #   long right tail (max 5556m) inflates it well past the density where most basins actually
+    #   live, so a std-based band came out far looser than it looked on paper (even 0.5 std admitted
+    #   24.5% of the corpus on average). Replaced by an empirical sweep of small absolute widths
+    #   directly, measured against the real find_conjunction code across a 16-basin sample stratified
+    #   by elevation x relief quartile (not coordinate-picked). tight/default/broad = 25/50/100m
+    #   median 0.146/0.445/1.656% of the L06 corpus matched -- properly selective; mean is pulled up
+    #   by low-elevation/low-relief queries (more company out there in the lowlands, not a defect).
+    #   wo2a_findings.md (dated despite the name -- covers WO2a+WO2b+WO3 Part B), 2026-07-29.
+    "terrain_elev":        {"kind": "abs_band", "field": "elev",         "family": "terrain",
+                             "default": 50.0},
+    # terrain_relief — relief_range (ele_mt_smx - ele_mt_smn) within ±m of the query basin's own
+    #   value. Same WO3 Part B derivation as terrain_elev. tight/default/broad = 50/100/200m.
+    "terrain_relief":      {"kind": "abs_band", "field": "relief_range", "family": "terrain",
+                             "default": 100.0},
 }
 
 CONJ_LENSES: Dict[str, Dict[str, Any]] = {
@@ -127,6 +144,15 @@ CONJ_LENSES: Dict[str, Dict[str, Any]] = {
         "conditions": ["precip_shape", "precip_magnitude", "precip_amplitude_cv",
                        "temp_level", "temp_range"],
         "shade_by": "precip_shape",
+    },
+    "terrain.regime": {
+        "group": "Terrain", "label": "Terrain regime",
+        # Coarse floor (WO3): basin-aggregate elevation level + range. No shape term — neither
+        # facet has one; both bands are query-relative (WO2a/WO2b: corr=0.54/0.57, independent
+        # work, no third facet). Not the WH Cities point-window lens (terrain_lens.py) — a
+        # different data path for a different corpus, same knob pattern only.
+        "conditions": ["terrain_elev", "terrain_relief"],
+        "shade_by": None,
     },
 }
 
@@ -395,15 +421,39 @@ def load_similarity_index(conn, level: int = 6) -> None:
             lat = order["lat"].to_numpy(dtype=float)
             lon = order["lon"].to_numpy(dtype=float)
 
+            # Terrain regime (WO3): basin-aggregate ele_mt_sav/ele_mt_smx/ele_mt_smn, straight from
+            # the scalars base table — no monthly-array machinery, no persist-view dependency
+            # (WO3 Part A / research: these are plain base-table scalar columns, same fetch pattern
+            # as the `pts` query just above). NoData is NULL, never zero (CLAUDE.md; WO2a found the
+            # -9999 sentinel does not affect these columns in practice, but the mask stays defensive).
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
+                terr = pd.read_sql(
+                    f"SELECT hybas_id, ele_mt_sav, ele_mt_smx, ele_mt_smn FROM {scalars_table}",
+                    conn)
+            terr["hybas_id"] = terr["hybas_id"].astype(np.int64)
+            torder = pd.DataFrame({"hybas_id": hybas_ids}).merge(terr, on="hybas_id", how="left")
+            elev     = torder["ele_mt_sav"].to_numpy(dtype=float)
+            ele_smx  = torder["ele_mt_smx"].to_numpy(dtype=float)
+            ele_smn  = torder["ele_mt_smn"].to_numpy(dtype=float)
+            for arr_ in (elev, ele_smx, ele_smn):
+                arr_[arr_ == -9999] = np.nan
+            relief_range = ele_smx - ele_smn
+            terrain_valid = np.isfinite(elev) & np.isfinite(relief_range)
+
             _INDEX[level]["conj"] = {
                 "hybas_ids": hybas_ids, "valid": cvalid, "Z": Z,
                 "arid": pre_total < _THRESH_ARID,
                 "pre_total": pre_total, "cv": cv,
                 "tmp_mean": tmp_mean, "tmp_rng": tmp_rng,
                 "lat": lat, "lon": lon,
+                "elev": elev, "relief_range": relief_range, "terrain_valid": terrain_valid,
             }
-            logger.info("L%d conjunction index ready: %d/%d valid basins",
-                        level, int(cvalid.sum()), len(hybas_ids))
+            logger.info(
+                "L%d conjunction index ready: %d/%d valid basins (climate); "
+                "%d/%d valid (terrain)",
+                level, int(cvalid.sum()), len(hybas_ids),
+                int(terrain_valid.sum()), len(hybas_ids))
         except Exception:
             logger.exception("conjunction index (level=%d) failed to load", level)
             _INDEX[level]["conj"] = None
@@ -576,7 +626,7 @@ def find_conjunction(
 
     Membership is binary; there is no ranking and no composite distance. Empty is honest scarcity.
     Raises RuntimeError if the index is not loaded; ValueError if the lens is unknown, the basin is
-    not in the index, or the basin has no valid climate data.
+    not in the index, or the basin has no valid data for the lens's required facets.
     """
     idx_entry = _INDEX.get(level)
     if idx_entry is None or idx_entry.get("conj") is None:
@@ -590,14 +640,28 @@ def find_conjunction(
         raise ValueError(f"Unknown conjunction lens: {lens_id!r}")
 
     hybas_ids = conj["hybas_ids"]
-    valid     = conj["valid"]
+
+    # Validity is per-family (WO3): climate lenses need conj["valid"]; terrain.regime needs
+    # conj["terrain_valid"] instead — the two are unrelated (a basin can have good terrain data
+    # and bad climate data or vice versa), so a lens is gated only on the families its own
+    # conditions actually touch. Existing climate-only lenses are unaffected (single family, same
+    # mask as before this generalization).
+    families = {CONJ_CONDITIONS[c].get("family", "climate") for c in lens["conditions"]}
+    family_masks = {"climate": conj["valid"], "terrain": conj.get("terrain_valid")}
+    valid = np.ones(len(hybas_ids), dtype=bool)
+    for fam in families:
+        fm = family_masks.get(fam)
+        if fm is not None:
+            valid = valid & fm
 
     hits = np.where(hybas_ids == int(query_hybas_id))[0]
     if len(hits) == 0:
         raise ValueError(f"Basin {query_hybas_id} not in conjunction index (level={level})")
     qi = int(hits[0])
     if not valid[qi]:
-        raise ValueError(f"Basin {query_hybas_id} has no valid climate data (level={level})")
+        raise ValueError(
+            f"Basin {query_hybas_id} has no valid data for lens {lens_id!r} (level={level})"
+        )
 
     bands = bands or {}
     used_bands: Dict[str, float] = {}
@@ -615,6 +679,8 @@ def find_conjunction(
     tmp_rng   = conj["tmp_rng"]
     lat       = conj["lat"]
     lon       = conj["lon"]
+    elev         = conj["elev"]
+    relief_range = conj["relief_range"]
 
     # Correlation is computed once if the lens uses it for a condition or for shading.
     need_corr = ("precip_shape" in lens["conditions"]) or (lens["shade_by"] == "precip_shape")
@@ -637,6 +703,10 @@ def find_conjunction(
             return np.abs(tmp_mean - tmp_mean[qi]) <= band("temp_level")
         if cond == "temp_range":
             return np.abs(tmp_rng - tmp_rng[qi]) <= band("temp_range")
+        if cond == "terrain_elev":
+            return np.abs(elev - elev[qi]) <= band("terrain_elev")
+        if cond == "terrain_relief":
+            return np.abs(relief_range - relief_range[qi]) <= band("terrain_relief")
         raise ValueError(f"Unknown condition: {cond!r}")
 
     # Start from the valid universe, self excluded. Optional corpus restriction.
@@ -662,11 +732,13 @@ def find_conjunction(
 
     members = [
         {
-            "hybas_id":     int(hybas_ids[i]),
-            "corr":         (round(float(corr[i]), 4) if corr is not None else None),
-            "pre_total_mm": round(float(pre_total[i]), 1),
-            "lat":          (float(lat[i]) if np.isfinite(lat[i]) else None),
-            "lon":          (float(lon[i]) if np.isfinite(lon[i]) else None),
+            "hybas_id":       int(hybas_ids[i]),
+            "corr":           (round(float(corr[i]), 4) if corr is not None else None),
+            "pre_total_mm":   round(float(pre_total[i]), 1),
+            "elev_m":         (round(float(elev[i]), 1) if np.isfinite(elev[i]) else None),
+            "relief_range_m": (round(float(relief_range[i]), 1) if np.isfinite(relief_range[i]) else None),
+            "lat":            (float(lat[i]) if np.isfinite(lat[i]) else None),
+            "lon":            (float(lon[i]) if np.isfinite(lon[i]) else None),
         }
         for i in member_idx
     ]
@@ -692,6 +764,8 @@ def find_conjunction(
         "cv":           round(float(cv[qi]), 4),
         "tmp_mean_c":   round(float(tmp_mean[qi]), 2),
         "tmp_range_c":  round(float(tmp_rng[qi]), 2),
+        "elev_m":         (round(float(elev[qi]), 1) if np.isfinite(elev[qi]) else None),
+        "relief_range_m": (round(float(relief_range[qi]), 1) if np.isfinite(relief_range[qi]) else None),
     }
 
     query_meta = {
