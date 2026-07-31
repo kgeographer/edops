@@ -6,6 +6,7 @@ import pytest
 from scripts.cdop.distance_core import (
     LENSES, backdrop_z, pairwise_distance, cohesion,
     random_draw_cohesions, family_restricted_draw_cohesions, percentile_rank,
+    displacement, random_draw_stats, displacement_percentile_rank, top_families, scan,
 )
 
 
@@ -129,3 +130,168 @@ def test_family_restricted_draws_only_swap_within_the_target_family():
     fam_dist = family_restricted_draw_cohesions(Xz, backdrop_family, focus_family,
                                                 n_draws=500, seed=2)
     assert fam_dist.std() > 0
+
+
+# ---------------------------------------------------------------------------
+# WO4 additions: displacement, random_draw_stats, top_families, scan
+# ---------------------------------------------------------------------------
+
+def test_displacement_zero_when_centered_on_backdrop():
+    # Backdrop mean is the origin in z-space by construction; a "subset" that is the whole
+    # backdrop has centroid == origin, so displacement == 0.
+    rng = np.random.default_rng(10)
+    Xz = rng.normal(0, 1, (500, 3))
+    Xz -= Xz.mean(axis=0)   # exact zero-mean, avoiding sampling-noise nonzero centroid
+    assert displacement(Xz) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_displacement_detects_offset_group():
+    # A subset shifted away from the origin should have nonzero, larger displacement than an
+    # unshifted subset of the same size/spread.
+    rng = np.random.default_rng(11)
+    centered = rng.normal(0, 1, (30, 3))
+    shifted = rng.normal(0, 1, (30, 3)) + np.array([5.0, 0.0, 0.0])
+    assert displacement(centered) < displacement(shifted)
+    assert displacement(shifted) == pytest.approx(5.0, abs=0.5)
+
+
+def test_random_draw_stats_reproduces_random_draw_cohesions():
+    # The whole point of duplicating the draw loop rather than refactoring: same seed/k/n_draws
+    # against the same backdrop must give byte-identical cohesion values to the original WO8d
+    # function, so WO8d's own numbers still reproduce through the new path.
+    rng = np.random.default_rng(12)
+    Xz = rng.normal(0, 1, (300, 4))
+    coh_only = random_draw_cohesions(Xz, k=25, n_draws=500, seed=7)
+    coh_joint, disp_joint = random_draw_stats(Xz, k=25, n_draws=500, seed=7)
+    np.testing.assert_array_equal(coh_only, coh_joint)
+    assert disp_joint.shape == (500,)
+    assert np.all(disp_joint >= 0)
+
+
+def test_displacement_percentile_rank_extremes():
+    dist = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    # value below every draw -> more displaced than none of them
+    assert displacement_percentile_rank(0.5, dist) == pytest.approx(0.0)
+    # value above every draw -> more displaced than all of them
+    assert displacement_percentile_rank(10.0, dist) == pytest.approx(1.0)
+
+
+def test_top_families_dominant_case():
+    # WO8d's own shape: one family clearly dominant, two smaller ones, no threshold needed.
+    ids = pd.Series(["atla1278"] * 15 + ["nilo1247"] * 4 + ["sino1245"] * 3 + [None] * 2)
+    out = top_families(ids, top_n=3)
+    assert out["n_total"] == 24
+    assert out["n_unresolved"] == 2
+    assert out["top_families"][0] == {"family_id": "atla1278", "n": 15, "share": pytest.approx(15 / 24)}
+    assert [f["family_id"] for f in out["top_families"]] == ["atla1278", "nilo1247", "sino1245"]
+
+
+def test_top_families_no_dominant_case():
+    # WO8d's Siberian-trio shape: several small, unrelated families, none dominant -- must not
+    # need special-casing to report correctly (this is exactly the pattern a single-"dominant
+    # family" framing would miss).
+    ids = pd.Series(["chuk1273", "yaku1245", "nenet1249"])
+    out = top_families(ids, top_n=3)
+    assert out["n_total"] == 3
+    assert out["n_unresolved"] == 0
+    shares = {f["family_id"]: f["share"] for f in out["top_families"]}
+    assert shares == {"chuk1273": pytest.approx(1 / 3), "yaku1245": pytest.approx(1 / 3),
+                       "nenet1249": pytest.approx(1 / 3)}
+
+
+def test_top_families_fewer_than_top_n():
+    ids = pd.Series(["a", "a", "b"])
+    out = top_families(ids, top_n=3)
+    assert len(out["top_families"]) == 2   # only 2 distinct families exist; no padding
+
+
+def _synthetic_substrate(rng, n=400):
+    df = pd.DataFrame({
+        "soc_id": [f"S{i}" for i in range(n)],
+        "ari_ix_sav": rng.uniform(0.1, 2.0, n),
+        "temperature_annual": rng.normal(20, 8, n),
+        "tmp_seas_amp": rng.normal(10, 4, n),
+        "relief_range_m": rng.normal(200, 150, n).clip(min=0),
+        "landform_position": rng.uniform(0, 1, n),
+        "family_id": rng.choice(["fam0", "fam1", "fam2", "fam3", None], size=n,
+                                 p=[0.3, 0.2, 0.2, 0.2, 0.1]),
+        "trait": rng.choice(["X", "Y"], size=n, p=[0.1, 0.9]),
+    })
+    return df
+
+
+def test_scan_shape_and_keys():
+    rng = np.random.default_rng(20)
+    df = _synthetic_substrate(rng)
+    out = scan(df, trait_col="trait", value="X", n_draws=200, seed=0)
+    assert out["trait_col"] == "trait"
+    assert out["value"] == "X"
+    assert out["n_focus_input"] == int((df["trait"] == "X").sum())
+    assert set(out["lenses"].keys()) == set(LENSES.keys())
+    for lens, res in out["lenses"].items():
+        assert "obs_cohesion" in res and "obs_displacement" in res
+        assert "pct_tighter_than_random" in res and "displacement_pct_rank" in res
+        assert res["n_focus"] == out["n_focus_input"]   # no NaNs planted in this lens's columns
+    assert out["composition"]["n_total"] == out["n_focus_input"]
+
+
+def test_scan_derives_ari_log_when_missing():
+    rng = np.random.default_rng(21)
+    df = _synthetic_substrate(rng)
+    assert "ari_log" not in df.columns
+    out = scan(df, trait_col="trait", value="X", n_draws=50, seed=0)
+    assert "water" in out["lenses"] and out["lenses"]["water"]["n_focus"] > 0
+
+
+def test_scan_focus_mask_survives_lens_specific_row_drops():
+    # Regression test for a real bug caught in WO4 Step 1 validation (Karl's notebook run,
+    # 2026-07-30): scan() originally computed the focus mask once against `sub`'s original index
+    # and reindexed it onto `backdrop_z`'s post-dropna, reset_index(drop=True) index -- which
+    # coincidentally lines up when a lens drops zero rows, but silently selects the WRONG rows
+    # once a lens drops rows that are NOT all at the end of the frame. This planted case mirrors
+    # that exactly: NaNs scattered through the middle of the frame (not trailing), on a
+    # terrain-only column, so a naive reindex-based mask would misalign for that lens while
+    # `water`/`thermal` (unaffected columns) stay fine.
+    rng = np.random.default_rng(30)
+    n = 200
+    df = _synthetic_substrate(rng, n=n)
+    # Scatter NaNs through the middle third of the frame, not the tail -- the exact condition
+    # that let the original bug slip past a same-size/no-shift check.
+    nan_idx = np.arange(60, 90)
+    df.loc[nan_idx, "landform_position"] = np.nan
+
+    # Focus group deliberately straddles the NaN block on both sides.
+    focus_idx = [50, 55, 65, 75, 85, 95, 105]   # 65/75/85 fall inside the dropped block
+    df.loc[:, "trait"] = "OTHER"
+    df.loc[focus_idx, "trait"] = "FOCUS"
+
+    out = scan(df, trait_col="trait", value="FOCUS", n_draws=100, seed=0)
+
+    # Ground truth, computed directly against the terrain lens's own post-dropna frame (the same
+    # computation `scan()` must now perform internally).
+    ok, Xz = backdrop_z(df, "terrain")
+    true_fmask = (ok["trait"] == "FOCUS").to_numpy()
+    expected_n_focus = int(true_fmask.sum())   # 4: three of the 7 focus rows sit in the dropped block
+    expected_cohesion = cohesion(Xz[true_fmask])
+
+    assert out["lenses"]["terrain"]["n_focus"] == expected_n_focus
+    assert out["lenses"]["terrain"]["obs_cohesion"] == pytest.approx(expected_cohesion)
+    # A lens untouched by the NaNs should see all 7 focus rows, unaffected.
+    assert out["lenses"]["water"]["n_focus"] == 7
+
+
+def test_scan_detects_planted_tight_displaced_group():
+    # A group planted tight AND displaced on the 'thermal' lens should read as unusual there
+    # (high pct_tighter_than_random, high displacement_pct_rank) but not necessarily on 'water'
+    # (untouched, should look ordinary).
+    rng = np.random.default_rng(22)
+    df = _synthetic_substrate(rng, n=600)
+    planted = df.sample(n=25, random_state=1).index
+    df.loc[planted, "trait"] = "PLANTED"
+    df.loc[planted, "temperature_annual"] = rng.normal(45, 0.5, len(planted))  # hot, tight
+    df.loc[planted, "tmp_seas_amp"] = rng.normal(0.5, 0.1, len(planted))
+
+    out = scan(df, trait_col="trait", value="PLANTED", n_draws=1000, seed=0)
+    thermal = out["lenses"]["thermal"]
+    assert thermal["pct_tighter_than_random"] > 95
+    assert thermal["displacement_pct_rank"] > 95

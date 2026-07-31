@@ -8,13 +8,13 @@
     <div class="col-12 col-lg-6">
       <ul class="nav nav-tabs" id="edopTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="false">Societies</button>
+          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="true">WH Cities</button>
+          <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
         </li>
       </ul>
 
@@ -22,7 +22,7 @@
 
 
         <!-- WH CITIES TAB (258 cities) -->
-        <div class="tab-pane fade show active" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
+        <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">258 World Heritage Cities</h4>
           <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a> — 254 of 258 have a basin assignment</p>
 
@@ -124,7 +124,7 @@
         </div>
 
         <!-- SOCIETIES TAB (D-PLACE) -->
-        <div class="tab-pane fade" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
+        <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
           <p class="text-muted" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
@@ -151,12 +151,13 @@
                   <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
                 </div>
-                <!-- Retired 2026-07-28 (docs/cdop/pilot/note_societies-tab-vs-wo8.md): pre-CDOP-Pilot
-                     PCA-cluster coloring, disconnected from WO8's actual correspondence-testing work.
-                     Hidden, not removed -- supporting code left in place, cleanup deferred. -->
-                <div class="form-check form-check-inline mb-0" style="display:none;">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-mode-basin">Basin clusters</label>
+                <!-- CITYKIN WO4 (2026-07-30): replaces the retired PCA "Basin clusters" option
+                     (docs/cdop/pilot/note_societies-tab-vs-wo8.md) with a targeted environment
+                     view. EA042 has a named theoretical hook (WO8a Part B); shows the confirmatory
+                     Climate envelope scatter. -->
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-envscan" value="envscan">
+                  <label class="form-check-label" for="soc-mode-envscan">Climate envelope</label>
                 </div>
               </div>
             </div>
@@ -175,10 +176,11 @@
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
-                <!-- Retired 2026-07-28, see note above -->
-                <div class="form-check form-check-inline mb-0" style="display:none;">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-rel-mode-basin">Basin clusters</label>
+                <!-- CITYKIN WO4 (2026-07-30): EA034 has no theoretical hook (WO8d could not test a
+                     predicted axis) -- shows the exploratory four-lens scan instead of a scatter. -->
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-envscan" value="envscan">
+                  <label class="form-check-label" for="soc-rel-mode-envscan">Environment scan</label>
                 </div>
               </div>
             </div>
@@ -257,6 +259,39 @@
         <h6 class="mb-1" id="dplace-results-heading"></h6>
         <div id="dplace-results-content"></div>
       </div>
+      <style>
+        /* CITYKIN WO4 (2026-07-30): the Climate envelope scatter + four-lens environment scan.
+           Palette per the dataviz skill's reference instance (light mode only -- this site has no
+           dark-mode toggle anywhere else, so a dark block would be dead weight, not parity).
+           Categorical slots 1 (blue) and 2 (orange): documented as passing the all-pairs CVD check
+           (both are within the reference palette's first three all-pairs-validated slots). */
+        .wo4-viz {
+          --wo4-surface:      #fcfcfb;
+          --wo4-text-primary: #0b0b0b;
+          --wo4-text-secondary: #52514e;
+          --wo4-text-muted:   #898781;
+          --wo4-gridline:     #e1e0d9;
+          --wo4-baseline:     #c3c2b7;
+          --wo4-backdrop:     #c3c2b7;   /* emphasis form: de-emphasized gray for the backdrop cloud */
+          --wo4-focus:        #2a78d6;   /* categorical slot 1 -- the confirmatory scatter's 1 series */
+          --wo4-series-cohesion:     #2a78d6;  /* categorical slot 1 */
+          --wo4-series-displacement: #eb6834;  /* categorical slot 2 */
+          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+        .wo4-viz svg { max-width: 100%; height: auto; }
+        .wo4-viz .wo4-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.8rem; color: var(--wo4-text-secondary); margin-bottom: 0.35rem; }
+        .wo4-viz .wo4-legend-key { display: inline-flex; align-items: center; gap: 0.35rem; }
+        .wo4-viz .wo4-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+        .wo4-viz .wo4-caption { font-size: 0.78rem; color: var(--wo4-text-muted); margin-top: 0.25rem; }
+        .wo4-viz .wo4-tooltip {
+          position: absolute; pointer-events: none; z-index: 10;
+          background: var(--wo4-text-primary); color: #fff; font-size: 0.75rem;
+          padding: 0.3rem 0.5rem; border-radius: 4px; white-space: nowrap;
+          opacity: 0; transition: opacity 0.1s ease;
+        }
+        .wo4-viz .wo4-bar-label { fill: var(--wo4-text-secondary); font-size: 11px; }
+        .wo4-viz .wo4-axis-label { fill: var(--wo4-text-muted); font-size: 11px; }
+      </style>
     </div>
 
   </div>
@@ -1192,6 +1227,17 @@
     // WH Cities: load cities now
     whcLoadCities();
 
+    // Societies: now the default tab on load -- shown.bs.tab (below) only fires on a real tab
+    // switch, never for the tab that's already active in markup, so load it here too (same
+    // unconditional-prefetch pattern as whcLoadCities above). loadSocieties() is idempotent --
+    // safe to call again from the tab-shown handler if the user navigates away and back.
+    // Deferred via setTimeout: this whole script is one function body nested inside this same
+    // DOMContentLoaded callback, and `let socData` (plus the other Societies state vars) aren't
+    // declared until much later in that body -- calling loadSocieties() synchronously here hits
+    // their temporal dead zone. Deferring to the next tick runs it only after this callback's
+    // full synchronous body -- every `let` in it -- has already executed.
+    setTimeout(loadSocieties, 0);
+
     // Terrain knobs: landform-position tooltip (0=floor/valley, 1=ridge/peak)
     const posInfoIcon = document.getElementById('terrain-info-position');
     if (posInfoIcon) {
@@ -2077,7 +2123,7 @@
     let socSubsistenceFilter = 'all';  // Current filter: 'all' or a subsistence name
     let socReligionFilter = 'all';     // Current filter: 'all' or a religion category
     let socActiveQuery = 'subsistence'; // Which query is active: 'subsistence' or 'religion'
-    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'basins'
+    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'envscan' (CITYKIN WO4)
 
     async function loadSocieties() {
       const loadingEl = document.getElementById('soc-loading');
@@ -2336,8 +2382,8 @@
     }
 
     function renderDplaceResults(data) {
-      if (socDisplayMode === 'basins') {
-        renderBasinClusters(data);
+      if (socDisplayMode === 'envscan') {
+        renderEnvScan(data);
       } else {
         renderTopEcoregions(data);
       }
@@ -2405,58 +2451,302 @@
       container.style.display = 'block';
     }
 
-    function renderBasinClusters(data) {
+    // ---------------------------------------------------------------------
+    // CITYKIN WO4 (2026-07-30) — replaces the retired PCA "Basin clusters" option.
+    // Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and gets the
+    // confirmatory Climate envelope scatter; EA034 (religion) has none and gets the exploratory
+    // four-lens scan. See docs/cdop/citykin/wo4_whc-grouping.md.
+    // ---------------------------------------------------------------------
+
+    let envScanRequestId = 0;
+    const WO4_LENS_ORDER = ['water', 'thermal', 'overall', 'terrain'];
+    const WO4_LENS_LABELS = {
+      water: 'Water (aridity)', thermal: 'Thermal', overall: 'Overall (climate envelope)', terrain: 'Terrain'
+    };
+
+    function wo4SvgEl(tag, attrs) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      if (attrs) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    }
+
+    function wo4Tooltip() {
+      let tip = document.getElementById('wo4-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'wo4-tooltip';
+        tip.className = 'wo4-tooltip';
+        document.body.appendChild(tip);
+      }
+      return tip;
+    }
+
+    function wo4ShowTooltip(evt, lines) {
+      const tip = wo4Tooltip();
+      tip.innerHTML = '';
+      lines.forEach(line => {
+        const div = document.createElement('div');
+        div.textContent = line;   // untrusted-as-a-rule: always textContent, never string-built HTML
+        tip.appendChild(div);
+      });
+      tip.style.left = (evt.pageX + 12) + 'px';
+      tip.style.top = (evt.pageY + 12) + 'px';
+      tip.style.opacity = '1';
+    }
+
+    function wo4HideTooltip() {
+      const tip = document.getElementById('wo4-tooltip');
+      if (tip) tip.style.opacity = '0';
+    }
+
+    function wo4Legend(items) {
+      const legend = document.createElement('div');
+      legend.className = 'wo4-legend';
+      items.forEach(item => {
+        const key = document.createElement('span');
+        key.className = 'wo4-legend-key';
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = item.color;
+        key.appendChild(swatch);
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        key.appendChild(label);
+        legend.appendChild(key);
+      });
+      return legend;
+    }
+
+    async function renderEnvScan(data) {
       const container = document.getElementById('dplace-results');
       const heading = document.getElementById('dplace-results-heading');
       const content = document.getElementById('dplace-results-content');
       if (!container || !heading || !content) return;
 
-      // Determine active filter
       const activeFilter = socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter;
-      const filterField = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
+      const trait = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
 
       if (activeFilter === 'all') {
         container.style.display = 'none';
         return;
       }
 
-      // Count societies per cluster for selected filter
-      const clusterCounts = {};  // cluster_id → count
-      data.societies.forEach(soc => {
-        if (soc[filterField] === activeFilter && soc.cluster_id != null) {
-          const cid = soc.cluster_id;
-          clusterCounts[cid] = (clusterCounts[cid] || 0) + 1;
-        }
-      });
+      const myRequestId = ++envScanRequestId;
+      container.style.display = 'block';
+      heading.textContent = `Environment for ${activeFilter}`;
+      content.innerHTML = '';
+      const loading = document.createElement('div');
+      loading.className = 'wo4-viz text-muted small py-3';
+      loading.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading environmental scan…';
+      content.appendChild(loading);
 
-      if (Object.keys(clusterCounts).length === 0) {
-        container.style.display = 'none';
+      let scan;
+      try {
+        const resp = await fetch(`/api/societies/env-scan?trait=${encodeURIComponent(trait)}&value=${encodeURIComponent(activeFilter)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        scan = await resp.json();
+      } catch (err) {
+        if (myRequestId !== envScanRequestId) return;   // a newer request superseded this one
+        content.innerHTML = '<div class="text-muted small">Environmental scan unavailable.</div>';
+        console.error('env-scan fetch failed:', err);
+        return;
+      }
+      if (myRequestId !== envScanRequestId) return;
+
+      content.innerHTML = '';
+      const root = document.createElement('div');
+      root.className = 'wo4-viz';
+      content.appendChild(root);
+
+      if (scan.n_focus === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-muted small';
+        empty.textContent = 'No basin-joined societies match this value.';
+        root.appendChild(empty);
         return;
       }
 
-      // Sort by count descending
-      const sorted = Object.entries(clusterCounts)
-        .map(([cid, count]) => ({ cluster_id: parseInt(cid), count }))
-        .sort((a, b) => b.count - a.count);
+      if (scan.hook && scan.hook.has_hook) {
+        heading.textContent = `Climate envelope for ${activeFilter}`;
+        root.appendChild(wo4ClimateEnvelopeScatter(scan));
+      } else {
+        heading.textContent = `Environment scan for ${activeFilter}`;
+        root.appendChild(wo4FourLensScan(scan));
+      }
+      root.appendChild(wo4CompositionNote(scan.composition));
+    }
 
-      // Render heading
-      heading.textContent = `Basin clusters for ${activeFilter}`;
+    function wo4ClimateEnvelopeScatter(scan) {
+      const wrap = document.createElement('div');
+      const sc = scan.scatter;
 
-      // Render as list with badges (similar to Basins tab)
-      const html = '<div class="list-group list-group-flush small">' +
-        sorted.map(c => {
-          const label = CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
-          return `
-            <div class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
-              <span>${escapeHtml(label)}</span>
-              <span class="badge bg-primary">${c.count}</span>
-            </div>
-          `;
-        }).join('') +
-        '</div>';
+      wrap.appendChild(wo4Legend([
+        { color: 'var(--wo4-backdrop)', label: `All subsistence-coded societies (n=${sc.backdrop.length})` },
+        { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
+      ]));
 
-      content.innerHTML = html;
-      container.style.display = 'block';
+      const width = 480, height = 300;
+      const margin = { top: 10, right: 16, bottom: 40, left: 56 };
+      const plotW = width - margin.left - margin.right;
+      const plotH = height - margin.top - margin.bottom;
+
+      const allPoints = sc.backdrop.concat(sc.focus);
+      const xs = allPoints.map(p => p.x), ys = allPoints.map(p => p.y);
+      const xMin = Math.min(...xs), xMax = Math.max(...xs);
+      const yMin = Math.min(...ys), yMax = Math.max(...ys);
+      const xPad = (xMax - xMin) * 0.05 || 1, yPad = (yMax - yMin) * 0.05 || 1;
+      const xScale = x => margin.left + ((x - (xMin - xPad)) / ((xMax + xPad) - (xMin - xPad))) * plotW;
+      const yScale = y => margin.top + plotH - ((y - (yMin - yPad)) / ((yMax + yPad) - (yMin - yPad))) * plotH;
+
+      const svg = wo4SvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Climate envelope scatter for ${scan.value}` });
+
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top + plotH, x2: margin.left + plotW, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top, x2: margin.left, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+
+      const xLabel = wo4SvgEl('text', { x: margin.left + plotW / 2, y: height - 6, 'text-anchor': 'middle', class: 'wo4-axis-label' });
+      xLabel.textContent = sc.x_label;
+      svg.appendChild(xLabel);
+
+      const yLabel = wo4SvgEl('text', { x: 12, y: margin.top + plotH / 2, 'text-anchor': 'middle', class: 'wo4-axis-label', transform: `rotate(-90, 12, ${margin.top + plotH / 2})` });
+      yLabel.textContent = sc.y_label;
+      svg.appendChild(yLabel);
+
+      // Backdrop dots: emphasis form's de-emphasized context, deliberately not interactive --
+      // ~1,000 dots of "here's everyone else" don't need per-point tooltips, and the story is the
+      // highlighted group, not the cloud.
+      const backdropG = wo4SvgEl('g');
+      sc.backdrop.forEach(p => {
+        backdropG.appendChild(wo4SvgEl('circle', { cx: xScale(p.x), cy: yScale(p.y), r: 2.5, fill: 'var(--wo4-backdrop)', 'fill-opacity': 0.45 }));
+      });
+      svg.appendChild(backdropG);
+
+      // Focus dots: the one series the emphasis form is about -- interactive.
+      const focusG = wo4SvgEl('g');
+      sc.focus.forEach(p => {
+        const c = wo4SvgEl('circle', {
+          cx: xScale(p.x), cy: yScale(p.y), r: 4, fill: 'var(--wo4-focus)', 'fill-opacity': 0.85,
+          stroke: 'var(--wo4-surface)', 'stroke-width': 2
+        });
+        c.style.cursor = 'pointer';
+        const tipLines = [p.name || p.soc_id, `${sc.x_label}: ${p.x.toFixed(2)}`, `${sc.y_label}: ${p.y.toFixed(1)}`];
+        c.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointerleave', wo4HideTooltip);
+        focusG.appendChild(c);
+      });
+      svg.appendChild(focusG);
+
+      wrap.appendChild(svg);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = `Confirmatory view — ${scan.hook.source}.`;
+      wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    function wo4FourLensScan(scan) {
+      const wrap = document.createElement('div');
+
+      wrap.appendChild(wo4Legend([
+        { color: 'var(--wo4-series-cohesion)', label: 'Cohesion (tighter than % of random draws)' },
+        { color: 'var(--wo4-series-displacement)', label: 'Displacement (more shifted than % of random draws)' },
+      ]));
+
+      const width = 480;
+      const rowH = 56, barH = 16, barGap = 2, labelW = 90;
+      const plotW = width - labelW - 50;   // 50px reserved for the value label at the bar's tip
+      const height = rowH * WO4_LENS_ORDER.length + 10;
+
+      const svg = wo4SvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Four-lens environment scan for ${scan.value}` });
+
+      WO4_LENS_ORDER.forEach((lens, i) => {
+        const res = scan.lenses[lens];
+        const rowY = i * rowH + 8;
+
+        const label = wo4SvgEl('text', { x: 0, y: rowY + barH + 2, class: 'wo4-bar-label' });
+        label.textContent = WO4_LENS_LABELS[lens] || lens;
+        svg.appendChild(label);
+
+        if (!res || !res.n_focus) {
+          const none = wo4SvgEl('text', { x: labelW, y: rowY + barH + 2, class: 'wo4-bar-label' });
+          none.textContent = 'no complete-case data';
+          svg.appendChild(none);
+          return;
+        }
+
+        // 50% (chance) reference line, spanning both bars in this row -- a solid hairline, never
+        // dashed (mark spec: gridlines are always solid).
+        const chanceX = labelW + 0.5 * plotW;
+        svg.appendChild(wo4SvgEl('line', {
+          x1: chanceX, y1: rowY - 2, x2: chanceX, y2: rowY + 2 * barH + barGap + 2,
+          stroke: 'var(--wo4-gridline)', 'stroke-width': 1
+        }));
+
+        const bars = [
+          {
+            value: res.pct_tighter_than_random, color: 'var(--wo4-series-cohesion)', y: rowY,
+            tip: [`${WO4_LENS_LABELS[lens]} — cohesion`, `${res.pct_tighter_than_random.toFixed(1)}% tighter than random draws`,
+                  `observed=${res.obs_cohesion.toFixed(3)}  random mean=${res.random_cohesion_mean.toFixed(3)}`]
+          },
+          {
+            value: res.displacement_pct_rank, color: 'var(--wo4-series-displacement)', y: rowY + barH + barGap,
+            tip: [`${WO4_LENS_LABELS[lens]} — displacement`, `${res.displacement_pct_rank.toFixed(1)}% more displaced than random draws`,
+                  `observed=${res.obs_displacement.toFixed(3)}  random mean=${res.random_displacement_mean.toFixed(3)}`]
+          },
+        ];
+
+        bars.forEach(b => {
+          const barW = Math.max(2, (b.value / 100) * plotW);
+          const rect = wo4SvgEl('rect', { x: labelW, y: b.y, width: barW, height: barH, rx: 4, ry: 4, fill: b.color });
+          rect.style.cursor = 'pointer';
+          rect.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, b.tip));
+          rect.addEventListener('pointermove', (e) => wo4ShowTooltip(e, b.tip));
+          rect.addEventListener('pointerleave', wo4HideTooltip);
+          svg.appendChild(rect);
+
+          const valueLabel = wo4SvgEl('text', { x: labelW + barW + 4, y: b.y + barH - 4, class: 'wo4-bar-label' });
+          valueLabel.textContent = `${b.value.toFixed(0)}%`;
+          svg.appendChild(valueLabel);
+        });
+      });
+
+      wrap.appendChild(svg);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = 'Exploratory scan — all four lenses always shown together; no single lens is a verdict on its own. Vertical line marks 50% (chance).';
+      wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    function wo4CompositionNote(comp) {
+      const wrap = document.createElement('div');
+      wrap.className = 'mt-2 small';
+      if (!comp || !comp.n_total) return wrap;
+
+      const title = document.createElement('div');
+      title.className = 'text-muted';
+      title.textContent = 'Top language families in this group:';
+      wrap.appendChild(title);
+
+      const list = document.createElement('ul');
+      list.className = 'mb-0 ps-3';
+      comp.top_families.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = `${f.family_id} — ${f.n} (${(f.share * 100).toFixed(0)}%)`;
+        list.appendChild(li);
+      });
+      if (comp.n_unresolved > 0) {
+        const li = document.createElement('li');
+        li.className = 'text-muted';
+        li.textContent = `${comp.n_unresolved} unresolved`;
+        list.appendChild(li);
+      }
+      wrap.appendChild(list);
+      return wrap;
     }
 
     // Breadcrumb state

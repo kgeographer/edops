@@ -18,6 +18,7 @@ from app.db.seasonality import (
 )
 from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
+from app.db.societies_scan import run_societies_env_scan
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
 
@@ -2685,6 +2686,25 @@ def societies():
     finally:
         if 'conn' in locals():
             conn.close()
+
+
+@router.get("/societies/env-scan")
+def societies_env_scan(trait: str, value: str):
+    """CITYKIN WO4 Step 2 -- replaces the legacy PCA 'Basin clusters' option. `(trait, value)` ->
+    per-lens cohesion + displacement against a random-draw baseline, a top-3 language-family
+    composition note, and the trait's hook metadata (whether EA042/EA034 has a named theoretical
+    environmental correlate, per `docs/cdop/citykin/wo4_whc-grouping.md`).
+
+    trait: 'subsistence' (EA042) or 'religion' (EA034) -- the tab's two wired traits, not a raw
+    D-PLACE variable code. No family-restricted resampling in this payload (Karl + Opus,
+    2026-07-30 -- that's a TRACE-phase analytical question, not this descriptive screen's job).
+    """
+    try:
+        return run_societies_env_scan(trait, value)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 # -----------------------
