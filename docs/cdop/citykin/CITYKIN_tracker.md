@@ -13,33 +13,23 @@ settled forward-looking note into *Locked decisions* / *Deferred* **in the same 
 resolved question live elsewhere. Keep *You are here* to the current WO only.
 
 - **Location:** `docs/cdop/citykin/CITYKIN_tracker.md`
-- **Last updated:** 2026-07-29 — **WO3 done: Terrain regime shipped on the sandbox Similarity panel,
-  Karl-reviewed live in the browser.** The std-based knob-derivation recipe that worked for WO1a's
-  point-window lens failed outright here (even a "tight" 0.5σ band admitted 24.5% of the L06 corpus —
-  elevation's std sits above its own IQR, inflated by a long right tail, so a std-fraction band is far
-  wider in practice than it looks on paper). Replaced with an empirical sweep of small absolute widths
-  measured directly against the real conjunction code: **locked defaults elevation ±25/50/100m, relief
-  ±50/100/200m** (tight/default/broad), median 0.146/0.445/1.656% of the L06 corpus matched — properly
-  selective; mean is pulled up by low-elevation/low-relief queries (more company in the crowded
-  lowlands, not a defect). Two-fixture generalization check passed at the locked defaults with no
-  per-fixture tuning: Tbilisi (rugged, terrain-coherent, set_size 6) and a table-selected large-flat
-  basin (terrain-coherent, set_size 880) share zero members, elevation ranges separated by >1,400m.
-  Wired into `app/db/seasonality.py`/`routes.py`/`sandbox_v3.html` (new `elev_band`/`relief_band` API
-  params, two new tight/default/broad knobs matching the panel's own convention, lens-aware hover
-  popup, the existing "describes the basin, not the place" footnote extended with this lens's own
-  coarse-floor caveat). Karl's browser smell tests (San Francisco, Kaifeng) both passed after two
-  self-corrected misreads (a small-thumbnail misread of Kaifeng's lowland/delta match set as mountain
-  ranges; and confirming — rather than assuming from Karl's description — that San Francisco's own L06
-  basin is a long peninsula-ridge catchment, not a city footprint, the same HydroBASINS-drainage-
-  topology mechanism as WO2a's Innsbruck case, now demonstrated live). Findings: `wo3_findings.md` (no
-  exec summary). Next: wire precip/temp/aridity lenses to the WH Cities retrieval UI and delete the old
-  `/api/whc-similar-env-lens` path (WO1 Part A's long-deferred half); L08 terrain knobs (named, not
-  started). **Opus's WO3 tracker review, same day:** caught a stale Deferred entry (the sandbox
-  Terrain regime lens WO3 just shipped was still listed as blocked on DEM acquisition — resolved by
-  removing it and recording how it actually resolved, in Locked decisions, as a dissolved rather than
-  cleared blocker) and a real naming collision (two distinct two-fixture rules, one per terrain lens,
-  both bare "the terrain lens" — disambiguated as point-window vs. basin-scale in both rows). Both
-  folded in this edit.
+- **Last updated:** 2026-07-30 — **WO4 done: the Societies-tab PCA "Basin clusters" option is replaced,
+  removed rather than left hidden.** Two displays now live in `cdop_pilot.html`'s `#panel-soc`: a
+  confirmatory Climate envelope scatter for EA042 (subsistence — has a named theoretical hook, WO8a
+  Part B) with a plain-language caption and axis pole labels; a five-variable meter scan for EA034
+  (religion — no hook) after the originally-built four-lens version was found unusable in Karl's
+  browser review ("tighter than X% of random draws" can't appear on a GUI page; two of the four lenses
+  bundled two physical variables into one number). Both get a composition donut (Glottolog-resolved
+  family names, not codes; hover-linked to the map *and* the scatter). New engine function
+  `variable_percentiles()` (`distance_core.py`) — a deterministic percentile-of-global-range per raw
+  variable, no resampling — is the actual shipped statistic; `scan()`'s lens/resampling machinery is
+  untouched but no longer called by this page (kept for TRACE). Full record: `wo4_findings.md`; WO
+  spec (superseded sections marked in place): `wo4_whc-grouping.md`. Also folded in this edit: the WH
+  Cities retrieval-lens wiring (precip regime, temp regime, terrain regime) — stale in this tracker
+  since it still read "not started" — is confirmed live via Karl's screenshot review at this session's
+  open; the roadmap row below is updated to match, though this session has no visibility into exactly
+  when/how it shipped.
+  (WO3's own detailed record lives in its roadmap row below and `wo3_findings.md`, not duplicated here.)
 
 ## Table of contents
 
@@ -88,10 +78,11 @@ Active branch: `cdop_citykin`, cut from `cdop`.
 | WO1 Part D — Tbilisi acceptance fixture | `cdop_citykin` | **superseded by WO1a's two-fixture gate (below), which passed** | WO1's single-fixture pass didn't generalize. Findings: `wo1_findings.md` (historical). |
 | **WO1a — retire the elevation gate; query-relative tolerance core; two-fixture gate** | `cdop_citykin` | **complete — accept gate passed, 2026-07-28** | Findings: `wo1a_findings.md`; exec: `wo1a_exec_summary.md`. |
 | WO1 wiring — terrain lens on `cdop_pilot` | `cdop_citykin` | **complete + polished, Karl-reviewed in browser 2026-07-28** | New route `GET /api/whc-similar-terrain` (city_id or lat/lon; `terrain_lens.py`/`terrain_grid.py`); "Terrain regime" added to the WH Cities "Similar (env)" dropdown with 3 tight/default/broad knobs (auto-apply, matching the sandbox conjunction panel's own convention). Tbilisi promoted to a real `gaz.wh_cities` row (id 259, pinned atop the dropdown, semantic-similarity hidden for it) — see Locked decisions. Three UI bugs fixed (default tab, a `d-flex`/inline-style conflict, dropdown auto-close). Detail: `logs/session_log_20260728.md`. |
-| WO1 wiring — climate/aridity lenses + Part A deletion of the old path | — | **not started** | Precip/temp regime (WO6b raw-curve) and aridity (`ari_log`) still need UI wiring; only then can `/api/whc-similar-env-lens` and its harmonic-precip/Mahalanobis-temp lenses be deleted. |
+| WO1 wiring — climate/aridity lenses + Part A deletion of the old path | `cdop_citykin` | **confirmed complete** (tracker was stale, corrected 2026-07-30) | Precip regime, temp regime, and terrain regime confirmed live in the WH Cities "Similar (env)" dropdown via Karl's screenshot review, 2026-07-30. This session has no visibility into when/how it shipped or whether `/api/whc-similar-env-lens` was actually deleted — not asserted either way; flag for a follow-up check if that old path's removal matters later. |
 | **WO2a — does basin relief-range measure terrain, or basin size?** | `cdop_citykin` | **complete — facets kept, 2026-07-29** | Diagnostic probe ahead of WO2. Findings: `wo2a_findings.md` (no exec summary this WO). |
 | **WO2b — shipping-facet correlation + Kansas citation correction (Opus follow-up)** | `cdop_citykin` | **complete, 2026-07-29** | Corrected WO2a's redundancy reading to the actual shipping pair and split Kansas's excess relief into its area-explained and genuinely-distinctive components. Findings folded into `wo2a_findings.md` (no exec summary). |
 | **WO3 — coarse Terrain regime lens, built + wired + reviewed** | `cdop_citykin` | **complete, 2026-07-29** | L06 only. Facets `ele_mt_sav` + `relief_range` (locked WO2a/b); tolerance-band defaults derived empirically after the std-based recipe failed (25/50/100m elev, 50/100/200m relief); two-fixture check passed; wired and Karl-reviewed live in browser. Findings: `wo3_findings.md` (no exec summary). L08 and the residual-facet idea remain named, not started. |
+| **WO4 — Societies-tab PCA "Basin clusters" replacement (meter bars + donut)** | `citykin_wo4` | **complete, 2026-07-30** | Confirmatory Climate envelope scatter (EA042) + five-variable meter scan (EA034), both with a composition donut hover-linked to the map and (for the scatter) the dots themselves. New engine: `variable_percentiles()`; `top_families()` extended with `other` bucket + `soc_ids`; `scripts/cdop/glottolog_family_names.py` (new). Legacy PCA option removed, not hidden. Findings: `wo4_findings.md`; WO spec: `wo4_whc-grouping.md`. |
 
 ---
 
@@ -101,18 +92,16 @@ Phase opened 2026-07-27. Branch `cdop_citykin`, cut from `cdop` (which holds all
 history after the `cdop_pilot` fast-forward merge). WO1 spec: `docs/cdop/citykin/wo1_update-whcities.md`
 — read in full before touching Part B; summary above.
 
-**Current step:** WO3 — the coarse Terrain regime lens (facets locked by WO2a/b: `ele_mt_sav` +
-`relief_range`) — closed 2026-07-29, built, wired, and Karl-reviewed live in the browser. The WO's
-own std-based knob-derivation recipe (borrowed from WO1a's point-window lens) failed outright on this
-corpus and was replaced with an empirical sweep; the two-fixture generalization check passed at the
-resulting defaults with no per-fixture tuning; browser smell tests (San Francisco, Kaifeng) both
-passed after two self-corrected misreads along the way. Full record: `wo3_findings.md` (no exec
-summary).
+**Current step:** WO4 — the Societies-tab PCA "Basin clusters" replacement — closed 2026-07-30, built,
+wired, and Karl-reviewed live in the browser across three passes (initial lens-based scan → meter-bar +
+donut redesign after the lens version proved unusable → scatter caption/hover/pole-label follow-up).
+Full record: `wo4_findings.md`; WO spec (superseded sections marked in place): `wo4_whc-grouping.md`.
 
-**Next:** wire the remaining WH Cities retrieval lenses (precip regime, temp regime — WO6b raw-curve;
-aridity, `ari_log`) to the ranked-retrieval UI and delete the old `/api/whc-similar-env-lens` path
-(WO1 Part A's long-deferred half, unaffected by WO2/WO3). L08 terrain knobs and the residual-facet
-idea remain named, not started.
+**Next:** undecided. WH Cities retrieval (precip/temp/terrain regime lenses) and the Societies-tab
+replacement (WO4) are both now complete — CITYKIN has no committed next work order. L08 terrain knobs,
+the residual-facet idea (WO2), and Tier-2/3 terrain fidelity upgrades (WO1 Part C) remain named, not
+started, not currently in queue. Whether `/api/whc-similar-env-lens` was actually deleted alongside the
+WH Cities lens wiring is unconfirmed (roadmap row above) — worth checking before assuming it's gone.
 
 Standing rules carried forward from CDOP Pilot: Karl runs notebooks cell-by-cell and reports output back
 — never assert a number as a finding without seeing his output, never Bash-run notebook logic. Full test
@@ -152,6 +141,10 @@ Announce what a tool call is for before running it, even quick exploratory check
 | **The basin-scale terrain lens**'s (WO3) two-fixture generalization check passed at the locked defaults, no per-fixture tuning | Rugged (Tbilisi's L06 basin, hybas_id 2060616700) and flat (hybas_id 6060269510, selected by area-quantile × relief-quantile from the table, not coordinate-picked) fixtures returned terrain-coherent, non-overlapping sets — elevation ranges separated by >1,400m. Distinct fixture pair from **the point-window terrain lens**'s Tbilisi + Bruges (above) — same city, different lens, different corpus, different actual query object (Tbilisi's L06 basin here vs. the 254-city WH Cities point-window record there); named explicitly to avoid the two being conflated. A real process trap surfaced and fixed along the way: a stale, already-imported copy of `seasonality.py` in the notebook's kernel silently ran the OLD placeholder defaults after the source file was edited — caught because the observed member ranges matched the old defaults' arithmetic exactly, not the new one. `wo3_findings.md`, 2026-07-29. |
 | San Francisco's L06 basin is a long peninsula-ridge catchment, not a city footprint — confirmed live, not assumed | Karl flagged the basin extent as "odd" during browser smell-testing; confirmed via query values (`elev_m` 321.0, `relief_range_m` 1602.0 — downtown SF itself tops out ~280m) and the basin's actual geometry. Same mechanism as WO2a's Innsbruck case (HydroBASINS delineates by drainage topology, not local landscape), now demonstrated live on a real user query rather than only in a synthetic fixture — reinforces, doesn't change, the existing UI footnote's caveat. `wo3_findings.md`, 2026-07-29. |
 | **RESOLVED, not by clearing the blocker — WO3's Terrain regime lens dissolved the DEM/data-acquisition question rather than answering it.** Was named Deferred (blocked on real data acquisition, not design): `note_to_opus_terrain-scale.md` argued the sandbox Similarity panel's Terrain regime needed the point-window method (to avoid container-effect smearing), which meant either a ~75min L06 batch job against a rate-limited public API or a locally-hosted DEM — impractical at L08 either way. | Opus's WO3 tracker review, 2026-07-29: that premise didn't hold. A **coarse** basin-scale lens doesn't need the point-window method at all — `ele_mt_sav`/`relief_range` are already-bulk-loaded BasinATLAS columns, the same free-SQL-reshape situation as precip/temp. The container-effect limitation this was built to avoid is disclosed honestly in the lens's own guide language instead (WO3's "describes the basin, not the place" footnote) rather than engineered around. The real DEM-acquisition question is **not moot** — it's still the path to a higher-fidelity, place-level facet (Tier-3, named not built) — but it no longer blocks *having* a Terrain regime option, which now exists. Postscript added to `note_to_opus_terrain-scale.md` rather than rewriting its historical record. |
+| **WO4: "environmental similarity net family" is a TRACE-phase analytical move, not a Societies-tab descriptive one** | Karl pushed back hard on an Opus proviso that would have made family-restricted resampling the headline reading for the composition note; Opus conceded via the project's own 0.70-redundancy-bar precedent (an inferential guard misapplied to a description job displaces the thing the surface exists to show). Composition is a plain family-name-and-count donut; `family_restricted_draw_cohesions` stays in `distance_core.py`, unused by this page, for TRACE. From `wo4_whc-grouping.md`; full reasoning `note_to_opus_societies-dataviz.md`. |
+| **WO4: no percentile/resampling language in GUI copy, ever** | Karl's standing rule, verbatim: "'100% tighter than random draws' is language that cannot appear on a GUI page EVER." That's article/treatise language, not interface copy, regardless of how the number was produced. Drove the meter-bar redesign below. |
+| **WO4: the four statistical lenses (water/thermal/overall/terrain) are the wrong unit of narration; five raw physical variables are the right one** | `thermal` bundles mean temperature + seasonal swing, `terrain` bundles ruggedness + landform position — each lens value has no single plain-language direction. Cohesion doesn't survive in any non-statistical form. Displacement survives, reframed as a single deterministic percentile of the group's mean against that variable's own global distribution (`variable_percentiles()`, no resampling) — "68th percentile of the global aridity range" has an honest answer to "percent of what?" that the lens-level framing didn't. `wo4_findings.md` § "Step 3, redesigned." |
+| **WO4: composition donut, not a bullet list — named families ranked, then Other, then Unresolved, regardless of raw count** | A single-dominant-family framing needs a threshold ("how big a share counts as dominant?"); a fixed top-3-by-count-plus-residual rule needs none and reads correctly whichever shape the group takes. Family names resolved via `scripts/cdop/glottolog_family_names.py` (fetched fresh from Glottolog, not guessed) — caught that `nilo1247` is Nilotic, not "Nilo-Saharan" as WO8d's own prose called it (Glottolog doesn't recognize Nilo-Saharan as a valid genealogical unit). `wo4_findings.md`. |
 
 ---
 
@@ -166,11 +159,14 @@ Announce what a tool call is for before running it, even quick exploratory check
   not only a candidate fourth terrain-tolerance facet (Opus's WO1a review, sharpening Karl's original
   observation). Register entry: `docs/design/deferred_items_register.md` § CDOP — CITYKIN. Karl: "let
   it ride and see how it works out in queries" rather than adding scope now; would need its own
-  correlation check first if ever promoted to a terrain facet. `wo1a_findings.md` § Open.
+  correlation check first if ever promoted to a terrain facet. `wo1a_findings.md` § Open. **Second,
+  independent data point for this same gap (WO4, 2026-07-30):** Fishing subsistence's Climate envelope
+  scatter is scattered across nearly the entire aridity/temperature range — the pattern of a trait
+  whose real driver (water-body proximity) isn't on either climate axis. Not investigated, just now a
+  second signal pointing at the same missing dimension. `wo4_findings.md` § Step 3 addendum.
 - **Non-compensatory conjunction head for CITYKIN** — stays in sandbox_v3 as the set-query instrument.
 - **Additional lenses** (coastality, offshore topology, at-a-distance measures) — Karl's wishlist,
-  demand-funded, named, not this WO. Coastality now has a real seed (the water-fraction row above) —
-  not built, but no longer purely speculative.
+  demand-funded, named, not this WO. Coastality now has two independent seeds (the water-fraction row
+  above) — not built, but no longer purely speculative.
 - **The semantic (Wikipedia-text, section-sliced) similarity channel** — a separate capability on the
   same page, unaffected by this WO.
-- **Any change to the Societies / TRACE surfaces.**

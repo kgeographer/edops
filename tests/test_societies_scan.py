@@ -1,10 +1,11 @@
 """
 test_societies_scan.py
 -----------------------
-Tests for /api/societies/env-scan — CITYKIN WO4 Step 2, the Societies-tab PCA-cluster
-replacement. Wraps scripts/cdop/distance_core.scan() over the cached WO8-family substrate
-(app/db/societies_scan.py); unit coverage for the engine itself lives in
-tests/cdop/test_distance_core.py.
+Tests for /api/societies/env-scan — CITYKIN WO4, the Societies-tab PCA-cluster replacement.
+Wraps scripts/cdop/distance_core.{top_families,variable_percentiles} (the 2026-07-30 meter-bar
+redesign — scan()'s lens-level machinery is no longer called by this endpoint at all) over the
+cached WO8-family substrate (app/db/societies_scan.py); unit coverage for the engine itself lives
+in tests/cdop/test_distance_core.py.
 
 All DB-hitting tests are skipped if the DB is unavailable (the app's other startup indices
 still need a connection even though this endpoint's own data source is a parquet).
@@ -37,7 +38,7 @@ def test_subsistence_scan_has_hook_metadata(client):
     assert body["n_focus"] == 76
     assert body["hook"]["has_hook"] is True
     assert body["hook"]["axes"] == ["water", "thermal"]
-    assert set(body["lenses"].keys()) == {"water", "thermal", "overall", "terrain"}
+    assert "variables" not in body   # meter-bar view is the no-hook display only
 
 
 def test_subsistence_scan_includes_scatter_coordinates(client):
@@ -51,6 +52,18 @@ def test_subsistence_scan_includes_scatter_coordinates(client):
     assert all({"soc_id", "x", "y"} <= p.keys() for p in sc["backdrop"][:5])
 
 
+def test_scatter_has_plain_language_summary(client):
+    # Pinned to real numbers (2026-07-30) -- the scatter's own caption, reusing the meter engine
+    # restricted to just the two plotted axes rather than asking the reader to eyeball ~1,000 dots.
+    r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Fishing"})
+    summary = r.json()["scatter"]["summary"]
+    assert set(summary.keys()) == {"aridity", "temperature"}
+    assert summary["temperature"]["qualifier"] == "very"
+    assert summary["temperature"]["direction"] == "Cool"
+    assert summary["aridity"]["qualifier"] == "somewhat"
+    assert summary["aridity"]["direction"] == "Wet"
+
+
 def test_religion_scan_has_no_hook_metadata(client):
     r = client.get("/api/societies/env-scan",
                     params={"trait": "religion", "value": "Active, but not supporting morality"})
@@ -60,12 +73,19 @@ def test_religion_scan_has_no_hook_metadata(client):
     assert body["hook"]["has_hook"] is False
     assert body["hook"]["axes"] is None
     assert "scatter" not in body
-    # Reproduces WO8d's Part C table exactly (wo4_findings.md) -- a live regression check that
-    # the endpoint's numbers stay pinned to the validated reference, not just that it responds.
-    terrain = body["lenses"]["terrain"]
-    assert terrain["n_backdrop"] == 1124
-    assert terrain["obs_cohesion"] == pytest.approx(1.207, abs=1e-3)
-    assert terrain["pct_tighter_than_random"] == pytest.approx(44.10, abs=0.5)
+
+    # Pinned to real numbers computed against the substrate (2026-07-30) -- a live regression
+    # check that the endpoint's meter-bar values stay stable, not just that it responds.
+    variables = body["variables"]
+    assert set(variables.keys()) == {"aridity", "temperature", "seasonality", "ruggedness", "landform"}
+    temp = variables["temperature"]
+    assert temp["percentile"] == pytest.approx(33.63, abs=0.5)
+    assert temp["qualifier"] == "somewhat"
+    assert temp["direction"] == "Cool"
+    assert temp["pole_low"] == "Cool" and temp["pole_high"] == "Warm"
+    # No percentile/resampling language anywhere in this response's own vocabulary -- the GUI-safe
+    # words are qualifier + direction, never a number baked into a label (Karl's standing rule).
+    assert "qualifier" in temp and "direction" in temp
 
 
 def test_composition_note_no_dominance_threshold(client):
@@ -75,6 +95,23 @@ def test_composition_note_no_dominance_threshold(client):
     assert comp["n_total"] == 76
     assert len(comp["top_families"]) == 3
     assert comp["top_families"][0]["family_id"] == "afro1255"
+
+
+def test_composition_note_has_names_and_soc_ids_for_map_hover(client):
+    r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Pastoralism"})
+    body = r.json()
+    comp = body["composition"]
+
+    top = comp["top_families"][0]
+    assert top["family_id"] == "afro1255"
+    assert top["family_name"] == "Afro-Asiatic"      # resolved, not the raw glottocode
+    assert len(top["soc_ids"]) == top["n"] == 36
+
+    # "Other" pools every family beyond the top 3, and it's a real, mappable bucket too, not a
+    # discarded remainder -- Karl's requirement for the donut + hover-to-map linking.
+    assert comp["other"]["n"] == 76 - sum(f["n"] for f in comp["top_families"]) - comp["n_unresolved"]
+    assert len(comp["other"]["soc_ids"]) == comp["other"]["n"]
+    assert len(comp["unresolved"]["soc_ids"]) == comp["n_unresolved"]
 
 
 def test_unknown_trait_is_400(client):

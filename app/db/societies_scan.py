@@ -1,7 +1,17 @@
-"""CITYKIN WO4 Step 2 — the Societies-tab PCA-cluster replacement's data path.
+"""CITYKIN WO4 — the Societies-tab PCA-cluster replacement's data path.
 
 Loads the shared society-basin-signature substrate once at startup (not per-request) and wraps
-`scripts.cdop.distance_core.scan()` with the two wired D-PLACE traits' hook metadata.
+`scripts.cdop.distance_core` with the two wired D-PLACE traits' hook metadata.
+
+**2026-07-30 meter-bar redesign**: no longer calls `distance_core.scan()` (the lens-level
+cohesion/displacement machinery) at all — Karl's review of the four-lens scan found
+"tighter than X% of random draws" language cannot appear on a GUI page, and two of the four
+lenses bundle two physical variables into one number, so no plain-language gloss could give a
+single variable + direction either way. The no-hook display now uses `variable_percentiles()`
+(a single deterministic percentile per raw physical variable, no resampling) instead. This also
+means `run_societies_env_scan()` no longer pays for `scan()`'s 2000-draw resampling loop across
+four lenses on every request — a real performance win, not just a display change, since that
+output was going unused everywhere once the meter redesign landed.
 
 **Data source, and the trade-off it makes explicit.** The substrate is
 `output/cdop/wo8c_substrate.parquet` — a real, already-validated artifact (WO8a's base society-
@@ -27,7 +37,8 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-from scripts.cdop.distance_core import scan
+from scripts.cdop.distance_core import top_families, variable_percentiles, VARIABLES
+from scripts.cdop.glottolog_family_names import family_name
 
 logger = logging.getLogger(__name__)
 
@@ -92,32 +103,51 @@ def get_societies_scan_substrate() -> pd.DataFrame:
     return _substrate
 
 
-def run_societies_env_scan(trait: str, value: str, n_draws: int = 2000, seed: int = 0) -> Dict[str, object]:
-    """`(trait, value)` -> the WO4 payload: per-lens cohesion/displacement + composition note +
-    trait hook metadata. `trait` is `'subsistence'` (EA042) or `'religion'` (EA034) -- the tab's
-    two wired traits, not a raw column name."""
+def run_societies_env_scan(trait: str, value: str) -> Dict[str, object]:
+    """`(trait, value)` -> the WO4 payload: composition note (family names + soc_ids, for the
+    donut and its map-hover linking) + trait hook metadata, plus either the confirmatory scatter
+    (hook traits) or the meter-bar variable percentiles (no-hook traits). `trait` is
+    `'subsistence'` (EA042) or `'religion'` (EA034) -- the tab's two wired traits, not a raw
+    column name."""
     if trait not in TRAIT_CONFIG:
         raise ValueError(f"unknown trait '{trait}' -- expected one of {sorted(TRAIT_CONFIG)}")
 
     cfg = TRAIT_CONFIG[trait]
     sub = get_societies_scan_substrate()
-    result = scan(sub, trait_col=cfg["column"], value=value, n_draws=n_draws, seed=seed)
+    trait_col = cfg["column"]
+    is_focus = sub[trait_col].notna() & (sub[trait_col] == value)
+
+    composition = top_families(
+        sub.loc[is_focus, "family_id"], soc_ids=sub.loc[is_focus, "soc_id"],
+    )
+    for entry in composition["top_families"]:
+        entry["family_name"] = family_name(entry["family_id"])
 
     payload: Dict[str, object] = {
         "trait": trait,
         "value": value,
-        "n_focus": result["n_focus_input"],
+        "n_focus": int(is_focus.sum()),
         "hook": {
             "has_hook": cfg["has_hook"],
             "axes": cfg["hook_axes"],
             "source": cfg["hook_source"],
         },
-        "composition": result["composition"],
-        "lenses": result["lenses"],
+        "composition": composition,
     }
 
     if cfg["has_hook"]:
-        payload["scatter"] = _build_scatter(sub, cfg["column"], value, cfg)
+        payload["scatter"] = _build_scatter(sub, trait_col, value, cfg)
+        # A plain-language read of the same two axes the scatter plots -- reuses the meter-bar
+        # engine (variable_percentiles) rather than asking the reader to eyeball ~1,000 dots
+        # unaided (Karl, 2026-07-30: "can we do better?" after the scatter alone read as an
+        # inscrutable cloud for a trait -- Fishing -- whose real driver isn't on either axis).
+        payload["scatter"]["summary"] = variable_percentiles(
+            sub, trait_col=trait_col, value=value,
+            variables={"aridity": VARIABLES["aridity"], "temperature": VARIABLES["temperature"]},
+        )["variables"]
+    else:
+        payload["variables"] = variable_percentiles(sub, trait_col=trait_col, value=value)["variables"]
+
     return payload
 
 

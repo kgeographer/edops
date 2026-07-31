@@ -260,11 +260,13 @@
         <div id="dplace-results-content"></div>
       </div>
       <style>
-        /* CITYKIN WO4 (2026-07-30): the Climate envelope scatter + four-lens environment scan.
-           Palette per the dataviz skill's reference instance (light mode only -- this site has no
-           dark-mode toggle anywhere else, so a dark block would be dead weight, not parity).
-           Categorical slots 1 (blue) and 2 (orange): documented as passing the all-pairs CVD check
-           (both are within the reference palette's first three all-pairs-validated slots). */
+        /* CITYKIN WO4 (2026-07-30, meter-bar redesign): the Climate envelope scatter + the
+           five-variable environment meters + composition donut. Palette per the dataviz skill's
+           reference instance (light mode only -- this site has no dark-mode toggle anywhere else,
+           so a dark block would be dead weight, not parity). Categorical slots 1/2/3 (blue/
+           orange/aqua): the reference palette's own documentation certifies these three together
+           pass the all-pairs CVD check required for small-multiples/scatter forms -- the donut's
+           three named-family slots use exactly these, not ad hoc colors. */
         .wo4-viz {
           --wo4-surface:      #fcfcfb;
           --wo4-text-primary: #0b0b0b;
@@ -274,15 +276,18 @@
           --wo4-baseline:     #c3c2b7;
           --wo4-backdrop:     #c3c2b7;   /* emphasis form: de-emphasized gray for the backdrop cloud */
           --wo4-focus:        #2a78d6;   /* categorical slot 1 -- the confirmatory scatter's 1 series */
-          --wo4-series-cohesion:     #2a78d6;  /* categorical slot 1 */
-          --wo4-series-displacement: #eb6834;  /* categorical slot 2 */
+          --wo4-cat-1: #2a78d6;   /* blue */
+          --wo4-cat-2: #eb6834;   /* orange */
+          --wo4-cat-3: #1baf7a;   /* aqua */
+          --wo4-neutral-fill: #9a9890;   /* "Other" -- visible, deliberately subordinate to the 3 named */
+          --wo4-meter-track: #d3e2f5;    /* light step of the cat-1 ramp, per the Meter form's own spec */
           font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         }
         .wo4-viz svg { max-width: 100%; height: auto; }
-        .wo4-viz .wo4-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.8rem; color: var(--wo4-text-secondary); margin-bottom: 0.35rem; }
+        .wo4-viz .wo4-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.8rem; color: var(--wo4-text-secondary); margin-bottom: 0.35rem; flex-wrap: wrap; }
         .wo4-viz .wo4-legend-key { display: inline-flex; align-items: center; gap: 0.35rem; }
-        .wo4-viz .wo4-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-        .wo4-viz .wo4-caption { font-size: 0.78rem; color: var(--wo4-text-muted); margin-top: 0.25rem; }
+        .wo4-viz .wo4-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+        .wo4-viz .wo4-caption { font-size: 0.85rem; color: var(--wo4-text-secondary); margin-top: 0.5rem; line-height: 1.5; }
         .wo4-viz .wo4-tooltip {
           position: absolute; pointer-events: none; z-index: 10;
           background: var(--wo4-text-primary); color: #fff; font-size: 0.75rem;
@@ -291,6 +296,34 @@
         }
         .wo4-viz .wo4-bar-label { fill: var(--wo4-text-secondary); font-size: 11px; }
         .wo4-viz .wo4-axis-label { fill: var(--wo4-text-muted); font-size: 11px; }
+        .wo4-viz .wo4-axis-pole { fill: var(--wo4-text-muted); font-size: 10px; }
+
+        /* -- Meter bars (the five-variable environment scan) -- */
+        .wo4-meters { display: flex; flex-direction: column; }
+        .wo4-meter-row { padding: 0.55rem 0; border-top: 1px solid var(--wo4-gridline); }
+        .wo4-meter-row:first-child { border-top: none; padding-top: 0; }
+        .wo4-meter-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.32rem; }
+        .wo4-meter-label { font-size: 0.9rem; font-weight: 600; color: var(--wo4-text-primary); }
+        .wo4-meter-qual { font-size: 0.82rem; color: var(--wo4-text-secondary); font-style: italic; }
+        .wo4-meter-track-row { display: flex; align-items: center; gap: 0.55rem; }
+        .wo4-pole { font-size: 0.72rem; color: var(--wo4-text-muted); white-space: nowrap; width: 5.4rem; }
+        .wo4-pole.right { text-align: right; }
+        .wo4-track { flex: 1; height: 9px; border-radius: 5px; background: var(--wo4-meter-track); position: relative; overflow: hidden; cursor: default; }
+        .wo4-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; background: var(--wo4-focus); transition: width 0.5s cubic-bezier(0.22,0.61,0.36,1); }
+        .wo4-midline { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--wo4-gridline); }
+        .wo4-pct { width: 2.8rem; text-align: right; font-size: 0.78rem; color: var(--wo4-text-secondary); font-variant-numeric: tabular-nums; }
+
+        /* -- Composition donut + legend -- */
+        .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }
+        .wo4-donut-figure { flex: none; }
+        .wo4-donut-total { font-family: inherit; }
+        .wo4-comp-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 12rem; }
+        .wo4-comp-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.3rem; border-radius: 5px; cursor: pointer; transition: background 0.12s ease; }
+        .wo4-comp-row:hover, .wo4-comp-row.is-active { background: var(--wo4-gridline); }
+        .wo4-comp-name { font-size: 0.85rem; color: var(--wo4-text-primary); flex: 1; }
+        .wo4-comp-count { font-size: 0.78rem; color: var(--wo4-text-muted); }
+        .wo4-comp-row.is-neutral .wo4-comp-name { color: var(--wo4-text-secondary); }
+        .wo4-map-dot-lit { }
       </style>
     </div>
 
@@ -2073,6 +2106,8 @@
     let ecoLayer = null;  // Current polygon layer on map
     let socLayer = null;  // D-PLACE societies markers layer group
     let socData = null;   // Cached societies data
+    let socMarkerIndex = {};   // soc_id -> Leaflet marker, for CITYKIN WO4's donut hover-to-map linking
+    let socScatterIndex = {};  // soc_id -> SVG circle in the confirmatory scatter, same hover linking
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2097,6 +2132,7 @@
         map.removeLayer(socLayer);
         socLayer = null;
       }
+      socMarkerIndex = {};
     }
 
     // 7-color palette for subsistence categories
@@ -2356,17 +2392,21 @@
           }
         }
 
-        const marker = L.circleMarker([soc.lat, soc.lon], {
+        const baseStyle = {
           radius: 4,
           fillColor: color,
           color: '#333',
           weight: 1,
           opacity: isMatch ? 0.8 : 0.3,
           fillOpacity: isMatch ? 0.8 : 0.1
-        });
+        };
+        const marker = L.circleMarker([soc.lat, soc.lon], baseStyle);
+        marker._wo4Base = baseStyle;   // snapshot for wo4RestoreMarkers() -- see donut hover wiring
+        marker._wo4Type = 'leaflet';
 
         marker.bindTooltip(`<strong>${escapeHtml(soc.name)}</strong> (${escapeHtml(soc.id)})`);
         socLayer.addLayer(marker);
+        socMarkerIndex[soc.id] = marker;
       });
 
       socLayer.addTo(map);
@@ -2452,16 +2492,21 @@
     }
 
     // ---------------------------------------------------------------------
-    // CITYKIN WO4 (2026-07-30) — replaces the retired PCA "Basin clusters" option.
-    // Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and gets the
-    // confirmatory Climate envelope scatter; EA034 (religion) has none and gets the exploratory
-    // four-lens scan. See docs/cdop/citykin/wo4_whc-grouping.md.
+    // CITYKIN WO4 (2026-07-30, meter-bar redesign) — replaces the retired PCA "Basin clusters"
+    // option. Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and
+    // gets the confirmatory Climate envelope scatter; EA034 (religion) has none and gets the
+    // exploratory five-variable meter scan (aridity/temperature/seasonality/ruggedness/landform,
+    // each a plain percentile-of-global-range, no lens-level resampling — Karl's review of the
+    // original four-lens scan found "tighter than X% of random draws" unusable on a GUI page).
+    // Composition (both displays) is a donut, not a bullet list, with hover-to-map linking.
+    // See docs/cdop/citykin/wo4_whc-grouping.md.
     // ---------------------------------------------------------------------
 
     let envScanRequestId = 0;
-    const WO4_LENS_ORDER = ['water', 'thermal', 'overall', 'terrain'];
-    const WO4_LENS_LABELS = {
-      water: 'Water (aridity)', thermal: 'Thermal', overall: 'Overall (climate envelope)', terrain: 'Terrain'
+    const WO4_VARIABLE_ORDER = ['aridity', 'temperature', 'seasonality', 'ruggedness', 'landform'];
+    const WO4_VARIABLE_LABELS = {
+      aridity: 'Aridity', temperature: 'Temperature', seasonality: 'Seasonality',
+      ruggedness: 'Ruggedness', landform: 'Landform',
     };
 
     function wo4SvgEl(tag, attrs) {
@@ -2532,6 +2577,7 @@
       }
 
       const myRequestId = ++envScanRequestId;
+      socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
       container.style.display = 'block';
       heading.textContent = `Environment for ${activeFilter}`;
       content.innerHTML = '';
@@ -2571,9 +2617,9 @@
         root.appendChild(wo4ClimateEnvelopeScatter(scan));
       } else {
         heading.textContent = `Environment scan for ${activeFilter}`;
-        root.appendChild(wo4FourLensScan(scan));
+        root.appendChild(wo4EnvScanMeters(scan));
       }
-      root.appendChild(wo4CompositionNote(scan.composition));
+      root.appendChild(wo4CompositionDonut(scan.composition));
     }
 
     function wo4ClimateEnvelopeScatter(scan) {
@@ -2584,6 +2630,21 @@
         { color: 'var(--wo4-backdrop)', label: `All subsistence-coded societies (n=${sc.backdrop.length})` },
         { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
       ]));
+
+      // Plain-language read of the same two axes, so the reader isn't left to eyeball ~1,000 dots
+      // unaided (Karl, 2026-07-30: "can we do better?" -- Fishing's cloud is scattered across
+      // nearly the whole range, and the caption is what surfaces that its mean is still real
+      // signal -- "somewhat Wet, very Cool" -- that the dispersed scatter alone obscures).
+      if (sc.summary) {
+        const summaryLine = document.createElement('div');
+        summaryLine.className = 'wo4-caption';
+        summaryLine.style.color = 'var(--wo4-text-primary)';
+        summaryLine.style.fontWeight = '600';
+        summaryLine.textContent = [sc.summary.aridity, sc.summary.temperature]
+          .map((res, i) => `${i === 0 ? 'Aridity' : 'Temperature'}: ${wo4Qualifier(res)}`)
+          .join('  ·  ');
+        wrap.appendChild(summaryLine);
+      }
 
       const width = 480, height = 300;
       const margin = { top: 10, right: 16, bottom: 40, left: 56 };
@@ -2611,6 +2672,28 @@
       yLabel.textContent = sc.y_label;
       svg.appendChild(yLabel);
 
+      // Pole labels, same source as the meter bars' (variable_percentiles()'s pole_low/pole_high) --
+      // not hardcoded here. Aridity in particular is famously counter-intuitive (the BasinATLAS
+      // index INCREASES with humidity; Karl, 2026-07-30) and the scatter had no tick values or
+      // direction cue at all before this -- a reader had no way to know which side was arid without
+      // already knowing that convention. xScale/yScale are both standard, non-inverted linear
+      // scales (low value -> left/bottom, high value -> right/top); the pole labels just say so.
+      if (sc.summary) {
+        const xPoleLow = wo4SvgEl('text', { x: margin.left, y: height - 6, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        xPoleLow.textContent = sc.summary.aridity.pole_low;
+        svg.appendChild(xPoleLow);
+        const xPoleHigh = wo4SvgEl('text', { x: margin.left + plotW, y: height - 6, 'text-anchor': 'end', class: 'wo4-axis-pole' });
+        xPoleHigh.textContent = sc.summary.aridity.pole_high;
+        svg.appendChild(xPoleHigh);
+
+        const yPoleHigh = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + 10, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleHigh.textContent = sc.summary.temperature.pole_high;   // top of plot = higher value
+        svg.appendChild(yPoleHigh);
+        const yPoleLow = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + plotH - 4, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleLow.textContent = sc.summary.temperature.pole_low;   // bottom of plot = lower value
+        svg.appendChild(yPoleLow);
+      }
+
       // Backdrop dots: emphasis form's de-emphasized context, deliberately not interactive --
       // ~1,000 dots of "here's everyone else" don't need per-point tooltips, and the story is the
       // highlighted group, not the cloud.
@@ -2628,11 +2711,14 @@
           stroke: 'var(--wo4-surface)', 'stroke-width': 2
         });
         c.style.cursor = 'pointer';
+        c._wo4Type = 'svg';
+        c._wo4Base = { r: 4, 'fill-opacity': 0.85, 'stroke-width': 2 };   // for wo4RestoreMarkers()
         const tipLines = [p.name || p.soc_id, `${sc.x_label}: ${p.x.toFixed(2)}`, `${sc.y_label}: ${p.y.toFixed(1)}`];
         c.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
         c.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
         c.addEventListener('pointerleave', wo4HideTooltip);
         focusG.appendChild(c);
+        socScatterIndex[p.soc_id] = c;
       });
       svg.appendChild(focusG);
 
@@ -2646,106 +2732,229 @@
       return wrap;
     }
 
-    function wo4FourLensScan(scan) {
+    function wo4Qualifier(res) {
+      return res.qualifier === 'typical' ? 'typical' : `${res.qualifier} ${res.direction.toLowerCase()}`;
+    }
+
+    function wo4EnvScanMeters(scan) {
       const wrap = document.createElement('div');
+      const meters = document.createElement('div');
+      meters.className = 'wo4-meters';
 
-      wrap.appendChild(wo4Legend([
-        { color: 'var(--wo4-series-cohesion)', label: 'Cohesion (tighter than % of random draws)' },
-        { color: 'var(--wo4-series-displacement)', label: 'Displacement (more shifted than % of random draws)' },
-      ]));
+      WO4_VARIABLE_ORDER.forEach(key => {
+        const res = scan.variables[key];
+        const row = document.createElement('div');
+        row.className = 'wo4-meter-row';
 
-      const width = 480;
-      const rowH = 56, barH = 16, barGap = 2, labelW = 90;
-      const plotW = width - labelW - 50;   // 50px reserved for the value label at the bar's tip
-      const height = rowH * WO4_LENS_ORDER.length + 10;
-
-      const svg = wo4SvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Four-lens environment scan for ${scan.value}` });
-
-      WO4_LENS_ORDER.forEach((lens, i) => {
-        const res = scan.lenses[lens];
-        const rowY = i * rowH + 8;
-
-        const label = wo4SvgEl('text', { x: 0, y: rowY + barH + 2, class: 'wo4-bar-label' });
-        label.textContent = WO4_LENS_LABELS[lens] || lens;
-        svg.appendChild(label);
+        const top = document.createElement('div');
+        top.className = 'wo4-meter-top';
+        const label = document.createElement('span');
+        label.className = 'wo4-meter-label';
+        label.textContent = WO4_VARIABLE_LABELS[key] || key;
+        top.appendChild(label);
 
         if (!res || !res.n_focus) {
-          const none = wo4SvgEl('text', { x: labelW, y: rowY + barH + 2, class: 'wo4-bar-label' });
-          none.textContent = 'no complete-case data';
-          svg.appendChild(none);
+          const none = document.createElement('span');
+          none.className = 'wo4-meter-qual';
+          none.textContent = 'no data';
+          top.appendChild(none);
+          row.appendChild(top);
+          meters.appendChild(row);
           return;
         }
 
-        // 50% (chance) reference line, spanning both bars in this row -- a solid hairline, never
-        // dashed (mark spec: gridlines are always solid).
-        const chanceX = labelW + 0.5 * plotW;
-        svg.appendChild(wo4SvgEl('line', {
-          x1: chanceX, y1: rowY - 2, x2: chanceX, y2: rowY + 2 * barH + barGap + 2,
-          stroke: 'var(--wo4-gridline)', 'stroke-width': 1
-        }));
+        const qual = document.createElement('span');
+        qual.className = 'wo4-meter-qual';
+        qual.textContent = wo4Qualifier(res);
+        top.appendChild(qual);
+        row.appendChild(top);
 
-        const bars = [
-          {
-            value: res.pct_tighter_than_random, color: 'var(--wo4-series-cohesion)', y: rowY,
-            tip: [`${WO4_LENS_LABELS[lens]} — cohesion`, `${res.pct_tighter_than_random.toFixed(1)}% tighter than random draws`,
-                  `observed=${res.obs_cohesion.toFixed(3)}  random mean=${res.random_cohesion_mean.toFixed(3)}`]
-          },
-          {
-            value: res.displacement_pct_rank, color: 'var(--wo4-series-displacement)', y: rowY + barH + barGap,
-            tip: [`${WO4_LENS_LABELS[lens]} — displacement`, `${res.displacement_pct_rank.toFixed(1)}% more displaced than random draws`,
-                  `observed=${res.obs_displacement.toFixed(3)}  random mean=${res.random_displacement_mean.toFixed(3)}`]
-          },
-        ];
+        const trackRow = document.createElement('div');
+        trackRow.className = 'wo4-meter-track-row';
 
-        bars.forEach(b => {
-          const barW = Math.max(2, (b.value / 100) * plotW);
-          const rect = wo4SvgEl('rect', { x: labelW, y: b.y, width: barW, height: barH, rx: 4, ry: 4, fill: b.color });
-          rect.style.cursor = 'pointer';
-          rect.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, b.tip));
-          rect.addEventListener('pointermove', (e) => wo4ShowTooltip(e, b.tip));
-          rect.addEventListener('pointerleave', wo4HideTooltip);
-          svg.appendChild(rect);
+        const poleLow = document.createElement('span');
+        poleLow.className = 'wo4-pole';
+        poleLow.textContent = res.pole_low;
+        trackRow.appendChild(poleLow);
 
-          const valueLabel = wo4SvgEl('text', { x: labelW + barW + 4, y: b.y + barH - 4, class: 'wo4-bar-label' });
-          valueLabel.textContent = `${b.value.toFixed(0)}%`;
-          svg.appendChild(valueLabel);
-        });
+        const track = document.createElement('div');
+        track.className = 'wo4-track';
+        const fill = document.createElement('div');
+        fill.className = 'wo4-fill';
+        fill.style.width = `${res.percentile}%`;
+        const midline = document.createElement('div');
+        midline.className = 'wo4-midline';
+        track.append(fill, midline);
+        const tipLines = [WO4_VARIABLE_LABELS[key] || key, wo4Qualifier(res)];
+        track.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
+        track.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
+        track.addEventListener('pointerleave', wo4HideTooltip);
+        trackRow.appendChild(track);
+
+        const poleHigh = document.createElement('span');
+        poleHigh.className = 'wo4-pole right';
+        poleHigh.textContent = res.pole_high;
+        trackRow.appendChild(poleHigh);
+
+        const pct = document.createElement('span');
+        pct.className = 'wo4-pct';
+        pct.textContent = `${Math.round(res.percentile)}%`;
+        trackRow.appendChild(pct);
+
+        row.appendChild(trackRow);
+        meters.appendChild(row);
       });
 
-      wrap.appendChild(svg);
+      wrap.appendChild(meters);
 
       const caption = document.createElement('div');
       caption.className = 'wo4-caption';
-      caption.textContent = 'Exploratory scan — all four lenses always shown together; no single lens is a verdict on its own. Vertical line marks 50% (chance).';
+      caption.textContent = `Where ${scan.value} societies typically sit on each variable's own global range, against all basin-joined D-PLACE societies.`;
       wrap.appendChild(caption);
 
       return wrap;
     }
 
-    function wo4CompositionNote(comp) {
+    // Highlight the given society IDs across every linked view (map markers, and the confirmatory
+    // scatter's dots when that display is showing), dim everyone else; wo4RestoreMarkers() undoes
+    // it. Two element types, one shared index-and-snapshot pattern: Leaflet markers restyle via
+    // .setStyle(), SVG circles via .setAttribute() -- _wo4Type picks the branch, _wo4Base is never
+    // hand-computed (it varies per element: isMatch-driven opacity on the map, nothing on the
+    // scatter) so restore always returns to what was actually there, not a guessed default.
+    function wo4ApplyStyle(el, style) {
+      if (el._wo4Type === 'svg') {
+        Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
+      } else {
+        el.setStyle(style);
+      }
+    }
+
+    function wo4HighlightMarkers(socIds) {
+      const idSet = new Set(socIds);
+      [socMarkerIndex, socScatterIndex].forEach(index => {
+        Object.entries(index).forEach(([id, el]) => {
+          if (idSet.has(id)) {
+            wo4ApplyStyle(el, el._wo4Type === 'svg'
+              ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
+              : { radius: 7, weight: 2, opacity: 1, fillOpacity: 1 });
+            if (el.bringToFront) el.bringToFront();
+            else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
+          } else {
+            wo4ApplyStyle(el, el._wo4Type === 'svg'
+              ? { 'fill-opacity': 0.08 }
+              : { opacity: 0.08, fillOpacity: 0.04 });
+          }
+        });
+      });
+    }
+
+    function wo4RestoreMarkers() {
+      [socMarkerIndex, socScatterIndex].forEach(index => {
+        Object.values(index).forEach(el => {
+          if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base);
+        });
+      });
+    }
+
+    function wo4CompositionDonut(comp) {
       const wrap = document.createElement('div');
-      wrap.className = 'mt-2 small';
       if (!comp || !comp.n_total) return wrap;
 
-      const title = document.createElement('div');
-      title.className = 'text-muted';
-      title.textContent = 'Top language families in this group:';
-      wrap.appendChild(title);
+      // Order is deliberate, not by count: named families ranked by size, THEN the two residual
+      // buckets (Other, Unresolved) always last regardless of where their raw count would
+      // otherwise sort them (Karl, 2026-07-30) -- zero-count buckets are dropped, not shown empty.
+      const namedColors = ['var(--wo4-cat-1)', 'var(--wo4-cat-2)', 'var(--wo4-cat-3)'];
+      const buckets = [
+        ...comp.top_families.map((f, i) => ({
+          label: f.family_name || f.family_id, n: f.n, share: f.share,
+          soc_ids: f.soc_ids || [], color: namedColors[i] || 'var(--wo4-neutral-fill)',
+        })),
+        { label: 'Other families', n: comp.other.n, share: comp.other.share,
+          soc_ids: comp.other.soc_ids || [], color: 'var(--wo4-neutral-fill)', neutral: true },
+        { label: 'Unresolved', n: comp.n_unresolved, share: comp.n_unresolved / comp.n_total,
+          soc_ids: comp.unresolved.soc_ids || [], color: 'var(--wo4-text-muted)', neutral: true },
+      ].filter(b => b.n > 0);
 
-      const list = document.createElement('ul');
-      list.className = 'mb-0 ps-3';
-      comp.top_families.forEach(f => {
-        const li = document.createElement('li');
-        li.textContent = `${f.family_id} — ${f.n} (${(f.share * 100).toFixed(0)}%)`;
-        list.appendChild(li);
+      const row = document.createElement('div');
+      row.className = 'wo4-donut-row';
+
+      const figure = document.createElement('div');
+      figure.className = 'wo4-donut-figure';
+      const svg = wo4SvgEl('svg', { width: 168, height: 168, viewBox: '0 0 168 168', role: 'img', 'aria-label': 'Language-family composition' });
+      const cx = 84, cy = 84, rOuter = 74, rInner = 44;
+      let angle = -Math.PI / 2;
+      const wedgeEls = {};
+
+      buckets.forEach((b, i) => {
+        const frac = b.n / comp.n_total;
+        const a0 = angle, a1 = angle + frac * 2 * Math.PI;
+        angle = a1;
+        const large = (a1 - a0) > Math.PI ? 1 : 0;
+        const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+        const [x0, y0] = pt(rOuter, a0), [x1, y1] = pt(rOuter, a1);
+        const [x2, y2] = pt(rInner, a1), [x3, y3] = pt(rInner, a0);
+        const d = `M${x0},${y0} A${rOuter},${rOuter} 0 ${large},1 ${x1},${y1} L${x2},${y2} A${rInner},${rInner} 0 ${large},0 ${x3},${y3} Z`;
+        const path = wo4SvgEl('path', { d, fill: b.color, stroke: 'var(--wo4-surface)', 'stroke-width': 2 });
+        path.style.cursor = 'pointer';
+        path.style.transition = 'opacity 0.15s ease';
+        svg.appendChild(path);
+        wedgeEls[i] = path;
       });
-      if (comp.n_unresolved > 0) {
+
+      const centerN = wo4SvgEl('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', class: 'wo4-donut-total', fill: 'var(--wo4-text-primary)', 'font-size': 22, 'font-weight': 600 });
+      centerN.textContent = comp.n_total;
+      svg.appendChild(centerN);
+      const centerLbl = wo4SvgEl('text', { x: cx, y: cy + 14, 'text-anchor': 'middle', fill: 'var(--wo4-text-muted)', 'font-size': 10 });
+      centerLbl.textContent = 'societies';
+      svg.appendChild(centerLbl);
+
+      figure.appendChild(svg);
+      row.appendChild(figure);
+
+      const legend = document.createElement('ul');
+      legend.className = 'wo4-comp-legend';
+      const legendRows = {};
+      buckets.forEach((b, i) => {
         const li = document.createElement('li');
-        li.className = 'text-muted';
-        li.textContent = `${comp.n_unresolved} unresolved`;
-        list.appendChild(li);
-      }
-      wrap.appendChild(list);
+        li.className = 'wo4-comp-row' + (b.neutral ? ' is-neutral' : '');
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = b.color;
+        const name = document.createElement('span');
+        name.className = 'wo4-comp-name';
+        name.textContent = b.label;
+        const count = document.createElement('span');
+        count.className = 'wo4-comp-count';
+        count.textContent = `${b.n} (${Math.round(b.share * 100)}%)`;
+        li.append(swatch, name, count);
+        legend.appendChild(li);
+        legendRows[i] = li;
+
+        const enter = () => {
+          wo4HighlightMarkers(b.soc_ids);
+          li.classList.add('is-active');
+          wedgeEls[i].style.opacity = '1';
+          Object.entries(wedgeEls).forEach(([j, el]) => { if (j != i) el.style.opacity = '0.35'; });
+        };
+        const leave = () => {
+          wo4RestoreMarkers();
+          li.classList.remove('is-active');
+          Object.values(wedgeEls).forEach(el => { el.style.opacity = '1'; });
+        };
+        li.addEventListener('mouseenter', enter);
+        li.addEventListener('mouseleave', leave);
+        wedgeEls[i].addEventListener('mouseenter', enter);
+        wedgeEls[i].addEventListener('mouseleave', leave);
+      });
+      row.appendChild(legend);
+
+      wrap.appendChild(row);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = 'Hover a family to highlight its societies on the map.';
+      wrap.appendChild(caption);
+
       return wrap;
     }
 

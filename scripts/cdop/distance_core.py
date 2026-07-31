@@ -210,7 +210,8 @@ def displacement_percentile_rank(value: float, distribution: np.ndarray) -> floa
     return float((distribution <= value).mean())
 
 
-def top_families(family_ids: pd.Series, top_n: int = 3) -> Dict[str, object]:
+def top_families(family_ids: pd.Series, top_n: int = 3,
+                  soc_ids: Optional[pd.Series] = None) -> Dict[str, object]:
     """Descriptive composition note: the top `top_n` language families in a filtered group by
     raw count, with each one's share of the group. Always returns up to `top_n` entries -- no
     dominance threshold, because a threshold ("how big a share counts as dominant?") is exactly
@@ -221,17 +222,143 @@ def top_families(family_ids: pd.Series, top_n: int = 3) -> Dict[str, object]:
     tightest sub-group in the whole set: exactly the pattern a single-dominant-family note would
     have missed). NaN/unresolved `family_id` is excluded from the ranking; its count is reported
     separately, never silently folded into a "family."
+
+    Also returns an `other` bucket (resolved families beyond the top-N, pooled) so a consumer
+    that wants the group to visually sum to its whole (e.g. a donut) doesn't have to re-derive it
+    from `n_total - sum(top_families) - n_unresolved` itself.
+
+    `soc_ids`, if given (same length/index alignment as `family_ids`), adds a `soc_ids` list to
+    every bucket -- the composition note alone can't answer "map hover" (CITYKIN WO4, 2026-07-30);
+    a consumer that needs which specific societies are in "Other" or "Unresolved" needs this, not
+    just the count. Omitted (not an empty list) when `soc_ids` isn't provided, so a caller that
+    doesn't pass it gets the same shape as before this was added.
     """
     n_total = int(len(family_ids))
     resolved = family_ids.dropna()
-    counts = resolved.value_counts().head(top_n)
+    counts = resolved.value_counts()
+    top_counts = counts.head(top_n)
+    other_families = counts.index[top_n:]
+
+    def _soc_ids_for(mask: pd.Series) -> Optional[list]:
+        if soc_ids is None:
+            return None
+        return [str(s) for s in soc_ids[mask]]
+
+    top_families_out = []
+    for fam, n in top_counts.items():
+        mask = family_ids == fam
+        entry = {"family_id": str(fam), "n": int(n), "share": float(n) / n_total if n_total else 0.0}
+        ids = _soc_ids_for(mask)
+        if ids is not None:
+            entry["soc_ids"] = ids
+        top_families_out.append(entry)
+
+    other_mask = family_ids.isin(other_families)
+    n_other = int(other_mask.sum())
+    other_entry = {"n": n_other, "share": float(n_other) / n_total if n_total else 0.0}
+    ids = _soc_ids_for(other_mask)
+    if ids is not None:
+        other_entry["soc_ids"] = ids
+
+    unresolved_mask = family_ids.isna()
+    n_unresolved = int(unresolved_mask.sum())
+    unresolved_entry = {"n": n_unresolved}
+    ids = _soc_ids_for(unresolved_mask)
+    if ids is not None:
+        unresolved_entry["soc_ids"] = ids
+
     return {
         "n_total": n_total,
-        "n_unresolved": int(n_total - len(resolved)),
-        "top_families": [
-            {"family_id": str(fam), "n": int(n), "share": float(n) / n_total if n_total else 0.0}
-            for fam, n in counts.items()
-        ],
+        "n_unresolved": n_unresolved,
+        "top_families": top_families_out,
+        "other": other_entry,
+        "unresolved": unresolved_entry,
+    }
+
+
+# ---------------------------------------------------------------------------
+# WO4 meter-bar redesign (2026-07-30): variable_percentiles() replaces the lens-level
+# cohesion/displacement scan as this page's actual shipped content. Karl's review of the four-lens
+# scan (water/thermal/overall/terrain, each a resampled percentile) found it fundamentally
+# unreadable to a general audience: "tighter than X% of random draws" is language that "cannot
+# appear on a GUI page EVER" -- and two of the four lenses (thermal, terrain) bundle two different
+# physical variables into one number, so even a plain-language gloss couldn't give a single
+# variable + direction. `scan()`'s lens machinery above is untouched and still reproduces WO8d's
+# numbers exactly -- kept for TRACE, not deleted, same "second consumer validates extraction"
+# discipline as everything else in this module.
+#
+# The replacement is deliberately simpler: a single deterministic percentile of the group's mean
+# against the whole backdrop's own distribution, per RAW variable (not per lens) -- no resampling,
+# no null distribution, no statistics-speak. "68th percentile of the global aridity range" has an
+# honest answer to "percent of what?" that "68% tighter than random draws" does not.
+# ---------------------------------------------------------------------------
+
+VARIABLES: Dict[str, Dict[str, str]] = {
+    "aridity":     {"column": "ari_log", "pole_low": "Arid", "pole_high": "Wet"},
+    "temperature": {"column": "temperature_annual", "pole_low": "Cool", "pole_high": "Warm"},
+    "seasonality": {"column": "tmp_seas_amp", "pole_low": "Stable", "pole_high": "Seasonal"},
+    "ruggedness":  {"column": "relief_range_m", "pole_low": "Flat", "pole_high": "Rugged"},
+    "landform":    {"column": "landform_position", "pole_low": "Valley floor", "pole_high": "Ridge/peak"},
+}
+
+
+def _qualifier(pct: float) -> str:
+    """Bucket a 0-100 percentile into a plain-language qualifier -- Karl's own vocabulary
+    (2026-07-30: "very, not very, average"), not a number, ever, in the GUI. Symmetric around 50;
+    'typical' covers the middle third-ish, 'somewhat' the next band out, 'very' the extremes."""
+    dist = abs(pct - 50)
+    if dist >= 35:
+        return "very"
+    if dist >= 15:
+        return "somewhat"
+    return "typical"
+
+
+def variable_percentiles(sub: pd.DataFrame, trait_col: str, value: str,
+                          variables: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, object]:
+    """`(trait_col, value)` -> per-variable percentile of the group's mean against the whole
+    backdrop -- the meter-bar display's actual content. Deterministic, no resampling: this is a
+    single percentile-of-a-mean, not a comparison against a null distribution (`scan()` above does
+    that, deliberately not what this display uses -- see module docstring above).
+
+    Rows where `trait_col` is null are excluded from the filtered set, never imputed (standing
+    rule). A variable with no complete-case overlap between the group and the backdrop for that
+    column reports `n_focus: 0` rather than raising.
+    """
+    variables = variables or VARIABLES
+    sub = sub.copy()
+    if "ari_log" not in sub.columns and "ari_ix_sav" in sub.columns:
+        sub["ari_log"] = np.log1p(sub["ari_ix_sav"])   # matches scan()'s derivation, WO8d Cell 3
+
+    is_focus = sub[trait_col].notna() & (sub[trait_col] == value)
+    n_focus_input = int(is_focus.sum())
+
+    rows: Dict[str, Dict[str, object]] = {}
+    for key, cfg in variables.items():
+        col = cfg["column"]
+        backdrop_vals = sub[col].dropna()
+        grp_vals = sub.loc[is_focus, col].dropna()
+        if len(grp_vals) == 0 or len(backdrop_vals) == 0:
+            rows[key] = {"n_focus": 0, "note": "no complete-case data"}
+            continue
+        grp_mean = float(grp_vals.mean())
+        pct = float((backdrop_vals <= grp_mean).mean() * 100)
+        rows[key] = {
+            "n_focus": int(len(grp_vals)),
+            "n_backdrop": int(len(backdrop_vals)),
+            "group_mean": grp_mean,
+            "percentile": pct,
+            "pole_low": cfg["pole_low"],
+            "pole_high": cfg["pole_high"],
+            "direction": cfg["pole_high"] if pct >= 50 else cfg["pole_low"],
+            "qualifier": _qualifier(pct),
+        }
+
+    return {
+        "trait_col": trait_col,
+        "value": value,
+        "n_focus_input": n_focus_input,
+        "variables": rows,
     }
 
 

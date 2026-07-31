@@ -7,6 +7,7 @@ from scripts.cdop.distance_core import (
     LENSES, backdrop_z, pairwise_distance, cohesion,
     random_draw_cohesions, family_restricted_draw_cohesions, percentile_rank,
     displacement, random_draw_stats, displacement_percentile_rank, top_families, scan,
+    VARIABLES, variable_percentiles,
 )
 
 
@@ -205,6 +206,36 @@ def test_top_families_fewer_than_top_n():
     assert len(out["top_families"]) == 2   # only 2 distinct families exist; no padding
 
 
+def test_top_families_other_bucket_pools_the_remainder():
+    # 24 total: top-3 by count are a(6)/b(5)/c(4) = 15; the other 3 distinct families (d,e,f,
+    # 1 each) should pool into "other" = 3, not vanish or get silently folded into the top-3.
+    ids = pd.Series(["a"] * 6 + ["b"] * 5 + ["c"] * 4 + ["d", "e", "f"] + [None] * 6)
+    out = top_families(ids, top_n=3)
+    assert out["n_total"] == 24
+    assert out["n_unresolved"] == 6
+    assert [f["family_id"] for f in out["top_families"]] == ["a", "b", "c"]
+    assert out["other"]["n"] == 3
+    assert out["other"]["share"] == pytest.approx(3 / 24)
+
+
+def test_top_families_soc_ids_included_when_requested():
+    ids = pd.Series(["a", "a", "b", None])
+    socs = pd.Series(["S1", "S2", "S3", "S4"])
+    out = top_families(ids, top_n=3, soc_ids=socs)
+    fam_a = next(f for f in out["top_families"] if f["family_id"] == "a")
+    assert sorted(fam_a["soc_ids"]) == ["S1", "S2"]
+    assert out["unresolved"]["soc_ids"] == ["S4"]
+    assert out["other"]["soc_ids"] == []
+
+
+def test_top_families_soc_ids_omitted_when_not_requested():
+    ids = pd.Series(["a", "a", "b"])
+    out = top_families(ids, top_n=3)
+    assert "soc_ids" not in out["top_families"][0]
+    assert "soc_ids" not in out["other"]
+    assert "soc_ids" not in out["unresolved"]
+
+
 def _synthetic_substrate(rng, n=400):
     df = pd.DataFrame({
         "soc_id": [f"S{i}" for i in range(n)],
@@ -295,3 +326,69 @@ def test_scan_detects_planted_tight_displaced_group():
     thermal = out["lenses"]["thermal"]
     assert thermal["pct_tighter_than_random"] > 95
     assert thermal["displacement_pct_rank"] > 95
+
+
+# ---------------------------------------------------------------------------
+# variable_percentiles() -- the WO4 meter-bar replacement for the lens scan
+# ---------------------------------------------------------------------------
+
+def test_variable_percentiles_shape_and_keys():
+    rng = np.random.default_rng(30)
+    df = _synthetic_substrate(rng)
+    out = variable_percentiles(df, trait_col="trait", value="X")
+    assert out["n_focus_input"] == int((df["trait"] == "X").sum())
+    assert set(out["variables"].keys()) == set(VARIABLES.keys())
+    for key, res in out["variables"].items():
+        assert res["n_focus"] > 0
+        assert 0 <= res["percentile"] <= 100
+        assert res["direction"] in (res["pole_low"], res["pole_high"])
+        assert res["qualifier"] in ("typical", "somewhat", "very")
+
+
+def test_variable_percentiles_derives_ari_log_when_missing():
+    rng = np.random.default_rng(31)
+    df = _synthetic_substrate(rng)
+    assert "ari_log" not in df.columns
+    out = variable_percentiles(df, trait_col="trait", value="X")
+    assert out["variables"]["aridity"]["n_focus"] > 0
+
+
+def test_variable_percentiles_direction_and_qualifier_on_planted_extreme():
+    # A group planted at the very top of the temperature range should read "very" + "Warm",
+    # not just "somewhat" -- checks the qualifier bucketing and pole direction together rather
+    # than each in isolation with hand-picked percentiles.
+    rng = np.random.default_rng(32)
+    df = _synthetic_substrate(rng, n=500)
+    planted = df.sample(n=20, random_state=2).index
+    df.loc[planted, "trait"] = "HOT"
+    df.loc[planted, "temperature_annual"] = 200.0   # far past the backdrop's own range
+
+    out = variable_percentiles(df, trait_col="trait", value="HOT")
+    temp = out["variables"]["temperature"]
+    assert temp["percentile"] > 95
+    assert temp["direction"] == "Warm"
+    assert temp["qualifier"] == "very"
+
+
+def test_variable_percentiles_typical_group_reads_typical():
+    # A group that's just a random subset of the backdrop (no plant) should land close to the
+    # 50th percentile and read "typical" on every variable -- the Otiose-shaped case.
+    rng = np.random.default_rng(33)
+    df = _synthetic_substrate(rng, n=2000)
+    df["trait"] = "Y"
+    subset_idx = df.sample(n=400, random_state=3).index
+    df.loc[subset_idx, "trait"] = "TYPICAL_SAMPLE"
+
+    out = variable_percentiles(df, trait_col="trait", value="TYPICAL_SAMPLE")
+    for key, res in out["variables"].items():
+        assert 35 <= res["percentile"] <= 65, f"{key} landed at {res['percentile']}, not typical"
+        assert res["qualifier"] == "typical"
+
+
+def test_variable_percentiles_missing_column_data_reports_zero_not_error():
+    rng = np.random.default_rng(34)
+    df = _synthetic_substrate(rng)
+    df["landform_position"] = np.nan   # whole column missing -- no complete-case overlap at all
+    out = variable_percentiles(df, trait_col="trait", value="X")
+    assert out["variables"]["landform"]["n_focus"] == 0
+    assert out["variables"]["aridity"]["n_focus"] > 0   # unaffected variables still compute

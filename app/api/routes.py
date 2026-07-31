@@ -2690,14 +2690,17 @@ def societies():
 
 @router.get("/societies/env-scan")
 def societies_env_scan(trait: str, value: str):
-    """CITYKIN WO4 Step 2 -- replaces the legacy PCA 'Basin clusters' option. `(trait, value)` ->
-    per-lens cohesion + displacement against a random-draw baseline, a top-3 language-family
-    composition note, and the trait's hook metadata (whether EA042/EA034 has a named theoretical
-    environmental correlate, per `docs/cdop/citykin/wo4_whc-grouping.md`).
+    """CITYKIN WO4 -- replaces the legacy PCA 'Basin clusters' option. `(trait, value)` -> a
+    composition note (top-3 language families by name, plus soc_id lists per bucket for the
+    donut's map-hover linking) and the trait's hook metadata, plus either the confirmatory
+    scatter (subsistence, EA042 -- has a named theoretical correlate) or per-variable meter-bar
+    percentiles (religion, EA034 -- no hook; see `docs/cdop/citykin/wo4_whc-grouping.md`).
 
     trait: 'subsistence' (EA042) or 'religion' (EA034) -- the tab's two wired traits, not a raw
-    D-PLACE variable code. No family-restricted resampling in this payload (Karl + Opus,
-    2026-07-30 -- that's a TRACE-phase analytical question, not this descriptive screen's job).
+    D-PLACE variable code. No percentile/resampling language anywhere in this payload's own
+    vocabulary (Karl's standing rule, 2026-07-30: that reads as a statistical claim on a GUI page,
+    never acceptable) and no family-restricted resampling (Karl + Opus, same date -- that's a
+    TRACE-phase analytical question, not this descriptive screen's job).
     """
     try:
         return run_societies_env_scan(trait, value)

@@ -115,9 +115,17 @@ Provisos:
 temperature, against the backdrop. The axes come from the trait's declared hook, not from a global
 constant.
 
-**Scan (EA034).** One row per lens — `water`, `thermal`, `overall`, `terrain` — each showing the
-group's displacement and cohesion against their baseline distributions. A small-multiple dot or bar
-layout; the visualization is straightforward once the numbers exist.
+**Scan (EA034) — SUPERSEDED, 2026-07-30, see `wo4_findings.md` § "Step 3, redesigned: meter bars +
+donut" for the full reasoning and the actual shipped design.** ~~One row per lens — `water`,
+`thermal`, `overall`, `terrain` — each showing the group's displacement and cohesion against their
+baseline distributions. A small-multiple dot or bar layout; the visualization is straightforward once
+the numbers exist.~~ Karl's browser review found this unnarratable (two of the four lenses bundle two
+physical variables into one number, so no plain-language gloss could give a single direction) and its
+"tighter than X% of random draws" language impossible on a GUI page. Replaced by five meter bars, one
+per raw physical variable (aridity, temperature, seasonality, ruggedness, landform), each a
+deterministic percentile-of-global-range with plain-word poles and a qualifier (typical/somewhat/very)
+— no resampling, no cohesion. The composition note (both displays) is now a donut with hover-to-map
+linking, not a bullet list.
 
 Provisos:
 
@@ -180,14 +188,20 @@ Provisos:
 
 ## Accept gate
 
-**The engine takes `(trait, value)` and returns cohesion and displacement per lens with percentiles
-against the random-draw baseline, plus a top-3 language-family composition note; WO8d's EA034 numbers
-reproduce; EA042 lights up on `water`/`thermal` on both statistics in the calibration run; EA042 renders
-its confirmatory scatter and EA034 its four-lens scan; and the legacy PCA "Basin clusters" option is
-removed rather than left hidden.**
+**SUPERSEDED, 2026-07-30 — the gate below described the lens-based scan; see `wo4_findings.md` for
+the actual shipped gate (meter bars, no cohesion, donut composition).** ~~The engine takes `(trait,
+value)` and returns cohesion and displacement per lens with percentiles against the random-draw
+baseline, plus a top-3 language-family composition note; WO8d's EA034 numbers reproduce; EA042 lights
+up on `water`/`thermal` on both statistics in the calibration run; EA042 renders its confirmatory
+scatter and EA034 its four-lens scan; and the legacy PCA "Basin clusters" option is removed rather than
+left hidden.~~ **Actual gate, met:** the engine returns a per-variable percentile-of-global-range (no
+resampling) for the five raw variables, plus a composition note with family names and per-bucket
+`soc_ids`; WO8d's Step 1 reproduction numbers still stand (unaffected — a separate code path); EA042
+renders its confirmatory scatter, EA034 its five-variable meter scan, both with a donut composition
+(hover-linked to the map); and the legacy PCA "Basin clusters" option is removed, not hidden.
 
-Step 4 is not in the gate. If time runs short it is the cut, and Steps 1–3 stand as a complete
-deliverable.
+Step 4 (map linkage) turned out not to be a separate step — the donut's hover-to-map linking absorbed
+it, built alongside Step 3 rather than after. Both are done.
 
 ## Validation order
 

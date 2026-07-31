@@ -118,3 +118,129 @@ unknown-trait 400, unmatched-value zero-focus). Full app suite: 416 passed / 14 
 (`--ignore=tests/engine`), up from 411 pre-WO4 Step 2 baseline.
 
 ## Step 2 status: built and tested, ready for payload review before Step 3
+
+## Step 3, redesigned: meter bars + donut (2026-07-30, supersedes the four-lens-scan build)
+
+Karl's browser review of the confirmatory scatter and the original four-lens scan (built per
+`wo4_whc-grouping.md`'s Step 3 as originally written) found two real problems, not style nits:
+
+1. **The lens-level scan was structurally unnarratable.** `water`/`thermal`/`overall`/`terrain` are
+   groupings built for the engine's resampling statistics, not units of narration — `thermal` bundles
+   mean temperature and seasonal swing into one number, `terrain` bundles ruggedness and landform
+   position into another, so even a plain-language gloss of a single lens value couldn't give one
+   physical direction ("Terrain: 86% cohesion, 68% displacement" has no answerable "68% of what?").
+2. **"Tighter than X% of random draws" is language that cannot appear on a GUI page, ever** — Karl's
+   words, verbatim. That's article/treatise language, not interface copy, regardless of how the number
+   was produced.
+
+Working through this live (not delegated back to Opus — Karl walked the reasoning himself, this doc
+records the destination): cohesion doesn't survive on this page in any form (no non-statistical
+restatement of "how tightly clustered" exists — it only means something relative to a comparison, which
+is exactly the resampling language just ruled out). Displacement survives, but reframed as **a single
+deterministic percentile of the group's mean against that variable's own global distribution** — no
+resampling, no null distribution — because "68th percentile of the global aridity range" has an honest,
+answerable response to "percent of what?" that "68% tighter than random draws" does not. And the unit of
+narration moves from the 4 statistical lenses to **5 raw physical variables**: aridity, temperature,
+seasonality, ruggedness, landform position — each with plain-word poles (Arid↔Wet, Cool↔Warm,
+Stable↔Seasonal, Flat↔Rugged, Valley floor↔Ridge/peak) and a qualifier bucketed from the percentile
+(typical / somewhat / very — Karl's own vocabulary, never a bare number in a label).
+
+Mocked as an Artifact first (two example groups, real computed numbers, 3-row vs. 5-row density
+comparison) before any code changed — Karl picked 5 rows. A second mockup iteration added the
+composition donut + hover-to-map-marker linking concept, which Karl also approved, with two fixes
+(the "Other" bucket's color was too faint; legend order should be named-families-by-rank then Other
+then Unresolved, regardless of Other's raw count) folded into the real build below.
+
+### Engine additions
+
+- **`variable_percentiles(sub, trait_col, value)`** (`distance_core.py`) — the new shipped statistic.
+  Per variable: group mean, percentile of that mean against the whole backdrop, `pole_low`/`pole_high`,
+  `direction` (which pole), `qualifier` (`typical`/`somewhat`/`very`, thresholds at ±15/±35 from the
+  50th percentile). Derives `ari_log` from `ari_ix_sav` if missing, matching `scan()`'s own convention.
+  `scan()` and the 4-lens machinery are **untouched, not deleted** — same "second consumer validates
+  extraction" discipline as everything else in this module; kept for TRACE.
+- **`top_families()` extended**: now returns an `other` bucket (resolved families beyond the top-3,
+  pooled — previously invisible, `n_total - top_families - n_unresolved` had to be inferred) and,
+  when a `soc_ids` parameter is passed, a `soc_ids` list on every bucket (top families, other,
+  unresolved) — needed for the donut's hover-to-map linking, which the count-only version couldn't
+  support. Backward compatible: omitted (not empty) when `soc_ids` isn't passed.
+- **`scripts/cdop/glottolog_family_names.py`** (new) — glottocode → family name for the 79 codes
+  actually present in the substrate, fetched fresh from Glottolog's own `languages.csv`
+  (glottolog-cldf) and checked against all 79, not guessed. Caught a real correction: `nilo1247` is
+  **Nilotic**, not "Nilo-Saharan" as WO8d's own prose called it in a couple of places — Glottolog
+  deliberately doesn't recognize Nilo-Saharan as a valid genealogical unit (a disputed macro-family
+  hypothesis). WO8d's frozen historical docs are untouched; this and all future user-facing display
+  use the Glottolog-correct name.
+
+### API changes (`app/db/societies_scan.py`)
+
+`run_societies_env_scan()` **no longer calls `scan()` at all** — a real performance win as well as a
+display change, since the 2000-draw resampling loop across 4 lenses was computing output nothing used
+once the redesign landed. Payload now: `composition` (family names + `soc_ids` per bucket, always
+present) + `hook` metadata, plus **either** `scatter` (hook traits — unchanged from Step 2) **or**
+`variables` (no-hook traits — the new meter content), never both.
+
+### Frontend (`cdop_pilot.html`)
+
+- `wo4EnvScanMeters()` replaces `wo4FourLensScan()` — 5 plain HTML meter rows (not SVG; simpler given
+  CSS can do the percentage-width fill directly), pole labels either side, qualifier text, percentage
+  shown (Karl's approved mockup showed the raw percentage directly — the "never on GUI" rule was about
+  resampling language specifically, not the honestly-interpretable percentile itself).
+- `wo4CompositionDonut()` replaces `wo4CompositionNote()` — an SVG donut (total n in the center hole)
+  + legend, three named-family slots in the dataviz skill's validated categorical slots 1/2/3
+  (blue/orange/aqua — documented as passing the all-pairs CVD check together), "Other"/"Unresolved" in
+  neutral grays, ordered named-first-then-residual regardless of raw count.
+- **Map hover-linking, wired for real** (not just the mockup): `displaySocieties()` now builds
+  `socMarkerIndex` (`soc_id` → Leaflet marker) and snapshots each marker's base style (`_wo4Base`) at
+  creation time, since restore-on-mouseleave needs the *actual* per-marker style (trait color +
+  match-driven opacity), not a hardcoded default. `wo4HighlightMarkers()`/`wo4RestoreMarkers()` do the
+  boost/dim/restore; wired to both the donut wedges and the legend rows.
+- Legacy `WO4_LENS_ORDER`/`WO4_LENS_LABELS` constants and the old `wo4FourLensScan`/
+  `wo4CompositionNote` functions are deleted, not left dead — same "removed, not hidden" standard
+  already applied to the PCA "Basin clusters" option this whole WO replaces.
+
+### Verified
+
+End-to-end against the real substrate: Pastoralism (subsistence) → aridity 7.5th percentile ("very
+Arid"), matching the WO8a "warm-dry pastoralists" case exactly. Otiose (religion) → all five variables
+land 39th–67th percentile ("typical"/"somewhat"), confirming the earlier finding that Otiose's
+loud lens-level numbers (95–100%) were a lens-resampling artifact, not a real single-variable signal —
+the meter-bar redesign is not just clearer, it reports something more honest for that case. Composition:
+family names resolve correctly (`afro1255` → "Afro-Asiatic", `nilo1247` → "Nilotic"), `other`/
+`unresolved` buckets carry real `soc_ids` lists matching their counts exactly.
+
+Tests: `tests/cdop/test_distance_core.py` (29 green: +3 `top_families` other/soc_ids cases, +5
+`variable_percentiles` cases), `tests/test_societies_scan.py` (7 green, updated for the new payload
+shape + a new composition/soc_ids/names test). Full app suite: **426 passed / 14 skipped / 0 fail**
+(`--ignore=tests/engine`).
+
+## Step 3 addendum: the confirmatory scatter gets a caption + cross-view hover (2026-07-30)
+
+Karl's first browser pass approved the meter/donut redesign and separately flagged the confirmatory
+scatter as the one element still just a raw dot cloud — worse, "Fishing" exposed a real problem, not a
+style nit: fishing societies scatter across nearly the *entire* aridity and temperature range (arctic to
+tropical, arid to wet), because fishing's actual constraint is proximity to a permanent water body — a
+coastality/hydrology fact neither plotted axis can see. WO8a validated Climate envelope as the cleanest
+*overall* subsistence separator; that doesn't mean every individual value shows a clean signal on it.
+Worth naming for later — it's the same gap CITYKIN's already-named "coastality lens" wishlist item
+points at (`docs/design/deferred_items_register.md` § CDOP — CITYKIN) — not solved here.
+
+Two additions, both direct reuses of infrastructure already built, not new concepts:
+
+1. **A plain-language caption above the scatter**, reusing `variable_percentiles()` restricted to just
+   the two plotted variables (aridity, temperature) — the same engine call the meter display uses,
+   same qualifier vocabulary. Real finding surfaced by this: Fishing's dispersed cloud reads as
+   "somewhat Wet, very Cool" — a real signal (the mean pulls toward cold-water fishing societies) that
+   the scatter's overplotted dispersion obscures on its own. The caption doesn't just handle the
+   "nothing here" case gracefully, it surfaces signal the raw dots hide.
+2. **Cross-view hover**: the donut/legend's hover-highlight (built for the map) now also highlights the
+   scatter's focus dots when that display is showing, and dims the rest — Karl's own suggestion.
+   `wo4HighlightMarkers()`/`wo4RestoreMarkers()` generalized to iterate both `socMarkerIndex` (Leaflet
+   markers) and `socScatterIndex` (SVG circles) via a type-tagged (`_wo4Type`) apply function, since
+   Leaflet restyles via `.setStyle()` and raw SVG via `.setAttribute()` — same snapshot-and-restore
+   discipline as the map (`_wo4Base`), not a hand-computed default.
+
+Tests: +1 (`test_scatter_has_plain_language_summary`, pinned to Fishing's real numbers). Full suite:
+**427 passed / 14 skipped / 0 fail**.
+
+## Step 3 status: built, not yet Karl-reviewed live in the browser

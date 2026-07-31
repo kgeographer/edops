@@ -47,7 +47,7 @@ Research framing: `docs/edop/project_summary_20260606.md`
 | Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
 | Demo | complete 2026-07-18 | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
 | CDOP1 — pilot | complete 2026-07-27 | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
-| **CDOP2 — CITYKIN** | **active** | WH Cities retrieval head (raw-curve distance + point-window terrain lens) and a 4th sandbox Similarity-panel lens, basin-scale Terrain regime; see `CITYKIN_tracker.md` |
+| **CDOP2 — CITYKIN** | **active** | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); see `CITYKIN_tracker.md` |
 | 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
@@ -60,19 +60,27 @@ their own WO-child branches, merged back on accept.
 
 - **Goto:** `docs/cdop/citykin/CITYKIN_tracker.md` — authoritative state, roadmap, locked decisions
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** WO1/WO1a/WO2a/WO2b/WO3 all complete as of 2026-07-29. The WH Cities retrieval head
-  has a validated raw-curve distance and a query-relative point-window terrain lens
-  (`GET /api/whc-similar-terrain`), live on `cdop_pilot.html`. The sandbox Similarity panel
-  (`sandbox_v3.html`) gained a 4th lens, basin-scale **Terrain regime** (`ele_mt_sav` + `relief_range`,
-  a non-compensatory tolerance-band conjunction in `app/db/seasonality.py`), Karl-reviewed live in the
-  browser. Full detail, every locked decision, and day-by-day narrative:
-  `docs/cdop/citykin/CITYKIN_tracker.md`, `logs/session_log_20260728.md`, `logs/session_log_20260729.md`.
-- **Next:** wire the remaining WH Cities retrieval lenses (precip regime, temp regime, aridity) to the
-  same ranked-retrieval UI, then delete the old `/api/whc-similar-env-lens` path (WO1 Part A's
-  long-deferred half). L08 terrain knobs and a residual-facet design idea are named, not started.
-- **Tests:** 480 pass, 14 skipped, 0 fail confirmed clean on `cdop_citykin` at phase open (2026-07-27);
-  targeted tests on every module touched since have stayed green (`tests/test_conjunction.py` + 2
-  adjacent files, 25/25, 2026-07-29). Full suite not rerun this phase — run before any merge gate.
+- **Current step:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete as of 2026-07-30. The WH Cities retrieval
+  head has a validated raw-curve distance, a query-relative point-window terrain lens
+  (`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on
+  `cdop_pilot.html`. The sandbox Similarity panel (`sandbox_v3.html`) has a 4th lens, basin-scale
+  **Terrain regime** (`ele_mt_sav` + `relief_range`, a non-compensatory tolerance-band conjunction in
+  `app/db/seasonality.py`). **WO4** replaced the Societies tab's legacy PCA "Basin clusters" option
+  (`#panel-soc`, `cdop_pilot.html`) with a confirmatory Climate envelope scatter (EA042/subsistence) and
+  a five-variable meter scan (EA034/religion — `variable_percentiles()`, a deterministic
+  percentile-of-global-range statistic; the original four-lens/resampling design was rebuilt after
+  Karl's browser review found "tighter than X% of random draws" unusable as GUI language), both with a
+  composition donut (Glottolog-resolved family names) hover-linked to the map and the scatter. All
+  Karl-reviewed live in the browser. Full detail, every locked decision, day-by-day narrative:
+  `docs/cdop/citykin/CITYKIN_tracker.md`, `docs/cdop/citykin/wo4_findings.md`,
+  `logs/session_log_20260728.md` through `logs/session_log_20260730.md`.
+- **Next:** undecided. WH Cities retrieval and the Societies-tab replacement are both complete; CITYKIN
+  has no committed next work order. L08 terrain knobs, a residual-facet design idea (WO2), and Tier-2/3
+  terrain fidelity upgrades remain named, not started. Whether the old `/api/whc-similar-env-lens` path
+  was actually deleted alongside the lens wiring is unconfirmed — worth checking before assuming it's
+  gone.
+- **Tests:** 427 passed / 14 skipped / 0 fail, full suite, confirmed clean on `citykin_wo4` (cut from
+  `cdop_citykin`) as of WO4 close, 2026-07-30.
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **CDOP Pilot (WO1–WO8d) is closed, frozen reference:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`. Headline
@@ -375,6 +383,8 @@ Standing cross-phase notes:
   file.
 - **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a, wired into
   `cdop_pilot.html`); `/api/whc-similar-env-lens` is deprecated-pending-deletion, not dead — see
-  `CITYKIN_tracker.md`.
+  `CITYKIN_tracker.md`. The precip/temp regime lenses that were supposed to trigger its deletion are now
+  confirmed live too (2026-07-30) — whether the old path was actually removed alongside them is
+  unconfirmed, worth a direct check before assuming either way.
 - **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
