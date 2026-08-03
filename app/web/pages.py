@@ -31,13 +31,15 @@ def edop_redirect():
     return RedirectResponse(url="/edops", status_code=301)
 
 @router.get("/sandbox")
-def sandbox_redirect():
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/sandbox/lookup", status_code=301)
+def sandbox(request: Request):
+    return _render(request, "sandbox_v3.html")
 
 @router.get("/sandbox/lookup")
-def sandbox_lookup(request: Request):
-    return _render(request, "sandbox.html")
+def sandbox_lookup_redirect():
+    # Old sandbox.html is abandoned (Karl, 2026-08-03) -- no route renders it anymore. File stays
+    # in the repo, harmless, just never called. Old bookmarks/links land on the new canonical /sandbox.
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/sandbox", status_code=301)
 
 @router.get("/sandbox/explorer")
 def sandbox_explorer(request: Request):
@@ -63,3 +65,16 @@ def cdop_pilot(request: Request):
 @router.get("/sandbox/lookup3")
 def sandbox_v3(request: Request):
     return _render(request, "sandbox_v3.html")
+
+
+# --- Computing Place reorg (2026-08-03): new canonical URLs under edops.computingplace.org.
+# /sandbox and /sandbox/lookup above are already repointed (old sandbox.html abandoned); these two
+# are purely additive -- /sandbox/explorer and /cdop stay exactly as they are, untouched.
+
+@router.get("/explorer")
+def explorer(request: Request):
+    return _render(request, "explorer.html")
+
+@router.get("/cdop_tests")
+def cdop_tests(request: Request):
+    return _render(request, "cdop_pilot.html")
