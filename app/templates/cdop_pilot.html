@@ -1,5 +1,15 @@
 {% extends "base.html" %}
 
+{% block header %}
+{% set page_title = "EDOPS <> CDOP workbench" %}
+{% set active_page = "cdop" %}
+{% include "_edops_header.html" %}
+{% endblock %}
+
+{% block modals %}
+{% include "_edops_modals.html" %}
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="row g-3">
@@ -1218,10 +1228,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    // base.html's shared site-title defaults to "Computing Place Workbench" (this page was cloned
-    // from workbench.html); override it here rather than in the shared template, which every page uses.
-    const siteTitleEl = document.getElementById('site-title');
-    if (siteTitleEl) siteTitleEl.textContent = 'Computing Place CDOP Pilot';
+    // Title is now static via the shared _edops_header.html partial (2026-08-03 reorg) --
+    // no more #site-title element to override here.
 
     function setMapTitle(text) {
       const el = document.getElementById('map-title');

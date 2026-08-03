@@ -165,21 +165,10 @@
 </head>
 <body>
 
-<header class="mb-2">
-  <h4 class="d-flex align-items-center justify-content-between py-2 border-bottom">
-    <span>
-      <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height:48px;" class="me-2"></a>
-      <a href="/edops" class="text-decoration-none text-reset">EDOPS</a>
-      <span class="me-1">Sandbox:</span>
-      <a href="/sandbox" class="text-decoration-none me-1">Lookup</a>
-      <span class="text-muted me-1">|</span>
-      <strong>Explorer</strong>
-    </span>
-    <span class="d-flex align-items-center gap-3">
-      <span class="badge bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">EDOPS v0.3</span>
-    </span>
-  </h4>
-</header>
+{% set page_title = "EDOPS Explorer v0.4" %}
+{% set active_page = "explorer" %}
+{% include "_edops_header.html" %}
+{% include "_edops_modals.html" %}
 
 <div class="container-fluid px-3">
   <div class="row g-3">

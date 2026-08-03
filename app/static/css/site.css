@@ -116,3 +116,17 @@ pre {
   cursor: default;
   border-color: #ddd;
 }
+
+/* Shared EDOPS header (2026-08-03 reorg) -- the 3-page nav-pills. Scoped to .edops-page-pills
+   (not a bare .nav-pills override) so it reliably beats Bootstrap's own same-specificity rule
+   regardless of <link> load order, and doesn't affect workbench.html's unrelated nav-pills.
+   Pale grey inactive state makes the three read as a single nav widget, not plain text links;
+   active uses the site's own accent green (matching .cp-tile-active), not Bootstrap's blue. */
+.edops-page-pills .nav-link {
+  background-color: #e9ecef;
+  color: #495057;
+}
+.edops-page-pills .nav-link.active {
+  background-color: #4a7c59;
+  color: #fff;
+}
