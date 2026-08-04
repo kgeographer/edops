@@ -5,7 +5,8 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- `docs/cdop/citykin/CITYKIN_tracker.md` — authoritative current state, roadmap, locked decisions ← active
+- **v0.4 docs** — active phase, no tracker yet; goto `logs/session_log_YYYYMMDD.md` for latest state
+- `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
 - `docs/cdop/pilot/CDOP_PILOT_tracker.md` — frozen reference (CDOP Pilot closed 2026-07-27)
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
@@ -47,46 +48,60 @@ Research framing: `docs/edop/project_summary_20260606.md`
 | Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
 | Demo | complete 2026-07-18 | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
 | CDOP1 — pilot | complete 2026-07-27 | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
-| **CDOP2 — CITYKIN** | **active** | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); see `CITYKIN_tracker.md` |
+| CDOP2 — CITYKIN | complete 2026-07-30 | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
+| Reorg (housekeeping) | complete 2026-08-03 | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
+| **v0.4 docs** | **active** | Site documentation/legibility pass ahead of v0.4 replacing v0.3 in production; no tracker yet |
 | 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**CITYKIN is the active track.** `cdop` sits off `main` (unpushed; holds all CDOP Pilot WO1–WO8d
-history); phase-trunk branches cut from `cdop` (`cdop_citykin` now, later e.g. `cdop_trace`), each with
-their own WO-child branches, merged back on accept.
+**v0.4 docs is the active track.** v0.4 (CDOP2/CITYKIN's product work plus the 2026-08-03 reorg) is
+feature-complete. What remains before it replaces v0.3 in production is a documentation/legibility
+pass — the site is about to get wider visibility as a public-facing WIP. No tracker exists yet for
+this phase; goto the latest `logs/session_log_YYYYMMDD.md` until one is set up.
 
-- **Goto:** `docs/cdop/citykin/CITYKIN_tracker.md` — authoritative state, roadmap, locked decisions
+**Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real coding
+work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now closed),
+with WO-child branches under each, merged back to the trunk on accept. Cross-cutting housekeeping that
+isn't component-specific coding — like the 2026-08-03 site/routing reorg — is instead cut directly off
+`main` (the `reorg` branch) and merged straight back to `main`, bypassing `cdop`/`edop` entirely.
+
+**State as of 2026-08-03 (local `main` only — production is still running pre-merge v0.3 code, nothing
+deployed yet):** `cdop_citykin` → `cdop` → `main` was fast-forward merged for the first time, bringing
+all of CDOP onto `main`. `reorg` (new canonical routes `/sandbox`, `/explorer`, `/cdop_tests`; unified
+EDOPS header across sandbox_v3/explorer/cdop_pilot; `sandbox.html` fully de-routed) was pushed to
+origin and merged to local `main` on top. `main` is 48 commits ahead of `origin/main` but not pushed.
+Full detail: `logs/session_log_20260803.md`.
+
 - **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Current step:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete as of 2026-07-30. The WH Cities retrieval
-  head has a validated raw-curve distance, a query-relative point-window terrain lens
-  (`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on
-  `cdop_pilot.html`. The sandbox Similarity panel (`sandbox_v3.html`) has a 4th lens, basin-scale
-  **Terrain regime** (`ele_mt_sav` + `relief_range`, a non-compensatory tolerance-band conjunction in
-  `app/db/seasonality.py`). **WO4** replaced the Societies tab's legacy PCA "Basin clusters" option
-  (`#panel-soc`, `cdop_pilot.html`) with a confirmatory Climate envelope scatter (EA042/subsistence) and
-  a five-variable meter scan (EA034/religion — `variable_percentiles()`, a deterministic
-  percentile-of-global-range statistic; the original four-lens/resampling design was rebuilt after
-  Karl's browser review found "tighter than X% of random draws" unusable as GUI language), both with a
-  composition donut (Glottolog-resolved family names) hover-linked to the map and the scatter. All
-  Karl-reviewed live in the browser. Full detail, every locked decision, day-by-day narrative:
-  `docs/cdop/citykin/CITYKIN_tracker.md`, `docs/cdop/citykin/wo4_findings.md`,
-  `logs/session_log_20260728.md` through `logs/session_log_20260730.md`.
-- **Next:** undecided. WH Cities retrieval and the Societies-tab replacement are both complete; CITYKIN
-  has no committed next work order. L08 terrain knobs, a residual-facet design idea (WO2), and Tier-2/3
-  terrain fidelity upgrades remain named, not started. Whether the old `/api/whc-similar-env-lens` path
-  was actually deleted alongside the lens wiring is unconfirmed — worth checking before assuming it's
-  gone.
-- **Tests:** 427 passed / 14 skipped / 0 fail, full suite, confirmed clean on `citykin_wo4` (cut from
-  `cdop_citykin`) as of WO4 close, 2026-07-30.
+- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed clean on local `main` 2026-08-03
+  (post reorg + header work).
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
+
+**CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
+WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
+(`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on
+`cdop_pilot.html`. The sandbox Similarity panel (`sandbox_v3.html`) has a 4th lens, basin-scale
+**Terrain regime** (`ele_mt_sav` + `relief_range`, a non-compensatory tolerance-band conjunction in
+`app/db/seasonality.py`). **WO4** replaced the Societies tab's legacy PCA "Basin clusters" option
+(`#panel-soc`, `cdop_pilot.html`) with a confirmatory Climate envelope scatter (EA042/subsistence) and
+a five-variable meter scan (EA034/religion — `variable_percentiles()`, a deterministic
+percentile-of-global-range statistic; the original four-lens/resampling design was rebuilt after
+Karl's browser review found "tighter than X% of random draws" unusable as GUI language), both with a
+composition donut (Glottolog-resolved family names) hover-linked to the map and the scatter. All
+Karl-reviewed live in the browser. Full detail, every locked decision, day-by-day narrative:
+`docs/cdop/citykin/CITYKIN_tracker.md`, `docs/cdop/citykin/wo4_findings.md`,
+`logs/session_log_20260728.md` through `logs/session_log_20260730.md`. Named-not-started ideas left on
+the table: L08 terrain knobs, a residual-facet design idea (WO2), Tier-2/3 terrain fidelity upgrades.
+Whether the old `/api/whc-similar-env-lens` path was actually deleted alongside the lens wiring is
+unconfirmed.
 
 **CDOP Pilot (WO1–WO8d) is closed, frozen reference:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`. Headline
 carried forward — the WO8d environment↔culture correspondence arc's real open question is an unexplained
 singleton residual (~14 EA034 societies) not resolved by lineage, climate, or proximity; not part of
-CITYKIN scope.
+CDOP2/CITYKIN scope.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
@@ -112,7 +127,7 @@ app/
 │   └── signature.py     # Core signature query; loads codebook at startup
 ├── web/pages.py         # Jinja2 page routes
 ├── templates/
-│   ├── sandbox.html     # Lookup page — Phase 1 product
+│   ├── sandbox.html     # Lookup page — Phase 1 product; retired on main, still live in prod pending deploy
 │   ├── explorer.html    # Explorer page — Phase 2 product
 │   ├── cliopatria.html  # Cliopatria polity viewer — eyes-only for ISHI; Phase 4 precursor
 │   └── ...
@@ -148,7 +163,14 @@ metadata/                # gitignored
 
 ## The sandbox pages
 
-### `/sandbox/lookup3` — Demo surface (active)
+**Routing note (local `main`, not yet deployed — see Current work above):** as of the 2026-08-03 reorg,
+`/sandbox` is the new canonical route for `sandbox_v3.html` (old `/sandbox/lookup3` still works too);
+`/explorer` is the new canonical route for `explorer.html` (old `/sandbox/explorer` still works too);
+`/sandbox/lookup` now 301-redirects to `/sandbox`, and `sandbox.html` (old Phase 1 Lookup page,
+described below) is fully retired — no route renders it on `main`. **In production today this hasn't
+happened yet:** `/sandbox/lookup` still serves `sandbox.html` live until this branch is deployed.
+
+### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
 `app/templates/sandbox_v3.html` — Demo phase product; current focus.
 
 Two-tab surface: **Settlements** (WHG place lookup → scope → BasinATLAS/LMR/HYDE choropleth + signature)
@@ -161,8 +183,9 @@ and **Polities** (search → slice slider + VCR → choropleth + signature).
 - 4 placed settlement examples (Timbuktu, Rome, Kaifeng, Santa Fe) + 6 polity examples
 - Line spec reference: `docs/design/demo/sandbox_v3_line_specs.md`
 
-### `/sandbox/lookup` — Lookup
-`app/templates/sandbox.html` — Phase 1 product; primary researcher tool.
+### `/sandbox/lookup` — Lookup (retired on `main`, still live in production)
+`app/templates/sandbox.html` — Phase 1 product; was the primary researcher tool, superseded by
+`sandbox_v3.html`. File remains in the repo, unreferenced by any route once deployed.
 
 WHG place lookup → basin assignment → neighborhood map → Band A–T signature.
 - Level 08/06 toggle; s/u/Δ toggle; Band T temporal charts (PDSI/Temp/Precip + eVolv2k)
@@ -170,9 +193,9 @@ WHG place lookup → basin assignment → neighborhood map → Band A–T signat
 - Ecoregion → Wikipedia modal; LLM narrative button
 - Examples: Timbuktu 1100–1200, Rome 0–300, Kaifeng 1000–1100
 
-Key design doc: `docs/design/scenarios.md` — read before any Lookup UI work.
+Key design doc: `docs/design/scenarios.md` — historical reference for this retired page.
 
-### `/sandbox/explorer` — Explorer
+### `/explorer` (canonical) / `/sandbox/explorer` — Explorer
 `app/templates/explorer.html` — Phase 2 product; visual CHAR exhibit.
 
 MapLibre GL JS choropleth on `basin06.pmtiles` (L6, 16,397 basins). Three tabs:
