@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
+    docs_url="/api/schema",
     title="Environmental Dimensions of Place Service (EDOPS)",
     description="A component of [Computing Place](https://computingplace.org).\n\n[API Guide](https://edops.computingplace.org/static/api_guide.html) · [Variable catalog](https://edops.computingplace.org/documentation/EDOPS_variable_catalog_v0.3.tsv) · [Schema](https://edops.computingplace.org/documentation/edops_schema.json)",
     version="0.3"

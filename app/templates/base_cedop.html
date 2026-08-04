@@ -21,6 +21,7 @@
 </head>
 <body>
 
+{% block header %}
 <header>
   <div class="container d-flex align-items-center justify-content-between" style="max-width: 960px;">
     <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height: 80px;"></a>
@@ -30,6 +31,9 @@
     </span>
   </div>
 </header>
+{% endblock %}
+
+{% block modals %}{% endblock %}
 
 <main>
   {% block content %}{% endblock %}

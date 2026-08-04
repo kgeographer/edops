@@ -1,20 +1,57 @@
 {% extends "base_cedop.html" %}
 
+{% block header %}
+<header>
+  <div class="container d-flex align-items-center justify-content-between" style="max-width: 960px;">
+    <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height: 80px;"></a>
+    <span class="d-flex align-items-center gap-2">
+      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About the project</a>
+      <a href="/docs" class="fs-6 fw-normal text-decoration-none">Docs</a>
+      <span class="badge rounded-pill bg-secondary fw-normal fs-6">research prototype, 2026</span>
+    </span>
+  </div>
+</header>
+{% endblock %}
+
+{% block modals %}
+<!-- About the project modal (2026-08-04, DOCSv4 plumbing): describes the project, not page
+     functionality (that's Docs). Placeholder -- prose content TBD. -->
+<div class="modal fade" id="about-project-modal" tabindex="-1" aria-labelledby="about-project-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 75%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="about-project-modal-label">About the project</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted fst-italic">Placeholder — project description in development.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="container" style="max-width: 960px;">
 
-  <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">EDOPS — Environmental Dimensions of Place Service</h2>
+  <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Environmental Dimensions of Place Service (EDOPS)</h2>
 
-  <p><strong>EDOPS</strong> generates structured environmental signatures for any location on Earth. Signatures are derived from global datasets aggregated at the hydrological sub-basin level — capturing physiography, hydrology, climate, and coastality — with optional historical climate enrichment from paleoclimate reconstructions. EDOPS is the environmental component of the <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.</p>
+  <p class="fs-5">EDOPS generates structured environmental signatures for any location on Earth. Signatures are derived from global datasets aggregated at the hydrological sub-basin level — capturing physiography, hydrology, climate, and coastality — with optional historical climate enrichment from paleoclimate reconstructions. EDOPS is the environmental component of the <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.</p>
 
-  <p>The service is available as a <a href="/sandbox">researcher sandbox</a> and a <a href="/api/signature?lat=16.77&lon=-3.01&bands=ABCDE" target="_blank">REST API</a>. A researcher dashboard is in development.</p>
+<!--  <p>The service is available as a <a href="/sandbox">researcher sandbox</a> and a <a href="/api/signature?lat=16.77&lon=-3.01&bands=ABCDE" target="_blank">REST API</a>. A researcher dashboard is in development.</p>-->
 
   <div class="cp-tiles mt-4">
     <a href="/sandbox" class="cp-tile cp-tile-active" style="height:230px;">
       <img src="/static/images/edops_sandbox_800.jpg" alt="EDOPS Sandbox" style="height:100%;">
     </a>
+    <a href="/explorer" class="cp-tile cp-tile-active" style="height:230px;">
+      <img src="/static/images/edops_explorer_800.jpg" alt="EDOPS Data Explorer" style="height:100%;">
+    </a>
     <a href="/cdop" class="cp-tile cp-tile-active" style="height:230px;">
-      <img src="/static/images/cp03_cdop01.jpg" alt="Cultural Dimensions of Place — CDOP Pilot" style="height:100%;">
+      <img src="/static/images/edops_workbench_800.jpg" alt="EDOPS<>CDOP Workbench" style="height:100%;">
     </a>
   </div>
 

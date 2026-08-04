@@ -25,6 +25,13 @@ def index(request: Request):
 def about(request: Request):
     return _render(request, "about.html")
 
+@router.get("/docs")
+def docs_stub(request: Request):
+    # Placeholder route (2026-08-04, DOCSv4 plumbing) -- reserves /docs for a future MkDocs
+    # site, now that Swagger has moved to /api/schema. Will be superseded by static nginx
+    # serving once MkDocs is built (§4 of the DOCSv4 TODO).
+    return _render(request, "docs_stub.html")
+
 @router.get("/edop")
 def edop_redirect():
     from fastapi.responses import RedirectResponse
