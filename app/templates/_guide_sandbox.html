@@ -1,7 +1,31 @@
-<!-- Sandbox Guide content -- prototype (2026-08-05): iframes the built MkDocs guide page
-     directly, same pattern as #api-guide-modal's iframe of /static/api_guide.html. Single
-     source of truth is docsite/guides/sandbox.md -- this is its rendered output, not a copy.
-     Requires `mkdocs build` to have run; /docs 404s otherwise (see main.py's StaticFiles mount,
-     check_dir=False). Known limitation: pulls in MkDocs Material's own header/sidebar/search
-     chrome, not just the article text -- unresolved, see CLAUDE.md open-items note. -->
-<iframe src="/docs/guides/sandbox/" style="width:100%; height:70vh; border:none;"></iframe>
+<!-- Sandbox Guide content. Three pills: Guide (default) + two Walkthroughs (Settlements has a
+     different left-panel flow than Polities -- WHG resolve vs. Seshat search + time-slice
+     slider -- so they need separate worked-example screenshot sequences, not one shared page).
+     Each pane iframes its own built MkDocs page -- same single-source-of-truth pattern as the
+     other Guide modals, just three source pages instead of one. Requires `mkdocs build`. -->
+<div class="btn-group btn-group-sm mb-2" role="group" aria-label="Guide or walkthrough">
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-guide" autocomplete="off" checked>
+  <label class="btn btn-outline-secondary" for="sgm-guide">Guide</label>
+
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-settlements" autocomplete="off">
+  <label class="btn btn-outline-secondary" for="sgm-wt-settlements">Walkthrough: Settlements</label>
+
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-polities" autocomplete="off">
+  <label class="btn btn-outline-secondary" for="sgm-wt-polities">Walkthrough: Polities</label>
+</div>
+<iframe id="sandbox-guide-iframe" src="/docs/guides/sandbox/" style="width:100%; height:66vh; border:none;"></iframe>
+<script>
+(function () {
+  var iframe = document.getElementById('sandbox-guide-iframe');
+  var srcByPillId = {
+    'sgm-guide':          '/docs/guides/sandbox/',
+    'sgm-wt-settlements': '/docs/guides/sandbox-walkthrough-settlements/',
+    'sgm-wt-polities':    '/docs/guides/sandbox-walkthrough-polities/'
+  };
+  document.querySelectorAll('input[name="sandbox-guide-mode"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (this.checked) iframe.src = srcByPillId[this.id];
+    });
+  });
+})();
+</script>

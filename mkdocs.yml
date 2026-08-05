@@ -13,7 +13,10 @@ nav:
   - Start here: index.md
   - Claims and limits: claims.md
   - Guides:
-      - Sandbox: guides/sandbox.md
+      - Sandbox:
+          - Guide: guides/sandbox.md
+          - "Walkthrough: Settlements": guides/sandbox-walkthrough-settlements.md
+          - "Walkthrough: Polities": guides/sandbox-walkthrough-polities.md
       - Explorer: guides/explorer.md
       - Workbench: guides/workbench.md
   - Codebook: codebook.md
