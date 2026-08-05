@@ -58,6 +58,17 @@ app.mount(
     name="documentation"
 )
 
+# MkDocs site (2026-08-05, DOCSv4): docsite/ is the tracked source; `mkdocs build` compiles it
+# to site/ (gitignored). check_dir=False so the app still starts if site/ hasn't been built yet
+# -- /docs just 404s until someone runs `mkdocs build`. At deploy time this mount can be
+# superseded by an nginx-level static serve of site/ (independent of FastAPI restarts), but
+# isn't required to -- this works in both local dev and production as-is.
+app.mount(
+    "/docs",
+    StaticFiles(directory="site", html=True, check_dir=False),
+    name="docs"
+)
+
 # Dev harness: serve exemplar fixtures at /dev/exemplars/ for the fixture-based renderer.
 # output/ is gitignored and absent on the server; the mount silently skips if the dir
 # does not exist so startup is unaffected in non-dev environments.
