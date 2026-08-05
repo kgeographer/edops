@@ -6,6 +6,9 @@ site_dir: site
 theme:
   name: material
 
+extra_javascript:
+  - javascripts/embed.js
+
 nav:
   - Start here: index.md
   - Claims and limits: claims.md
