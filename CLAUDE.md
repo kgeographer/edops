@@ -410,9 +410,11 @@ Standing cross-phase notes:
   archived to `xarchive/workbench.html`. `cdop_pilot.html` was renamed to `workbench.html` and now
   owns the `/workbench` route and the `active_page = "workbench"` identifier; `/cdop` and
   `/cdop_tests` were dropped outright (v0.4 isn't deployed, no compat redirects needed). The
-  visible label — page title `"EDOP <> CDOP workbench"`, nav pill `"EDOP <> CDOP"` — is
-  deliberately left as-is; Karl wants to reconsider it during the docs-content pass ahead, not
-  settle it now. The `workbench.computingplace.org` subdomain still needs an nginx-level redirect
+  nav pill now reads **Workbench** (settled 2026-08-05 — Karl's reasoning: the page keeps the
+  Ecoregions drill-down, which isn't strictly a CDOP integration, so a generic name fits better
+  than "EDOP <> CDOP"). The page `<h4>` title (`page_title`, currently `"EDOP <> CDOP workbench"`)
+  wasn't part of this ask and is still open. The `workbench.computingplace.org` subdomain still
+  needs an nginx-level redirect
   to `edops.computingplace.org/workbench` at deploy time — that's a manual step Karl runs on the
   server, not tracked in this repo.
 - **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a, wired into

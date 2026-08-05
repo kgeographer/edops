@@ -1,3 +1,7 @@
-<!-- Sandbox Guide content -- placeholder, design TBD (DOCSv4 §3). -->
-<p class="text-muted fst-italic">Placeholder — Sandbox guide content in development. Will cover the
-Map, Signature, Analysis, Seasonality, Context, Similarity, and Atlas tabs.</p>
+<!-- Sandbox Guide content -- prototype (2026-08-05): iframes the built MkDocs guide page
+     directly, same pattern as #api-guide-modal's iframe of /static/api_guide.html. Single
+     source of truth is docsite/guides/sandbox.md -- this is its rendered output, not a copy.
+     Requires `mkdocs build` to have run; /docs 404s otherwise (see main.py's StaticFiles mount,
+     check_dir=False). Known limitation: pulls in MkDocs Material's own header/sidebar/search
+     chrome, not just the article text -- unresolved, see CLAUDE.md open-items note. -->
+<iframe src="/docs/guides/sandbox/" style="width:100%; height:70vh; border:none;"></iframe>
