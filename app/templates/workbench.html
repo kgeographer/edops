@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 
+{% set active_page = "workbench" %}
+
+{% block header %}
+{% set page_title = "EDOP <> CDOP workbench" %}
+{% include "_edops_header.html" %}
+{% endblock %}
+
+{% block modals %}
+{% include "_edops_modals.html" %}
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="row g-3">
@@ -8,186 +19,23 @@
     <div class="col-12 col-lg-6">
       <ul class="nav nav-tabs" id="edopTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-main" data-bs-toggle="tab" data-bs-target="#panel-main" type="button" role="tab" aria-controls="panel-main" aria-selected="true">Main</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-basins" data-bs-toggle="tab" data-bs-target="#panel-basins" type="button" role="tab" aria-controls="panel-basins" aria-selected="false">Basins</button>
+          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="false">Societies</button>
-        </li>
-        <li class="nav-item" role="presentation">
           <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-wh" data-bs-toggle="tab" data-bs-target="#panel-wh" type="button" role="tab" aria-controls="panel-wh" aria-selected="false">WH Sites</button>
         </li>
       </ul>
 
       <div class="tab-content pt-3" id="edopTabContent">
 
-        <!-- MAIN TAB -->
-        <div class="tab-pane fade show active" id="panel-main" role="tabpanel" aria-labelledby="tab-main">
-          <h5 class="mb-2 d-flex justify-content-between align-items-center">
-            Resolve place
-            <span id="whg-zoom-alert" class="small text-warning fw-normal" style="display:none;">&#9651; Zoom in first (zoom &ge; 4)</span>
-          </h5>
-
-          <!-- Input method pills -->
-          <ul class="nav nav-pills nav-pills-sm nav-fill mb-3" id="main-input-pills" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link show active" id="pill-whg" data-bs-toggle="pill" data-bs-target="#input-whg" type="button" role="tab" aria-controls="input-whg" aria-selected="false">WHG API</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="pill-edop" data-bs-toggle="pill" data-bs-target="#input-edop" type="button" role="tab" aria-controls="input-edop" aria-selected="false">EDOP Gazetteer</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="pill-coords" data-bs-toggle="pill" data-bs-target="#input-coords" type="button" role="tab" aria-controls="input-coords" aria-selected="true">Coordinates</button>
-            </li>
-          </ul>
-
-          <!-- Input forms (swappable based on pill selection) -->
-          <div class="tab-content" id="main-input-content">
-
-            <!-- WHG API -->
-            <div class="tab-pane fade show active" id="input-whg" role="tabpanel" aria-labelledby="pill-whg">
-              <div class="mb-3">
-
-                <div class="d-flex align-items-center gap-2">
-                  <div class="flex-grow-1 position-relative">
-                    <input
-                      class="form-control"
-                      id="whg-search"
-                      type="text"
-                      placeholder="search World Historical Gazetteer..."
-                      autocomplete="off"
-                    />
-                    <div id="whg-searching" class="text-muted small mt-1" style="display:none;">
-                      <span class="spinner-border spinner-border-sm me-1" role="status"></span>Searching WHG...
-                    </div>
-                    <div
-                      id="whg-dropdown"
-                      class="dropdown-menu w-100"
-                      style="display:none; max-height:300px; overflow-y:auto;">
-                    </div>
-                  </div>
-
-                </div>
-
-                <div class="mt-3" id="whg-similar-cities-wrap" style="display:none;">
-                  <button class="btn btn-outline-primary" id="whg-similar-cities-btn" type="button">Similar World Heritage Cities</button>
-                </div>
-
-
-              </div>
-            </div>
-            <!-- Local EDOP gazetteer  -->
-            <div class="tab-pane fade" id="input-edop" role="tabpanel" aria-labelledby="pill-gaz">
-              <div class="mb-3">
-                <div class="mb-2">
-                  <div class="position-relative">
-                    <input class="form-control" id="gaz-search" type="text" placeholder="Type to search..." autocomplete="off" />
-                    <div id="gaz-dropdown" class="dropdown-menu w-100" style="display:none; max-height:300px; overflow-y:auto;"></div>
-                  </div>
-                  <div class="form-text text-muted">~97k places from multiple sources. Type 3+ chars to search. <a href="#" id="gaz-clear-link">Clear</a></div>
-                </div>
-                <div class="mt-3 d-flex gap-2">
-                  <button class="btn btn-outline-primary" id="gaz-similar-env" type="button" disabled>Similar (env)</button>
-                </div>
-
-                <div id="explainer-edop" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-                </div>
-              </div>
-            </div>
-            <!-- Coordinates input -->
-            <div class="tab-pane fade" id="input-coords" role="tabpanel" aria-labelledby="pill-coords">
-              <form id="coords-form" class="mb-3">
-                <div class="row g-2 mb-2">
-                  <div class="col">
-                    <label class="form-label" for="main-lon">Longitude</label>
-                    <input class="form-control" id="main-lon" name="lon" type="number" step="any" placeholder="e.g. -2.99944" />
-                  </div>
-                  <div class="col">
-                    <label class="form-label" for="main-lat">Latitude</label>
-                    <input class="form-control" id="main-lat" name="lat" type="number" step="any" placeholder="e.g. 16.77333" />
-                  </div>
-                </div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-primary" type="submit">Get Signature</button>
-                  <button class="btn btn-outline-secondary" id="test-btn" type="button">Use Timbuktu</button>
-                </div>
-              </form>
-
-              <div id="explainer-coords" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-              </div>
-            </div>
-            <!-- deprecated; inactive -->
-            <div class="tab-pane fade" id="input-foo" role="tabpanel" aria-labelledby="pill-foo">
-              <form id="whg-form" class="mb-3">
-                <div class="mb-2">
-                  <label class="form-label" for="main-name">Place name</label>
-                  <input class="form-control" id="main-name" name="name" type="text" placeholder="e.g. Timbux1x`ktu" />
-                  <div class="form-text">Name resolution via WHG API (top-ranked hit only)</div>
-                </div>
-                <button class="btn btn-primary" type="submit">Resolve</button>
-              </form>
-            </div>
-          </div>
-
-          <!-- Explainer (hidden when results appear) -->
-          <div id="main-explainer" class="mt-3 text-muted" style="font-size: 0.9rem;">
-            <p><b>EDOP (Environmental Dimensions of Place)</b> is an experimental exploration of how physical environments can be described, compared, and related across the world. At its core, the system assigns an environmental signature to any geographic location, based on the characteristics of the hydrological sub-basin in which it lies. These sub-basins—drawn from the <a href="https://www.hydrosheds.org/products/hydrobasins" target="_blank">HydroBasins and HydroAtlas datasets</a> at level 8—partition the Earth's land surface into roughly 190,000 regions, providing a consistent, global unit for environmental comparison.</p>
-            <a>Using this framework, EDOP lets you look up places by name or coordinates and examine how their environmental profiles relate to one another. In some cases, those comparisons are purely environmental; in others, they are paired with text-based similarity measures derived from descriptive sources such as Wikipedia, currently demonstrated for selected <a href="https://www.ovpm.org/" target="_blank">World Heritage cities</a> and <a href="https://whc.unesco.org/en/list/" target="_blank">sites</a>. The system has begun incoporating <a href="" https://www.oneearth.org/ecoregion-list/target="_blank">OneEarth ecoregions</a> as navigable environmental hierarchies. This early release is best understood as a foundation: a way to expose environmental data as reusable, comparable signatures, and a first step toward more integrated views of place, environment, and cultural description.</p>
-          </div>
-
-          <!-- Main tab status message -->
-          <div class="alert alert-light" id="main-status" style="display:none;"></div>
-        </div>
-
-        <!-- BASINS TAB (cluster explorer) -->
-        <div class="tab-pane fade" id="panel-basins" role="tabpanel" aria-labelledby="tab-basins">
-          <h4 class="mb-1">Basin Environmental Types</h4>
-          <p class="text-muted small">20 clusters of 190k sub-basins based on environmental bands A-D. Select to see WH cities in basins of that type.</p>
-
-          <div id="basin-cluster-list" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
-            <span class="text-muted p-2">Loading clusters...</span>
-          </div>
-
-          <div class="mt-3">
-            <div class="alert alert-light" id="basin-status" style="display:none;"></div>
-          </div>
-        </div>
-
-        <!-- WORLD HERITAGE TAB (pilot 20 sites) -->
-        <div class="tab-pane fade" id="panel-wh" role="tabpanel" aria-labelledby="tab-wh">
-          <h4 class="mb-3">20 World Heritage sites</h4>
-
-          <div class="mb-2">
-            <select class="form-select" id="wh-select" disabled>
-              <option value="">Loading…</option>
-            </select>
-          </div>
-
-          <div class="mt-3 d-flex gap-2">
-            <button class="btn btn-outline-secondary" id="wh-show-desc" type="button" disabled>Show description</button>
-            <button class="btn btn-outline-primary" id="wh-similar-env" type="button" disabled>Similar (env)</button>
-            <button class="btn btn-outline-info" id="wh-similar-text" type="button" disabled>Similar (semantic)</button>
-          </div>
-
-          <div class="mt-3">
-            <div class="alert alert-light" id="wh-desc" style="display:none;"></div>
-          </div>
-        </div>
 
         <!-- WH CITIES TAB (258 cities) -->
         <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">258 World Heritage Cities</h4>
-          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a></p>
+          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a> — 254 of 258 have a basin assignment</p>
 
           <div class="mb-2">
             <select class="form-select" id="whc-select" disabled>
@@ -197,18 +45,16 @@
           </div>
 
           <div class="mt-3 d-flex gap-2 flex-wrap">
-            <!-- Environmental similarity dropdown -->
+            <!-- Environmental similarity dropdown — Climate lenses via LENS_REGISTRY (L08, topN=5) -->
             <div class="dropdown">
               <button class="btn btn-outline-primary dropdown-toggle" type="button" id="whc-similar-env-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (env)
               </button>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
-                <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="A">A – Physiographic bedrock</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="B">B – Hydro-climatic baselines</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="C">C – Bioclimatic proxies</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="D">D – Anthropocene markers</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="terrain">Terrain regime</a></li>
               </ul>
             </div>
 
@@ -225,6 +71,39 @@
                 <li><a class="dropdown-item" href="#" data-band="culture">Culture</a></li>
                 <li><a class="dropdown-item" href="#" data-band="modern">Modern</a></li>
               </ul>
+            </div>
+          </div>
+
+          <!-- Terrain regime knobs (CITYKIN WO1a) — query-relative tolerance bands, shown only when
+               the Terrain regime lens is active. Three-level tight/default/broad steps, same pattern
+               as the sandbox Similarity panel's conjunction bands (#v3-cj-corr etc.) — each level is a
+               round fraction of the facet's own corpus std (elev std ~696m, relief std ~404m, position
+               std ~0.115): tight ~0.5std, default ~0.7-0.9std (WO1a-locked, fixture-validated), broad
+               ~1.0std. Auto-applies on change, no separate button, matching the sandbox convention. -->
+          <div class="mt-2 gap-2 align-items-end flex-wrap" id="terrain-knobs" style="display:none;">
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-elev">Elevation (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-elev" style="width:auto; font-size:0.8rem;">
+                <option value="350">350 · tight</option>
+                <option value="500" selected>500</option>
+                <option value="700">700 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-relief">Relief (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-relief" style="width:auto; font-size:0.8rem;">
+                <option value="200">200 · tight</option>
+                <option value="300" selected>300</option>
+                <option value="400">400 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-pos">Landform position (±) <i class="bi bi-question-circle text-muted" id="terrain-info-position" style="cursor:help;"></i></label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-pos" style="width:auto; font-size:0.8rem;">
+                <option value="0.05">0.05 · tight</option>
+                <option value="0.10" selected>0.10</option>
+                <option value="0.15">0.15 · broad</option>
+              </select>
             </div>
           </div>
 
@@ -256,7 +135,7 @@
         </div>
 
         <!-- SOCIETIES TAB (D-PLACE) -->
-        <div class="tab-pane fade" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
+        <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
           <p class="text-muted" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
@@ -283,9 +162,13 @@
                   <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
                 </div>
+                <!-- CITYKIN WO4 (2026-07-30): replaces the retired PCA "Basin clusters" option
+                     (docs/cdop/pilot/note_societies-tab-vs-wo8.md) with a targeted environment
+                     view. EA042 has a named theoretical hook (WO8a Part B); shows the confirmatory
+                     Climate envelope scatter. -->
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-mode-basin">Basin clusters</label>
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-envscan" value="envscan">
+                  <label class="form-check-label" for="soc-mode-envscan">Climate envelope</label>
                 </div>
               </div>
             </div>
@@ -304,9 +187,11 @@
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
                   <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
+                <!-- CITYKIN WO4 (2026-07-30): EA034 has no theoretical hook (WO8d could not test a
+                     predicted axis) -- shows the exploratory four-lens scan instead of a scatter. -->
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-rel-mode-basin">Basin clusters</label>
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-envscan" value="envscan">
+                  <label class="form-check-label" for="soc-rel-mode-envscan">Environment scan</label>
                 </div>
               </div>
             </div>
@@ -385,6 +270,72 @@
         <h6 class="mb-1" id="dplace-results-heading"></h6>
         <div id="dplace-results-content"></div>
       </div>
+      <style>
+        /* CITYKIN WO4 (2026-07-30, meter-bar redesign): the Climate envelope scatter + the
+           five-variable environment meters + composition donut. Palette per the dataviz skill's
+           reference instance (light mode only -- this site has no dark-mode toggle anywhere else,
+           so a dark block would be dead weight, not parity). Categorical slots 1/2/3 (blue/
+           orange/aqua): the reference palette's own documentation certifies these three together
+           pass the all-pairs CVD check required for small-multiples/scatter forms -- the donut's
+           three named-family slots use exactly these, not ad hoc colors. */
+        .wo4-viz {
+          --wo4-surface:      #fcfcfb;
+          --wo4-text-primary: #0b0b0b;
+          --wo4-text-secondary: #52514e;
+          --wo4-text-muted:   #898781;
+          --wo4-gridline:     #e1e0d9;
+          --wo4-baseline:     #c3c2b7;
+          --wo4-backdrop:     #c3c2b7;   /* emphasis form: de-emphasized gray for the backdrop cloud */
+          --wo4-focus:        #2a78d6;   /* categorical slot 1 -- the confirmatory scatter's 1 series */
+          --wo4-cat-1: #2a78d6;   /* blue */
+          --wo4-cat-2: #eb6834;   /* orange */
+          --wo4-cat-3: #1baf7a;   /* aqua */
+          --wo4-neutral-fill: #9a9890;   /* "Other" -- visible, deliberately subordinate to the 3 named */
+          --wo4-meter-track: #d3e2f5;    /* light step of the cat-1 ramp, per the Meter form's own spec */
+          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+        .wo4-viz svg { max-width: 100%; height: auto; }
+        .wo4-viz .wo4-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.8rem; color: var(--wo4-text-secondary); margin-bottom: 0.35rem; flex-wrap: wrap; }
+        .wo4-viz .wo4-legend-key { display: inline-flex; align-items: center; gap: 0.35rem; }
+        .wo4-viz .wo4-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+        .wo4-viz .wo4-caption { font-size: 0.85rem; color: var(--wo4-text-secondary); margin-top: 0.5rem; line-height: 1.5; }
+        .wo4-viz .wo4-tooltip {
+          position: absolute; pointer-events: none; z-index: 10;
+          background: var(--wo4-text-primary); color: #fff; font-size: 0.75rem;
+          padding: 0.3rem 0.5rem; border-radius: 4px; white-space: nowrap;
+          opacity: 0; transition: opacity 0.1s ease;
+        }
+        .wo4-viz .wo4-bar-label { fill: var(--wo4-text-secondary); font-size: 11px; }
+        .wo4-viz .wo4-axis-label { fill: var(--wo4-text-muted); font-size: 11px; }
+        .wo4-viz .wo4-axis-pole { fill: var(--wo4-text-muted); font-size: 10px; }
+
+        /* -- Meter bars (the five-variable environment scan) -- */
+        .wo4-meters { display: flex; flex-direction: column; }
+        .wo4-meter-row { padding: 0.55rem 0; border-top: 1px solid var(--wo4-gridline); }
+        .wo4-meter-row:first-child { border-top: none; padding-top: 0; }
+        .wo4-meter-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.32rem; }
+        .wo4-meter-label { font-size: 0.9rem; font-weight: 600; color: var(--wo4-text-primary); }
+        .wo4-meter-qual { font-size: 0.82rem; color: var(--wo4-text-secondary); font-style: italic; }
+        .wo4-meter-track-row { display: flex; align-items: center; gap: 0.55rem; }
+        .wo4-pole { font-size: 0.72rem; color: var(--wo4-text-muted); white-space: nowrap; width: 5.4rem; }
+        .wo4-pole.right { text-align: right; }
+        .wo4-track { flex: 1; height: 9px; border-radius: 5px; background: var(--wo4-meter-track); position: relative; overflow: hidden; cursor: default; }
+        .wo4-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; background: var(--wo4-focus); transition: width 0.5s cubic-bezier(0.22,0.61,0.36,1); }
+        .wo4-midline { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--wo4-gridline); }
+        .wo4-pct { width: 2.8rem; text-align: right; font-size: 0.78rem; color: var(--wo4-text-secondary); font-variant-numeric: tabular-nums; }
+
+        /* -- Composition donut + legend -- */
+        .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }
+        .wo4-donut-figure { flex: none; }
+        .wo4-donut-total { font-family: inherit; }
+        .wo4-comp-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 12rem; }
+        .wo4-comp-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.3rem; border-radius: 5px; cursor: pointer; transition: background 0.12s ease; }
+        .wo4-comp-row:hover, .wo4-comp-row.is-active { background: var(--wo4-gridline); }
+        .wo4-comp-name { font-size: 0.85rem; color: var(--wo4-text-primary); flex: 1; }
+        .wo4-comp-count { font-size: 0.78rem; color: var(--wo4-text-muted); }
+        .wo4-comp-row.is-neutral .wo4-comp-name { color: var(--wo4-text-secondary); }
+        .wo4-map-dot-lit { }
+      </style>
     </div>
 
   </div>
@@ -434,64 +385,6 @@
     }
   }
 
-  function whSetStatus(msg) {
-    // Lightweight status: show in description alert area if present, else console.
-    const el = document.getElementById('wh-desc');
-    if (!el) {
-      console.log(msg);
-      return;
-    }
-    if (!msg) {
-      el.style.display = 'none';
-      el.textContent = '';
-      return;
-    }
-    el.style.display = '';
-    el.textContent = msg;
-  }
-
-  async function whLoadSites() {
-    const sel = document.getElementById('wh-select');
-    const btnDesc = document.getElementById('wh-show-desc');
-    const descBox = document.getElementById('wh-desc');
-
-    if (!sel) return;
-
-    sel.disabled = true;
-    if (btnDesc) btnDesc.disabled = true;
-    if (descBox) {
-      descBox.style.display = 'none';
-      descBox.textContent = '';
-    }
-
-    sel.innerHTML = '<option value="">Loading…</option>';
-
-    try {
-      const resp = await fetch('/api/wh-sites');
-      if (!resp.ok) {
-        const txt = await resp.text();
-        throw new Error(`WH sites request failed (${resp.status}): ${txt}`);
-      }
-      const data = await resp.json();
-      whSites = (data && data.sites) ? data.sites : [];
-
-      // Populate dropdown
-      sel.innerHTML = '<option value="">Select a site…</option>';
-      whSites.forEach((s) => {
-        const opt = document.createElement('option');
-        opt.value = String(s.id_no);
-        opt.textContent = s.name_en;
-        sel.appendChild(opt);
-      });
-
-      sel.disabled = false;
-    } catch (e) {
-      sel.innerHTML = '<option value="">(Seed list unavailable)</option>';
-      sel.disabled = true;
-      whSetStatus(String(e));
-    }
-  }
-
   function showClusterLabel(label) {
     // Suppressed pending PCA recomputation from rev1 signature.
     const container = document.getElementById('cluster-label');
@@ -524,234 +417,8 @@
     clearSimilarMarkers();
   }
 
-  async function fetchSimilarSites(idNo, limit = 5) {
-    const url = `/api/similar?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Similar sites request failed (${resp.status}): ${txt}`);
-    }
-    return await resp.json();
-  }
-
-  async function fetchSimilarTextSites(idNo, limit = 5) {
-    const url = `/api/similar-text?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Similar text sites request failed (${resp.status}): ${txt}`);
-    }
-    return await resp.json();
-  }
-
   // Color palette for similar sites (distinct, colorblind-friendly)
   const SIMILAR_COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'];
-
-  function renderSimilarSites(data, sourceSite, similarityType = 'env') {
-    const container = document.getElementById('similar-results');
-    const list = document.getElementById('similar-list');
-    const heading = document.getElementById('similar-heading');
-    const description = document.getElementById('similar-description');
-    if (!container || !list) return;
-
-    // Set heading and description based on similarity type
-    if (heading && description) {
-      if (similarityType === 'text') {
-        heading.textContent = 'Similar Sites (Semantic)';
-        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
-      } else {
-        heading.textContent = 'Similar Sites (Environmental)';
-        description.textContent = 'computed from the multivariate environmental profile using dimensionality reduction and clustering';
-      }
-    }
-
-    const similar = data.similar || [];
-    if (!similar.length) {
-      list.innerHTML = '<div class="text-muted">No similar sites found.</div>';
-      container.style.display = '';
-      return;
-    }
-
-    // Build list HTML with color swatches
-    const isText = similarityType === 'text';
-    const rows = similar.map((site, idx) => {
-      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-      const sameCluster = site.cluster_label === sourceSite.cluster_label;
-      const clusterNote = sameCluster
-        ? `<span class="text-success small">same cluster</span>`
-        : `<span class="text-muted small">${site.cluster_label || ''}</span>`;
-      // Text similarity returns 'similarity', env returns 'distance'
-      const metricLabel = isText ? 'sim' : 'dist';
-      const metricValue = isText ? site.similarity : site.distance;
-      return `
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <div>
-            <strong>${idx + 1}.</strong> ${escapeHtml(site.name_en)}
-            <div class="small">${clusterNote}</div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted small">${metricLabel}: ${metricValue}</span>
-            <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    list.innerHTML = rows;
-    container.style.display = '';
-
-    // Add markers for similar sites
-    clearSimilarMarkers();
-    ensureMap();
-
-    const bounds = [];
-
-    // Include source site in bounds
-    if (sourceSite.location && sourceSite.location.coordinates) {
-      bounds.push([sourceSite.location.coordinates[1], sourceSite.location.coordinates[0]]);
-    }
-
-    similar.forEach((site, idx) => {
-      const lat = site.lat;
-      const lon = site.lon;
-      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-      bounds.push([lat, lon]);
-
-      // Colored marker matching list swatch
-      const simMarker = L.circleMarker([lat, lon], {
-        radius: 10,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9
-      }).addTo(map);
-
-      simMarker.bindPopup(`
-        <div style="max-width: 200px;">
-          <strong>${idx + 1}. ${site.name_en}</strong><br/>
-          <span class="text-muted">Distance: ${site.distance}</span><br/>
-          <span class="small">${site.cluster_label || ''}</span>
-        </div>
-      `);
-
-      similarMarkers.push(simMarker);
-    });
-
-    // Zoom to fit all markers
-    if (bounds.length > 1 && map) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }
-
-  async function whShowSimilarEnv() {
-    if (!whSelected) return;
-
-    const btnSimilar = document.getElementById('wh-similar-env');
-    if (btnSimilar) btnSimilar.disabled = true;
-
-    clearSimilarResults();
-
-    try {
-      whSetStatus('Finding environmentally similar sites…');
-      const data = await fetchSimilarSites(whSelected.id_no, 5);
-      renderSimilarSites(data, whSelected, 'env');
-      whSetStatus('');
-    } catch (e) {
-      whSetStatus(String(e));
-    } finally {
-      if (btnSimilar) btnSimilar.disabled = false;
-    }
-  }
-
-  async function whShowSimilarText() {
-    if (!whSelected) return;
-
-    const btnSimilar = document.getElementById('wh-similar-text');
-    if (btnSimilar) btnSimilar.disabled = true;
-
-    clearSimilarResults();
-
-    try {
-      whSetStatus('Finding semantically similar sites…');
-      const data = await fetchSimilarTextSites(whSelected.id_no, 5);
-      renderSimilarSites(data, whSelected, 'text');
-      whSetStatus('');
-    } catch (e) {
-      whSetStatus(String(e));
-    } finally {
-      if (btnSimilar) btnSimilar.disabled = false;
-    }
-  }
-
-  async function whSelectById(idNo) {
-    const btnDesc = document.getElementById('wh-show-desc');
-    const btnSimilarEnv = document.getElementById('wh-similar-env');
-    const btnSimilarText = document.getElementById('wh-similar-text');
-    const descBox = document.getElementById('wh-desc');
-
-    whSelected = whSites.find((s) => String(s.id_no) === String(idNo)) || null;
-
-    // Clear previous results
-    if (descBox) {
-      descBox.style.display = 'none';
-      descBox.textContent = '';
-    }
-    if (btnDesc) btnDesc.textContent = 'Show description';
-    clearSimilarResults();
-
-    if (!whSelected) {
-      if (btnDesc) btnDesc.disabled = true;
-      if (btnSimilarEnv) btnSimilarEnv.disabled = true;
-      if (btnSimilarText) btnSimilarText.disabled = true;
-      showClusterLabel(null);
-      return;
-    }
-
-    // Show cluster label if available
-    showClusterLabel(whSelected.cluster_label);
-
-    // Enable Similar buttons
-    if (btnSimilarEnv) btnSimilarEnv.disabled = false;
-    if (btnSimilarText) btnSimilarText.disabled = false;
-
-    // This path is not WHG resolution; clear Resolved place
-    renderResolvedPlace(null);
-    showWhgPlaceLink(null);
-
-    const loc = whSelected.location;
-    if (!loc || loc.type !== 'Point' || !loc.coordinates || loc.coordinates.length < 2) {
-      whSetStatus('Selected site has no usable Point geometry.');
-      if (btnDesc) btnDesc.disabled = true;
-      return;
-    }
-
-    const lon = Number(loc.coordinates[0]);
-    const lat = Number(loc.coordinates[1]);
-
-    const popupHtml = `
-      <div style="max-width: 260px;">
-        <strong>${whSelected.name_en}</strong><br/>
-        <span class="text-muted">${whSelected.states_name_en || ''}</span>
-      </div>
-    `;
-    setMarkerWithPopup(lon, lat, popupHtml);
-
-    // Enable description button if text exists
-    if (btnDesc) btnDesc.disabled = !(whSelected.short_description_en && whSelected.short_description_en.length);
-
-    try {
-      whSetStatus('Computing environmental profile…');
-      const sig = await fetchSignature(lon, lat);
-      renderSignature(sig);
-      setBasinFromSignature(sig);
-      whSetStatus('');
-      if (marker && marker.getPopup()) marker.openPopup();
-    } catch (e) {
-      whSetStatus(String(e));
-      renderSignature({ error: String(e) });
-    }
-  }
 
   // -----------------------
   // WH Cities (258) functions
@@ -788,16 +455,34 @@
       const data = await resp.json();
       whcCities = (data && data.cities) ? data.cities : [];
 
+      // Tbilisi (CITYKIN WO1a/WO1's terrain acceptance fixture) is pinned at the top of the dropdown,
+      // above the region groups -- not because it's a bigger city, but because it's the instrument's
+      // own reference case. Pulled out of the region grouping so it appears exactly once.
+      const pinned = whcCities.filter((c) => c.city === 'Tbilisi');
+      const rest = whcCities.filter((c) => c.city !== 'Tbilisi');
+
       // Group by region
       const byRegion = {};
-      whcCities.forEach((c) => {
+      rest.forEach((c) => {
         const region = c.region || 'Other';
         if (!byRegion[region]) byRegion[region] = [];
         byRegion[region].push(c);
       });
 
-      // Build grouped dropdown
+      // Build grouped dropdown, pinned city/cities first
       sel.innerHTML = '<option value="">Select a city…</option>';
+      pinned.forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        opt.textContent = `${c.city}, ${c.country}`;
+        sel.appendChild(opt);
+      });
+      if (pinned.length) {
+        const sep = document.createElement('option');
+        sep.disabled = true;
+        sep.textContent = '──────────';
+        sel.appendChild(sep);
+      }
       Object.keys(byRegion).sort().forEach((region) => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region;
@@ -827,6 +512,8 @@
     // Clear previous state
     clearSimilarResults();
     whcSetStatus('');
+    const terrainKnobs = document.getElementById('terrain-knobs');
+    if (terrainKnobs) terrainKnobs.style.display = 'none';
 
     if (!whcSelected) {
       if (btnSimilarEnv) btnSimilarEnv.disabled = true;
@@ -841,6 +528,12 @@
     // Enable Similar dropdown buttons
     if (btnSimilarEnv) btnSimilarEnv.disabled = false;
     if (btnSimilarText) btnSimilarText.disabled = false;
+
+    // Tbilisi (CITYKIN's terrain fixture, added to gaz.wh_cities for terrain-lens purposes only) has
+    // no scraped Wikipedia summaries/embeddings, unlike the true WH Cities -- hide "Similar (semantic)"
+    // entirely for it rather than leave a dead control enabled.
+    const textDropdown = btnSimilarText ? btnSimilarText.closest('.dropdown') : null;
+    if (textDropdown) textDropdown.style.display = (whcSelected.city === 'Tbilisi') ? 'none' : '';
 
     // Clear Resolved place (this is not WHG resolution)
     renderResolvedPlace(null);
@@ -876,12 +569,34 @@
     }
   }
 
-  async function fetchWhcSimilarEnv(cityId, limit = 5) {
-    const url = `/api/whc-similar?city_id=${encodeURIComponent(cityId)}&limit=${limit}`;
+  async function fetchWhcSimilarEnv(cityId, lensId = 'climate.precip', limit = 5) {
+    const url = `/api/whc-similar-env-lens?city_id=${encodeURIComponent(cityId)}&lens_id=${encodeURIComponent(lensId)}&limit=${limit}`;
     const resp = await fetch(url);
     if (!resp.ok) {
       const txt = await resp.text();
       throw new Error(`WH similar request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  function getTerrainTolerances() {
+    const elev = parseFloat(document.getElementById('terrain-tol-elev')?.value);
+    const relief = parseFloat(document.getElementById('terrain-tol-relief')?.value);
+    const pos = parseFloat(document.getElementById('terrain-tol-pos')?.value);
+    return {
+      elev_tol: Number.isFinite(elev) ? elev : 500,
+      relief_tol: Number.isFinite(relief) ? relief : 300,
+      pos_tol: Number.isFinite(pos) ? pos : 0.10,
+    };
+  }
+
+  async function fetchWhcSimilarTerrain(cityId, tol, limit = 8) {
+    const url = `/api/whc-similar-terrain?city_id=${encodeURIComponent(cityId)}`
+      + `&elev_tol=${tol.elev_tol}&relief_tol=${tol.relief_tol}&pos_tol=${tol.pos_tol}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`WH terrain request failed (${resp.status}): ${txt}`);
     }
     return await resp.json();
   }
@@ -903,15 +618,26 @@
     const description = document.getElementById('similar-description');
     if (!container || !list) return;
 
-    // Set heading and description based on similarity type and band
+    // Set heading and description based on similarity type and band/lens
+    const ENV_LENS_LABELS = {
+      'climate.precip': 'Precipitation regime',
+      'climate.temp':   'Temperature regime',
+      'terrain':        'Terrain regime',
+    };
+    const isTerrain = band === 'terrain';
     if (heading && description) {
       if (similarityType === 'text') {
         const bandLabel = SEMANTIC_BAND_LABELS[band] || band;
-        heading.textContent = `Similar Cities (${bandLabel})`;
-        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
+        heading.textContent = `5 most similar cities in this collection (${bandLabel})`;
+        description.textContent = 'corpus-relative ranking by Wikipedia text embeddings (cosine similarity)';
+      } else if (isTerrain) {
+        const n = data.eligible_count ?? (data.similar || []).length;
+        heading.textContent = `${n} cities within tolerance (Terrain regime), showing top ${(data.similar || []).length}`;
+        description.textContent = 'query-relative tolerance bands on point-window elevation/relief/landform-position (CITYKIN WO1a)';
       } else {
-        heading.textContent = 'Similar Cities (Environmental: Composite)';
-        description.textContent = 'computed from basin environmental signatures using PCA distance';
+        const lensLabel = ENV_LENS_LABELS[band] || band;
+        heading.textContent = `5 most similar cities in this collection (${lensLabel})`;
+        description.textContent = 'corpus-relative ranking by climate-lens distance (L08 basin index)';
       }
     }
 
@@ -928,7 +654,10 @@
       const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
       const sameCluster = site.env_cluster === sourceSite.env_cluster;
       let clusterNote = '';
-      if (!isText) {
+      if (isTerrain) {
+        clusterNote = `<span class="text-muted small">elev ${Math.round(site.grid_elev_mean)}m · `
+          + `relief ${Math.round(site.relief_range_m)}m · pos ${site.landform_position.toFixed(2)}</span>`;
+      } else if (!isText) {
         // For env similarity, show cluster label
         clusterNote = sameCluster
           ? `<span class="text-success small">same cluster</span>`
@@ -1003,7 +732,7 @@
     }
   }
 
-  async function whcShowSimilarEnv(band = 'composite') {
+  async function whcShowSimilarEnv(lensId = 'climate.precip') {
     if (!whcSelected) return;
 
     const btn = document.getElementById('whc-similar-env-btn');
@@ -1013,8 +742,29 @@
 
     try {
       whcSetStatus('Finding environmentally similar cities…');
-      const data = await fetchWhcSimilarEnv(whcSelected.id, 5);
-      renderWhcSimilarSites(data, whcSelected, 'env');
+      const data = await fetchWhcSimilarEnv(whcSelected.id, lensId, 5);
+      renderWhcSimilarSites(data, whcSelected, 'env', lensId);
+      whcSetStatus('');
+    } catch (e) {
+      whcSetStatus(String(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function whcShowSimilarTerrain() {
+    if (!whcSelected) return;
+
+    const btn = document.getElementById('whc-similar-env-btn');
+    if (btn) btn.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whcSetStatus('Finding terrain-similar cities…');
+      const tol = getTerrainTolerances();
+      const data = await fetchWhcSimilarTerrain(whcSelected.id, tol, 8);
+      renderWhcSimilarSites(data, whcSelected, 'env', 'terrain');
       whcSetStatus('');
     } catch (e) {
       whcSetStatus(String(e));
@@ -1094,183 +844,6 @@
       bodyEl.innerHTML = html;
     } catch (e) {
       bodyEl.innerHTML = `<div class="text-danger">Error: ${escapeHtml(String(e))}</div>`;
-    }
-  }
-
-  // -----------------------
-  // Basin Cluster functions
-  // -----------------------
-
-  let basinClusters = [];
-  let selectedClusterId = null;
-
-  // Fallback cluster labels (Jan 2026 k=20 run, from basin08_cluster_labels_manual.json).
-  // Preferred source is the label returned by /api/basin-clusters from the DB table.
-  const CLUSTER_LABELS = {
-    0: 'Warm Desert',
-    1: 'Boreal Continental',
-    2: 'Tropical Dry',
-    3: 'Arctic Tundra',
-    4: 'Tropical Moist Lowland',
-    5: 'Hot Hyper-arid Desert',
-    6: 'Tropical Moist Highland',
-    7: 'Mediterranean / Warm Temperate',
-    8: 'Subtropical Desert',
-    9: 'Tropical Coastal',
-    10: 'Temperate Steppe / Grassland',
-    11: 'Temperate / Mediterranean',
-    12: 'High-altitude Permafrost',
-    13: 'Tropical Savanna',
-    14: 'Hot Desert (Middle East / N. Africa)',
-    15: 'Saharan / Arabian Hyper-arid',
-    16: 'Tropical Semi-arid (Sahel / Andes)',
-    17: 'Boreal / Cool Temperate',
-    18: 'Extreme Desert (Empty Quarter)',
-    19: 'Northern Boreal / Subarctic'
-  };
-
-  function basinSetStatus(msg) {
-    const el = document.getElementById('basin-status');
-    if (!el) return;
-    if (msg) {
-      el.textContent = msg;
-      el.style.display = '';
-    } else {
-      el.textContent = '';
-      el.style.display = 'none';
-    }
-  }
-
-  async function loadBasinClusters() {
-    try {
-      const resp = await fetch('/api/basin-clusters');
-      if (!resp.ok) throw new Error(`Failed to load clusters (${resp.status})`);
-      const data = await resp.json();
-      basinClusters = data.clusters || [];
-      renderBasinClusterList();
-    } catch (e) {
-      const container = document.getElementById('basin-cluster-list');
-      if (container) container.innerHTML = `<span class="text-danger p-2">${escapeHtml(String(e))}</span>`;
-    }
-  }
-
-  function renderBasinClusterList() {
-    const container = document.getElementById('basin-cluster-list');
-    if (!container) return;
-
-    if (!basinClusters.length) {
-      container.innerHTML = '<span class="text-muted p-2">No clusters found.</span>';
-      return;
-    }
-
-    // Sort by city count descending
-    const sorted = [...basinClusters].sort((a, b) => b.city_count - a.city_count);
-
-    // Render as list items
-    const html = sorted.map(c => {
-      const label = c.label || CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
-      const cityBadge = c.city_count > 0
-        ? `<span class="badge bg-primary">${c.city_count}</span>`
-        : `<span class="badge bg-secondary">0</span>`;
-      return `
-        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center basin-cluster-item"
-           data-cluster-id="${c.cluster_id}">
-          <span>${escapeHtml(label)}</span>
-          ${cityBadge}
-        </a>
-      `;
-    }).join('');
-
-    container.innerHTML = html;
-
-    // Add click handlers
-    container.querySelectorAll('.basin-cluster-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const clusterId = parseInt(item.getAttribute('data-cluster-id'), 10);
-        selectBasinCluster(clusterId);
-      });
-    });
-  }
-
-  async function selectBasinCluster(clusterId) {
-    selectedClusterId = clusterId;
-
-    // Update list item states
-    document.querySelectorAll('.basin-cluster-item').forEach(item => {
-      const id = parseInt(item.getAttribute('data-cluster-id'), 10);
-      if (id === clusterId) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-    });
-
-    const clusterData = basinClusters.find(c => c.cluster_id === clusterId);
-    const label = (clusterData && clusterData.label) || CLUSTER_LABELS[clusterId] || `Cluster ${clusterId}`;
-    basinSetStatus('Loading cities...');
-
-    try {
-      const resp = await fetch(`/api/basin-clusters/${clusterId}/cities`);
-      if (!resp.ok) throw new Error(`Failed to load cities (${resp.status})`);
-      const data = await resp.json();
-
-      basinSetStatus('');
-
-      const cities = data.cities || [];
-
-      // Show results in similar-results div below the map
-      const container = document.getElementById('similar-results');
-      const heading = document.getElementById('similar-heading');
-      const description = document.getElementById('similar-description');
-      const list = document.getElementById('similar-list');
-
-      if (heading) heading.textContent = `${label}`;
-      if (description) description.textContent = `${cities.length} World Heritage cities in basins of this environmental type`;
-
-      if (cities.length === 0) {
-        list.innerHTML = '<div class="text-muted">No WH cities in basins of this type.</div>';
-      } else {
-        list.innerHTML = cities.map((c, idx) => {
-          const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-          return `
-            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-              <span>${escapeHtml(c.city)}, ${escapeHtml(c.country)}</span>
-              <span style="display:inline-block; width:12px; height:12px; background:${color}; border-radius:2px;"></span>
-            </div>
-          `;
-        }).join('');
-      }
-
-      container.style.display = '';
-
-      // Show cities on map
-      clearSimilarMarkers();
-      clearMarker();
-      ensureMap();
-
-      const bounds = [];
-      cities.forEach((city, idx) => {
-        if (!city.lon || !city.lat) return;
-        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-        const marker = L.circleMarker([city.lat, city.lon], {
-          radius: 7,
-          fillColor: color,
-          color: '#333',
-          weight: 1,
-          fillOpacity: 0.8
-        }).addTo(map);
-        marker.bindTooltip(`${city.city}, ${city.country}`);
-        similarMarkers.push(marker);
-        bounds.push([city.lat, city.lon]);
-      });
-
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-
-    } catch (e) {
-      basinSetStatus(String(e));
     }
   }
 
@@ -1656,6 +1229,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Title is now static via the shared _edops_header.html partial (2026-08-03 reorg) --
+    // no more #site-title element to override here.
+
     function setMapTitle(text) {
       const el = document.getElementById('map-title');
       if (el) el.textContent = text;
@@ -1687,153 +1263,33 @@
       whgPlaceLinkEl.addEventListener('click', (e) => e.preventDefault());
     }
 
-    // Site title click -> return to Main tab
-    const siteTitle = document.getElementById('site-title');
-    if (siteTitle) {
-      siteTitle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const mainTab = document.querySelector('[data-bs-target="#panel-main"]');
-        if (mainTab) {
-          bootstrap.Tab.getOrCreateInstance(mainTab).show();
-        }
-      });
-    }
-
-    // Wire Timbuktu test button (existing behavior)
-    const testBtn = document.getElementById('test-btn');
-    testBtn.addEventListener('click', async () => {
-      // Timbuktu WH site (approx): lon=-2.999444444, lat=16.77333333
-      const lon = -2.999444444;
-      const lat = 16.77333333;
-      document.getElementById('main-lon').value = lon;
-      document.getElementById('main-lat').value = lat;
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-      try {
-        await resolveByLonLat(lon, lat);
-      } catch (e) {
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // Coordinates form submit
-    const coordsForm = document.getElementById('coords-form');
-    coordsForm.addEventListener('submit', async (evt) => {
-      evt.preventDefault();
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-
-      const lon = document.getElementById('main-lon').value.trim();
-      const lat = document.getElementById('main-lat').value.trim();
-
-      if (lon === '' || lat === '') {
-        mainSetStatus('Please enter both longitude and latitude.');
-        return;
-      }
-
-      try {
-        await resolveByLonLat(lon, lat);
-      } catch (e) {
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // WHG Lookup form submit
-    const whgForm = document.getElementById('whg-form');
-    whgForm.addEventListener('submit', async (evt) => {
-      evt.preventDefault();
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-
-      const name = document.getElementById('main-name').value.trim();
-
-      if (name === '') {
-        mainSetStatus('Please enter a place name.');
-        return;
-      }
-
-      try {
-        mainSetStatus('Resolving via WHG...');
-        await resolveByName(name);
-        mainSetStatus('');
-      } catch (e) {
-        mainSetStatus('');
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // Clear state when switching input method pills within Main tab
-    document.querySelectorAll('#main-input-pills button[data-bs-toggle="pill"]').forEach((pill) => {
-      pill.addEventListener('shown.bs.tab', () => {
-        renderResolvedPlace(null);
-        renderSignature(null);
-        clearBasinLayer();
-        clearMarker();
-        clearSimilarResults();
-        mainSetStatus('');
-        clearGazState();
-        setMapTitle('Zoom to study area');
-        if (map) map.setView([0, 0], 2);
-      });
-    });
-
     // Initialize map if Leaflet is present
     ensureMap();
-
-    // World Heritage: load seed list now (simple pilot behavior)
-    whLoadSites();
-
-    // World Heritage: selection handler
-    const whSel = document.getElementById('wh-select');
-    if (whSel) {
-      whSel.addEventListener('change', async () => {
-        const v = whSel.value;
-        if (!v) return;
-        await whSelectById(v);
-      });
-    }
-
-    // World Heritage: toggle description
-    const whBtn = document.getElementById('wh-show-desc');
-    if (whBtn) {
-      whBtn.addEventListener('click', () => {
-        const descBox = document.getElementById('wh-desc');
-        if (!whSelected || !whSelected.short_description_en || !descBox) return;
-
-        // Toggle visibility (use 'block' not '' to avoid falsy empty string issue)
-        if (descBox.style.display === 'none') {
-          descBox.textContent = whSelected.short_description_en;
-          descBox.style.display = 'block';
-          whBtn.textContent = 'Hide description';
-        } else {
-          descBox.style.display = 'none';
-          descBox.textContent = '';
-          whBtn.textContent = 'Show description';
-        }
-      });
-    }
-
-    // World Heritage: similar buttons
-    const btnSimilarEnv = document.getElementById('wh-similar-env');
-    if (btnSimilarEnv) {
-      btnSimilarEnv.addEventListener('click', whShowSimilarEnv);
-    }
-    const btnSimilarText = document.getElementById('wh-similar-text');
-    if (btnSimilarText) {
-      btnSimilarText.addEventListener('click', whShowSimilarText);
-    }
 
     // WH Cities: load cities now
     whcLoadCities();
 
-    // Basin clusters: load clusters now
-    loadBasinClusters();
+    // Societies: now the default tab on load -- shown.bs.tab (below) only fires on a real tab
+    // switch, never for the tab that's already active in markup, so load it here too (same
+    // unconditional-prefetch pattern as whcLoadCities above). loadSocieties() is idempotent --
+    // safe to call again from the tab-shown handler if the user navigates away and back.
+    // Deferred via setTimeout: this whole script is one function body nested inside this same
+    // DOMContentLoaded callback, and `let socData` (plus the other Societies state vars) aren't
+    // declared until much later in that body -- calling loadSocieties() synchronously here hits
+    // their temporal dead zone. Deferring to the next tick runs it only after this callback's
+    // full synchronous body -- every `let` in it -- has already executed.
+    setTimeout(loadSocieties, 0);
+
+    // Terrain knobs: landform-position tooltip (0=floor/valley, 1=ridge/peak)
+    const posInfoIcon = document.getElementById('terrain-info-position');
+    if (posInfoIcon) {
+      new bootstrap.Tooltip(posInfoIcon, {
+        title: '0 = floor (surrounded by higher ground); 1 = ridge/peak (surrounded by lower ground). '
+             + 'Ratio of (mean − min) to (max − min) elevation across the sampled window.',
+        placement: 'top',
+        trigger: 'hover',
+      });
+    }
 
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
@@ -1845,14 +1301,32 @@
       });
     }
 
-    // WH Cities: environmental similarity dropdown
+    // WH Cities: environmental similarity dropdown (lens-based)
     document.querySelectorAll('#whc-similar-env-btn + .dropdown-menu .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
-        const band = item.getAttribute('data-band');
-        whcShowSimilarEnv(band);
+        // Close explicitly -- Bootstrap's own auto-close doesn't fire reliably here, because the
+        // handlers below synchronously disable this same toggle button while the menu is still open.
+        const envToggle = document.getElementById('whc-similar-env-btn');
+        if (envToggle) bootstrap.Dropdown.getOrCreateInstance(envToggle).hide();
+        const lensId = item.getAttribute('data-lens');
+        const knobs = document.getElementById('terrain-knobs');
+        if (lensId === 'terrain') {
+          if (knobs) knobs.style.display = 'flex';
+          whcShowSimilarTerrain();
+        } else {
+          if (knobs) knobs.style.display = 'none';
+          whcShowSimilarEnv(lensId);
+        }
       });
+    });
+
+    // WH Cities: terrain knobs — auto-apply on change, same convention as the sandbox's
+    // conjunction bands (#v3-cj-corr etc.), no separate Apply button.
+    ['terrain-tol-elev', 'terrain-tol-relief', 'terrain-tol-pos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => whcShowSimilarTerrain());
     });
 
     // WH Cities: semantic similarity dropdown
@@ -1860,6 +1334,8 @@
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
+        const textToggle = document.getElementById('whc-similar-text-btn');
+        if (textToggle) bootstrap.Dropdown.getOrCreateInstance(textToggle).hide();
         const band = item.getAttribute('data-band');
         whcShowSimilarText(band);
       });
@@ -1877,7 +1353,6 @@
         renderSignature(null);
         showClusterLabel(null);
         clearSimilarResults();
-        clearGazState();
         // Hide eco selected info and dplace results
         const ecoInfo = document.getElementById('eco-selected-info');
         if (ecoInfo) ecoInfo.style.display = 'none';
@@ -1898,29 +1373,9 @@
           ? evt.target.getAttribute('data-bs-target')
           : null;
 
-        // WH-specific UI reset when entering WH tab
-        if (targetSel === '#panel-wh') {
-          whSetStatus('');
-          const descBox = document.getElementById('wh-desc');
-          if (descBox) {
-            descBox.style.display = 'none';
-            descBox.textContent = '';
-          }
-        }
-
         // WHC-specific UI reset when entering WHC tab
         if (targetSel === '#panel-whc') {
           whcSetStatus('');
-        }
-
-        // Basins-specific UI reset when entering Basins tab
-        if (targetSel === '#panel-basins') {
-          basinSetStatus('');
-        }
-
-        // Main-specific UI reset when entering Main tab
-        if (targetSel === '#panel-main') {
-          mainSetStatus('');
         }
 
         // Eco-specific: load realms on first view
@@ -2351,8 +1806,9 @@
     }
 
     // -----------------------
-    // Gazetteer Autocomplete
+    // Ecoregions Hierarchy (placeholder — replaces removed Gazetteer section)
     // -----------------------
+    // Note: gaz-search, gaz-dropdown, coords-form belong to the removed Main tab.
 
     const gazSearch = document.getElementById('gaz-search');
     const gazDropdown = document.getElementById('gaz-dropdown');
@@ -2659,6 +2115,8 @@
     let ecoLayer = null;  // Current polygon layer on map
     let socLayer = null;  // D-PLACE societies markers layer group
     let socData = null;   // Cached societies data
+    let socMarkerIndex = {};   // soc_id -> Leaflet marker, for CITYKIN WO4's donut hover-to-map linking
+    let socScatterIndex = {};  // soc_id -> SVG circle in the confirmatory scatter, same hover linking
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2683,6 +2141,7 @@
         map.removeLayer(socLayer);
         socLayer = null;
       }
+      socMarkerIndex = {};
     }
 
     // 7-color palette for subsistence categories
@@ -2709,7 +2168,7 @@
     let socSubsistenceFilter = 'all';  // Current filter: 'all' or a subsistence name
     let socReligionFilter = 'all';     // Current filter: 'all' or a religion category
     let socActiveQuery = 'subsistence'; // Which query is active: 'subsistence' or 'religion'
-    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'basins'
+    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'envscan' (CITYKIN WO4)
 
     async function loadSocieties() {
       const loadingEl = document.getElementById('soc-loading');
@@ -2942,17 +2401,21 @@
           }
         }
 
-        const marker = L.circleMarker([soc.lat, soc.lon], {
+        const baseStyle = {
           radius: 4,
           fillColor: color,
           color: '#333',
           weight: 1,
           opacity: isMatch ? 0.8 : 0.3,
           fillOpacity: isMatch ? 0.8 : 0.1
-        });
+        };
+        const marker = L.circleMarker([soc.lat, soc.lon], baseStyle);
+        marker._wo4Base = baseStyle;   // snapshot for wo4RestoreMarkers() -- see donut hover wiring
+        marker._wo4Type = 'leaflet';
 
         marker.bindTooltip(`<strong>${escapeHtml(soc.name)}</strong> (${escapeHtml(soc.id)})`);
         socLayer.addLayer(marker);
+        socMarkerIndex[soc.id] = marker;
       });
 
       socLayer.addTo(map);
@@ -2968,8 +2431,8 @@
     }
 
     function renderDplaceResults(data) {
-      if (socDisplayMode === 'basins') {
-        renderBasinClusters(data);
+      if (socDisplayMode === 'envscan') {
+        renderEnvScan(data);
       } else {
         renderTopEcoregions(data);
       }
@@ -3037,58 +2500,471 @@
       container.style.display = 'block';
     }
 
-    function renderBasinClusters(data) {
+    // ---------------------------------------------------------------------
+    // CITYKIN WO4 (2026-07-30, meter-bar redesign) — replaces the retired PCA "Basin clusters"
+    // option. Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and
+    // gets the confirmatory Climate envelope scatter; EA034 (religion) has none and gets the
+    // exploratory five-variable meter scan (aridity/temperature/seasonality/ruggedness/landform,
+    // each a plain percentile-of-global-range, no lens-level resampling — Karl's review of the
+    // original four-lens scan found "tighter than X% of random draws" unusable on a GUI page).
+    // Composition (both displays) is a donut, not a bullet list, with hover-to-map linking.
+    // See docs/cdop/citykin/wo4_whc-grouping.md.
+    // ---------------------------------------------------------------------
+
+    let envScanRequestId = 0;
+    const WO4_VARIABLE_ORDER = ['aridity', 'temperature', 'seasonality', 'ruggedness', 'landform'];
+    const WO4_VARIABLE_LABELS = {
+      aridity: 'Aridity', temperature: 'Temperature', seasonality: 'Seasonality',
+      ruggedness: 'Ruggedness', landform: 'Landform',
+    };
+
+    function wo4SvgEl(tag, attrs) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      if (attrs) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    }
+
+    function wo4Tooltip() {
+      let tip = document.getElementById('wo4-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'wo4-tooltip';
+        tip.className = 'wo4-tooltip';
+        document.body.appendChild(tip);
+      }
+      return tip;
+    }
+
+    function wo4ShowTooltip(evt, lines) {
+      const tip = wo4Tooltip();
+      tip.innerHTML = '';
+      lines.forEach(line => {
+        const div = document.createElement('div');
+        div.textContent = line;   // untrusted-as-a-rule: always textContent, never string-built HTML
+        tip.appendChild(div);
+      });
+      tip.style.left = (evt.pageX + 12) + 'px';
+      tip.style.top = (evt.pageY + 12) + 'px';
+      tip.style.opacity = '1';
+    }
+
+    function wo4HideTooltip() {
+      const tip = document.getElementById('wo4-tooltip');
+      if (tip) tip.style.opacity = '0';
+    }
+
+    function wo4Legend(items) {
+      const legend = document.createElement('div');
+      legend.className = 'wo4-legend';
+      items.forEach(item => {
+        const key = document.createElement('span');
+        key.className = 'wo4-legend-key';
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = item.color;
+        key.appendChild(swatch);
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        key.appendChild(label);
+        legend.appendChild(key);
+      });
+      return legend;
+    }
+
+    async function renderEnvScan(data) {
       const container = document.getElementById('dplace-results');
       const heading = document.getElementById('dplace-results-heading');
       const content = document.getElementById('dplace-results-content');
       if (!container || !heading || !content) return;
 
-      // Determine active filter
       const activeFilter = socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter;
-      const filterField = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
+      const trait = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
 
       if (activeFilter === 'all') {
         container.style.display = 'none';
         return;
       }
 
-      // Count societies per cluster for selected filter
-      const clusterCounts = {};  // cluster_id → count
-      data.societies.forEach(soc => {
-        if (soc[filterField] === activeFilter && soc.cluster_id != null) {
-          const cid = soc.cluster_id;
-          clusterCounts[cid] = (clusterCounts[cid] || 0) + 1;
-        }
-      });
+      const myRequestId = ++envScanRequestId;
+      socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
+      container.style.display = 'block';
+      heading.textContent = `Environment for ${activeFilter}`;
+      content.innerHTML = '';
+      const loading = document.createElement('div');
+      loading.className = 'wo4-viz text-muted small py-3';
+      loading.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading environmental scan…';
+      content.appendChild(loading);
 
-      if (Object.keys(clusterCounts).length === 0) {
-        container.style.display = 'none';
+      let scan;
+      try {
+        const resp = await fetch(`/api/societies/env-scan?trait=${encodeURIComponent(trait)}&value=${encodeURIComponent(activeFilter)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        scan = await resp.json();
+      } catch (err) {
+        if (myRequestId !== envScanRequestId) return;   // a newer request superseded this one
+        content.innerHTML = '<div class="text-muted small">Environmental scan unavailable.</div>';
+        console.error('env-scan fetch failed:', err);
+        return;
+      }
+      if (myRequestId !== envScanRequestId) return;
+
+      content.innerHTML = '';
+      const root = document.createElement('div');
+      root.className = 'wo4-viz';
+      content.appendChild(root);
+
+      if (scan.n_focus === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-muted small';
+        empty.textContent = 'No basin-joined societies match this value.';
+        root.appendChild(empty);
         return;
       }
 
-      // Sort by count descending
-      const sorted = Object.entries(clusterCounts)
-        .map(([cid, count]) => ({ cluster_id: parseInt(cid), count }))
-        .sort((a, b) => b.count - a.count);
+      if (scan.hook && scan.hook.has_hook) {
+        heading.textContent = `Climate envelope for ${activeFilter}`;
+        root.appendChild(wo4ClimateEnvelopeScatter(scan));
+      } else {
+        heading.textContent = `Environment scan for ${activeFilter}`;
+        root.appendChild(wo4EnvScanMeters(scan));
+      }
+      root.appendChild(wo4CompositionDonut(scan.composition));
+    }
 
-      // Render heading
-      heading.textContent = `Basin clusters for ${activeFilter}`;
+    function wo4ClimateEnvelopeScatter(scan) {
+      const wrap = document.createElement('div');
+      const sc = scan.scatter;
 
-      // Render as list with badges (similar to Basins tab)
-      const html = '<div class="list-group list-group-flush small">' +
-        sorted.map(c => {
-          const label = CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
-          return `
-            <div class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
-              <span>${escapeHtml(label)}</span>
-              <span class="badge bg-primary">${c.count}</span>
-            </div>
-          `;
-        }).join('') +
-        '</div>';
+      wrap.appendChild(wo4Legend([
+        { color: 'var(--wo4-backdrop)', label: `All subsistence-coded societies (n=${sc.backdrop.length})` },
+        { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
+      ]));
 
-      content.innerHTML = html;
-      container.style.display = 'block';
+      // Plain-language read of the same two axes, so the reader isn't left to eyeball ~1,000 dots
+      // unaided (Karl, 2026-07-30: "can we do better?" -- Fishing's cloud is scattered across
+      // nearly the whole range, and the caption is what surfaces that its mean is still real
+      // signal -- "somewhat Wet, very Cool" -- that the dispersed scatter alone obscures).
+      if (sc.summary) {
+        const summaryLine = document.createElement('div');
+        summaryLine.className = 'wo4-caption';
+        summaryLine.style.color = 'var(--wo4-text-primary)';
+        summaryLine.style.fontWeight = '600';
+        summaryLine.textContent = [sc.summary.aridity, sc.summary.temperature]
+          .map((res, i) => `${i === 0 ? 'Aridity' : 'Temperature'}: ${wo4Qualifier(res)}`)
+          .join('  ·  ');
+        wrap.appendChild(summaryLine);
+      }
+
+      const width = 480, height = 300;
+      const margin = { top: 10, right: 16, bottom: 40, left: 56 };
+      const plotW = width - margin.left - margin.right;
+      const plotH = height - margin.top - margin.bottom;
+
+      const allPoints = sc.backdrop.concat(sc.focus);
+      const xs = allPoints.map(p => p.x), ys = allPoints.map(p => p.y);
+      const xMin = Math.min(...xs), xMax = Math.max(...xs);
+      const yMin = Math.min(...ys), yMax = Math.max(...ys);
+      const xPad = (xMax - xMin) * 0.05 || 1, yPad = (yMax - yMin) * 0.05 || 1;
+      const xScale = x => margin.left + ((x - (xMin - xPad)) / ((xMax + xPad) - (xMin - xPad))) * plotW;
+      const yScale = y => margin.top + plotH - ((y - (yMin - yPad)) / ((yMax + yPad) - (yMin - yPad))) * plotH;
+
+      const svg = wo4SvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Climate envelope scatter for ${scan.value}` });
+
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top + plotH, x2: margin.left + plotW, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top, x2: margin.left, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+
+      const xLabel = wo4SvgEl('text', { x: margin.left + plotW / 2, y: height - 6, 'text-anchor': 'middle', class: 'wo4-axis-label' });
+      xLabel.textContent = sc.x_label;
+      svg.appendChild(xLabel);
+
+      const yLabel = wo4SvgEl('text', { x: 12, y: margin.top + plotH / 2, 'text-anchor': 'middle', class: 'wo4-axis-label', transform: `rotate(-90, 12, ${margin.top + plotH / 2})` });
+      yLabel.textContent = sc.y_label;
+      svg.appendChild(yLabel);
+
+      // Pole labels, same source as the meter bars' (variable_percentiles()'s pole_low/pole_high) --
+      // not hardcoded here. Aridity in particular is famously counter-intuitive (the BasinATLAS
+      // index INCREASES with humidity; Karl, 2026-07-30) and the scatter had no tick values or
+      // direction cue at all before this -- a reader had no way to know which side was arid without
+      // already knowing that convention. xScale/yScale are both standard, non-inverted linear
+      // scales (low value -> left/bottom, high value -> right/top); the pole labels just say so.
+      if (sc.summary) {
+        const xPoleLow = wo4SvgEl('text', { x: margin.left, y: height - 6, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        xPoleLow.textContent = sc.summary.aridity.pole_low;
+        svg.appendChild(xPoleLow);
+        const xPoleHigh = wo4SvgEl('text', { x: margin.left + plotW, y: height - 6, 'text-anchor': 'end', class: 'wo4-axis-pole' });
+        xPoleHigh.textContent = sc.summary.aridity.pole_high;
+        svg.appendChild(xPoleHigh);
+
+        const yPoleHigh = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + 10, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleHigh.textContent = sc.summary.temperature.pole_high;   // top of plot = higher value
+        svg.appendChild(yPoleHigh);
+        const yPoleLow = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + plotH - 4, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleLow.textContent = sc.summary.temperature.pole_low;   // bottom of plot = lower value
+        svg.appendChild(yPoleLow);
+      }
+
+      // Backdrop dots: emphasis form's de-emphasized context, deliberately not interactive --
+      // ~1,000 dots of "here's everyone else" don't need per-point tooltips, and the story is the
+      // highlighted group, not the cloud.
+      const backdropG = wo4SvgEl('g');
+      sc.backdrop.forEach(p => {
+        backdropG.appendChild(wo4SvgEl('circle', { cx: xScale(p.x), cy: yScale(p.y), r: 2.5, fill: 'var(--wo4-backdrop)', 'fill-opacity': 0.45 }));
+      });
+      svg.appendChild(backdropG);
+
+      // Focus dots: the one series the emphasis form is about -- interactive.
+      const focusG = wo4SvgEl('g');
+      sc.focus.forEach(p => {
+        const c = wo4SvgEl('circle', {
+          cx: xScale(p.x), cy: yScale(p.y), r: 4, fill: 'var(--wo4-focus)', 'fill-opacity': 0.85,
+          stroke: 'var(--wo4-surface)', 'stroke-width': 2
+        });
+        c.style.cursor = 'pointer';
+        c._wo4Type = 'svg';
+        c._wo4Base = { r: 4, 'fill-opacity': 0.85, 'stroke-width': 2 };   // for wo4RestoreMarkers()
+        const tipLines = [p.name || p.soc_id, `${sc.x_label}: ${p.x.toFixed(2)}`, `${sc.y_label}: ${p.y.toFixed(1)}`];
+        c.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointerleave', wo4HideTooltip);
+        focusG.appendChild(c);
+        socScatterIndex[p.soc_id] = c;
+      });
+      svg.appendChild(focusG);
+
+      wrap.appendChild(svg);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = `Confirmatory view — ${scan.hook.source}.`;
+      wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    function wo4Qualifier(res) {
+      return res.qualifier === 'typical' ? 'typical' : `${res.qualifier} ${res.direction.toLowerCase()}`;
+    }
+
+    function wo4EnvScanMeters(scan) {
+      const wrap = document.createElement('div');
+      const meters = document.createElement('div');
+      meters.className = 'wo4-meters';
+
+      WO4_VARIABLE_ORDER.forEach(key => {
+        const res = scan.variables[key];
+        const row = document.createElement('div');
+        row.className = 'wo4-meter-row';
+
+        const top = document.createElement('div');
+        top.className = 'wo4-meter-top';
+        const label = document.createElement('span');
+        label.className = 'wo4-meter-label';
+        label.textContent = WO4_VARIABLE_LABELS[key] || key;
+        top.appendChild(label);
+
+        if (!res || !res.n_focus) {
+          const none = document.createElement('span');
+          none.className = 'wo4-meter-qual';
+          none.textContent = 'no data';
+          top.appendChild(none);
+          row.appendChild(top);
+          meters.appendChild(row);
+          return;
+        }
+
+        const qual = document.createElement('span');
+        qual.className = 'wo4-meter-qual';
+        qual.textContent = wo4Qualifier(res);
+        top.appendChild(qual);
+        row.appendChild(top);
+
+        const trackRow = document.createElement('div');
+        trackRow.className = 'wo4-meter-track-row';
+
+        const poleLow = document.createElement('span');
+        poleLow.className = 'wo4-pole';
+        poleLow.textContent = res.pole_low;
+        trackRow.appendChild(poleLow);
+
+        const track = document.createElement('div');
+        track.className = 'wo4-track';
+        const fill = document.createElement('div');
+        fill.className = 'wo4-fill';
+        fill.style.width = `${res.percentile}%`;
+        const midline = document.createElement('div');
+        midline.className = 'wo4-midline';
+        track.append(fill, midline);
+        const tipLines = [WO4_VARIABLE_LABELS[key] || key, wo4Qualifier(res)];
+        track.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
+        track.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
+        track.addEventListener('pointerleave', wo4HideTooltip);
+        trackRow.appendChild(track);
+
+        const poleHigh = document.createElement('span');
+        poleHigh.className = 'wo4-pole right';
+        poleHigh.textContent = res.pole_high;
+        trackRow.appendChild(poleHigh);
+
+        const pct = document.createElement('span');
+        pct.className = 'wo4-pct';
+        pct.textContent = `${Math.round(res.percentile)}%`;
+        trackRow.appendChild(pct);
+
+        row.appendChild(trackRow);
+        meters.appendChild(row);
+      });
+
+      wrap.appendChild(meters);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = `Where ${scan.value} societies typically sit on each variable's own global range, against all basin-joined D-PLACE societies.`;
+      wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    // Highlight the given society IDs across every linked view (map markers, and the confirmatory
+    // scatter's dots when that display is showing), dim everyone else; wo4RestoreMarkers() undoes
+    // it. Two element types, one shared index-and-snapshot pattern: Leaflet markers restyle via
+    // .setStyle(), SVG circles via .setAttribute() -- _wo4Type picks the branch, _wo4Base is never
+    // hand-computed (it varies per element: isMatch-driven opacity on the map, nothing on the
+    // scatter) so restore always returns to what was actually there, not a guessed default.
+    function wo4ApplyStyle(el, style) {
+      if (el._wo4Type === 'svg') {
+        Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
+      } else {
+        el.setStyle(style);
+      }
+    }
+
+    function wo4HighlightMarkers(socIds) {
+      const idSet = new Set(socIds);
+      [socMarkerIndex, socScatterIndex].forEach(index => {
+        Object.entries(index).forEach(([id, el]) => {
+          if (idSet.has(id)) {
+            wo4ApplyStyle(el, el._wo4Type === 'svg'
+              ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
+              : { radius: 7, weight: 2, opacity: 1, fillOpacity: 1 });
+            if (el.bringToFront) el.bringToFront();
+            else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
+          } else {
+            wo4ApplyStyle(el, el._wo4Type === 'svg'
+              ? { 'fill-opacity': 0.08 }
+              : { opacity: 0.08, fillOpacity: 0.04 });
+          }
+        });
+      });
+    }
+
+    function wo4RestoreMarkers() {
+      [socMarkerIndex, socScatterIndex].forEach(index => {
+        Object.values(index).forEach(el => {
+          if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base);
+        });
+      });
+    }
+
+    function wo4CompositionDonut(comp) {
+      const wrap = document.createElement('div');
+      if (!comp || !comp.n_total) return wrap;
+
+      // Order is deliberate, not by count: named families ranked by size, THEN the two residual
+      // buckets (Other, Unresolved) always last regardless of where their raw count would
+      // otherwise sort them (Karl, 2026-07-30) -- zero-count buckets are dropped, not shown empty.
+      const namedColors = ['var(--wo4-cat-1)', 'var(--wo4-cat-2)', 'var(--wo4-cat-3)'];
+      const buckets = [
+        ...comp.top_families.map((f, i) => ({
+          label: f.family_name || f.family_id, n: f.n, share: f.share,
+          soc_ids: f.soc_ids || [], color: namedColors[i] || 'var(--wo4-neutral-fill)',
+        })),
+        { label: 'Other families', n: comp.other.n, share: comp.other.share,
+          soc_ids: comp.other.soc_ids || [], color: 'var(--wo4-neutral-fill)', neutral: true },
+        { label: 'Unresolved', n: comp.n_unresolved, share: comp.n_unresolved / comp.n_total,
+          soc_ids: comp.unresolved.soc_ids || [], color: 'var(--wo4-text-muted)', neutral: true },
+      ].filter(b => b.n > 0);
+
+      const row = document.createElement('div');
+      row.className = 'wo4-donut-row';
+
+      const figure = document.createElement('div');
+      figure.className = 'wo4-donut-figure';
+      const svg = wo4SvgEl('svg', { width: 168, height: 168, viewBox: '0 0 168 168', role: 'img', 'aria-label': 'Language-family composition' });
+      const cx = 84, cy = 84, rOuter = 74, rInner = 44;
+      let angle = -Math.PI / 2;
+      const wedgeEls = {};
+
+      buckets.forEach((b, i) => {
+        const frac = b.n / comp.n_total;
+        const a0 = angle, a1 = angle + frac * 2 * Math.PI;
+        angle = a1;
+        const large = (a1 - a0) > Math.PI ? 1 : 0;
+        const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+        const [x0, y0] = pt(rOuter, a0), [x1, y1] = pt(rOuter, a1);
+        const [x2, y2] = pt(rInner, a1), [x3, y3] = pt(rInner, a0);
+        const d = `M${x0},${y0} A${rOuter},${rOuter} 0 ${large},1 ${x1},${y1} L${x2},${y2} A${rInner},${rInner} 0 ${large},0 ${x3},${y3} Z`;
+        const path = wo4SvgEl('path', { d, fill: b.color, stroke: 'var(--wo4-surface)', 'stroke-width': 2 });
+        path.style.cursor = 'pointer';
+        path.style.transition = 'opacity 0.15s ease';
+        svg.appendChild(path);
+        wedgeEls[i] = path;
+      });
+
+      const centerN = wo4SvgEl('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', class: 'wo4-donut-total', fill: 'var(--wo4-text-primary)', 'font-size': 22, 'font-weight': 600 });
+      centerN.textContent = comp.n_total;
+      svg.appendChild(centerN);
+      const centerLbl = wo4SvgEl('text', { x: cx, y: cy + 14, 'text-anchor': 'middle', fill: 'var(--wo4-text-muted)', 'font-size': 10 });
+      centerLbl.textContent = 'societies';
+      svg.appendChild(centerLbl);
+
+      figure.appendChild(svg);
+      row.appendChild(figure);
+
+      const legend = document.createElement('ul');
+      legend.className = 'wo4-comp-legend';
+      const legendRows = {};
+      buckets.forEach((b, i) => {
+        const li = document.createElement('li');
+        li.className = 'wo4-comp-row' + (b.neutral ? ' is-neutral' : '');
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = b.color;
+        const name = document.createElement('span');
+        name.className = 'wo4-comp-name';
+        name.textContent = b.label;
+        const count = document.createElement('span');
+        count.className = 'wo4-comp-count';
+        count.textContent = `${b.n} (${Math.round(b.share * 100)}%)`;
+        li.append(swatch, name, count);
+        legend.appendChild(li);
+        legendRows[i] = li;
+
+        const enter = () => {
+          wo4HighlightMarkers(b.soc_ids);
+          li.classList.add('is-active');
+          wedgeEls[i].style.opacity = '1';
+          Object.entries(wedgeEls).forEach(([j, el]) => { if (j != i) el.style.opacity = '0.35'; });
+        };
+        const leave = () => {
+          wo4RestoreMarkers();
+          li.classList.remove('is-active');
+          Object.values(wedgeEls).forEach(el => { el.style.opacity = '1'; });
+        };
+        li.addEventListener('mouseenter', enter);
+        li.addEventListener('mouseleave', leave);
+        wedgeEls[i].addEventListener('mouseenter', enter);
+        wedgeEls[i].addEventListener('mouseleave', leave);
+      });
+      row.appendChild(legend);
+
+      wrap.appendChild(row);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = 'Hover a family to highlight its societies on the map.';
+      wrap.appendChild(caption);
+
+      return wrap;
     }
 
     // Breadcrumb state

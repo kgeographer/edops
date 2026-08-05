@@ -1,8 +1,8 @@
 <!-- Shared EDOPS header (2026-08-03 reorg). Used by sandbox_v3.html, explorer.html, and
-     cdop_pilot.html (via base.html's header-block override). Callers set two Jinja
-     variables before including this file:
+     workbench.html (via base.html's header-block override; formerly cdop_pilot.html, renamed
+     2026-08-05). Callers set two Jinja variables before including this file:
        page_title   -- e.g. "EDOPS Sandbox v0.4"
-       active_page  -- one of 'sandbox' | 'explorer' | 'cdop', for the active nav-pill state
+       active_page  -- one of 'sandbox' | 'explorer' | 'workbench', for the active nav-pill state
      Karl, 2026-08-03: "workable frame that can be tweaked later, progress not perfection." -->
 <header class="mb-2">
   <div class="d-flex align-items-center justify-content-between py-2 border-bottom flex-wrap gap-2">
@@ -14,7 +14,7 @@
       <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'sandbox' else '' }}" href="/sandbox">Sandbox</a></li>
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'explorer' else '' }}" href="/explorer">Data Explorer</a></li>
-        <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'cdop' else '' }}" href="/cdop_tests">EDOP &lt;&gt; CDOP</a></li>
+        <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'workbench' else '' }}" href="/workbench">EDOP &lt;&gt; CDOP</a></li>
       </ul>
     </div>
     <div class="d-flex align-items-center gap-3">

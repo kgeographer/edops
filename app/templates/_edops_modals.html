@@ -1,7 +1,8 @@
-<!-- Shared Guide/API modals. Used by sandbox_v3.html, explorer.html, and cdop_pilot.html
-     (via base.html's modals-block override). base.html keeps its own inline About modal for
-     workbench.html, untouched, to avoid duplicate-ID collisions if a page both extends
-     base.html's default modals AND includes this partial.
+<!-- Shared Guide/API modals. Used by sandbox_v3.html, explorer.html, and workbench.html
+     (via base.html's modals-block override; formerly cdop_pilot.html, renamed 2026-08-05).
+     The old workbench.html -- which relied on base.html's own inline default About/API modals,
+     not this partial -- is archived to xarchive/ (gitignored). Those base.html defaults are
+     now unreached by any live route, left in place rather than deleted in this pass.
      Guide modal replaced the retired About modal 2026-08-04 (DOCSv4 plumbing) -- shell is
      shared, body is per-page: includes "_guide_{{ active_page }}.html" (each caller sets
      active_page before including this partial). Placeholder content, per-page Guide design

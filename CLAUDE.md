@@ -401,11 +401,23 @@ Cross-phase deferred items → `docs/design/deferred_items_register.md`.
 
 Standing cross-phase notes:
 - **Cliopatria viewer** (`/polities`) — live but eyes-only for ISHI; Phase 4 precursor
-- **`/wh-sites` and `/similar`** — not dead: called by `workbench.html`, a real, actively-used page
-  (registered at `/workbench` plus host-based subdomain routing), just undocumented elsewhere in this
-  file.
+- **`/wh-sites` and `/similar` are now orphaned** (2026-08-05) — previously "not dead" because
+  `workbench.html` called them, but that page has been archived to `xarchive/` (gitignored, not
+  deleted) as part of the Workbench-name untangling below. Nothing live calls them now; worth a
+  removal pass when convenient, not urgent.
+- **The two-things-named-Workbench collision is resolved** (2026-08-05) — the old `workbench.html`
+  (dev/test harness: Main lookup, Basins, Ecoregions, Societies, WH Cities, WH Sites tabs) is
+  archived to `xarchive/workbench.html`. `cdop_pilot.html` was renamed to `workbench.html` and now
+  owns the `/workbench` route and the `active_page = "workbench"` identifier; `/cdop` and
+  `/cdop_tests` were dropped outright (v0.4 isn't deployed, no compat redirects needed). The
+  visible label — page title `"EDOP <> CDOP workbench"`, nav pill `"EDOP <> CDOP"` — is
+  deliberately left as-is; Karl wants to reconsider it during the docs-content pass ahead, not
+  settle it now. The `workbench.computingplace.org` subdomain still needs an nginx-level redirect
+  to `edops.computingplace.org/workbench` at deploy time — that's a manual step Karl runs on the
+  server, not tracked in this repo.
 - **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a, wired into
-  `cdop_pilot.html`); `/api/whc-similar-env-lens` is deprecated-pending-deletion, not dead — see
+  `workbench.html`, formerly `cdop_pilot.html`); `/api/whc-similar-env-lens` is
+  deprecated-pending-deletion, not dead — see
   `CITYKIN_tracker.md`. The precip/temp regime lenses that were supposed to trigger its deletion are now
   confirmed live too (2026-07-30) — whether the old path was actually removed alongside them is
   unconfirmed, worth a direct check before assuming either way.
