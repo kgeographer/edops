@@ -1,0 +1,20 @@
+site_name: EDOPS Documentation
+site_description: Documentation for the Environmental Dimensions of Place Service (EDOPS)
+docs_dir: docsite
+site_dir: site
+
+theme:
+  name: material
+
+nav:
+  - Start here: index.md
+  - Claims and limits: claims.md
+  - Guides:
+      - Sandbox: guides/sandbox.md
+      - Explorer: guides/explorer.md
+      - Workbench: guides/workbench.md
+  - Codebook: codebook.md
+  - Instruments: instruments.md
+  - Data sources: data-sources.md
+  - API: api.md
+  - Project: project.md
