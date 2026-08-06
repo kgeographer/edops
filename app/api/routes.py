@@ -2547,6 +2547,8 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
                 "hybas_id": int(r["hybas_id"]),
                 "neighbor_lat": float(r["neighbor_lat"]),
                 "neighbor_lon": float(r["neighbor_lon"]),
+                "border_bearing": float(r["border_bearing"]),
+                "centroid_bearing": float(r["centroid_bearing"]),
                 "feature": {
                     "type": "Feature",
                     "properties": {"hybas_id": int(r["hybas_id"])},

@@ -311,8 +311,11 @@
       <!-- Ring info (shown on ring scope render) -->
       <div id="v3-ring-info" class="text-muted small px-1 mt-2" style="display:none;">
         <p class="mb-1">The <strong>map</strong> shows the center basin and its first-order
-        adjacent ring. Click a ring member to load its signature in the Signature tab.
-        Click the center to return to the center signature.</p>
+        adjacent ring, numbered clockwise from north (not by compass direction — several
+        neighbors can share the same rough direction). Click a basin, on the map or in the list
+        below, to preview it, then <strong>Get signature</strong> to load its data across all
+        tabs. This list always shows which basin is currently loaded, whichever tab you're on.</p>
+        <div id="v3-ring-list" class="list-group mt-1"></div>
       </div>
 
       <!-- Lower panel: intro text + choropleth controls -->
@@ -643,10 +646,21 @@
   let _pointMarker   = null;
   let _ringData      = null;
   let _ringPopup     = null;
+  let _ringSelectPopup    = null;  // persistent click-to-preview popup, distinct from the hover popup
+  // Split deliberately: preview is a lightweight, pre-commit map/tooltip affordance (click a
+  // basin, see a highlight + "Get signature" link); committed is what's actually loaded into
+  // Signature/Analysis/Seasonality/Context and what titles + the list's bold row reflect. If
+  // these were one variable, titles would flip to "Ring 3" the instant you merely clicked to
+  // preview, before the data caught up -- the same title/data mismatch bug, just relocated.
+  let _previewRingMemberId   = null;  // hybas_id under the cursor/popup, pre-commit; null = none
+  let _committedRingMemberId = null;  // hybas_id actually loaded right now; null = center
   let _centerPayload = null;
   let _sigMemberIds    = null;  // Set<number> of hybas_ids in current scope
   let _basinLayerLevel = null;  // level (6|8) at which basin-choropleth is loaded
   let _pointSig         = null;  // /api/signature response for current point — powers Analysis tab
+  let _centerPointSig   = null;  // _pointSig snapshot for the ring center — _pointSig itself
+                                  // gets overwritten by commitRingMember, so returning to center
+                                  // needs its own cached copy, same idea as _centerPayload
   let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
 
   // WO6c conjunction panel — paint the non-compensatory set. The validated instrument; the old
@@ -1302,8 +1316,9 @@
     const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
 
     // ── Assemble ──────────────────────────────────────────────────────────
+    const _ringSuffix = _activeBasinLabel();
     const nameHtml = _currentPlaceName
-      ? `<h5 class="mb-0">${_currentPlaceName}</h5>` : '';
+      ? `<h5 class="mb-0">${_currentPlaceName}${_ringSuffix ? ` · ${_ringSuffix}` : ''}</h5>` : '';
 
     document.getElementById('v3-seas-placeholder').style.display = 'none';
     const content = document.getElementById('v3-seas-content');
@@ -1393,11 +1408,13 @@
   }
 
   async function renderConjunction() {
-    if (currentLat == null || currentLon == null) return;
+    // Active basin, not the query anchor -- same reasoning as renderContext().
+    const qLat = _activeLat(), qLon = _activeLon();
+    if (qLat == null || qLon == null) return;
     const lv = _activeLevel();
     const b  = _cjBands();
     const conds = CJ_LENS_CONDS[_cjCurrentLens] || [];
-    const key = [currentLat, currentLon, _cjCurrentLens, lv, b.corr, b.ratio, b.cv, b.t_level, b.t_range, b.elev, b.relief].join('|');
+    const key = [qLat, qLon, _cjCurrentLens, lv, b.corr, b.ratio, b.cv, b.t_level, b.t_range, b.elev, b.relief].join('|');
     if (key === _cjQueryKey && _cjMap) { _cjMap.resize(); return; }
     _cjQueryKey = key;
 
@@ -1462,12 +1479,13 @@
       _cjMap.resize();
     }
 
+    const cjRingLabel = _activeBasinLabel();
     document.getElementById('v3-cj-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${cjRingLabel ? ` · ${escapeHtml(cjRingLabel)}` : ''}</h5>` : '';
 
     if (_cjMarker) _cjMarker.remove();
     _cjMarker = new maplibregl.Marker({ color: '#2c5f8a' })
-      .setLngLat([currentLon, currentLat]).addTo(_cjMap);
+      .setLngLat([qLon, qLat]).addTo(_cjMap);
 
     // Container disclosure — matches the Context tab (WO6c Part E). Terrain regime (WO3) extends
     // this same footnote with its own coarse-floor caveat rather than a separate blurb widget: it's
@@ -1475,16 +1493,23 @@
     // within the basin a place actually sits — the WH Cities point-window terrain lens (a different
     // instrument) is what answers that question. Stated here because "no one reads anything" — this
     // line is the one visible spot that survives that rule.
-    const containerBase = _currentPlaceName
-      ? `This describes the Level ${lv} basin ${_currentPlaceName} sits in, not ${_currentPlaceName} itself.`
-      : `This describes the Level ${lv} basin containing this point.`;
+    let containerBase;
+    if (cjRingLabel && _currentPlaceName) {
+      // Same relationship-correction as the Context blurb: a ring member's basin is NOT the
+      // one _currentPlaceName sits in, it's a first-order neighbor of it.
+      containerBase = `This describes ${cjRingLabel}, a Level ${lv} basin adjacent to the one ${_currentPlaceName} sits in — not ${_currentPlaceName} itself.`;
+    } else if (_currentPlaceName) {
+      containerBase = `This describes the Level ${lv} basin ${_currentPlaceName} sits in, not ${_currentPlaceName} itself.`;
+    } else {
+      containerBase = `This describes the Level ${lv} basin containing this point.`;
+    }
     const terrainCaveat = _cjCurrentLens === 'terrain.regime'
       ? ` It's the basin's overall elevation and relief range — not fine-grained ruggedness, and it doesn't reflect where within the basin a place sits.`
       : '';
     document.getElementById('v3-cj-container').textContent = containerBase + terrainCaveat;
 
     try {
-      const params = new URLSearchParams({ lat: currentLat, lon: currentLon, lens: _cjCurrentLens, level: lv });
+      const params = new URLSearchParams({ lat: qLat, lon: qLon, lens: _cjCurrentLens, level: lv });
       if (conds.includes('precip_shape'))        params.set('corr', b.corr);
       if (conds.includes('precip_magnitude'))    params.set('ratio', b.ratio);
       if (conds.includes('precip_amplitude_cv')) params.set('cv', b.cv);
@@ -1544,7 +1569,7 @@
 
       if (features.length) {
         const bounds = new maplibregl.LngLatBounds();
-        bounds.extend([currentLon, currentLat]);
+        bounds.extend([qLon, qLat]);
         features.forEach(f => {
           const g = f.geometry;
           const rings = g.type === 'Polygon' ? g.coordinates : g.coordinates.flat();
@@ -1695,19 +1720,22 @@
   }
 
   async function renderContext() {
-    if (currentLat == null || currentLon == null) return;
+    // Active basin, not the query anchor -- currentLat/currentLon stays fixed for ring scope
+    // (it's the center query point); qLat/qLon follows whichever ring member is previewed.
+    const qLat = _activeLat(), qLon = _activeLon();
+    if (qLat == null || qLon == null) return;
     const lv     = _activeLevel();
     const radius = _ctxCurrentRadius();
 
     document.getElementById('v3-ctx-radius-col-label').textContent = `vs. within ${radius} km`;
 
-    if (_ctxQueryLat === currentLat && _ctxQueryLon === currentLon &&
+    if (_ctxQueryLat === qLat && _ctxQueryLon === qLon &&
         _ctxQueryLevel === lv && _ctxQueryRadius === radius) {
       if (_ctxMap) _ctxMap.resize();
       return;
     }
-    _ctxQueryLat    = currentLat;
-    _ctxQueryLon    = currentLon;
+    _ctxQueryLat    = qLat;
+    _ctxQueryLon    = qLon;
     _ctxQueryLevel  = lv;
     _ctxQueryRadius = radius;
 
@@ -1766,18 +1794,19 @@
       _ctxMap.resize();
     }
 
+    const ctxRingLabel = _activeBasinLabel();
     document.getElementById('v3-ctx-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}</h5>` : '';
+      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${ctxRingLabel ? ` · ${escapeHtml(ctxRingLabel)}` : ''}</h5>` : '';
 
     if (_ctxMarker) _ctxMarker.remove();
     _ctxMarker = new maplibregl.Marker({ color: '#2c5f8a' })
-      .setLngLat([currentLon, currentLat])
+      .setLngLat([qLon, qLat])
       .addTo(_ctxMap);
 
     try {
       const [ctxR, popR] = await Promise.all([
-        fetch(`/api/context?lat=${currentLat}&lon=${currentLon}&level=${lv}&radius_km=${radius}`),
-        fetch(`/api/context/population?lat=${currentLat}&lon=${currentLon}&level=${lv}&radius_km=${radius}`),
+        fetch(`/api/context?lat=${qLat}&lon=${qLon}&level=${lv}&radius_km=${radius}`),
+        fetch(`/api/context/population?lat=${qLat}&lon=${qLon}&level=${lv}&radius_km=${radius}`),
       ]);
       if (!ctxR.ok) throw new Error(`context ${ctxR.status}`);
       if (!popR.ok) throw new Error(`context/population ${popR.status}`);
@@ -1883,9 +1912,18 @@
     // Case-2/3-only or "nothing stands out" result still says it. Case 1
     // sentences can therefore just say "The basin" -- the lead sentence has
     // already established what that refers to.
-    const lead = placeName
-      ? `This describes the Level ${level} basin ${placeName} sits in, not ${placeName} itself.`
-      : `This describes the Level ${level} basin containing this point.`;
+    const ringLabel = _activeBasinLabel();
+    let lead;
+    if (ringLabel && placeName) {
+      // A ring member's basin is NOT the one placeName sits in -- it's a first-order
+      // neighbor of it. The center-basin phrasing ("the basin X sits in") would misstate
+      // that relationship, so this needs its own sentence, not just a name substitution.
+      lead = `This describes ${ringLabel}, a Level ${level} basin adjacent to the one ${placeName} sits in — not ${placeName} itself.`;
+    } else if (placeName) {
+      lead = `This describes the Level ${level} basin ${placeName} sits in, not ${placeName} itself.`;
+    } else {
+      lead = `This describes the Level ${level} basin containing this point.`;
+    }
 
     const sentences = [];
     for (const r of rows) {
@@ -2073,9 +2111,16 @@
       at L08 most basins are small enough that upstream values converge toward local.
       Use the <strong>Level</strong> selector to compare.
     </p>`;
+    // Analysis had no title at all before -- Signature/Seasonality/Context/Similarity all show
+    // one, so its absence here just meant no ring-member confusion could show up either. Adding
+    // it now for consistency, same _currentPlaceName + ring-label pattern as the others.
+    const analysisRingLabel = _activeBasinLabel();
+    const analysisNameHtml = _currentPlaceName
+      ? `<h5 class="mb-2">${escapeHtml(_currentPlaceName)}${analysisRingLabel ? ` · ${escapeHtml(analysisRingLabel)}` : ''}</h5>` : '';
 
     el.innerHTML = `
       <div class="pt-3 px-1" style="font-size:0.85rem;">
+        ${analysisNameHtml}
         ${levelNote}
 
         <h6 class="fw-semibold mb-2">Basin context <span class="badge bg-light text-dark border ms-1" style="font-size:0.7rem;">Level 0${level}</span></h6>
@@ -2130,6 +2175,9 @@
 
   function _resetRightColumn() {
     _pointSig = null;
+    _centerPointSig = null;
+    _previewRingMemberId = null;
+    _committedRingMemberId = null;
     _currentPlaceName = '';
     _ctxQueryLat    = null;
     _ctxQueryLon    = null;
@@ -2284,6 +2332,57 @@
     ];
   }
 
+  // ── Ring-member selection (basinring, 2026-08-05) ───────────────────────────
+  // Ring members are numbered 1..N clockwise from north by border_bearing -- the engine's own
+  // docstring (resolve_basin_ring, engine.py) calls this "the operationally useful direction:
+  // where the crossing happens," vs. centroid_bearing which it calls "diagnostic" (the bearing
+  // to the neighbor's own interior point, which can point somewhere less intuitive for an
+  // elongated or oddly-shaped neighbor). Numbering, not compass letters, because a fan of
+  // several first-order neighbors can easily collide into the same octant (a real case, not
+  // hypothetical: Kaifeng has 3-4 southward tributary basins) -- the number is the stable,
+  // never-ambiguous reference; bearing degrees are shown as secondary, human-oriented detail.
+  function _ringOrdinal(hybasId) {
+    if (!_ringData?.ring) return null;
+    const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
+    const idx = sorted.findIndex(m => m.hybas_id === hybasId);
+    return idx === -1 ? null : idx + 1;
+  }
+  // "Active" basin coords: the COMMITTED ring member if one is loaded, else the query anchor
+  // (currentLat/currentLon). Deliberately reads _committedRingMemberId, not the preview one --
+  // titles/Context must only move once the data actually has. Also deliberately NOT the same
+  // variable as the anchor itself -- selecting a ring member must not redefine "the place" that
+  // Get signature/buffer/ring re-fetch against.
+  function _activeLat() {
+    if (_committedRingMemberId != null && _ringData) {
+      const m = _ringData.ring.find(r => r.hybas_id === _committedRingMemberId);
+      if (m) return m.neighbor_lat;
+    }
+    return currentLat;
+  }
+  function _activeLon() {
+    if (_committedRingMemberId != null && _ringData) {
+      const m = _ringData.ring.find(r => r.hybas_id === _committedRingMemberId);
+      if (m) return m.neighbor_lon;
+    }
+    return currentLon;
+  }
+  function _activeBasinLabel() {
+    const n = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
+    return n != null ? `Ring ${n}` : null;
+  }
+  // The ring list lives in the left panel, visible/clickable from any tab -- so committing a
+  // ring member while already sitting on Context (not just Map) needs to force a refresh; the
+  // normal shown.bs.tab / radius-change triggers won't fire on their own in that case.
+  function _refreshContextIfActive() {
+    if (document.getElementById('v3-tab-context-btn')?.classList.contains('active')) renderContext();
+  }
+  function _refreshSimilarityIfActive() {
+    if (document.getElementById('v3-tab-similarity-btn')?.classList.contains('active')) {
+      _cjQueryKey = null;  // force past the cache-key check -- committing a ring member changes
+      renderConjunction();  // qLat/qLon even when nothing else about the query changed
+    }
+  }
+
   async function drawSingleBasin(lat, lon, sigHybas_id, level = 6) {
     try {
       const r = await fetch(`/api/basin-preview?lat=${lat}&lon=${lon}&level=${level}`);
@@ -2350,6 +2449,8 @@
 
   async function drawRingGeometry(ringData) {
     if (!ringData?.center || !Array.isArray(ringData.ring)) return null;
+    _previewRingMemberId = null;
+    _committedRingMemberId = null;  // fresh ring query -- clear any selection from a prior place
     shell.add('ring-center',
       { type: 'geojson', data: ringData.center },
       [
@@ -2371,33 +2472,149 @@
 
     map.on('mousemove', memberFillId, e => {
       map.getCanvas().style.cursor = 'pointer';
-      _ringPopup.setLngLat(e.lngLat).setHTML('<span style="font-size:0.78rem;">View signature</span>').addTo(map);
+      const n = _ringOrdinal(e.features[0].properties.hybas_id);
+      _ringPopup.setLngLat(e.lngLat).setHTML(`<span style="font-size:0.78rem;">Preview Ring ${n}</span>`).addTo(map);
     });
     map.on('mouseleave', memberFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
     map.on('click',      memberFillId, e => {
       const hid    = e.features[0].properties.hybas_id;
       const member = ringData.ring.find(m => m.hybas_id === hid);
-      if (member) fetchMemberSig(member.neighbor_lat, member.neighbor_lon);
+      if (member) previewRingMember(member);
     });
     map.on('mousemove', centerFillId, e => {
       map.getCanvas().style.cursor = 'pointer';
       _ringPopup.setLngLat(e.lngLat).setHTML('<span style="font-size:0.78rem;">Return to center</span>').addTo(map);
     });
     map.on('mouseleave', centerFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
-    map.on('click',      centerFillId, () => renderCenterSig());
+    map.on('click',      centerFillId, () => previewCenter());
+
+    _applyRingSelectionStyle();
+    _renderRingList();
 
     return geojsonBbox({ type: 'FeatureCollection',
       features: [ringData.center, ...ringData.ring.map(m => m.feature)] });
   }
 
-  async function fetchMemberSig(lat, lon) {
+  // Data-driven paint expressions keyed on the hybas_id property already present on every
+  // ring-member feature -- no MapLibre feature-state / promoteId plumbing needed, just
+  // setPaintProperty on selection change.
+  function _applyRingSelectionStyle() {
+    const memberFill = _layers['ring-members']?.layerIds?.[0];
+    const memberLine  = _layers['ring-members']?.layerIds?.[2];
+    const centerFill  = _layers['ring-center']?.layerIds?.[0];
+    const centerLine  = _layers['ring-center']?.layerIds?.[2];
+    if (!memberFill) return;
+    // Map highlight follows preview-if-present, else committed -- gives immediate feedback on
+    // click even before "Get signature" is hit, without touching titles/Context (those only
+    // read the committed variable).
+    const selId = _previewRingMemberId ?? _committedRingMemberId ?? -1;
+    map.setPaintProperty(memberFill, 'fill-color',
+      ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#4a90c4']);
+    map.setPaintProperty(memberFill, 'fill-opacity',
+      ['case', ['==', ['get', 'hybas_id'], selId], 0.35, 0]);
+    if (memberLine) {
+      map.setPaintProperty(memberLine, 'line-color',
+        ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#3d3835']);
+      map.setPaintProperty(memberLine, 'line-width',
+        ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
+    }
+    const centerActive = (_previewRingMemberId ?? _committedRingMemberId) == null;
+    if (centerFill) {
+      map.setPaintProperty(centerFill, 'fill-color', centerActive ? '#e67e22' : '#1a4a6e');
+      map.setPaintProperty(centerFill, 'fill-opacity', centerActive ? 0.35 : 0);
+    }
+    if (centerLine) {
+      map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#3d3835');
+      map.setPaintProperty(centerLine, 'line-width', centerActive ? 3.5 : 2.5);
+    }
+  }
+
+  // Persistent list in the left panel (#v3-ring-info), not tied to any right-panel tab -- stays
+  // on screen and shows the active basin regardless of which of the 5 tabs is focused. Bold row
+  // tracks _committedRingMemberId only (not preview) so it always agrees with the tab titles and
+  // with what's actually loaded -- that agreement was the explicit requirement.
+  function _renderRingList() {
+    const el = document.getElementById('v3-ring-list');
+    if (!el || !_ringData?.ring) return;
+    const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
+    const centerActive = _committedRingMemberId == null;
+    const rows = sorted.map((m, i) => {
+      const n = i + 1;
+      const active = _committedRingMemberId === m.hybas_id;
+      return `<a href="#" class="list-group-item list-group-item-action py-1 px-2${active ? ' active' : ''}"
+                 data-hybas-id="${m.hybas_id}" style="font-size:0.8rem;">
+                Ring ${n} <span class="${active ? '' : 'text-muted'}">· ~${Math.round(m.border_bearing)}°</span>
+              </a>`;
+    }).join('');
+    el.innerHTML = `
+      <a href="#" class="list-group-item list-group-item-action py-1 px-2${centerActive ? ' active' : ''}"
+         id="v3-ring-center-row" style="font-size:0.8rem;">Center basin</a>
+      ${rows}`;
+    el.querySelectorAll('[data-hybas-id]').forEach(row => {
+      row.addEventListener('click', ev => {
+        ev.preventDefault();
+        const hid = Number(row.dataset.hybasId);
+        const member = _ringData.ring.find(r => r.hybas_id === hid);
+        if (member) previewRingMember(member);
+      });
+    });
+    document.getElementById('v3-ring-center-row')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      previewCenter();
+    });
+  }
+
+  // Click (map or list) previews only -- highlight + a popup with an explicit "Get signature"
+  // link. Doesn't fetch or switch tabs until that link is clicked, so a stray click can't
+  // silently swap what 5 tabs' worth of content is showing.
+  function previewRingMember(member) {
+    _previewRingMemberId = member.hybas_id;  // preview only -- does not touch titles/Context/list-bold
+    _applyRingSelectionStyle();
+    const n = _ringOrdinal(member.hybas_id);
+    if (_ringSelectPopup) _ringSelectPopup.remove();
+    _ringSelectPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: [0, -4] })
+      .setLngLat([member.neighbor_lon, member.neighbor_lat])
+      .setHTML(`<div style="font-size:0.8rem;"><strong>Ring ${n}</strong><br>
+                   <a href="#" id="v3-ring-get-sig">Get signature &rarr;</a></div>`)
+      .addTo(map);
+    document.getElementById('v3-ring-get-sig')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      commitRingMember(member);
+    });
+  }
+
+  // Center has no fetch cost (payload is already cached from the original Get signature call),
+  // so it commits immediately -- no preview/confirm step needed for the "safe" direction.
+  function previewCenter() {
+    _previewRingMemberId   = null;
+    _committedRingMemberId = null;
+    _applyRingSelectionStyle();
+    _renderRingList();
+    if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
+    renderCenterSig();
+    _refreshContextIfActive();
+    _refreshSimilarityIfActive();
+  }
+
+  async function commitRingMember(member) {
+    _previewRingMemberId   = null;
+    _committedRingMemberId = member.hybas_id;
+    _applyRingSelectionStyle();
+    _renderRingList();
+    if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
+
     const sigTabBtn = document.getElementById('v3-tab-sig-btn');
     const pane      = document.getElementById('v3-sig-content');
     pane.innerHTML  = spinner('Loading member signature…');
     sigTabBtn.classList.remove('disabled');
     bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
+
+    const lv    = _activeLevel();
     const bands = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'single_basin', lat, lon, level: _activeLevel(), bands, detail: 'true' });
+    const params = new URLSearchParams({
+      type: 'single_basin', lat: member.neighbor_lat, lon: member.neighbor_lon,
+      level: lv, bands, detail: 'true',
+    });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2405,12 +2622,34 @@
       if (ty) params.set('to_year',   ty);
     }
     try {
-      const r = await fetch(`/api/areas?${params}`);
+      // Parallel: /api/areas for the Signature tab, /api/signature (raw values) for
+      // Analysis/Seasonality -- same split the main Get-signature handler uses, which is why
+      // those two tabs never updated for ring members before: they were always fetched from
+      // currentLat/currentLon (the original query point), never from the clicked member.
+      const [r, sigR] = await Promise.all([
+        fetch(`/api/areas?${params}`),
+        fetch(`/api/signature?lat=${member.neighbor_lat}&lon=${member.neighbor_lon}&level=${lv}&bands=ABCE`),
+      ]);
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const p = await r.json();
       renderSignature(p);
-      const tRows = (p.rows || []).filter(r => r.band === 'T');
+      const tRows = (p.rows || []).filter(row => row.band === 'T');
       if (tRows.length) wireTSliders(tRows);
+
+      if (sigR.ok) {
+        _pointSig = await sigR.json();
+        renderAnalysis(_pointSig, lv);
+        document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
+        renderSeasonality(_pointSig);
+        document.getElementById('v3-tab-seasonality-btn').classList.remove('disabled');
+        document.getElementById('v3-ctx-placeholder').style.display = 'none';
+        document.getElementById('v3-ctx-content').style.display = '';
+        document.getElementById('v3-tab-context-btn').classList.remove('disabled');
+        _cjShowContent(true);
+        document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
+      }
+      _refreshContextIfActive();
+      _refreshSimilarityIfActive();
     } catch (err) {
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     }
@@ -2422,6 +2661,11 @@
     const tRows = (_centerPayload.rows || []).filter(r => r.band === 'T');
     if (tRows.length) wireTSliders(tRows);
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-sig-btn')).show();
+    if (_centerPointSig) {
+      _pointSig = _centerPointSig;  // restore -- commitRingMember overwrites the shared _pointSig
+      renderAnalysis(_pointSig, _activeLevel());
+      renderSeasonality(_pointSig);
+    }
   }
 
   // ── URL builders ──────────────────────────────────────────────────────────
@@ -2547,6 +2791,7 @@
           const sigR = await _sigFetch;
           if (sigR.ok) {
             _pointSig = await sigR.json();
+            if (scope === 'ring') _centerPointSig = _pointSig;
             renderAnalysis(_pointSig, lv);
             document.getElementById('v3-tab-analysis-btn').classList.remove('disabled');
             renderSeasonality(_pointSig);
@@ -2779,6 +3024,8 @@
       ? `Basin ${nb.hybas_id}`
       : `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}`;
     if (nb.level) heading += ` · L${String(nb.level).padStart(2,'0')}`;
+    const ringLabel = _activeBasinLabel();
+    if (ringLabel) heading = `${ringLabel} · ${heading}`;
     const byBand = {};
     for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
     let html = `
