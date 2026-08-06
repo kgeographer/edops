@@ -67,17 +67,47 @@ work is cut as phase-trunk branches off one of those (`cdop_citykin` was the las
 with WO-child branches under each, merged back to the trunk on accept. Cross-cutting housekeeping that
 isn't component-specific coding — like the 2026-08-03 site/routing reorg — is instead cut directly off
 `main` (the `reorg` branch) and merged straight back to `main`, bypassing `cdop`/`edop` entirely.
+**v0.4 docs follows the same shape as the component trunks, off `main`:** `docsv4` is the phase-trunk
+branch; WO-scale work is cut as child branches off `docsv4` and merged straight back into it on accept
+(`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
+un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-03 (local `main` only — production is still running pre-merge v0.3 code, nothing
-deployed yet):** `cdop_citykin` → `cdop` → `main` was fast-forward merged for the first time, bringing
-all of CDOP onto `main`. `reorg` (new canonical routes `/sandbox`, `/explorer`, `/cdop_tests`; unified
-EDOPS header across sandbox_v3/explorer/cdop_pilot; `sandbox.html` fully de-routed) was pushed to
-origin and merged to local `main` on top. `main` is 48 commits ahead of `origin/main` but not pushed.
-Full detail: `logs/session_log_20260803.md`.
+**State as of 2026-08-06 (branch `docsv4`, 2 commits ahead of `origin/docsv4` — not yet merged to
+`main`, nothing deployed):** Two and a half days into the v0.4 docs pass. MkDocs is live in-repo
+(`docsite/` source, `mkdocs.yml`, `site/` build output gitignored) — same-repo decision over a
+separate docs repo, reasoning in `logs/session_log_20260805.md`. Swagger moved `/docs` → `/api/schema`;
+`/docs` now serves the built MkDocs site via a `StaticFiles` mount (`check_dir=False`, so the app still
+starts if `site/` hasn't been built). All three page Guides drafted (`docsite/guides/*.md`), grounded
+in the live templates; the app's Guide modals (Sandbox/Explorer/Workbench) iframe the built pages
+directly rather than duplicating content, with Material's own header stripped when embedded
+(`docsite/javascripts/embed.js`, iframe-detection only — doesn't touch the standalone site). Sandbox's
+Guide modal additionally has Guide/Walkthrough pills (two placeholder walkthrough pages, Settlements
+and Polities forks, screenshot-scroll format decided over coachmarks/video — see DOCSv4 TODO). The
+Workbench naming collision (below) was resolved the same days.
 
-- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase)
-- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed clean on local `main` 2026-08-03
-  (post reorg + header work).
+Writing the Sandbox Guide surfaced a real product bug — Basin ring's stale-tab problem (clicking a
+ring member only ever updated the Signature tab, not Analysis/Seasonality/Context/Similarity) — which
+became a full rebuild on the `basinring` branch: ring members numbered by bearing (not compass, which
+collides when several neighbors share an octant), a persistent selection list + compass-rose glyph in
+the left panel, preview-then-commit interaction (click highlights, a popup's **Get signature** link
+commits), several bugs Karl caught by testing (a missing API field causing `NaN` bearings, tab buttons
+staying disabled after a ring-member commit, Context/Similarity silently still querying the center
+point). Merged to `docsv4` 2026-08-06. Same day: basin/polity outline color didn't survive hillshaded
+terrain basemaps (dark charcoal vanished against dark relief) — fixed by switching to a hue terrain
+can't produce (crimson/magenta) rather than relying on luminance contrast, same principle already
+proven by the ring-selection orange. Also found and logged (not yet built) that the Polities fork
+never populates Analysis/Seasonality/Context/Similarity at all — see deferred register — and restored
+Settlements as the default active fork, hiding those four tabs while Polities is active instead of
+leaving them permanently disabled. Full day-by-day detail: `logs/session_log_20260804.md` through
+`logs/session_log_20260806.md`.
+
+- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase; includes the new
+  Polities-tabs gap, 2026-08-06)
+- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed on `docsv4` 2026-08-06 (same
+  pass/skip counts as the 2026-08-03 baseline — nothing broke). Not fully zero-tolerance-clean by
+  this file's own rule: 671 warnings, all the same pre-existing pandas/SQLAlchemy connectable
+  message already flagged in Notebook conventions above — not introduced by DOCSv4/basinring work,
+  not yet suppressed at the pytest level either. Worth a cleanup pass, not urgent.
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
@@ -136,6 +166,12 @@ app/
     ├── explorer/        # PMTiles, GeoJSON, HYDE tiles (gitignored — rsync only)
     └── ...
 
+mkdocs.yml               # MkDocs config — docs_dir: docsite/, site_dir: site/ (v0.4 docs, 2026-08-05)
+docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, plus
+                          #   guides/ (page Guides + Sandbox walkthroughs) and javascripts/embed.js
+site/                    # `mkdocs build` output (gitignored) — served at /docs via a StaticFiles
+                          #   mount in main.py. `mkdocs serve` (live preview) and this are two
+                          #   separate things reading from different places — see Key endpoints.
 documentation/           # Public-facing docs (tracked)
 docs/                    # Design docs and WIP — gitignored with exceptions:
 docs/edop/areas/         #   Areas tracker (frozen ref) + findings (tracked)
@@ -163,12 +199,17 @@ metadata/                # gitignored
 
 ## The sandbox pages
 
-**Routing note (local `main`, not yet deployed — see Current work above):** as of the 2026-08-03 reorg,
-`/sandbox` is the new canonical route for `sandbox_v3.html` (old `/sandbox/lookup3` still works too);
-`/explorer` is the new canonical route for `explorer.html` (old `/sandbox/explorer` still works too);
-`/sandbox/lookup` now 301-redirects to `/sandbox`, and `sandbox.html` (old Phase 1 Lookup page,
-described below) is fully retired — no route renders it on `main`. **In production today this hasn't
-happened yet:** `/sandbox/lookup` still serves `sandbox.html` live until this branch is deployed.
+**Routing note (local `main`/`docsv4`, not yet deployed — see Current work above):** as of the
+2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox_v3.html` (old
+`/sandbox/lookup3` still works too); `/explorer` is the new canonical route for `explorer.html`
+(old `/sandbox/explorer` still works too); `/sandbox/lookup` now 301-redirects to `/sandbox`, and
+`sandbox.html` (old Phase 1 Lookup page, described below) is fully retired — no route renders it
+on `main`. `/workbench` is the third canonical route (`workbench.html`, formerly `cdop_pilot.html`
+— renamed 2026-08-05, see Open/deferred items below); `/cdop` and `/cdop_tests`, which used to
+serve it, were dropped outright rather than redirected, since nothing's deployed yet. **In
+production today none of this has happened:** `/sandbox/lookup` still serves `sandbox.html` live,
+and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is still what's actually deployed, until
+this branch ships.
 
 ### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
 `app/templates/sandbox_v3.html` — Demo phase product; current focus.
@@ -220,12 +261,50 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
   `basin06.pmtiles`, `lmr_notches.geojson`, `countries_110m.geojson`,
   `hyde_tiles/`, `lisa_classifications.parquet`
 
+### `/workbench` (canonical) — Workbench
+`app/templates/workbench.html` — formerly `cdop_pilot.html` (CDOP Pilot/CITYKIN product; renamed
+2026-08-05, see Open/deferred items below). Third full peer of Sandbox/Explorer in the app's
+header nav; EDOP↔CDOP environment/culture correspondence testing. A map and environmental-profile
+panel stay visible on the right across all three tabs; results are necessary-not-sufficient
+evidence, not causal claims. Three tabs:
+
+**Societies** — 1,291 D-PLACE societies. Two queries, deliberately asymmetric: **Dominant
+subsistence (EA042)** offers *Ecoregions by realm* or a confirmatory **Climate envelope** scatter
+(has a named theoretical hook); **High gods (EA034)** offers *Ecoregions by realm* or an
+exploratory **Environment scan** (no hook to confirm against). Composition donut (Glottolog-
+resolved family names), hover-linked to map and scatter.
+
+**Ecoregions** — OneEarth Bioregions drill-down (14 realms → 53 subrealms → 185 bioregions → 847
+ecoregions), Wikipedia summary + OneEarth link per ecoregion. Mostly a reference browser feeding
+the Societies tab's "Ecoregions by realm" view, not a correspondence test of its own — whether it
+belongs on this page at all is still an open question (Karl's own note, `docs/_TODO.md`).
+
+**WH Cities** — 258 World Heritage Cities (OVPM), 254 basin-assigned. Two independent similarity
+searches per city: **Similar (env)** — regime-lens conjunction (Precipitation/Temperature/Terrain
+regime — 3 lenses here vs. Sandbox's 4, no combined Climate lens for cities); **Similar
+(semantic)** — Wikipedia-discourse text similarity by band (Composite/Environment/History/
+Culture/Modern).
+
+Full mechanics for all three tabs (verified against the live templates, not just described):
+`docsite/guides/workbench.md`.
+
 ---
 
 ## Key endpoints
 
 ```
 NOTE: see documentation/API_guide.md (master, public)
+
+/api/schema
+    FastAPI's interactive Swagger UI — moved here from /docs 2026-08-04 to free that route for
+    MkDocs. If you're looking for the old Swagger URL, this is it now.
+
+/docs
+    MkDocs site (v0.4 docs). Served by a StaticFiles mount over site/ (main.py), NOT by
+    `mkdocs serve`. Those are two different things reading from two different places —
+    `mkdocs build` updates what this route serves; `mkdocs serve` (live preview, different port)
+    never writes to site/ at all. Edited docsite/ content needs `mkdocs build` before it shows up
+    here or in the app's Guide modals (which iframe this route's built pages).
 
 /api/signature?lat=X&lon=Y[&bands=ABCDET&from_year=N&to_year=N&level=6|8]
     Returns profile_groups A–T. Band T requires from_year+to_year.
