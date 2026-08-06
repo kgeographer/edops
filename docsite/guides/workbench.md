@@ -1,4 +1,4 @@
-# Workbench guide
+# EDOPS Workbench guide
 
 The Workbench is where EDOP's environmental signatures meet CDOP's cultural/reference datasets —
 three tabs test different kinds of environment↔culture correspondence. A map and an environmental

@@ -1,10 +1,7 @@
-# Sandbox guide
+# EDOPS Sandbox guide
 
-The Sandbox is the main lookup tool: choose a place or a historical polity on the left, then
-read its environmental signature across seven tabs on the right. Two independent time axes are
-in play throughout — the *resolver year* (which polity boundary, or which basin period, is in
-effect) and the Band T span (`from_year`–`to_year`, the paleoclimate/land-use window a query
-aggregates over).
+The Sandbox is the main signature lookup tool: choose a place or a historical polity on the left, then
+read its environmental signature across six of the seven tabs on the right.
 
 ## Choosing a place: Settlements vs. Polities
 
@@ -13,13 +10,15 @@ cold start.
 
 **Settlements** resolves a place by name (optionally `"Name, Country"`) or `lat,lon` coordinates
 via the World Historical Gazetteer, or loads one of four worked examples (Timbuktu, Kaifeng,
-Tbilisi, Santa Fe, each with a preset date range). Once a place is resolved you choose:
+Tbilisi, Santa Fe, San Francisco, each with a preset date range). Once a place is resolved you choose:
 
-- **Neighborhood scope** — *Single basin* (just the containing basin), *Buffer* (all basins
-  within a radius you set, default 100 km), or *Basin ring* (the containing basin's immediate
-  neighbors). This determines what "the basin" means for every tab that follows — a buffer or
-  ring query aggregates across more basins than a single-basin query, so summary numbers on
-  Signature/Analysis/Seasonality will read differently depending which scope is active.
+- **Neighborhood scope** — *Single basin* (default; containing basin only), *Buffer* (all basins
+  within a radius you set, default 100 km, aggregated into one summary), or *Basin ring* (the
+  containing basin's immediate neighbors — **not** aggregated; Get signature loads the center
+  basin, and each ring member on the map is individually clickable to load its own signature for
+  comparison). Buffer changes what "the basin" means for every tab that follows, since it's a
+  genuine aggregate across more basins than a single-basin query. Basin ring is different in kind,
+  not just degree — it's a per-neighbor comparison tool, not an aggregation scope.
 - **Level** — L06 (16,397 basins globally) or L08 (190,675 basins) — a coarser vs. finer
   BasinATLAS resolution.
 - **Signature bands** — A (Physiographic), B (Hydroclimatic), C (Bioclimatic), D (Anthropocene),
@@ -28,10 +27,12 @@ Tbilisi, Santa Fe, each with a preset date range). Once a place is resolved you 
 
 **Polities** searches Seshat polities by name, or loads one of six worked examples (Northern
 Song, Abbasid Caliphate, Tibetan Empire, Tang Dynasty, Pagan Kingdom, Qin — the last flagged "no
-LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals a time-slice
-slider with VCR-style transport controls (first/previous/play/next) for stepping through the
-polity's historical boundary changes; Level and Bands work the same as Settlements, with T
-pre-checked.
+LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals two independent
+temporal controls: a time-slice slider with VCR-style transport controls
+(first/previous/play/next) for stepping through the polity's historical boundary changes, and —
+separately — a Band T from-year/to-year range (T is pre-checked) for the paleoclimate/land-use
+aggregation window. The two aren't linked: moving the slider changes which boundary is shown, not
+the Band T window, and vice versa. Level and Bands otherwise work the same as Settlements.
 
 Either fork ends the same way: a **Get signature** button that fires the query.
 

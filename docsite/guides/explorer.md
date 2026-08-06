@@ -1,4 +1,4 @@
-# Explorer guide
+# EDOPS Data Explorer guide
 
 The Explorer is a visual exhibit of the full EDOPS variable catalog as a choropleth — pick a
 variable on the left, see it painted across all 16,397 (L6) or 190,675 (L8) basins worldwide on
