@@ -50,12 +50,12 @@
       <div class="d-flex align-items-end">
         <ul class="nav nav-tabs flex-grow-1" id="v3-fork-tabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="v3-tab-settlements-btn"
+            <button class="nav-link active" id="v3-tab-settlements-btn"
                     data-bs-toggle="tab" data-bs-target="#v3-pane-settlements"
                     type="button" role="tab">Settlements</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="v3-tab-polities-btn"
+            <button class="nav-link" id="v3-tab-polities-btn"
                     data-bs-toggle="tab" data-bs-target="#v3-pane-polities"
                     type="button" role="tab">Polities</button>
           </li>
@@ -70,7 +70,7 @@
           <div class="tab-content" id="v3-fork-content">
 
             <!-- ======== SETTLEMENTS PANE ======== -->
-            <div class="tab-pane fade" id="v3-pane-settlements" role="tabpanel"
+            <div class="tab-pane fade show active" id="v3-pane-settlements" role="tabpanel"
                  aria-labelledby="v3-tab-settlements-btn">
 
               <!-- WHG resolve field -->
@@ -194,7 +194,7 @@
             </div><!-- /v3-pane-settlements -->
 
             <!-- ======== POLITIES PANE ======== -->
-            <div class="tab-pane fade show active" id="v3-pane-polities" role="tabpanel"
+            <div class="tab-pane fade" id="v3-pane-polities" role="tabpanel"
                  aria-labelledby="v3-tab-polities-btn">
 
               <!-- Polity search -->
@@ -406,19 +406,19 @@
           <button class="nav-link disabled" id="v3-tab-sig-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-sig" type="button" role="tab">Signature</button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="v3-tab-analysis-li">
           <button class="nav-link disabled" id="v3-tab-analysis-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-analysis" type="button" role="tab">Analysis</button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="v3-tab-seasonality-li">
           <button class="nav-link disabled" id="v3-tab-seasonality-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-seasonality" type="button" role="tab">Seasonality</button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="v3-tab-context-li">
           <button class="nav-link disabled" id="v3-tab-context-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-context" type="button" role="tab">Context</button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="v3-tab-similarity-li">
           <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
         </li>
@@ -3499,13 +3499,26 @@
     }
   });
 
+  // Polities never populates Analysis/Seasonality/Context/Similarity -- the Get-signature
+  // handler only fetches /api/areas?type=polity, never the parallel /api/signature call
+  // Settlements uses, and Context/Similarity are point-anchored instruments with no
+  // representative point for a polity to begin with (see deferred_items_register.md). Hiding
+  // rather than leaving them disabled: four permanently-greyed-out tabs read as broken, not as
+  // "not available for this fork."
+  function _setPolitiesTabVisibility(onPolities) {
+    ['v3-tab-analysis-li', 'v3-tab-seasonality-li', 'v3-tab-context-li', 'v3-tab-similarity-li']
+      .forEach(id => document.getElementById(id)?.classList.toggle('d-none', onPolities));
+  }
+
   // ── Tab-switch hard reset ─────────────────────────────────────────────────
   // hide.bs.tab fires before the animation so the map clears immediately.
   document.getElementById('v3-tab-settlements-btn').addEventListener('hide.bs.tab', () => {
     resetSettlements();
+    _setPolitiesTabVisibility(true);
   });
   document.getElementById('v3-tab-polities-btn').addEventListener('hide.bs.tab', () => {
     resetPolities();
+    _setPolitiesTabVisibility(false);
   });
 
   // Reset button: delegates to whichever tab is active
