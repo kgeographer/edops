@@ -898,8 +898,8 @@
             { type: 'geojson', data: fc },
             [
               { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
-              { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
-              { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
+              { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 3.0 } },
+              { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 1.5 } },
             ]
           );
           _fitMap(geojsonBbox(fc));
@@ -2399,8 +2399,8 @@
         { type: 'geojson', data: feature },
         [
           { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
-          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
-          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 2.0 } },
         ]
       );
       return geojsonBbox(feature);
@@ -2435,8 +2435,8 @@
         { type: 'geojson', data: fc },
         [
           { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
-          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.0 } },
-          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 3.0 } },
+          { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 1.5 } },
         ]
       );
       shell.add('buffer-circle',
@@ -2455,16 +2455,16 @@
       { type: 'geojson', data: ringData.center },
       [
         { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0 } },
-        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 5.5 } },
-        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.5 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 5.5 } },
+        { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 2.5 } },
       ]
     );
     shell.add('ring-members',
       { type: 'geojson', data: { type: 'FeatureCollection', features: ringData.ring.map(m => m.feature) } },
       [
         { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
-        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 3.5 } },
-        { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 1.5 } },
+        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 3.5 } },
+        { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 1.5 } },
       ]
     );
     const memberFillId = _layers['ring-members'].layerIds[0];
@@ -2511,12 +2511,12 @@
     // variable coloring was underneath. The outline treatment doesn't compete with it.
     const selId = _previewRingMemberId ?? _committedRingMemberId ?? -1;
     map.setPaintProperty(memberLine, 'line-color',
-      ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#3d3835']);
+      ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#c2185b']);
     map.setPaintProperty(memberLine, 'line-width',
       ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
     const centerActive = (_previewRingMemberId ?? _committedRingMemberId) == null;
     if (centerLine) {
-      map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#3d3835');
+      map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#c2185b');
       map.setPaintProperty(centerLine, 'line-width', centerActive ? 3.5 : 2.5);
     }
   }
@@ -3331,8 +3331,8 @@
       shell.add('polity-boundary',
         { type: 'geojson', data: feature },
         [
-          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.88)', 'line-width': 4.0 } },
-          { type: 'line', paint: { 'line-color': '#3d3835', 'line-width': 2.0 } },
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 4.0 } },
+          { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 2.0 } },
         ]
       );
       _fitMap(geojsonBbox(feature));
