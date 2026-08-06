@@ -6,6 +6,9 @@ site_dir: site
 theme:
   name: material
 
+extra_css:
+  - stylesheets/extra.css
+
 extra_javascript:
   - javascripts/embed.js
 
