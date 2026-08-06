@@ -1,7 +1,7 @@
 """
 catalog.py — Variable catalog accessor.
 
-Loads EDOPS_variable_catalog_v0.3.tsv once at import time, keyed by schema_key.
+Loads EDOPS_variable_catalog_v0.4.tsv once at import time, keyed by schema_key.
 Provides direction-agnostic lookups used by the similarity registry and any other
 code that needs to translate between schema keys, DB column names, and labels.
 
@@ -18,7 +18,7 @@ import csv
 from pathlib import Path
 from typing import Dict, Optional
 
-_CATALOG_PATH = Path(__file__).parent.parent.parent / "documentation" / "EDOPS_variable_catalog_v0.3.tsv"
+_CATALOG_PATH = Path(__file__).parent.parent.parent / "documentation" / "EDOPS_variable_catalog_v0.4.tsv"
 
 # Loaded once; keyed by schema_key.
 _BY_KEY: Dict[str, Dict[str, str]] = {}

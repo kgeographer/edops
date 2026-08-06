@@ -403,7 +403,7 @@ _TYPE_TO_KIND = {
 
 _CATALOG_PATH = (
     _Path(__file__).resolve().parents[3]
-    / 'documentation' / 'EDOPS_variable_catalog_v0.3.tsv'
+    / 'documentation' / 'EDOPS_variable_catalog_v0.4.tsv'
 )
 
 
@@ -424,7 +424,7 @@ def load_catalog(level=6, codebook_path=None):
     Parameters
     ----------
     level         : int  — 6 or 8; selects zero_fraction_*_L{level}
-    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.3.tsv
+    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.4.tsv
 
     Returns
     -------

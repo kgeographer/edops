@@ -464,7 +464,7 @@ docs/ hold old drafts and works-in-progress (gitignored)
 | Doc                                             | Purpose                                                                                                          |
 |-------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `documentation/EDOP_summary_20260608.pdf`       | Current project summary                                                                                          |
-| `documentation/EDOPS_variable_catalog_v0.3.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth |
+| `documentation/EDOPS_variable_catalog_v0.4.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth. `EDOPS_variable_catalog_v0.3.tsv` is a frozen snapshot of what's actually deployed in production (recovered from the live server 2026-08-06); not read by any code. |
 | `documentation/EDOPS_esda_findings.md`          | ESDA findings (BV.1–BVR.7, CAT.1–8, etc.)                                                                        |
 | `documentation/EDOPS_eda_findings.md`           | EDA findings (F1.1–F11.6)                                                                                        |
 | `docs/edop/prospectus_20260505.md`              | Initial research direction doc (superseded by project summary)                                                   |
