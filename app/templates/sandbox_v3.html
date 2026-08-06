@@ -310,12 +310,12 @@
 
       <!-- Ring info (shown on ring scope render) -->
       <div id="v3-ring-info" class="text-muted small px-1 mt-2" style="display:none;">
-        <p class="mb-1">The <strong>map</strong> shows the center basin and its first-order
-        adjacent ring, numbered clockwise from north (not by compass direction — several
-        neighbors can share the same rough direction). Click a basin, on the map or in the list
-        below, to preview it, then <strong>Get signature</strong> to load its data across all
-        tabs. This list always shows which basin is currently loaded, whichever tab you're on.</p>
-        <div id="v3-ring-list" class="list-group mt-1"></div>
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <div class="flex-grow-1">Ring members are numbered clockwise from north — click one
+            (map or list) to preview, then <strong>Get signature</strong> to load it.</div>
+          <div id="v3-ring-glyph-wrap" class="flex-shrink-0"></div>
+        </div>
+        <div id="v3-ring-list" class="list-group"></div>
       </div>
 
       <!-- Lower panel: intro text + choropleth controls -->
@@ -2490,6 +2490,7 @@
 
     _applyRingSelectionStyle();
     _renderRingList();
+    _renderRingGlyph();
 
     return geojsonBbox({ type: 'FeatureCollection',
       features: [ringData.center, ...ringData.ring.map(m => m.feature)] });
@@ -2499,30 +2500,21 @@
   // ring-member feature -- no MapLibre feature-state / promoteId plumbing needed, just
   // setPaintProperty on selection change.
   function _applyRingSelectionStyle() {
-    const memberFill = _layers['ring-members']?.layerIds?.[0];
     const memberLine  = _layers['ring-members']?.layerIds?.[2];
-    const centerFill  = _layers['ring-center']?.layerIds?.[0];
     const centerLine  = _layers['ring-center']?.layerIds?.[2];
-    if (!memberFill) return;
+    if (!memberLine) return;
     // Map highlight follows preview-if-present, else committed -- gives immediate feedback on
     // click even before "Get signature" is hit, without touching titles/Context (those only
     // read the committed variable).
+    // Outline only, deliberately -- a fill here sits on the same layers the #v3-basin-var
+    // choropleth paints via feature-state, so a solid highlight fill visually stomped whatever
+    // variable coloring was underneath. The outline treatment doesn't compete with it.
     const selId = _previewRingMemberId ?? _committedRingMemberId ?? -1;
-    map.setPaintProperty(memberFill, 'fill-color',
-      ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#4a90c4']);
-    map.setPaintProperty(memberFill, 'fill-opacity',
-      ['case', ['==', ['get', 'hybas_id'], selId], 0.35, 0]);
-    if (memberLine) {
-      map.setPaintProperty(memberLine, 'line-color',
-        ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#3d3835']);
-      map.setPaintProperty(memberLine, 'line-width',
-        ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
-    }
+    map.setPaintProperty(memberLine, 'line-color',
+      ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#3d3835']);
+    map.setPaintProperty(memberLine, 'line-width',
+      ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
     const centerActive = (_previewRingMemberId ?? _committedRingMemberId) == null;
-    if (centerFill) {
-      map.setPaintProperty(centerFill, 'fill-color', centerActive ? '#e67e22' : '#1a4a6e');
-      map.setPaintProperty(centerFill, 'fill-opacity', centerActive ? 0.35 : 0);
-    }
     if (centerLine) {
       map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#3d3835');
       map.setPaintProperty(centerLine, 'line-width', centerActive ? 3.5 : 2.5);
@@ -2531,16 +2523,20 @@
 
   // Persistent list in the left panel (#v3-ring-info), not tied to any right-panel tab -- stays
   // on screen and shows the active basin regardless of which of the 5 tabs is focused. Bold row
-  // tracks _committedRingMemberId only (not preview) so it always agrees with the tab titles and
-  // with what's actually loaded -- that agreement was the explicit requirement.
+  // follows preview-if-present else committed, same as the map's own outline and the glyph --
+  // clicking the list needs its own immediate feedback, same as clicking the map does. Titles
+  // and tab content are the ones that stay committed-only (they read _activeBasinLabel(), which
+  // is unaffected by this) -- that split is deliberate: this is a selection indicator, titles
+  // are a content claim, and only the latter has to wait for the data to actually load.
   function _renderRingList() {
     const el = document.getElementById('v3-ring-list');
     if (!el || !_ringData?.ring) return;
     const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
-    const centerActive = _committedRingMemberId == null;
+    const shownId = _previewRingMemberId ?? _committedRingMemberId;
+    const centerActive = shownId == null;
     const rows = sorted.map((m, i) => {
       const n = i + 1;
-      const active = _committedRingMemberId === m.hybas_id;
+      const active = shownId === m.hybas_id;
       return `<a href="#" class="list-group-item list-group-item-action py-1 px-2${active ? ' active' : ''}"
                  data-hybas-id="${m.hybas_id}" style="font-size:0.8rem;">
                 Ring ${n} <span class="${active ? '' : 'text-muted'}">· ~${Math.round(m.border_bearing)}°</span>
@@ -2564,12 +2560,68 @@
     });
   }
 
-  // Click (map or list) previews only -- highlight + a popup with an explicit "Get signature"
-  // link. Doesn't fetch or switch tabs until that link is clicked, so a stray click can't
-  // silently swap what 5 tabs' worth of content is showing.
+  // Small compass-rose glyph, flush right in the same blurb row rather than its own section --
+  // screen real estate in the left panel was already tight. Bearing-accurate dot placement from
+  // border_bearing, same colors as the map's own ring layers (not the app's site palette) since
+  // it's meant to echo the map directly, not read as a separate branded element. Follows
+  // preview-if-present else committed, same as the list -- see _renderRingList's comment for why.
+  function _renderRingGlyph() {
+    const wrap = document.getElementById('v3-ring-glyph-wrap');
+    if (!wrap || !_ringData?.ring) return;
+    const SIZE = 56, R = 20, CX = SIZE / 2, CY = SIZE / 2;
+    const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
+    const shownId = _previewRingMemberId ?? _committedRingMemberId;
+    const dots = sorted.map((m, i) => {
+      const n = i + 1;
+      const rad = (m.border_bearing * Math.PI) / 180;
+      const x = CX + R * Math.sin(rad);
+      const y = CY - R * Math.cos(rad);
+      const active = shownId === m.hybas_id;
+      const r = active ? 4.5 : 3;
+      const fill = active ? '#e67e22' : '#4a90c4';
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}"
+                stroke="#fff" stroke-width="1" tabindex="0" role="button"
+                aria-label="Ring ${n}, about ${Math.round(m.border_bearing)} degrees"
+                style="cursor:pointer;" data-hybas-id="${m.hybas_id}">
+                <title>Ring ${n} · ~${Math.round(m.border_bearing)}°</title>
+              </circle>`;
+    }).join('');
+    const centerActive = shownId == null;
+    const centerDot = `<circle cx="${CX}" cy="${CY}" r="${centerActive ? 4.5 : 3}"
+        fill="${centerActive ? '#e67e22' : '#1a4a6e'}" stroke="#fff" stroke-width="1"
+        tabindex="0" role="button" aria-label="Center basin"
+        style="cursor:pointer;" data-hybas-id="">
+        <title>Center basin</title>
+      </circle>`;
+    wrap.innerHTML = `
+      <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" style="overflow:visible;">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#dee2e6" stroke-width="1"/>
+        <text x="${CX}" y="${CY - R - 4}" text-anchor="middle" font-size="7" fill="#adb5bd">N</text>
+        ${dots}
+        ${centerDot}
+      </svg>`;
+    wrap.querySelectorAll('[data-hybas-id]').forEach(el => {
+      const select = () => {
+        const raw = el.dataset.hybasId;
+        if (raw === '') { previewCenter(); return; }
+        const member = _ringData.ring.find(r => r.hybas_id === Number(raw));
+        if (member) previewRingMember(member);
+      };
+      el.addEventListener('click', select);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } });
+    });
+  }
+
+  // Click (map, list, or glyph) previews only -- highlight + a popup with an explicit "Get
+  // signature" link. Doesn't fetch or switch tabs until that link is clicked, so a stray click
+  // can't silently swap what 5 tabs' worth of content is showing. Selection indicators (map
+  // outline, list bold row, glyph dot) all update immediately here; titles/tab content don't --
+  // they read _activeBasinLabel()/_activeLat()/_activeLon(), which stay on committed only.
   function previewRingMember(member) {
-    _previewRingMemberId = member.hybas_id;  // preview only -- does not touch titles/Context/list-bold
+    _previewRingMemberId = member.hybas_id;
     _applyRingSelectionStyle();
+    _renderRingList();
+    _renderRingGlyph();
     const n = _ringOrdinal(member.hybas_id);
     if (_ringSelectPopup) _ringSelectPopup.remove();
     _ringSelectPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: [0, -4] })
@@ -2590,6 +2642,7 @@
     _committedRingMemberId = null;
     _applyRingSelectionStyle();
     _renderRingList();
+    _renderRingGlyph();
     if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
     renderCenterSig();
     _refreshContextIfActive();
@@ -2601,6 +2654,7 @@
     _committedRingMemberId = member.hybas_id;
     _applyRingSelectionStyle();
     _renderRingList();
+    _renderRingGlyph();
     if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
 
     const sigTabBtn = document.getElementById('v3-tab-sig-btn');
