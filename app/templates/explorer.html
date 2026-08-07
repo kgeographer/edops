@@ -457,21 +457,29 @@
   const showSpinner = () => { _spinner.style.display = 'flex'; };
   const hideSpinner = () => { _spinner.style.display = 'none'; };
 
-  // Add basin06 PMTiles source + fill layer once map is loaded
+  // Add basin06 + basin08 PMTiles sources + fill layers once map is loaded.
+  // Only one level's layer is visible/interactive at a time (toggled by the Level pill) --
+  // both sources are registered up front since PMTiles only fetches directory/tiles on demand,
+  // not the whole archive.
   let _mapReady = false;
   let _pendingRender = null;
 
-  map.on('load', () => {
-    _mapReady = true;
-    map.addSource('basin06', {
+  function _activeLevel()    { return document.querySelector('input[name="ex-level"]:checked')?.value || '6'; }
+  function _activeSourceId() { return _activeLevel() === '8' ? 'basin08' : 'basin06'; }
+  function _activeLayerId()  { return _activeLevel() === '8' ? 'basin08-fill' : 'basin06-fill'; }
+
+  function _addBasinSourceAndLayer(map_, level) {
+    const sourceId = `basin0${level}`;
+    map_.addSource(sourceId, {
       type: 'vector',
-      url: 'pmtiles:///static/explorer/basin06.pmtiles',
+      url: `pmtiles:///static/explorer/${sourceId}.pmtiles`,
     });
-    map.addLayer({
-      id: 'basin06-fill',
+    map_.addLayer({
+      id: `${sourceId}-fill`,
       type: 'fill',
-      source: 'basin06',
-      'source-layer': 'basin06',
+      source: sourceId,
+      'source-layer': sourceId,
+      layout: { visibility: level === 6 ? 'visible' : 'none' },
       paint: {
         'fill-color':         ['coalesce', ['feature-state', 'fc'], '#d3d3d3'],
         'fill-opacity':       ['case', ['boolean', ['feature-state', 'hover'], false], 0.95, 0.85],
@@ -479,45 +487,70 @@
                                 '#333', ['coalesce', ['feature-state', 'fc'], '#bbb']],
       }
     });
+  }
+
+  // Show the active level's fill layer, hide the other -- main map + all region maps.
+  function _syncLevelLayerVisibility() {
+    const active = _activeLayerId();
+    const other  = active === 'basin08-fill' ? 'basin06-fill' : 'basin08-fill';
+    if (_mapReady) {
+      if (map.getLayer(active)) map.setLayoutProperty(active, 'visibility', 'visible');
+      if (map.getLayer(other))  map.setLayoutProperty(other, 'visibility', 'none');
+    }
+    for (const { map: rm } of regionMaps) {
+      if (rm.getLayer(active)) rm.setLayoutProperty(active, 'visibility', 'visible');
+      if (rm.getLayer(other))  rm.setLayoutProperty(other, 'visibility', 'none');
+    }
+  }
+
+  map.on('load', () => {
+    _mapReady = true;
+    _addBasinSourceAndLayer(map, 6);
+    _addBasinSourceAndLayer(map, 8);
     if (_pendingRender) { _pendingRender(); _pendingRender = null; }
   });
 
-  // Hover state + popup for basin06 layer
+  // Hover state + popup, wired to both basin06-fill and basin08-fill -- only the visible
+  // layer receives pointer events, so both can stay wired permanently.
   let hoveredId = null;
   const _popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, maxWidth: '260px' });
 
-  map.on('mousemove', 'basin06-fill', (e) => {
-    if (!e.features.length) return;
-    map.getCanvas().style.cursor = 'pointer';
-    const f  = e.features[0];
-    const id = f.id;
-    if (hoveredId !== null && hoveredId !== id) {
-      map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: hoveredId }, { hover: false });
-    }
-    hoveredId = id;
-    map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id }, { hover: true });
-    let html;
-    if (currentMode === 'categorical') {
-      const cat_id = currentValues?.[id];
-      const name = currentIdToName?.[cat_id] ?? `Class ${cat_id ?? '?'}`;
-      html = `<div style="font-size:0.78rem;">${escHtml(String(name))}<br><span style="color:#888;">Basin ${id}</span></div>`;
-    } else {
-      const val = currentValues?.[id];
-      const disp = val != null ? `${Number(val.toFixed(4))} ${currentMeta?.units || ''}`.trim() : 'No data';
-      html = `<div style="font-size:0.78rem;line-height:1.4;"><strong>Basin ${id}</strong><br>${disp}</div>`;
-      if (val != null) highlightHistoBin(val);
-    }
-    _popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
-  });
-  map.on('mouseleave', 'basin06-fill', () => {
-    map.getCanvas().style.cursor = '';
-    if (hoveredId !== null) {
-      map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: hoveredId }, { hover: false });
-      hoveredId = null;
-    }
-    _popup.remove();
-    clearHistoHighlight();
-  });
+  function _wireHoverLayer(layerId, sourceId) {
+    map.on('mousemove', layerId, (e) => {
+      if (!e.features.length) return;
+      map.getCanvas().style.cursor = 'pointer';
+      const f  = e.features[0];
+      const id = f.id;
+      if (hoveredId !== null && hoveredId !== id) {
+        map.setFeatureState({ source: sourceId, sourceLayer: sourceId, id: hoveredId }, { hover: false });
+      }
+      hoveredId = id;
+      map.setFeatureState({ source: sourceId, sourceLayer: sourceId, id }, { hover: true });
+      let html;
+      if (currentMode === 'categorical') {
+        const cat_id = currentValues?.[id];
+        const name = currentIdToName?.[cat_id] ?? `Class ${cat_id ?? '?'}`;
+        html = `<div style="font-size:0.78rem;">${escHtml(String(name))}<br><span style="color:#888;">Basin ${id}</span></div>`;
+      } else {
+        const val = currentValues?.[id];
+        const disp = val != null ? `${Number(val.toFixed(4))} ${currentMeta?.units || ''}`.trim() : 'No data';
+        html = `<div style="font-size:0.78rem;line-height:1.4;"><strong>Basin ${id}</strong><br>${disp}</div>`;
+        if (val != null) highlightHistoBin(val);
+      }
+      _popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+    });
+    map.on('mouseleave', layerId, () => {
+      map.getCanvas().style.cursor = '';
+      if (hoveredId !== null) {
+        map.setFeatureState({ source: sourceId, sourceLayer: sourceId, id: hoveredId }, { hover: false });
+        hoveredId = null;
+      }
+      _popup.remove();
+      clearHistoHighlight();
+    });
+  }
+  _wireHoverLayer('basin06-fill', 'basin06');
+  _wireHoverLayer('basin08-fill', 'basin08');
 
   // ── Color palettes ──
   const VIRIDIS = ['#440154','#443982','#31688e','#21918c','#35b779','#8fd744','#fde725'];
@@ -637,9 +670,10 @@
     for (const [id, val] of Object.entries(values)) colorMap[id] = currentColorFn(val);
 
     const apply = () => {
-      map.removeFeatureState({ source: 'basin06', sourceLayer: 'basin06' });
+      const src = _activeSourceId();
+      map.removeFeatureState({ source: src, sourceLayer: src });
       for (const [id, fc] of Object.entries(colorMap)) {
-        map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: Number(id) }, { fc });
+        map.setFeatureState({ source: src, sourceLayer: src, id: Number(id) }, { fc });
       }
     };
     if (_mapReady) apply(); else _pendingRender = apply;
@@ -799,9 +833,10 @@
     for (const [id, cat_id] of Object.entries(values)) colorMap[id] = idToColor[cat_id] ?? '#aaa';
 
     const apply = () => {
-      map.removeFeatureState({ source: 'basin06', sourceLayer: 'basin06' });
+      const src = _activeSourceId();
+      map.removeFeatureState({ source: src, sourceLayer: src });
       for (const [id, fc] of Object.entries(colorMap)) {
-        map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: Number(id) }, { fc });
+        map.setFeatureState({ source: src, sourceLayer: src, id: Number(id) }, { fc });
       }
     };
     if (_mapReady) apply(); else _pendingRender = apply;
@@ -866,9 +901,10 @@
     currentMode = 'lisa';
     const colorMap = {};
     for (const [id, cls] of Object.entries(lisaClasses)) colorMap[id] = LISA_COLORS[cls] ?? '#d3d3d3';
-    map.removeFeatureState({ source: 'basin06', sourceLayer: 'basin06' });
+    const src = _activeSourceId();
+    map.removeFeatureState({ source: src, sourceLayer: src });
     for (const [id, fc] of Object.entries(colorMap)) {
-      map.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: Number(id) }, { fc });
+      map.setFeatureState({ source: src, sourceLayer: src, id: Number(id) }, { fc });
     }
     applyRegionFeatureStates(colorMap);
     renderRegionsLegend();
@@ -906,10 +942,11 @@
 
   function applyRegionFeatureStates(colorMap) {
     if (!regionMapsReady) return;
+    const src = _activeSourceId();
     for (const { map: rm } of regionMaps) {
-      rm.removeFeatureState({ source: 'basin06', sourceLayer: 'basin06' });
+      rm.removeFeatureState({ source: src, sourceLayer: src });
       for (const [id, fc] of Object.entries(colorMap)) {
-        rm.setFeatureState({ source: 'basin06', sourceLayer: 'basin06', id: Number(id) }, { fc });
+        rm.setFeatureState({ source: src, sourceLayer: src, id: Number(id) }, { fc });
       }
     }
   }
@@ -1001,11 +1038,15 @@
       });
 
       await new Promise(resolve => rm.on('load', () => {
-        rm.addSource('basin06', { type: 'vector', url: 'pmtiles:///static/explorer/basin06.pmtiles' });
-        rm.addLayer({
-          id: 'basin06-fill', type: 'fill', source: 'basin06', 'source-layer': 'basin06',
-          paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], '#d3d3d3'], 'fill-opacity': 0.85 }
-        });
+        for (const level of [6, 8]) {
+          const sourceId = `basin0${level}`;
+          rm.addSource(sourceId, { type: 'vector', url: `pmtiles:///static/explorer/${sourceId}.pmtiles` });
+          rm.addLayer({
+            id: `${sourceId}-fill`, type: 'fill', source: sourceId, 'source-layer': sourceId,
+            layout: { visibility: level === 6 ? 'visible' : 'none' },
+            paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], '#d3d3d3'], 'fill-opacity': 0.85 }
+          });
+        }
         resolve();
       }));
 
@@ -1729,9 +1770,9 @@
       document.getElementById('ex-histogram').style.display  = isEvolv ? 'none' : '';
       document.getElementById('ex-evolv-panel').classList.toggle('d-none', !isEvolv);
 
-      // Hide basin06 fill layer while Band T is active
-      if (_mapReady && map.getLayer('basin06-fill'))
-        map.setLayoutProperty('basin06-fill', 'visibility', 'none');
+      // Hide the active basin fill layer (L6 or L8) while Band T is active
+      if (_mapReady && map.getLayer(_activeLayerId()))
+        map.setLayoutProperty(_activeLayerId(), 'visibility', 'none');
       // Clear incompatible Band T layers
       if (subsystem !== 'hyde' && hydeSourceAdded) {
         if (map.getLayer('hyde-layer'))   map.removeLayer('hyde-layer');
@@ -1768,9 +1809,9 @@
       document.getElementById('ex-histogram').style.display = '';
       document.getElementById('ex-evolv-panel').classList.add('d-none');
 
-      // Show basin06 fill layer; remove Band T layers
-      if (_mapReady && map.getLayer('basin06-fill'))
-        map.setLayoutProperty('basin06-fill', 'visibility', 'visible');
+      // Show the active basin fill layer (L6 or L8); remove Band T layers
+      if (_mapReady && map.getLayer(_activeLayerId()))
+        map.setLayoutProperty(_activeLayerId(), 'visibility', 'visible');
       if (hydeSourceAdded) {
         if (map.getLayer('hyde-layer'))   map.removeLayer('hyde-layer');
         if (map.getSource('hyde-raster')) map.removeSource('hyde-raster');
@@ -1858,7 +1899,13 @@
 
   // ── A–E change handlers ──
   document.querySelectorAll('input[name="ex-su"]').forEach(el => { el.addEventListener('change', () => { if (selectedKey) fetchAndRender(); }); });
-  document.querySelectorAll('input[name="ex-level"]').forEach(el => { el.addEventListener('change', () => { if (selectedKey) fetchAndRender(); }); });
+  document.querySelectorAll('input[name="ex-level"]').forEach(el => { el.addEventListener('change', () => {
+    _syncLevelLayerVisibility();
+    if (!selectedKey) return;
+    const v = allVars.find(v => v.schema_key === selectedKey);
+    if (v?.type === 'string') fetchAndRenderCategorical();
+    else fetchAndRender();
+  }); });
   document.getElementById('ex-month').addEventListener('change', () => { if (selectedKey) fetchAndRender(); });
 
   // ── Band T change handlers ──
