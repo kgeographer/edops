@@ -77,7 +77,9 @@ un-merged into `main` until the whole docs pass is ready to replace v0.3 in prod
 (`docsite/` source, `mkdocs.yml`, `site/` build output gitignored) — same-repo decision over a
 separate docs repo, reasoning in `logs/session_log_20260805.md`. Swagger moved `/docs` → `/api/schema`;
 `/docs` now serves the built MkDocs site via a `StaticFiles` mount (`check_dir=False`, so the app still
-starts if `site/` hasn't been built). All three page Guides drafted (`docsite/guides/*.md`), grounded
+starts if `site/` hasn't been built). All three page Guides drafted
+(`docsite/{sandbox,explorer,workbench}/overview.md` — nav restructured 2026-08-07 from a flat
+`docsite/guides/` into per-surface subtrees, Instruments folded into Workbench's subtree), grounded
 in the live templates; the app's Guide modals (Sandbox/Explorer/Workbench) iframe the built pages
 directly rather than duplicating content, with Material's own header stripped when embedded
 (`docsite/javascripts/embed.js`, iframe-detection only — doesn't touch the standalone site). Sandbox's
@@ -286,7 +288,7 @@ regime — 3 lenses here vs. Sandbox's 4, no combined Climate lens for cities); 
 Culture/Modern).
 
 Full mechanics for all three tabs (verified against the live templates, not just described):
-`docsite/guides/workbench.md`.
+`docsite/workbench/overview.md`.
 
 ---
 

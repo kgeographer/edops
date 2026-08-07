@@ -1,4 +1,4 @@
-# API
+# API Guide
 
 *Placeholder — content in development.*
 

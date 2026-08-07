@@ -15,15 +15,17 @@ extra_javascript:
 nav:
   - Start here: index.md
   - Claims and limits: claims.md
-  - Guides:
-      - Sandbox:
-          - Guide: guides/sandbox.md
-          - "Walkthrough: Settlements": guides/sandbox-walkthrough-settlements.md
-          - "Walkthrough: Polities": guides/sandbox-walkthrough-polities.md
-      - Explorer: guides/explorer.md
-      - Workbench: guides/workbench.md
+  - Sandbox:
+      - Overview: sandbox/overview.md
+      - Reading a signature: sandbox/reading-a-signature.md
+      - "Walkthrough: Settlement": sandbox/walkthrough-settlement.md
+      - "Walkthrough: Polity": sandbox/walkthrough-polity.md
+  - Data Explorer:
+      - Overview: explorer/overview.md
+  - Workbench:
+      - Overview: workbench/overview.md
+      - Instruments: workbench/instruments.md
   - Codebook: codebook.md
-  - Instruments: instruments.md
   - Data sources: data-sources.md
   - API: api.md
   - Project: project.md

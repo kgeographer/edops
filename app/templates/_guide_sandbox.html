@@ -1,26 +1,31 @@
-<!-- Sandbox Guide content. Three pills: Guide (default) + two Walkthroughs (Settlements has a
-     different left-panel flow than Polities -- WHG resolve vs. Seshat search + time-slice
-     slider -- so they need separate worked-example screenshot sequences, not one shared page).
-     Each pane iframes its own built MkDocs page -- same single-source-of-truth pattern as the
-     other Guide modals, just three source pages instead of one. Requires `mkdocs build`. -->
+<!-- Sandbox Guide content. Four pills: Overview (default), Reading a signature, + two
+     Walkthroughs (Settlement has a different left-panel flow than Polity -- WHG resolve vs.
+     Seshat search + time-slice slider -- so they need separate worked-example screenshot
+     sequences, not one shared page). Each pane iframes its own built MkDocs page -- same
+     single-source-of-truth pattern as the other Guide modals, just four source pages instead
+     of one. Requires `mkdocs build`. -->
 <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Guide or walkthrough">
-  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-guide" autocomplete="off" checked>
-  <label class="btn btn-outline-secondary" for="sgm-guide">Guide</label>
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-overview" autocomplete="off" checked>
+  <label class="btn btn-outline-secondary" for="sgm-overview">Overview</label>
 
-  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-settlements" autocomplete="off">
-  <label class="btn btn-outline-secondary" for="sgm-wt-settlements">Walkthrough: Settlements</label>
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-reading" autocomplete="off">
+  <label class="btn btn-outline-secondary" for="sgm-reading">Reading a signature</label>
 
-  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-polities" autocomplete="off">
-  <label class="btn btn-outline-secondary" for="sgm-wt-polities">Walkthrough: Polities</label>
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-settlement" autocomplete="off">
+  <label class="btn btn-outline-secondary" for="sgm-wt-settlement">Walkthrough: Settlement</label>
+
+  <input type="radio" class="btn-check" name="sandbox-guide-mode" id="sgm-wt-polity" autocomplete="off">
+  <label class="btn btn-outline-secondary" for="sgm-wt-polity">Walkthrough: Polity</label>
 </div>
-<iframe id="sandbox-guide-iframe" src="/docs/guides/sandbox/" style="width:100%; height:66vh; border:none;"></iframe>
+<iframe id="sandbox-guide-iframe" src="/docs/sandbox/overview/" style="width:100%; height:66vh; border:none;"></iframe>
 <script>
 (function () {
   var iframe = document.getElementById('sandbox-guide-iframe');
   var srcByPillId = {
-    'sgm-guide':          '/docs/guides/sandbox/',
-    'sgm-wt-settlements': '/docs/guides/sandbox-walkthrough-settlements/',
-    'sgm-wt-polities':    '/docs/guides/sandbox-walkthrough-polities/'
+    'sgm-overview':     '/docs/sandbox/overview/',
+    'sgm-reading':      '/docs/sandbox/reading-a-signature/',
+    'sgm-wt-settlement':'/docs/sandbox/walkthrough-settlement/',
+    'sgm-wt-polity':    '/docs/sandbox/walkthrough-polity/'
   };
   document.querySelectorAll('input[name="sandbox-guide-mode"]').forEach(function (radio) {
     radio.addEventListener('change', function () {

@@ -1,4 +1,4 @@
-# EDOPS Sandbox guide
+# EDOPS Sandbox Guide
 
 The Sandbox is the main signature lookup tool: choose a place or a historical polity on the left, then
 read its environmental signature across six of the seven tabs on the right.
@@ -10,7 +10,9 @@ cold start.
 
 **Settlements** resolves a place by name (optionally `"Name, Country"`) or `lat,lon` coordinates
 via the World Historical Gazetteer, or loads one of four worked examples (Timbuktu, Kaifeng,
-Tbilisi, Santa Fe, San Francisco, each with a preset date range). Once a place is resolved you choose:
+Tbilisi, Santa Fe, San Francisco, each with a preset date range). __Note:__ _you must zoom to the vicinity 
+of the place you are seeking, in order to constrain results_. Once a place is resolved you can accept or 
+change defaults for:
 
 - **Neighborhood scope** — *Single basin* (default; containing basin only), *Buffer* (all basins
   within a radius you set, default 100 km, aggregated into one summary), or *Basin ring* (the
@@ -25,21 +27,24 @@ Tbilisi, Santa Fe, San Francisco, each with a preset date range). Once a place i
   E (Coastality), and T (Temporal — LMR/HYDE/eVolv2k enrichment). Checking T reveals a
   from-year/to-year range to set the aggregation window for those temporal layers.
 
-**Polities** searches Seshat polities by name, or loads one of six worked examples (Northern
+**Polities:** Either search the Seshat project's 
+<a href="https://github.com/Seshat-Global-History-Databank/cliopatria" target="_blank">Cliopatria polities</a> by name, 
+or load of one of six worked examples (Northern
 Song, Abbasid Caliphate, Tibetan Empire, Tang Dynasty, Pagan Kingdom, Qin — the last flagged "no
 LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals two independent
 temporal controls: a time-slice slider with VCR-style transport controls
 (first/previous/play/next) for stepping through the polity's historical boundary changes, and —
 separately — a Band T from-year/to-year range (T is pre-checked) for the paleoclimate/land-use
-aggregation window. The two aren't linked: moving the slider changes which boundary is shown, not
-the Band T window, and vice versa. Level and Bands otherwise work the same as Settlements.
+aggregation window. The two are partially linked: moving the slider changes which boundary is shown. 
+**Get Signature** will resolve Band T values for the current polity time slice.
+Level and Bands otherwise work the same as Settlements.
 
-Either fork ends the same way: a **Get signature** button that fires the query.
+For both forks, the **Get signature** button always fires the query for the current parameters.
 
 ## The seven tabs
 
-**Map** shows the basin boundaries for the current neighborhood scope, and paints them by
-whichever variable is selected for coloring, if one is.
+**Map** shows the basin boundaries for the current neighborhood scope. Selecting a variable from the
+dropdown list paints all basins globally while focused on the current neighborhood, providing useful context. 
 
 **Signature** lists every requested variable, organized into accordions by band.
 

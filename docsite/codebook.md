@@ -1,10 +1,12 @@
-# Codebook
+# EDOPS Codebook
 
 *First-draft variable entries generated mechanically from `documentation/EDOPS_variable_catalog_v0.4.tsv` (served live at `/documentation/EDOPS_variable_catalog_v0.4.tsv`). The prose sections below (marked TODO) are hand-written and not yet drafted — see `docs/design/DOCSv4 — TODO.md` §5.4.*
 
-## How to read an entry
+## How to read a signature
 
-*TODO — prose not yet written.*
+The Codebook is a strict per-variable reference — for how the Signature tab's numbers, badges,
+histograms, and Band T charts actually work, see
+[Reading a signature](sandbox/reading-a-signature.md).
 
 ## Local, upstream, and delta
 
