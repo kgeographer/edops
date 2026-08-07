@@ -28,15 +28,6 @@ offers:
 That confirmatory/exploratory split is the point: EA042's climate envelope is answering a specific
 question, EA034's scan is asking an open one. Read results accordingly.
 
-## Ecoregions (OneEarth)
-
-A drill-down browser through the [OneEarth Bioregions](https://www.oneearth.org/bioregions/)
-hierarchy — 14 realms, 53 subrealms, 185 bioregions, 847 ecoregions — via a breadcrumb trail
-(Realms → Subrealms → Bioregions → Ecoregions). Selecting an ecoregion shows its boundary on the
-map and, where available, a Wikipedia summary alongside a link back to the OneEarth source page.
-This tab is mostly a reference browser rather than a correspondence test in its own right — it's
-what the Societies tab's "Ecoregions by realm" view is drawing its categories from.
-
 ## WH Cities
 
 258 World Heritage Cities ([OVPM](https://www.ovpm.org/) member cities), 254 of 258 basin-assigned.
@@ -53,6 +44,16 @@ enables two independent kinds of similarity search:
 Comparing what the two searches surface for the same city — environmentally similar vs.
 discursively similar — is itself informative: agreement is a hint worth investigating further,
 disagreement is not a failure of either measure.
+
+## Ecoregions (OneEarth)
+
+A drill-down browser through the [OneEarth Bioregions](https://www.oneearth.org/bioregions/)
+hierarchy — 14 realms, 53 subrealms, 185 bioregions, 847 ecoregions — via a breadcrumb trail
+(Realms → Subrealms → Bioregions → Ecoregions). Selecting an ecoregion shows its boundary on the
+map and, where available, a Wikipedia summary alongside a link back to the OneEarth source page.
+This tab is mostly a reference browser rather than a correspondence test in its own right — it's
+what the Societies tab's "Ecoregions by realm" view is drawing its categories from.
+
 
 ---
 
