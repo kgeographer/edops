@@ -229,7 +229,7 @@
     <!-- RIGHT: map (always visible) -->
     <div class="col-12 col-lg-6">
       <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>
-      <div id="map" style="height: 420px; border: 1px solid #ddd;"></div>
+      <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
       <style>
         /* Hillshade blend: keeps relief legible when reference tiles (streets/labels) are toggled on.
            Note: mix-blend-mode behavior can vary slightly across browsers. */
@@ -2229,6 +2229,33 @@
       }
     }
 
+    // Subsistence and religion are mutually exclusive queries -- only one trait colors the
+    // map at a time (socActiveQuery). Opening one accordion closes the other and resets its
+    // selection back to "All", so the map can't be left showing a stale combined state.
+    function _closeSocAccordion(panelId, toggleId) {
+      const panel = document.getElementById(panelId);
+      const chevron = document.getElementById(toggleId)?.querySelector('i');
+      if (panel) panel.style.display = 'none';
+      if (chevron) { chevron.classList.add('bi-chevron-down'); chevron.classList.remove('bi-chevron-up'); }
+    }
+
+    function resetSubsistenceSelection() {
+      socSubsistenceFilter = 'all';
+      document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => { r.checked = (r.value === 'all'); });
+      // socDisplayMode is shared across both accordions' own "Show:" radio groups -- reset it
+      // (and this group's own radios) back to the ecoregions default, or a stale 'envscan' from
+      // this accordion would keep driving renderDplaceResults() after focus moves to religion.
+      document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
+      socDisplayMode = 'ecoregions';
+    }
+
+    function resetReligionSelection() {
+      socReligionFilter = 'all';
+      document.querySelectorAll('input[name="soc-religion"]').forEach(r => { r.checked = (r.value === 'all'); });
+      document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
+      socDisplayMode = 'ecoregions';
+    }
+
     function wireSubsistenceAccordion() {
       const toggle = document.getElementById('soc-query-subsistence');
       const panel = document.getElementById('soc-subsistence-panel');
@@ -2238,6 +2265,13 @@
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
+        if (!isOpen) {
+          _closeSocAccordion('soc-religion-panel', 'soc-query-religion');
+          if (socReligionFilter !== 'all') {
+            resetReligionSelection();
+            if (socData) displaySocieties(socData);
+          }
+        }
         panel.style.display = isOpen ? 'none' : 'block';
         if (chevron) {
           chevron.classList.toggle('bi-chevron-down', isOpen);
@@ -2288,11 +2322,7 @@
         radio.addEventListener('change', (e) => {
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
-          // Reset religion filter when switching to subsistence
-          socReligionFilter = 'all';
-          document.querySelectorAll('input[name="soc-religion"]').forEach(r => {
-            r.checked = (r.value === 'all');
-          });
+          resetReligionSelection();
           displaySocieties(socData);
         });
       });
@@ -2307,6 +2337,13 @@
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
+        if (!isOpen) {
+          _closeSocAccordion('soc-subsistence-panel', 'soc-query-subsistence');
+          if (socSubsistenceFilter !== 'all') {
+            resetSubsistenceSelection();
+            if (socData) displaySocieties(socData);
+          }
+        }
         panel.style.display = isOpen ? 'none' : 'block';
         if (chevron) {
           chevron.classList.toggle('bi-chevron-down', isOpen);
@@ -2357,11 +2394,7 @@
         radio.addEventListener('change', (e) => {
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
-          // Reset subsistence filter when switching to religion
-          socSubsistenceFilter = 'all';
-          document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => {
-            r.checked = (r.value === 'all');
-          });
+          resetSubsistenceSelection();
           displaySocieties(socData);
         });
       });
@@ -2431,6 +2464,12 @@
     }
 
     function renderDplaceResults(data) {
+      // The composition donut lives in the left column (#soc-content), decoupled from the
+      // scatter/meters viz in #dplace-results-content -- cleared centrally here so switching
+      // display mode or resetting to "All" can't leave a stale donut behind.
+      const socContent = document.getElementById('soc-content');
+      if (socContent) socContent.innerHTML = '';
+
       if (socDisplayMode === 'envscan') {
         renderEnvScan(data);
       } else {
@@ -2628,7 +2667,13 @@
         heading.textContent = `Environment scan for ${activeFilter}`;
         root.appendChild(wo4EnvScanMeters(scan));
       }
-      root.appendChild(wo4CompositionDonut(scan.composition));
+      const socContent = document.getElementById('soc-content');
+      if (socContent) {
+        const donutWrap = document.createElement('div');
+        donutWrap.className = 'wo4-viz';
+        donutWrap.appendChild(wo4CompositionDonut(scan.composition));
+        socContent.appendChild(donutWrap);
+      }
     }
 
     function wo4ClimateEnvelopeScatter(scan) {
