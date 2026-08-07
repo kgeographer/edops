@@ -260,7 +260,7 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
   uses `1 - t`; aridity + precipitation RDBU sequential (low = red); LMR PDSI/precip
   use `t`; LMR temperature anomaly uses `1 - t`.
 - **Gitignored static assets** (must rsync to server, never git):
-  `basin06.pmtiles`, `lmr_notches.geojson`, `countries_110m.geojson`,
+  `basin06.pmtiles`, `basin08.pmtiles`, `lmr_notches.geojson`, `countries_110m.geojson`,
   `hyde_tiles/`, `lisa_classifications.parquet`
 
 ### `/workbench` (canonical) — Workbench
