@@ -6,6 +6,9 @@ site_dir: site
 theme:
   name: material
 
+hooks:
+  - mkdocs_hooks.py
+
 extra_css:
   - stylesheets/extra.css
 
