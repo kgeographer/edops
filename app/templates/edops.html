@@ -5,9 +5,9 @@
   <div class="container d-flex align-items-center justify-content-between" style="max-width: 960px;">
     <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height: 80px;"></a>
     <span class="d-flex align-items-center gap-2">
-      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About the project</a>
-      <a href="/docs" class="fs-6 fw-normal text-decoration-none">Docs</a>
-      <span class="badge rounded-pill bg-secondary fw-normal fs-6">research prototype, 2026</span>
+      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About EDOPS</a> |
+      <a href="/docs" class="fs-6 fw-normal text-decoration-none">Documentation</a>
+      <span class="badge rounded-pill bg-secondary fw-normal fs-6 ms-4">v0.4 Sep 2026</span>
     </span>
   </div>
 </header>
@@ -39,20 +39,30 @@
 
   <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Environmental Dimensions of Place Service (EDOPS)</h2>
 
-  <p class="fs-5">EDOPS generates structured environmental signatures for any location on Earth. Signatures are derived from global datasets aggregated at the hydrological sub-basin level — capturing physiography, hydrology, climate, and coastality — with optional historical climate enrichment from paleoclimate reconstructions. EDOPS is the environmental component of the <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.</p>
-
-<!--  <p>The service is available as a <a href="/sandbox">researcher sandbox</a> and a <a href="/api/signature?lat=16.77&lon=-3.01&bands=ABCDE" target="_blank">REST API</a>. A researcher dashboard is in development.</p>-->
+  <p class="fs-5">EDOPS generates structured environmental signatures for any location on Earth. Signatures are derived from global datasets aggregated at the hydrological sub-basin level — capturing physiography, hydrology, climate, and coastality — with optional historical climate enrichment from paleoclimate reconstructions. EDOPS is the environmental component of a broader
+    <a href="/">Computing Place</a>
+<!--    <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a>-->
+    research initiative.</p>
 
   <div class="cp-tiles mt-4">
-    <a href="/sandbox" class="cp-tile cp-tile-active" style="height:230px;">
-      <img src="/static/images/edops_sandbox_800.jpg" alt="EDOPS Sandbox" style="height:100%;">
-    </a>
-    <a href="/explorer" class="cp-tile cp-tile-active" style="height:230px;">
-      <img src="/static/images/edops_explorer_800.jpg" alt="EDOPS Data Explorer" style="height:100%;">
-    </a>
-    <a href="/workbench" class="cp-tile cp-tile-active" style="height:230px;">
-      <img src="/static/images/edops_workbench_800.jpg" alt="EDOPS<>CDOP Workbench" style="height:100%;">
-    </a>
+    <div class="cp-tile-col">
+      <a href="/sandbox" class="cp-tile cp-tile-active" style="height:200px;">
+        <img src="/static/images/tile_sandbox_800.jpg" alt="EDOPS Sandbox" style="height:100%;">
+      </a>
+      <div class="cp-tile-blurb">Generate environmental signatures for settlements and polities</div>
+    </div>
+    <div class="cp-tile-col">
+      <a href="/explorer" class="cp-tile cp-tile-active" style="height:200px;">
+        <img src="/static/images/tile_explorer_800.jpg" alt="EDOPS Data Explorer" style="height:100%;">
+      </a>
+      <div class="cp-tile-blurb">Browse EDOPS source global datasets in an interactive map</div>
+    </div>
+    <div class="cp-tile-col">
+      <a href="/workbench" class="cp-tile cp-tile-active" style="height:200px;">
+        <img src="/static/images/tile_workbench_800.jpg" alt="EDOPS<>CDOP Workbench" style="height:100%;">
+      </a>
+      <div class="cp-tile-blurb">Pilot tests, including correspondences between environment and culture</div>
+    </div>
   </div>
 
 </div>

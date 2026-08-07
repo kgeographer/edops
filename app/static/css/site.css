@@ -71,6 +71,12 @@ pre {
   flex-wrap: wrap;
 }
 
+.cp-tile-col {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
 .cp-tile {
   display: block;
   width: 220px;
@@ -84,11 +90,26 @@ pre {
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
+.cp-tile-blurb {
+  margin-top: 0.6rem;
+  color: #000;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  padding: 0 8px;
+  /*text-align: center;*/
+}
+
 .cp-tile img {
   width: 100%;
   height: 180px;
   object-fit: cover;
   display: block;
+}
+
+/* Scoped to .cp-tile-col (only edops.html wraps tiles this way) so this doesn't affect
+   index.html's EDOP/CDOP tiles, which share the base .cp-tile classes. */
+.cp-tile-col .cp-tile img {
+  object-position: center bottom;
 }
 
 .cp-tile-info {
