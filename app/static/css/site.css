@@ -151,3 +151,12 @@ pre {
   background-color: #4a7c59;
   color: #fff;
 }
+
+/* Shared help-tooltip harness (2026-08-07) -- see app/static/js/edops_help.js. Replaces the
+   inline style="cursor:help" + text-muted small pattern Workbench's EA042/EA034 icons used
+   ad hoc, which needed a bespoke bootstrap.Tooltip() call per icon. */
+.edops-help {
+  cursor: help;
+  color: #6c757d;
+  font-size: 0.85em;
+}
