@@ -2937,8 +2937,9 @@
       bars += `<rect x="${(i*barW).toFixed(1)}" y="${BAR_H-h}" width="${(barW-0.8).toFixed(1)}" height="${h}" fill="#5b8dc4" opacity="0.75"/>`;
     }
     const lo = bins[0].toFixed(1), hi = bins[bins.length-1].toFixed(1);
+    // resolver_year (the polity-boundary year) is rendered by renderRow() under the variable
+    // name instead -- not duplicated here (2026-08-08).
     const parts = [];
-    if (dist.resolver_year != null) parts.push(`boundary ${dist.resolver_year}`);
     if (dist.band_t_from != null && dist.band_t_to != null)
       parts.push(`${dist.band_t_from}–${dist.band_t_to} CE`);
     const stamp = parts.length
@@ -3101,36 +3102,44 @@
     const nb   = payload.neighborhood || {};
     const lvlStr = nb.level ? ` · L${String(nb.level).padStart(2,'0')}` : '';
     const ringN  = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
-    let heading;
+    let headingHtml;
     if (ringN != null) {
       // A ring member's raw hybas_id means nothing to a reader -- name it relative to the place
       // the query was anchored on instead, same "place + ring label" framing Analysis/Context/
       // Seasonality already use via _activeBasinLabel() (2026-08-08).
       const lvlParen = nb.level ? ` (Level ${String(nb.level).padStart(2,'0')})` : '';
-      heading = _currentPlaceName
+      headingHtml = escapeHtml(_currentPlaceName
         ? `Ring basin #${ringN} for ${_currentPlaceName}${lvlParen}`
-        : `Ring basin #${ringN}${lvlParen}`;
+        : `Ring basin #${ringN}${lvlParen}`);
     } else if (nb.hybas_id) {
       // Same reasoning as the ring-member case above -- the raw hybas_id is a DB key, not
       // something a reader can orient by; the place name is what they actually searched for
       // (2026-08-08).
       const lvlParen = nb.level ? ` (Level ${String(nb.level).padStart(2,'0')})` : '';
-      heading = _currentPlaceName
+      headingHtml = escapeHtml(_currentPlaceName
         ? `Containing basin for ${_currentPlaceName}${lvlParen}`
-        : `Basin ${nb.hybas_id}${lvlStr}`;
+        : `Basin ${nb.hybas_id}${lvlStr}`);
     } else if (nb.type === 'polygon' && _polityName) {
       // Polity aggregate -- same reasoning as the basin/ring cases above, name it by what the
-      // user searched for rather than a bare unit count (2026-08-08).
+      // user searched for. Also names the active time slice (2026-08-08) -- basin membership
+      // for a polity is slice-dependent, and without the years shown there was no way to tell
+      // which slice a given signature came from short of re-checking the slider. Basin count/
+      // level demoted to a smaller trailing span since the place + years are what identifies
+      // the query; the count is supporting detail.
+      const slice = _politySlices[_polityCurrentIdx];
+      const yearsStr = slice ? ` (${slice.fromyear} CE – ${slice.toyear} CE)` : '';
       const lvlParen = nb.level ? ` Level ${String(nb.level).padStart(2,'0')}` : '';
-      heading = `${_polityName}: ${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''},${lvlParen}`;
+      const detail = `${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''} at${lvlParen}`;
+      headingHtml = `${escapeHtml(_polityName)}${escapeHtml(yearsStr)} `
+        + `<span style="font-size:0.9rem; font-weight:400; font-style: italic;">${escapeHtml(detail)}</span>`;
     } else {
-      heading = `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`;
+      headingHtml = escapeHtml(`${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`);
     }
     const byBand = {};
     for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
-        <h5 class="mb-0">${escapeHtml(heading)}</h5>
+        <h5 class="mb-0">${headingHtml}</h5>
         <a href="#" class="text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle"></i></a>
       </div>
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
@@ -3163,8 +3172,11 @@
   }
 
   function renderRow(row) {
+    const resolverYear = row.detail?.distribution?.resolver_year;
+    const asOf = resolverYear != null
+      ? `<div style="font-size:0.65rem;color:#000;">as of ${resolverYear} CE</div>` : '';
     return `<tr>
-      <td class="ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}</td>
+      <td class="ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}${asOf}</td>
       <td>${renderLeaf(row)}</td>
     </tr>`;
   }
