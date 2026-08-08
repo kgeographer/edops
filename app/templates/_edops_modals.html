@@ -1,22 +1,30 @@
-<!-- Shared Guide/API modals. Used by sandbox_v3.html, explorer.html, and workbench.html
+<!-- Shared Documentation/API modals. Used by sandbox_v3.html, explorer.html, and workbench.html
      (formerly cdop_pilot.html, renamed 2026-08-05; converted from a base.html block-extending
      template to a standalone document like the other two, 2026-08-07). The old workbench.html
      -- which relied on base.html's own inline default About/API modals, not this partial -- is
      archived to xarchive/ (gitignored). base.html itself (and its stale default modal content)
      was deleted 2026-08-07, once converting workbench.html left nothing using it.
-     Guide modal replaced the retired About modal 2026-08-04 (DOCSv4 plumbing) -- shell is
-     shared, body is per-page: includes "_guide_{{ active_page }}.html" (each caller sets
-     active_page before including this partial). Placeholder content, per-page Guide design
-     still TBD. -->
-
-<!-- Guide Modal (2026-08-04, DOCSv4 plumbing): replaces the retired About modal. Per-page
-     Guide content design is TBD -- this is a placeholder shell so the Guide link/modal wiring
-     can ship ahead of prose. -->
-<div class="modal fade" id="guide-modal" tabindex="-1" aria-labelledby="guide-modal-label" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 75%;">
+     Documentation modal replaced the retired About modal 2026-08-04 (DOCSv4 plumbing), then the
+     separate Guide/Docs links were merged into this single one 2026-08-08 -- the old Guide
+     modal iframed built MkDocs pages with the sidebar hidden (via docsite/javascripts/embed.js
+     stripping Material's header) and a plain "Docs" link separately opened /docs full-page;
+     once the mkdocs sidebar breakpoint hook (see mkdocs_hooks.py) made the sidebar show up
+     inside a wide-enough modal anyway, keeping both links stopped making sense -- Karl's call
+     was that a visible sidebar in the modal isn't a bad thing, so this modal now IS the docs
+     site for the current page, sidebar included. Shell is shared, body is per-page: includes
+     "_guide_{{ active_page }}.html" (each caller sets active_page before including this
+     partial; filenames kept as _guide_*.html, just the modal chrome around them changed). -->
+<div class="modal fade" id="documentation-modal" tabindex="-1" aria-labelledby="documentation-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="guide-modal-label">Environmental Dimensions of Place Service (EDOPS)</h4>
+        <h4 class="modal-title" id="documentation-modal-label">Environmental Dimensions of Place Service (EDOPS)</h4>
+        <div class="ms-auto me-3">
+          <a href="/docs/" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <img src="/static/images/open-book.png" alt="" style="height:16px; width:16px; vertical-align:-3px;">
+            Full page ↗
+          </a>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
