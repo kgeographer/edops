@@ -1,17 +1,38 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EDOPS Workbench</title>
+
+  <link rel="stylesheet" href="/static/css/site.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-5K56B8BCD9');
+  </script>
+  <link rel="stylesheet" href="/static/css/workbench.css">
+</head>
+<body>
 
 {% set active_page = "workbench" %}
-
-{% block header %}
 {% set page_title = "EDOP <> CDOP workbench" %}
 {% include "_edops_header.html" %}
-{% endblock %}
 
-{% block modals %}
 {% include "_edops_modals.html" %}
-{% endblock %}
 
-{% block content %}
+<main>
 <div class="container-fluid">
   <div class="row g-3">
 
@@ -197,21 +218,6 @@
             </div>
           </div>
           <div id="soc-content"></div>
-          <style>
-            /* Default (closed) vs. open state for the two trait accordion headers -- overrides
-               Bootstrap's list-group-item-action default (white, pale-grey hover/focus), which
-               read as too low-contrast to tell open from closed at a glance. */
-            .soc-accordion-toggle,
-            .soc-accordion-toggle:hover,
-            .soc-accordion-toggle:focus {
-              background-color: aliceblue;
-            }
-            .soc-accordion-toggle.soc-open,
-            .soc-accordion-toggle.soc-open:hover,
-            .soc-accordion-toggle.soc-open:focus {
-              background-color: lightblue;
-            }
-          </style>
         </div>
 
       </div>
@@ -245,13 +251,6 @@
     <div class="col-12 col-lg-6">
 <!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
-      <style>
-        /* Hillshade blend: keeps relief legible when reference tiles (streets/labels) are toggled on.
-           Note: mix-blend-mode behavior can vary slightly across browsers. */
-        .edop-hillshade {
-          mix-blend-mode: multiply;
-        }
-      </style>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
       <!-- Similar sites results (shown below map) -->
@@ -285,72 +284,6 @@
         <h6 class="mb-1" id="dplace-results-heading"></h6>
         <div id="dplace-results-content"></div>
       </div>
-      <style>
-        /* CITYKIN WO4 (2026-07-30, meter-bar redesign): the Climate envelope scatter + the
-           five-variable environment meters + composition donut. Palette per the dataviz skill's
-           reference instance (light mode only -- this site has no dark-mode toggle anywhere else,
-           so a dark block would be dead weight, not parity). Categorical slots 1/2/3 (blue/
-           orange/aqua): the reference palette's own documentation certifies these three together
-           pass the all-pairs CVD check required for small-multiples/scatter forms -- the donut's
-           three named-family slots use exactly these, not ad hoc colors. */
-        .wo4-viz {
-          --wo4-surface:      #fcfcfb;
-          --wo4-text-primary: #0b0b0b;
-          --wo4-text-secondary: #52514e;
-          --wo4-text-muted:   #898781;
-          --wo4-gridline:     #e1e0d9;
-          --wo4-baseline:     #c3c2b7;
-          --wo4-backdrop:     #c3c2b7;   /* emphasis form: de-emphasized gray for the backdrop cloud */
-          --wo4-focus:        #2a78d6;   /* categorical slot 1 -- the confirmatory scatter's 1 series */
-          --wo4-cat-1: #2a78d6;   /* blue */
-          --wo4-cat-2: #eb6834;   /* orange */
-          --wo4-cat-3: #1baf7a;   /* aqua */
-          --wo4-neutral-fill: #9a9890;   /* "Other" -- visible, deliberately subordinate to the 3 named */
-          --wo4-meter-track: #d3e2f5;    /* light step of the cat-1 ramp, per the Meter form's own spec */
-          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        }
-        .wo4-viz svg { max-width: 100%; height: auto; }
-        .wo4-viz .wo4-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.8rem; color: var(--wo4-text-secondary); margin-bottom: 0.35rem; flex-wrap: wrap; }
-        .wo4-viz .wo4-legend-key { display: inline-flex; align-items: center; gap: 0.35rem; }
-        .wo4-viz .wo4-legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
-        .wo4-viz .wo4-caption { font-size: 0.85rem; color: var(--wo4-text-secondary); margin-top: 0.5rem; line-height: 1.5; }
-        .wo4-viz .wo4-tooltip {
-          position: absolute; pointer-events: none; z-index: 10;
-          background: var(--wo4-text-primary); color: #fff; font-size: 0.75rem;
-          padding: 0.3rem 0.5rem; border-radius: 4px; white-space: nowrap;
-          opacity: 0; transition: opacity 0.1s ease;
-        }
-        .wo4-viz .wo4-bar-label { fill: var(--wo4-text-secondary); font-size: 11px; }
-        .wo4-viz .wo4-axis-label { fill: var(--wo4-text-muted); font-size: 11px; }
-        .wo4-viz .wo4-axis-pole { fill: var(--wo4-text-muted); font-size: 10px; }
-
-        /* -- Meter bars (the five-variable environment scan) -- */
-        .wo4-meters { display: flex; flex-direction: column; }
-        .wo4-meter-row { padding: 0.55rem 0; border-top: 1px solid var(--wo4-gridline); }
-        .wo4-meter-row:first-child { border-top: none; padding-top: 0; }
-        .wo4-meter-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.32rem; }
-        .wo4-meter-label { font-size: 0.9rem; font-weight: 600; color: var(--wo4-text-primary); }
-        .wo4-meter-qual { font-size: 0.82rem; color: var(--wo4-text-secondary); font-style: italic; }
-        .wo4-meter-track-row { display: flex; align-items: center; gap: 0.55rem; }
-        .wo4-pole { font-size: 0.72rem; color: var(--wo4-text-muted); white-space: nowrap; width: 5.4rem; }
-        .wo4-pole.right { text-align: right; }
-        .wo4-track { flex: 1; height: 9px; border-radius: 5px; background: var(--wo4-meter-track); position: relative; overflow: hidden; cursor: default; }
-        .wo4-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; background: var(--wo4-focus); transition: width 0.5s cubic-bezier(0.22,0.61,0.36,1); }
-        .wo4-midline { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--wo4-gridline); }
-        .wo4-pct { width: 2.8rem; text-align: right; font-size: 0.78rem; color: var(--wo4-text-secondary); font-variant-numeric: tabular-nums; }
-
-        /* -- Composition donut + legend -- */
-        .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }
-        .wo4-donut-figure { flex: none; }
-        .wo4-donut-total { font-family: inherit; }
-        .wo4-comp-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 12rem; }
-        .wo4-comp-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.3rem; border-radius: 5px; cursor: pointer; transition: background 0.12s ease; }
-        .wo4-comp-row:hover, .wo4-comp-row.is-active { background: var(--wo4-gridline); }
-        .wo4-comp-name { font-size: 0.85rem; color: var(--wo4-text-primary); flex: 1; }
-        .wo4-comp-count { font-size: 0.78rem; color: var(--wo4-text-muted); }
-        .wo4-comp-row.is-neutral .wo4-comp-name { color: var(--wo4-text-secondary); }
-        .wo4-map-dot-lit { }
-      </style>
     </div>
 
   </div>
@@ -2256,21 +2189,31 @@
       if (chevron) { chevron.classList.add('bi-chevron-down'); chevron.classList.remove('bi-chevron-up'); }
     }
 
-    function resetSubsistenceSelection() {
+    // resetDisplayMode defaults true (full reset -- used when actually leaving this accordion's
+    // context, i.e. the other one is being opened). Callers clearing this accordion's filter as
+    // a side effect of a VALUE pick in the OTHER accordion must pass false: socDisplayMode is
+    // shared across both accordions' own "Show:" radio groups, so resetting it here would
+    // clobber a display choice the user just made in the accordion they're actually looking at
+    // (bug Karl caught 2026-08-07: pick "Climate envelope" in Subsistence, then a trait value --
+    // the value-radio handler's cross-accordion reset was wiping socDisplayMode back to
+    // 'ecoregions' right before rendering, even though Subsistence's own radio still showed
+    // "Climate envelope" checked).
+    function resetSubsistenceSelection(resetDisplayMode = true) {
       socSubsistenceFilter = 'all';
       document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => { r.checked = (r.value === 'all'); });
-      // socDisplayMode is shared across both accordions' own "Show:" radio groups -- reset it
-      // (and this group's own radios) back to the ecoregions default, or a stale 'envscan' from
-      // this accordion would keep driving renderDplaceResults() after focus moves to religion.
-      document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
-      socDisplayMode = 'ecoregions';
+      if (resetDisplayMode) {
+        document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
+        socDisplayMode = 'ecoregions';
+      }
     }
 
-    function resetReligionSelection() {
+    function resetReligionSelection(resetDisplayMode = true) {
       socReligionFilter = 'all';
       document.querySelectorAll('input[name="soc-religion"]').forEach(r => { r.checked = (r.value === 'all'); });
-      document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
-      socDisplayMode = 'ecoregions';
+      if (resetDisplayMode) {
+        document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
+        socDisplayMode = 'ecoregions';
+      }
     }
 
     function wireSubsistenceAccordion() {
@@ -2342,7 +2285,7 @@
         radio.addEventListener('change', (e) => {
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
-          resetReligionSelection();
+          resetReligionSelection(false);
           displaySocieties(socData);
         });
       });
@@ -2415,7 +2358,7 @@
         radio.addEventListener('change', (e) => {
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
-          resetSubsistenceSelection();
+          resetSubsistenceSelection(false);
           displaySocieties(socData);
         });
       });
@@ -3313,4 +3256,13 @@
 
   });
 </script>
-{% endblock %}
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

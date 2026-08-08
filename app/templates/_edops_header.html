@@ -1,6 +1,8 @@
 <!-- Shared EDOPS header (2026-08-03 reorg). Used by sandbox_v3.html, explorer.html, and
-     workbench.html (via base.html's header-block override; formerly cdop_pilot.html, renamed
-     2026-08-05). Callers set two Jinja variables before including this file:
+     workbench.html (formerly cdop_pilot.html, renamed 2026-08-05; converted from a base.html
+     block-extending template to a standalone document like the other two, 2026-08-07 --
+     base.html deleted, nothing else used it). Callers set two Jinja variables before including
+     this file:
        page_title   -- e.g. "EDOPS Sandbox v0.4"
        active_page  -- one of 'sandbox' | 'explorer' | 'workbench', for the active nav-pill state
      Karl, 2026-08-03: "workable frame that can be tweaked later, progress not perfection." -->
