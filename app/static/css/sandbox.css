@@ -3,7 +3,13 @@
    Explorer/Workbench — see site.css for cross-page rules. */
 
 body { font-size: 1rem; }
+
+/* ── Left column ── */
 #left-col { position: sticky; top: 1rem; }
+#band-list {
+  list-style: none;
+}
+
 /* Atlas tab is the one place-independent tab — tint it so it reads as different. */
 #v3-tab-atlas-btn { background-color: #e0f7fa; }
 #v3-tab-atlas-btn:hover { background-color: #cbeff5; }
@@ -21,3 +27,24 @@ body { font-size: 1rem; }
   100% { background: transparent; }
 }
 .v3-band-t-flash { animation: v3-flash-yellow 2s ease forwards; }
+
+/* Signature Bands help panel (2026-08-08) — click-to-toggle legend, kept as compact as
+   possible since it sits inline in the left column, not in a modal. Full row width (sibling
+   of the Level/Signature Bands row, not nested inside it) so entries can wrap side by side
+   instead of stacking one per line. */
+#v3-band-legend {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+.v3-band-legend-list {
+  list-style: none;
+  padding-left: 0.25rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 1.25rem;
+}
+.v3-band-legend-list li { flex: 1 1 260px; }

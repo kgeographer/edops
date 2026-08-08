@@ -60,8 +60,8 @@
                 <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
               </div>
               <!-- WHG status line (hidden at cold start) -->
-              <div id="v3-whg-status" class="text-muted mb-1"
-                   style="font-size:0.78rem; display:none;"></div>
+              <div id="v3-whg-status" class="mb-1"
+                   style="font-size:0.9rem; color: #993333; display:none;"></div>
               <!-- WHG candidate list (hidden at cold start) -->
               <div id="v3-whg-candidates" class="list-group list-group-flush mb-1"
                    style="display:none; font-size:0.8rem; max-height:200px; overflow-y:auto;"></div>
@@ -94,8 +94,8 @@
               <div id="v3-scope-wrap" class="mb-2" style="display:none;">
                 <select id="v3-scope-select" class="form-select form-select-sm">
                   <option value="single">Single basin</option>
-                  <option value="buffer">Buffer</option>
                   <option value="ring">Basin ring</option>
+                  <option value="buffer">Buffer</option>
                 </select>
                 <!-- Buffer radius (shown when Buffer is chosen) -->
                 <div id="v3-buffer-extra" class="mt-1 align-items-center gap-2"
@@ -109,7 +109,9 @@
               <!-- Level + Signature Bands -->
               <div class="d-flex gap-2 align-items-start mb-2">
                 <div style="flex:0 0 auto;">
-                  <label class="form-label mb-0" style="font-size:0.9rem;">Level</label>
+                  <label class="form-label mb-0" style="font-size:0.9rem;">Level
+                    <i class="bi bi-question-circle edops-help" data-help-text="TODO: Level choice"></i>
+                  </label>
                   <select class="form-select form-select-sm mt-1" id="v3-level"
                           style="width:68px;" disabled>
                     <option value="6">06</option>
@@ -118,7 +120,7 @@
                 </div>
                 <div style="flex:1 1 auto;">
                   <label class="form-label mb-0" style="font-size:0.9rem;">Signature Bands
-                   <i class="bi bi-question-circle edops-help" data-help-text="TODO: short reminder"></i>
+                   <i class="bi bi-question-circle edops-help" data-help-toggle="#v3-band-legend"></i>
                   </label>
                 <div id="v3-band-checks" class="d-flex flex-wrap gap-2 mt-1 ps-1"
                        style="background-color:aliceblue; padding:4px; border-radius:4px;">
@@ -155,6 +157,16 @@
                   </div>
                 </div>
               </div>
+              <div id="v3-band-legend" class="mb-2" style="display:none;">
+                <ul class="v3-band-legend-list mb-0">
+                  <li><strong>A — Physiographic bedrock</strong>: elevation, slope, relief, lithology, karst. Stable over geological time.</li>
+                  <li><strong>B — Hydro-climatic baselines</strong>: river discharge, runoff, groundwater, soils, wetlands (full upstream catchment).</li>
+                  <li><strong>C — Bioclimatic proxies</strong>: temperature, precipitation, aridity, biome, ecoregion (contemporary baseline; Band T supersedes for period-specific queries).</li>
+                  <li><strong>D — Anthropocene markers</strong>: population density, cropland, human footprint, GDP (present-day only — exclude for pre-modern analyses).</li>
+                  <li><strong>E — Coastality</strong>: distance to marine outlet, endorheic flag, outlet type.</li>
+                  <li><strong>T — Temporal context</strong>: period-specific land use (HYDE 3.4), climate reconstruction (LMR v2.1), volcanic events (eVolv2k). Requires a date range.</li>
+                </ul>
+              </div>
 
               <!-- Band T year range (shown when T is checked) -->
               <div id="v3-t-year-row" class="d-none mb-2">
@@ -168,7 +180,7 @@
                 </div>
               </div>
 
-              <!-- Get signature -->
+           <!-- Get signature -->
               <button class="btn btn-success btn-sm w-100" id="v3-sig-btn" disabled>
                 Get signature
               </button>
@@ -294,10 +306,9 @@
       <div id="v3-ring-info" class="text-muted small px-1 mt-2" style="display:none;">
         <div class="d-flex align-items-start gap-2 mb-2">
           <div class="flex-grow-1">Ring members are numbered clockwise from north — click one
-            (map or list) to preview, then <strong>Get signature</strong> to load it.</div>
+            (map or glyph) to preview, then <strong>Get signature</strong> to load it.</div>
           <div id="v3-ring-glyph-wrap" class="flex-shrink-0"></div>
         </div>
-        <div id="v3-ring-list" class="list-group"></div>
       </div>
 
       <!-- Lower panel: intro text + choropleth controls -->
@@ -900,6 +911,13 @@
   document.getElementById('v3-scope-select').addEventListener('change', function () {
     applyScope(this.value);
     updateSigButton();
+    // Changing neighborhood invalidates whatever signature/Analysis/Seasonality/Context/
+    // Similarity content is showing -- it was computed for the OLD scope's basin(s), not the
+    // new one. Reset back to "run Get signature to populate" rather than leaving stale content
+    // (e.g. a ring member's signature) on screen until the user happens to click the button
+    // again (2026-08-08). keepPlace: true -- the resolved place itself hasn't changed, only its
+    // neighborhood scope.
+    if (currentLat !== null) _resetRightColumn({ keepPlace: true });
     if (currentLat !== null) _drawScopePreview(this.value);
   });
 
@@ -980,7 +998,7 @@
     }
 
     if (!map || map.getZoom() < 4) {
-      _whgSetStatus('Zoom in to your study region first, then search.');
+      _whgSetStatus('Zoom map to your study region first, then search.');
       return;
     }
 
@@ -2155,12 +2173,12 @@
       </div>`;
   }
 
-  function _resetRightColumn() {
+  function _resetRightColumn({ keepPlace = false } = {}) {
     _pointSig = null;
     _centerPointSig = null;
     _previewRingMemberId = null;
     _committedRingMemberId = null;
-    _currentPlaceName = '';
+    if (!keepPlace) _currentPlaceName = '';
     _ctxQueryLat    = null;
     _ctxQueryLon    = null;
     _ctxQueryLevel  = null;
@@ -2471,7 +2489,6 @@
     map.on('click',      centerFillId, () => previewCenter());
 
     _applyRingSelectionStyle();
-    _renderRingList();
     _renderRingGlyph();
 
     return geojsonBbox({ type: 'FeatureCollection',
@@ -2503,54 +2520,20 @@
     }
   }
 
-  // Persistent list in the left panel (#v3-ring-info), not tied to any right-panel tab -- stays
-  // on screen and shows the active basin regardless of which of the 5 tabs is focused. Bold row
-  // follows preview-if-present else committed, same as the map's own outline and the glyph --
-  // clicking the list needs its own immediate feedback, same as clicking the map does. Titles
-  // and tab content are the ones that stay committed-only (they read _activeBasinLabel(), which
-  // is unaffected by this) -- that split is deliberate: this is a selection indicator, titles
-  // are a content claim, and only the latter has to wait for the data to actually load.
-  function _renderRingList() {
-    const el = document.getElementById('v3-ring-list');
-    if (!el || !_ringData?.ring) return;
-    const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
-    const shownId = _previewRingMemberId ?? _committedRingMemberId;
-    const centerActive = shownId == null;
-    const rows = sorted.map((m, i) => {
-      const n = i + 1;
-      const active = shownId === m.hybas_id;
-      return `<a href="#" class="list-group-item list-group-item-action py-1 px-2${active ? ' active' : ''}"
-                 data-hybas-id="${m.hybas_id}" style="font-size:0.8rem;">
-                Ring ${n} <span class="${active ? '' : 'text-muted'}">· ~${Math.round(m.border_bearing)}°</span>
-              </a>`;
-    }).join('');
-    el.innerHTML = `
-      <a href="#" class="list-group-item list-group-item-action py-1 px-2${centerActive ? ' active' : ''}"
-         id="v3-ring-center-row" style="font-size:0.8rem;">Center basin</a>
-      ${rows}`;
-    el.querySelectorAll('[data-hybas-id]').forEach(row => {
-      row.addEventListener('click', ev => {
-        ev.preventDefault();
-        const hid = Number(row.dataset.hybasId);
-        const member = _ringData.ring.find(r => r.hybas_id === hid);
-        if (member) previewRingMember(member);
-      });
-    });
-    document.getElementById('v3-ring-center-row')?.addEventListener('click', ev => {
-      ev.preventDefault();
-      previewCenter();
-    });
-  }
-
-  // Small compass-rose glyph, flush right in the same blurb row rather than its own section --
-  // screen real estate in the left panel was already tight. Bearing-accurate dot placement from
-  // border_bearing, same colors as the map's own ring layers (not the app's site palette) since
-  // it's meant to echo the map directly, not read as a separate branded element. Follows
-  // preview-if-present else committed, same as the list -- see _renderRingList's comment for why.
+  // Small compass-rose glyph, flush right in the same blurb row rather than its own section.
+  // Bearing-accurate dot placement from border_bearing, same colors as the map's own ring
+  // layers (not the app's site palette) since it's meant to echo the map directly, not read as
+  // a separate branded element. Follows preview-if-present else committed, same as the map's
+  // own outline -- see _applyRingSelectionStyle's comment for why.
+  //
+  // This glyph and the map (clicking a ring basin, or the center fill) are the only two ways to
+  // pick a ring member -- an earlier text list (#v3-ring-list) duplicating the same picks was
+  // dropped 2026-08-08 as redundant once the glyph became interactive and was sized up to be a
+  // comfortable click target on its own.
   function _renderRingGlyph() {
     const wrap = document.getElementById('v3-ring-glyph-wrap');
     if (!wrap || !_ringData?.ring) return;
-    const SIZE = 56, R = 20, CX = SIZE / 2, CY = SIZE / 2;
+    const SIZE = 112, R = 40, CX = SIZE / 2, CY = SIZE / 2;
     const sorted = [..._ringData.ring].sort((a, b) => a.border_bearing - b.border_bearing);
     const shownId = _previewRingMemberId ?? _committedRingMemberId;
     const dots = sorted.map((m, i) => {
@@ -2559,7 +2542,7 @@
       const x = CX + R * Math.sin(rad);
       const y = CY - R * Math.cos(rad);
       const active = shownId === m.hybas_id;
-      const r = active ? 4.5 : 3;
+      const r = active ? 6 : 4;
       const fill = active ? '#e67e22' : '#4a90c4';
       return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}"
                 stroke="#fff" stroke-width="1" tabindex="0" role="button"
@@ -2569,7 +2552,7 @@
               </circle>`;
     }).join('');
     const centerActive = shownId == null;
-    const centerDot = `<circle cx="${CX}" cy="${CY}" r="${centerActive ? 4.5 : 3}"
+    const centerDot = `<circle cx="${CX}" cy="${CY}" r="${centerActive ? 6 : 4}"
         fill="${centerActive ? '#e67e22' : '#1a4a6e'}" stroke="#fff" stroke-width="1"
         tabindex="0" role="button" aria-label="Center basin"
         style="cursor:pointer;" data-hybas-id="">
@@ -2578,7 +2561,7 @@
     wrap.innerHTML = `
       <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" style="overflow:visible;">
         <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#dee2e6" stroke-width="1"/>
-        <text x="${CX}" y="${CY - R - 4}" text-anchor="middle" font-size="7" fill="#adb5bd">N</text>
+        <text x="${CX}" y="${CY - R - 6}" text-anchor="middle" font-size="10" fill="#adb5bd">N</text>
         ${dots}
         ${centerDot}
       </svg>`;
@@ -2602,14 +2585,13 @@
   function previewRingMember(member) {
     _previewRingMemberId = member.hybas_id;
     _applyRingSelectionStyle();
-    _renderRingList();
     _renderRingGlyph();
     const n = _ringOrdinal(member.hybas_id);
     if (_ringSelectPopup) _ringSelectPopup.remove();
     _ringSelectPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: [0, -4] })
       .setLngLat([member.neighbor_lon, member.neighbor_lat])
       .setHTML(`<div style="font-size:0.8rem;"><strong>Ring ${n}</strong><br>
-                   <a href="#" id="v3-ring-get-sig">Get signature &rarr;</a></div>`)
+                   <a href="#" id="v3-ring-get-sig">Get signature</a></div>`)
       .addTo(map);
     document.getElementById('v3-ring-get-sig')?.addEventListener('click', ev => {
       ev.preventDefault();
@@ -2623,7 +2605,6 @@
     _previewRingMemberId   = null;
     _committedRingMemberId = null;
     _applyRingSelectionStyle();
-    _renderRingList();
     _renderRingGlyph();
     if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
     renderCenterSig();
@@ -2635,7 +2616,6 @@
     _previewRingMemberId   = null;
     _committedRingMemberId = member.hybas_id;
     _applyRingSelectionStyle();
-    _renderRingList();
     _renderRingGlyph();
     if (_ringSelectPopup) { _ringSelectPopup.remove(); _ringSelectPopup = null; }
 
@@ -2745,6 +2725,29 @@
     bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     sigBtn.disabled = true;
 
+    // Capture any ring member already previewed/committed before drawRingGeometry's own
+    // fresh-query reset wipes it (see that function's comment) -- re-applied below once the new
+    // ring data is in, so clicking this button doesn't silently bounce a selected member back
+    // to center.
+    const _ringReselectId = (scope === 'ring') ? (_previewRingMemberId ?? _committedRingMemberId) : null;
+
+    // Scope-switch cleanup (2026-08-08) -- leaving ring scope previously left both a stale
+    // hybas_id sitting in _committedRingMemberId (renderSignature's heading would then mislabel
+    // a fresh single/buffer payload as a ring member forever, until a ring query happened to
+    // reset it) and stale ring-center/ring-members map layers (shell.add only replaces layers
+    // under its own name, so switching scopes never removed the other scopes' geometry). Doing
+    // this unconditionally on every click, for whichever scopes are NOT the one being fetched,
+    // keeps state and map geometry in sync with whatever's about to be rendered regardless of
+    // which scope was active before.
+    if (scope !== 'ring') {
+      _previewRingMemberId = null;
+      _committedRingMemberId = null;
+      shell.remove('ring-center');
+      shell.remove('ring-members');
+    }
+    if (scope !== 'single') shell.remove('single-basin');
+    if (scope !== 'buffer') { shell.remove('buffer-basins'); shell.remove('buffer-circle'); }
+
     try {
       let payload, pendingBbox = null;
 
@@ -2839,6 +2842,13 @@
             document.getElementById('v3-tab-similarity-btn').classList.remove('disabled');
           }
         } catch (_) { /* analysis/seasonality tabs stay at placeholder */ }
+      }
+
+      // Re-apply the captured selection last, so it wins over the center render/analysis above
+      // instead of the other way around.
+      if (_ringReselectId != null) {
+        const member = _ringData?.ring?.find(m => m.hybas_id === _ringReselectId);
+        if (member) await commitRingMember(member);
       }
 
     } catch (err) {
@@ -3056,12 +3066,28 @@
   function renderSignature(payload) {
     const pane = document.getElementById('v3-sig-content');
     const nb   = payload.neighborhood || {};
-    let heading = nb.hybas_id
-      ? `Basin ${nb.hybas_id}`
-      : `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}`;
-    if (nb.level) heading += ` · L${String(nb.level).padStart(2,'0')}`;
-    const ringLabel = _activeBasinLabel();
-    if (ringLabel) heading = `${ringLabel} · ${heading}`;
+    const lvlStr = nb.level ? ` · L${String(nb.level).padStart(2,'0')}` : '';
+    const ringN  = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
+    let heading;
+    if (ringN != null) {
+      // A ring member's raw hybas_id means nothing to a reader -- name it relative to the place
+      // the query was anchored on instead, same "place + ring label" framing Analysis/Context/
+      // Seasonality already use via _activeBasinLabel() (2026-08-08).
+      const lvlParen = nb.level ? ` (Level ${String(nb.level).padStart(2,'0')})` : '';
+      heading = _currentPlaceName
+        ? `Ring basin #${ringN} for ${_currentPlaceName}${lvlParen}`
+        : `Ring basin #${ringN}${lvlParen}`;
+    } else if (nb.hybas_id) {
+      // Same reasoning as the ring-member case above -- the raw hybas_id is a DB key, not
+      // something a reader can orient by; the place name is what they actually searched for
+      // (2026-08-08).
+      const lvlParen = nb.level ? ` (Level ${String(nb.level).padStart(2,'0')})` : '';
+      heading = _currentPlaceName
+        ? `Containing basin for ${_currentPlaceName}${lvlParen}`
+        : `Basin ${nb.hybas_id}${lvlStr}`;
+    } else {
+      heading = `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`;
+    }
     const byBand = {};
     for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
     let html = `
