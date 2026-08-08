@@ -1,0 +1,23 @@
+/* Sandbox page styles — extracted from the inline <style> block in app/templates/sandbox_v3.html
+   (2026-08-07 CSS reorg; verbatim move, no rule changes). Page-scoped, not shared with
+   Explorer/Workbench — see site.css for cross-page rules. */
+
+body { font-size: 1rem; }
+#left-col { position: sticky; top: 1rem; }
+/* Atlas tab is the one place-independent tab — tint it so it reads as different. */
+#v3-tab-atlas-btn { background-color: #e0f7fa; }
+#v3-tab-atlas-btn:hover { background-color: #cbeff5; }
+#v3-band-checks .form-check,
+#v3-polity-band-checks .form-check { margin-bottom: 0; }
+#v3-band-checks .form-check-label,
+#v3-polity-band-checks .form-check-label { font-size: 0.8rem; }
+.param-row label { font-size: 0.8rem; color: #666; }
+/* Card flush to nav-tabs strip */
+.fork-card { border-top-left-radius: 0; }
+@keyframes v3-flash-yellow {
+  0%   { background: transparent; }
+  15%  { background: #fff3cd; border-radius: 4px; }
+  85%  { background: #fff3cd; border-radius: 4px; }
+  100% { background: transparent; }
+}
+.v3-band-t-flash { animation: v3-flash-yellow 2s ease forwards; }
