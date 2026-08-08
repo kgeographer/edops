@@ -17,6 +17,25 @@
 {% include "_edops_header.html" %}
 {% include "_edops_modals.html" %}
 
+<!-- Reading a signature modal (2026-08-08) -- triggered from the Signature panel's own
+     heading row (renderSignature()), not the header nav. Hardcoded to the Sandbox-specific
+     Reading a signature doc page rather than reusing #documentation-modal's per-active_page
+     include, since this link means one specific page regardless of which Guide tab a user
+     might otherwise be on. -->
+<div class="modal fade" id="reading-signature-modal" tabindex="-1" aria-labelledby="reading-signature-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="reading-signature-modal-label">Reading a signature</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe src="/docs/sandbox/reading-a-signature/" style="width:100%; height:75vh; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid px-3">
   <div class="row g-3">
 
@@ -2881,7 +2900,7 @@
     const fillW = Math.round(share * W);
     let inner = `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#e9ecef" rx="2"/>`;
     inner    += `<rect x="0" y="0" width="${fillW}" height="${BAR_H}" fill="#5b8dc4" opacity="0.55" rx="2"/>`;
-    inner    += `<text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#999">${(share*100).toFixed(0)}%</text>`;
+    inner    += `<text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#000">${(share*100).toFixed(0)}%</text>`;
     return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
   }
 
@@ -2899,8 +2918,8 @@
         inner += `<rect x="${x.toFixed(1)}" y="0" width="${mW}" height="${BAR_H}" fill="#2c5f8a" rx="1"/>`;
       }
     }
-    inner += `<text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#999">${escapeHtml(p10.toFixed(1))}</text>`;
-    inner += `<text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#999" text-anchor="end">${escapeHtml(p90.toFixed(1))}</text>`;
+    inner += `<text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${escapeHtml(p10.toFixed(1))}</text>`;
+    inner += `<text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${escapeHtml(p90.toFixed(1))}</text>`;
     return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
   }
 
@@ -2923,12 +2942,12 @@
     if (dist.band_t_from != null && dist.band_t_to != null)
       parts.push(`${dist.band_t_from}–${dist.band_t_to} CE`);
     const stamp = parts.length
-      ? `<div style="font-size:0.65rem;color:#888;margin-top:1px;">${escapeHtml(parts.join(' · '))}</div>` : '';
+      ? `<div style="font-size:0.65rem;color:#000;margin-top:1px;">${escapeHtml(parts.join(' · '))}</div>` : '';
     return `<div style="margin-top:3px;">
       <svg width="${W}" height="${BAR_H+LABEL_H}" style="display:block;">
         <g>${bars}</g>
-        <text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#999">${escapeHtml(lo)}</text>
-        <text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#999" text-anchor="end">${escapeHtml(hi)}</text>
+        <text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${escapeHtml(lo)}</text>
+        <text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${escapeHtml(hi)}</text>
       </svg>${stamp}</div>`;
   }
 
@@ -2963,10 +2982,10 @@
       ${zeroLine}
       <polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>
       <polyline points="${meanPts}" fill="none" stroke="#2c5f8a" stroke-width="1.3" stroke-linejoin="round"/>
-      <text x="1" y="9" font-size="9" fill="#aaa">${yMax.toFixed(2)}</text>
-      <text x="1" y="${CH-2}" font-size="9" fill="#aaa">${yMin.toFixed(2)}</text>
-      <text x="1" y="${CH+LH-1}" font-size="9" fill="#aaa">${rows[0].year}</text>
-      <text x="${W-1}" y="${CH+LH-1}" font-size="9" fill="#aaa" text-anchor="end">${rows[n-1].year}</text>
+      <text x="1" y="9" font-size="9" fill="#000">${yMax.toFixed(2)}</text>
+      <text x="1" y="${CH-2}" font-size="9" fill="#000">${yMin.toFixed(2)}</text>
+      <text x="1" y="${CH+LH-1}" font-size="9" fill="#000">${rows[0].year}</text>
+      <text x="${W-1}" y="${CH+LH-1}" font-size="9" fill="#000" text-anchor="end">${rows[n-1].year}</text>
     </svg>`;
   }
 
@@ -2979,21 +2998,21 @@
     let html = `<div class="px-2 py-2">`;
 
     if (LMR_VARS.some(v => byVar[v])) {
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-bottom:6px;">
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-bottom:6px;">
         LMR climate &mdash; ${nLmr} cells &middot; ${spanStr}</div>`;
       for (const v of LMR_VARS) {
         const vRows = byVar[v];
         if (!vRows) continue;
         const midRow = vRows[Math.floor(vRows.length / 2)];
         html += `<div class="mb-3">
-          <div style="font-size:0.78rem;color:#555;margin-bottom:2px;">${LMR_LABELS[v] || v}</div>
+          <div style="font-size:0.78rem;color:#000;margin-bottom:2px;">${LMR_LABELS[v] || v}</div>
           ${renderTimeMarginal(vRows)}
           <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
-            <span class="text-muted">Year</span>
+            <span>Year</span>
             <input type="range" id="v3-t-sl-${v}"
                    min="${vRows[0].year}" max="${vRows[vRows.length-1].year}"
                    step="1" value="${midRow.year}" style="width:160px;height:14px;">
-            <span id="v3-t-yr-${v}" style="color:#555;min-width:34px;">${midRow.year}</span>
+            <span id="v3-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
           </div>
           <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {})}</div>
         </div>`;
@@ -3004,24 +3023,24 @@
     if (hydePresent.length) {
       const epochRows    = byVar[hydePresent[0]];
       const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
         <table class="table table-sm mb-1" style="font-size:0.78rem;">
           <thead><tr><th></th>`;
       for (const r of epochRows) {
         const near = r.caveat?.includes('hyde_nearest_year');
-        html += `<th class="text-muted">${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
+        html += `<th>${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
       }
       html += `</tr></thead><tbody>`;
       for (const v of hydePresent) {
         html += `<tr><td>${HYDE_LABELS[v] || v}</td>`;
         for (const r of byVar[v]) {
-          html += `<td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}${r.units ? ` <span class="text-muted">${escapeHtml(r.units)}</span>` : ''}</td>`;
+          html += `<td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}${r.units ? ` <span>${escapeHtml(r.units)}</span>` : ''}</td>`;
         }
         html += `</tr>`;
       }
       html += `</tbody></table>`;
       if (hasNearest)
-        html += `<p class="text-muted mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
+        html += `<p class="mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
     }
 
     if (byVar['evolv2k_vssi']) {
@@ -3034,7 +3053,7 @@
         ? ` <a href="#" style="font-weight:normal;font-size:0.7rem;"
                onclick="(function(el){var tb=document.getElementById('v3-evolv-minor');var hidden=tb.style.display==='none';tb.style.display=hidden?'':'none';el.textContent=hidden?'show fewer':'show all ${allEvolv.length}'})(this);return false"
             >show all ${allEvolv.length}</a>` : '';
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#6c757d;margin-top:4px;margin-bottom:4px;">
+      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-top:4px;margin-bottom:4px;">
         eVolv2k volcanic events — ${shown.length}${showToggle ? ` &ge; ${VSSI_THRESHOLD} Tg S` : ''}${toggleLink}</div>
         <table class="table table-sm mb-0" style="font-size:0.78rem;">
           <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead><tbody>`;
@@ -3044,7 +3063,7 @@
       if (showToggle) {
         html += `<tbody id="v3-evolv-minor" style="display:none;">`;
         for (const r of minorEvolv)
-          html += `<tr style="color:#999;"><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
+          html += `<tr style="color:#000;"><td>${r.year}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}</td></tr>`;
         html += `</tbody>`;
       }
       html += `</table>`;
@@ -3112,7 +3131,7 @@
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
         <h5 class="mb-0">${escapeHtml(heading)}</h5>
-        <span class="text-muted small">n=${nb.n_units ?? 1}</span>
+        <a href="#" class="text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle"></i></a>
       </div>
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
     for (const band of BAND_ORDER) {
@@ -3145,7 +3164,7 @@
 
   function renderRow(row) {
     return `<tr>
-      <td class="text-muted ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}</td>
+      <td class="ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}</td>
       <td>${renderLeaf(row)}</td>
     </tr>`;
   }
@@ -3157,7 +3176,7 @@
     switch (row.method) {
       case 'area_weighted': {
         const s = score !== null && score !== undefined
-          ? `${score.toFixed(1)}<span class="text-muted ms-1" style="font-size:0.75rem;">pct</span>` : '—';
+          ? `${score.toFixed(1)}<span class="ms-1" style="font-size:0.75rem;">pct</span>` : '—';
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
@@ -3166,7 +3185,7 @@
       case 'dominant_basin': {
         const s = score !== null ? `${score.toFixed(1)} pct` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
-        const b = det.dominant_hybas_id ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
       }
       case 'class_mixture':
@@ -3175,19 +3194,19 @@
         return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
       case 'distribution_only': {
         const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
-          ? `<div>${score.toFixed(1)}<span class="text-muted ms-1" style="font-size:0.75rem;">pct</span></div>` : '';
+          ? `<div>${score.toFixed(1)}<span class="ms-1" style="font-size:0.75rem;">pct</span></div>` : '';
         const caveat = row.score_suppressed
-          ? `<div style="font-size:0.72rem;color:#888;margin-top:1px;">score suppressed — bimodal</div>` : '';
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
         return `${scoreHtml}<div style="margin-top:3px;">${renderRangeBar(det)}</div>${caveat}`;
       }
       case 'extreme': {
         const s = score !== null ? `${score.toFixed(1)} pct` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
-        const b = det.dominant_hybas_id ? ` <span class="text-muted" style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
       }
       default:
-        return `<span class="text-muted" style="font-size:0.72rem;">[${escapeHtml(row.method)}]</span>`;
+        return `<span style="font-size:0.72rem;">[${escapeHtml(row.method)}]</span>`;
     }
   }
 
