@@ -3099,6 +3099,11 @@
       heading = _currentPlaceName
         ? `Containing basin for ${_currentPlaceName}${lvlParen}`
         : `Basin ${nb.hybas_id}${lvlStr}`;
+    } else if (nb.type === 'polygon' && _polityName) {
+      // Polity aggregate -- same reasoning as the basin/ring cases above, name it by what the
+      // user searched for rather than a bare unit count (2026-08-08).
+      const lvlParen = nb.level ? ` Level ${String(nb.level).padStart(2,'0')}` : '';
+      heading = `${_polityName}: ${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''},${lvlParen}`;
     } else {
       heading = `${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`;
     }
