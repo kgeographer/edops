@@ -72,8 +72,8 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-06 (branch `docsv4`, 2 commits ahead of `origin/docsv4` — not yet merged to
-`main`, nothing deployed):** Two and a half days into the v0.4 docs pass. MkDocs is live in-repo
+**State as of 2026-08-07 (branch `docsv4`, 2 commits ahead of `origin/docsv4` — not yet merged to
+`main`, nothing deployed):** Three and a half days into the v0.4 docs pass. MkDocs is live in-repo
 (`docsite/` source, `mkdocs.yml`, `site/` build output gitignored) — same-repo decision over a
 separate docs repo, reasoning in `logs/session_log_20260805.md`. Swagger moved `/docs` → `/api/schema`;
 `/docs` now serves the built MkDocs site via a `StaticFiles` mount (`check_dir=False`, so the app still
@@ -85,31 +85,68 @@ directly rather than duplicating content, with Material's own header stripped wh
 (`docsite/javascripts/embed.js`, iframe-detection only — doesn't touch the standalone site). Sandbox's
 Guide modal additionally has Guide/Walkthrough pills (two placeholder walkthrough pages, Settlements
 and Polities forks, screenshot-scroll format decided over coachmarks/video — see DOCSv4 TODO). The
-Workbench naming collision (below) was resolved the same days.
+Workbench naming collision (below) was resolved 2026-08-05.
 
-Writing the Sandbox Guide surfaced a real product bug — Basin ring's stale-tab problem (clicking a
-ring member only ever updated the Signature tab, not Analysis/Seasonality/Context/Similarity) — which
-became a full rebuild on the `basinring` branch: ring members numbered by bearing (not compass, which
-collides when several neighbors share an octant), a persistent selection list + compass-rose glyph in
-the left panel, preview-then-commit interaction (click highlights, a popup's **Get signature** link
-commits), several bugs Karl caught by testing (a missing API field causing `NaN` bearings, tab buttons
-staying disabled after a ring-member commit, Context/Similarity silently still querying the center
-point). Merged to `docsv4` 2026-08-06. Same day: basin/polity outline color didn't survive hillshaded
-terrain basemaps (dark charcoal vanished against dark relief) — fixed by switching to a hue terrain
-can't produce (crimson/magenta) rather than relying on luminance contrast, same principle already
-proven by the ring-selection orange. Also found and logged (not yet built) that the Polities fork
-never populates Analysis/Seasonality/Context/Similarity at all — see deferred register — and restored
-Settlements as the default active fork, hiding those four tabs while Polities is active instead of
-leaving them permanently disabled. Full day-by-day detail: `logs/session_log_20260804.md` through
-`logs/session_log_20260806.md`.
+The variable catalog was promoted to `documentation/EDOPS_variable_catalog_v0.4.tsv` (canonical,
+loaded at startup) — the working copy had quietly diverged from what's actually deployed (91 rows
+in prod vs 103 locally, no tag marking the v0.3 cutover); the true, currently-deployed v0.3 was
+recovered directly from the live server and frozen as `EDOPS_variable_catalog_v0.3.tsv`, historical
+reference only. `docsite/codebook.md` got a first-draft mechanical pass generated from the v0.4
+catalog, grouped by band; hand-written sections (how to read an entry, derived-variable rationale)
+left as explicit TODOs.
 
-- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase; includes the new
+Basin ring rebuild (preview/commit ring-member selector, bearing-numbered neighbors, compass glyph)
+merged to `docsv4` 2026-08-06 and is stable; the boundary-color-vs-hillshade fix and the logged (not
+built) Polities-fork Analysis/Seasonality/Context/Similarity gap are also from that day and unchanged
+since. Full detail: `logs/session_log_20260804.md` through `logs/session_log_20260806.md`.
+
+**Today (2026-08-07), in order — full detail `logs/session_log_20260807.md`:**
+- **Explorer's L6/L8 Level toggle wired.** The values/categorical/LISA APIs already supported
+  `level=8`; every `setFeatureState` call painting the choropleth was hardcoded to the `basin06`
+  tileset/layer regardless of the selected level — a dead control (confirmed via
+  `docs/edop/surface/wo22_findings.md`, which had already built `basin08.pmtiles` for Sandbox's own
+  Level select and never wired Explorer to it). `basin08` source/layer now registered alongside
+  `basin06` on the Global map and all 6 Regions sub-maps; render functions resolve source/layer via
+  new `_activeSourceId()`/`_activeLayerId()` helpers. Empirically verified painting all ~190k L8
+  basins is fast (`setFeatureState` loop: 75ms; ~1.6s total fetch-to-idle) — the one risk WO22 had
+  left uncharacterized, since Sandbox's own L8 design paints only ~100 scope-member basins, never
+  the full global set.
+- **Workbench Societies tab:** the two trait accordions (EA042/EA034) are now mutually exclusive —
+  opening one closes the other and resets its selection, instead of both staying open with
+  independent live selections. The composition donut moved from stacking under the map into the
+  now-freed left column (`#soc-content`, previously dead markup). Two rounds of a `socDisplayMode`
+  bug fixed — it's a single variable shared behind both accordions' separately-named "Show:" radio
+  groups, so switching accordions or picking a value could leave stale/mismatched content showing
+  regardless of which radio was actually checked.
+- **MkDocs sidebar breakpoint overridden** from Material's stock 1220px down to 768px (matches
+  Bootstrap's `md` breakpoint, already this app's own responsive line) via `mkdocs_hooks.py`, a
+  post-build regex hook — confirmed via squidfunk/mkdocs-material#7130 that no supported config
+  knob exists and a hand-written CSS override is fragile; proved that the hard way first (an
+  `extra.css` override broke nav accordion behavior outright, reverted, no trace left). Two rounds
+  — round 1 missed a paired secondary-sidebar threshold (60em) sharing compound media-query
+  conditions with the primary one, round 2 fixed it generally rather than per-selector. Two known
+  re-verify triggers going forward: `mkdocs-material` version bumps, and `nav:` structure changes
+  in `mkdocs.yml` (new nesting/sections exercise DOM shapes the hook hasn't been tested against).
+- **CSS reorg** (Karl-requested, ahead of the tooltip work below): `app/static/css/{explorer,
+  sandbox,workbench}.css` replace each page's inline `<style>` block (verbatim moves, cascade
+  position preserved exactly). Along the way, `workbench.html` — the only template still using
+  `{% extends "base.html" %}`, and overriding every block it defined — was converted to a standalone
+  document matching Sandbox/Explorer, and `base.html` deleted (nothing else used it; its own inline
+  content, a stale "About EDOP" modal, was already 100% dead code).
+- **Shared help-tooltip harness** built: `.edops-help` CSS class + `app/static/js/edops_help.js`
+  (self-initializing, wired once via `_edops_header.html` so it's live on all three pages), so Karl
+  can tour pages dropping in `<i class="bi bi-question-circle edops-help"
+  data-help-text="TODO: ...">` now and fill in real content later. `grep -rn 'data-help-text="TODO'
+  app/templates/` finds every icon still waiting for content.
+
+- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase; includes the
   Polities-tabs gap, 2026-08-06)
-- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed on `docsv4` 2026-08-06 (same
-  pass/skip counts as the 2026-08-03 baseline — nothing broke). Not fully zero-tolerance-clean by
-  this file's own rule: 671 warnings, all the same pre-existing pandas/SQLAlchemy connectable
-  message already flagged in Notebook conventions above — not introduced by DOCSv4/basinring work,
-  not yet suppressed at the pytest level either. Worth a cleanup pass, not urgent.
+- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed on `docsv4` 2026-08-07 (same
+  pass/skip counts as the 2026-08-03 baseline — nothing broke across today's changes either). Not
+  fully zero-tolerance-clean by this file's own rule: 668 warnings, all the same pre-existing
+  pandas/SQLAlchemy connectable message already flagged in Notebook conventions above — not
+  introduced by any of today's or yesterday's work, not yet suppressed at the pytest level either.
+  Worth a cleanup pass, not urgent.
 - **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
 
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
@@ -161,13 +198,19 @@ app/
 ├── templates/
 │   ├── sandbox.html     # Lookup page — Phase 1 product; retired on main, still live in prod pending deploy
 │   ├── explorer.html    # Explorer page — Phase 2 product
+│   ├── workbench.html   # Workbench page — standalone doc like the other two (2026-08-07;
+│   │                     #   formerly base.html-extending, base.html deleted, nothing else used it)
 │   ├── cliopatria.html  # Cliopatria polity viewer — eyes-only for ISHI; Phase 4 precursor
 │   └── ...
 └── static/
-    ├── css/site.css
+    ├── css/site.css      # cross-page shared rules (nav pills, tiles, help-tooltip harness)
+    ├── css/{explorer,sandbox,workbench}.css  # page-scoped (2026-08-07 CSS reorg; ex-inline <style> blocks)
+    ├── js/edops_help.js  # shared help-tooltip harness (2026-08-07) — see State as of, above
     ├── explorer/        # PMTiles, GeoJSON, HYDE tiles (gitignored — rsync only)
     └── ...
 
+mkdocs_hooks.py           # MkDocs post-build hook (2026-08-07) — overrides Material's hardcoded
+                          #   sidebar-dock breakpoint via regex on the compiled CSS; see State as of
 mkdocs.yml               # MkDocs config — docs_dir: docsite/, site_dir: site/ (v0.4 docs, 2026-08-05)
 docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, plus
                           #   guides/ (page Guides + Sandbox walkthroughs) and javascripts/embed.js
@@ -241,7 +284,10 @@ Key design doc: `docs/design/scenarios.md` — historical reference for this ret
 ### `/explorer` (canonical) / `/sandbox/explorer` — Explorer
 `app/templates/explorer.html` — Phase 2 product; visual CHAR exhibit.
 
-MapLibre GL JS choropleth on `basin06.pmtiles` (L6, 16,397 basins). Three tabs:
+MapLibre GL JS choropleth. L6/L8 Level toggle wired 2026-08-07 (`basin06.pmtiles`, 16,397 basins /
+`basin08.pmtiles`, 190,675 basins — both registered on the Global map and all 6 Regions sub-maps);
+previously a dead control, values API already supported `level=8` but paint was hardcoded to L6.
+Three tabs:
 
 **Global** — world choropleth; Bands A–T accordion; histogram; LISA;
 Band T (LMR 5-period / HYDE 4-var 3-view / eVolv2k timeline).
@@ -253,8 +299,8 @@ Mediterranean & N. Africa, Mesoamerica, Pacific Northwest. Band T fully supporte
 **Compare** — provisionally complete.
 
 ### Explorer architecture decisions (do not revisit)
-- **PMTiles + flat values API**: geometry served once from `basin06.pmtiles`;
-  `/api/explorer/values` returns `{hybas_id: value}` dict only (~0.3 MB, no geometry).
+- **PMTiles + flat values API**: geometry served once per level from `basin06.pmtiles`/`basin08.pmtiles`;
+  `/api/explorer/values` returns `{hybas_id: value}` dict only (~0.3 MB L6 / ~3 MB L8, no geometry).
   Sub-second variable loads. Do not suggest GeoJSON caching — explicitly rejected.
 - **Color scheme**: warm/dry = red, cold/wet = blue throughout. Temperature diverging
   uses `1 - t`; aridity + precipitation RDBU sequential (low = red); LMR PDSI/precip
