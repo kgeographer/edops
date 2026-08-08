@@ -12,6 +12,15 @@ header, main {
 
 header {
   /*padding-block: 1rem;*/
+  position: relative;
+}
+
+/* Fixed page-title-length-independent position for the 3-page nav pills. */
+.edops-page-pills-wrap {
+  position: absolute;
+  left: 500px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 pre {
