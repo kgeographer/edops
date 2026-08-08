@@ -157,6 +157,6 @@ pre {
    ad hoc, which needed a bespoke bootstrap.Tooltip() call per icon. */
 .edops-help {
   cursor: help;
-  color: #6c757d;
-  font-size: 0.85em;
+  color: #993333;
+  font-size: 0.9em;
 }
