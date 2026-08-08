@@ -157,7 +157,7 @@
                   </div>
                 </div>
               </div>
-              <div id="v3-band-legend" class="mb-2" style="display:none;">
+              <div id="v3-band-legend" class="v3-band-legend mb-2" style="display:none;">
                 <ul class="v3-band-legend-list mb-0">
                   <li><strong>A — Physiographic bedrock</strong>: elevation, slope, relief, lithology, karst. Stable over geological time.</li>
                   <li><strong>B — Hydro-climatic baselines</strong>: river discharge, runoff, groundwater, soils, wetlands (full upstream catchment).</li>
@@ -234,7 +234,9 @@
               <!-- Level + Signature Bands (T pre-checked; all disabled at cold start) -->
               <div class="d-flex gap-2 align-items-start mb-2">
                 <div style="flex:0 0 auto;">
-                  <label class="form-label mb-0" style="font-size:0.9rem;">Level</label>
+                  <label class="form-label mb-0" style="font-size:0.9rem;">Level
+                    <i class="bi bi-question-circle edops-help" data-help-text="TODO: Level choice"></i>
+                  </label>
                   <select class="form-select form-select-sm mt-1" id="v3-polity-level"
                           disabled style="width:68px;">
                     <option value="6">06</option>
@@ -242,7 +244,9 @@
                   </select>
                 </div>
                 <div style="flex:1 1 auto;">
-                  <label class="form-label mb-0" style="font-size:0.9rem;">Signature Bands</label>
+                  <label class="form-label mb-0" style="font-size:0.9rem;">Signature Bands
+                   <i class="bi bi-question-circle edops-help" data-help-toggle="#v3-polity-band-legend"></i>
+                  </label>
                 <div id="v3-polity-band-checks" class="d-flex flex-wrap gap-2 mt-1 ps-1"
                        style="background-color:aliceblue; padding:4px; border-radius:4px;">
                     <div class="form-check form-check-inline me-0">
@@ -277,6 +281,16 @@
                     </div>
                   </div>
                 </div>
+              </div>
+              <div id="v3-polity-band-legend" class="v3-band-legend mb-2" style="display:none;">
+                <ul class="v3-band-legend-list mb-0">
+                  <li><strong>A — Physiographic bedrock</strong>: elevation, slope, relief, lithology, karst. Stable over geological time.</li>
+                  <li><strong>B — Hydro-climatic baselines</strong>: river discharge, runoff, groundwater, soils, wetlands (full upstream catchment).</li>
+                  <li><strong>C — Bioclimatic proxies</strong>: temperature, precipitation, aridity, biome, ecoregion (contemporary baseline; Band T supersedes for period-specific queries).</li>
+                  <li><strong>D — Anthropocene markers</strong>: population density, cropland, human footprint, GDP (present-day only — exclude for pre-modern analyses).</li>
+                  <li><strong>E — Coastality</strong>: distance to marine outlet, endorheic flag, outlet type.</li>
+                  <li><strong>T — Temporal context</strong>: period-specific land use (HYDE 3.4), climate reconstruction (LMR v2.1), volcanic events (eVolv2k). Requires a date range.</li>
+                </ul>
               </div>
 
               <!-- Band T year range (revealed on polity resolve) -->

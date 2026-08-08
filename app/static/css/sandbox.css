@@ -31,8 +31,9 @@ body { font-size: 1rem; }
 /* Signature Bands help panel (2026-08-08) — click-to-toggle legend, kept as compact as
    possible since it sits inline in the left column, not in a modal. Full row width (sibling
    of the Level/Signature Bands row, not nested inside it) so entries can wrap side by side
-   instead of stacking one per line. */
-#v3-band-legend {
+   instead of stacking one per line. Shared class, not an id rule — Settlements
+   (#v3-band-legend) and Polities (#v3-polity-band-legend) both use it. */
+.v3-band-legend {
   background: #f8f9fa;
   border-radius: 4px;
   padding: 4px 8px;
