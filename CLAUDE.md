@@ -72,82 +72,24 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-07 (branch `docsv4`, 2 commits ahead of `origin/docsv4` — not yet merged to
-`main`, nothing deployed):** Three and a half days into the v0.4 docs pass. MkDocs is live in-repo
-(`docsite/` source, `mkdocs.yml`, `site/` build output gitignored) — same-repo decision over a
-separate docs repo, reasoning in `logs/session_log_20260805.md`. Swagger moved `/docs` → `/api/schema`;
-`/docs` now serves the built MkDocs site via a `StaticFiles` mount (`check_dir=False`, so the app still
-starts if `site/` hasn't been built). All three page Guides drafted
-(`docsite/{sandbox,explorer,workbench}/overview.md` — nav restructured 2026-08-07 from a flat
-`docsite/guides/` into per-surface subtrees, Instruments folded into Workbench's subtree), grounded
-in the live templates; the app's Guide modals (Sandbox/Explorer/Workbench) iframe the built pages
-directly rather than duplicating content, with Material's own header stripped when embedded
-(`docsite/javascripts/embed.js`, iframe-detection only — doesn't touch the standalone site). Sandbox's
-Guide modal additionally has Guide/Walkthrough pills (two placeholder walkthrough pages, Settlements
-and Polities forks, screenshot-scroll format decided over coachmarks/video — see DOCSv4 TODO). The
-Workbench naming collision (below) was resolved 2026-08-05.
-
-The variable catalog was promoted to `documentation/EDOPS_variable_catalog_v0.4.tsv` (canonical,
-loaded at startup) — the working copy had quietly diverged from what's actually deployed (91 rows
-in prod vs 103 locally, no tag marking the v0.3 cutover); the true, currently-deployed v0.3 was
-recovered directly from the live server and frozen as `EDOPS_variable_catalog_v0.3.tsv`, historical
-reference only. `docsite/codebook.md` got a first-draft mechanical pass generated from the v0.4
-catalog, grouped by band; hand-written sections (how to read an entry, derived-variable rationale)
-left as explicit TODOs.
-
+**State as of 2026-08-08 (branch `docsv4`, 5 commits ahead of `origin/docsv4` — not yet merged to
+`main`, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build
+output gitignored). Swagger moved `/docs` → `/api/schema`; `/docs` serves the built MkDocs site via
+a `StaticFiles` mount. All three page Guides drafted, plus a new top-level `docsite/similarity.md`.
+The header's old separate "Guide" (sidebar-stripped modal) and "Docs" (plain link) were merged
+2026-08-08 into one "Documentation" modal that iframes the built site with its sidebar showing.
 Basin ring rebuild (preview/commit ring-member selector, bearing-numbered neighbors, compass glyph)
-merged to `docsv4` 2026-08-06 and is stable; the boundary-color-vs-hillshade fix and the logged (not
-built) Polities-fork Analysis/Seasonality/Context/Similarity gap are also from that day and unchanged
-since. Full detail: `logs/session_log_20260804.md` through `logs/session_log_20260806.md`.
+merged 2026-08-06 and stable. Full history: `logs/session_log_20260804.md` through
+`logs/session_log_20260807.md`.
 
-**Today (2026-08-07), in order — full detail `logs/session_log_20260807.md`:**
-- **Explorer's L6/L8 Level toggle wired.** The values/categorical/LISA APIs already supported
-  `level=8`; every `setFeatureState` call painting the choropleth was hardcoded to the `basin06`
-  tileset/layer regardless of the selected level — a dead control (confirmed via
-  `docs/edop/surface/wo22_findings.md`, which had already built `basin08.pmtiles` for Sandbox's own
-  Level select and never wired Explorer to it). `basin08` source/layer now registered alongside
-  `basin06` on the Global map and all 6 Regions sub-maps; render functions resolve source/layer via
-  new `_activeSourceId()`/`_activeLayerId()` helpers. Empirically verified painting all ~190k L8
-  basins is fast (`setFeatureState` loop: 75ms; ~1.6s total fetch-to-idle) — the one risk WO22 had
-  left uncharacterized, since Sandbox's own L8 design paints only ~100 scope-member basins, never
-  the full global set.
-- **Workbench Societies tab:** the two trait accordions (EA042/EA034) are now mutually exclusive —
-  opening one closes the other and resets its selection, instead of both staying open with
-  independent live selections. The composition donut moved from stacking under the map into the
-  now-freed left column (`#soc-content`, previously dead markup). Two rounds of a `socDisplayMode`
-  bug fixed — it's a single variable shared behind both accordions' separately-named "Show:" radio
-  groups, so switching accordions or picking a value could leave stale/mismatched content showing
-  regardless of which radio was actually checked.
-- **MkDocs sidebar breakpoint overridden** from Material's stock 1220px down to 768px (matches
-  Bootstrap's `md` breakpoint, already this app's own responsive line) via `mkdocs_hooks.py`, a
-  post-build regex hook — confirmed via squidfunk/mkdocs-material#7130 that no supported config
-  knob exists and a hand-written CSS override is fragile; proved that the hard way first (an
-  `extra.css` override broke nav accordion behavior outright, reverted, no trace left). Two rounds
-  — round 1 missed a paired secondary-sidebar threshold (60em) sharing compound media-query
-  conditions with the primary one, round 2 fixed it generally rather than per-selector. Two known
-  re-verify triggers going forward: `mkdocs-material` version bumps, and `nav:` structure changes
-  in `mkdocs.yml` (new nesting/sections exercise DOM shapes the hook hasn't been tested against).
-- **CSS reorg** (Karl-requested, ahead of the tooltip work below): `app/static/css/{explorer,
-  sandbox,workbench}.css` replace each page's inline `<style>` block (verbatim moves, cascade
-  position preserved exactly). Along the way, `workbench.html` — the only template still using
-  `{% extends "base.html" %}`, and overriding every block it defined — was converted to a standalone
-  document matching Sandbox/Explorer, and `base.html` deleted (nothing else used it; its own inline
-  content, a stale "About EDOP" modal, was already 100% dead code).
-- **Shared help-tooltip harness** built: `.edops-help` CSS class + `app/static/js/edops_help.js`
-  (self-initializing, wired once via `_edops_header.html` so it's live on all three pages), so Karl
-  can tour pages dropping in `<i class="bi bi-question-circle edops-help"
-  data-help-text="TODO: ...">` now and fill in real content later. `grep -rn 'data-help-text="TODO'
-  app/templates/` finds every icon still waiting for content.
-
-- **Deferred items:** `docs/design/deferred_items_register.md` (cross-phase; includes the
-  Polities-tabs gap, 2026-08-06)
-- **Tests:** 509 passed / 14 skipped / 0 fail, full suite, confirmed on `docsv4` 2026-08-07 (same
-  pass/skip counts as the 2026-08-03 baseline — nothing broke across today's changes either). Not
-  fully zero-tolerance-clean by this file's own rule: 668 warnings, all the same pre-existing
-  pandas/SQLAlchemy connectable message already flagged in Notebook conventions above — not
-  introduced by any of today's or yesterday's work, not yet suppressed at the pytest level either.
-  Worth a cleanup pass, not urgent.
-- **Milestone:** Braga (2026-09-20) — UNED Digital Humanities conference
+**Today (2026-08-08) — full detail `logs/session_log_20260808.md`:** Nit-review pass across
+Sandbox/Workbench (ring-basin state bugs, signature headings now name place/slice instead of raw
+IDs, accessibility pass converting muted-gray text to black in the signature accordions,
+Guide+Docs merged into one Documentation modal) plus the new top-level `docsite/similarity.md`,
+which corrects a conflated description of how Sandbox's and Workbench WH Cities' similarity
+methods actually differ — open `[decide]` and scoping notes in
+`docs/design/DOCSv4 — TODO.md` §5.5. Tests: 509 passed / 14 skipped / 668 warnings — same baseline
+as 2026-08-07, nothing broken. Milestone: Braga (2026-09-20) — UNED Digital Humanities conference.
 
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
 WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
@@ -164,8 +106,8 @@ Karl-reviewed live in the browser. Full detail, every locked decision, day-by-da
 `docs/cdop/citykin/CITYKIN_tracker.md`, `docs/cdop/citykin/wo4_findings.md`,
 `logs/session_log_20260728.md` through `logs/session_log_20260730.md`. Named-not-started ideas left on
 the table: L08 terrain knobs, a residual-facet design idea (WO2), Tier-2/3 terrain fidelity upgrades.
-Whether the old `/api/whc-similar-env-lens` path was actually deleted alongside the lens wiring is
-unconfirmed.
+Whether the old `/api/whc-similar-env-lens` path was deleted alongside the lens wiring is resolved
+2026-08-08 — see Open/deferred items below and `docsite/similarity.md`.
 
 **CDOP Pilot (WO1–WO8d) is closed, frozen reference:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`. Headline
 carried forward — the WO8d environment↔culture correspondence arc's real open question is an unexplained
@@ -212,8 +154,9 @@ app/
 mkdocs_hooks.py           # MkDocs post-build hook (2026-08-07) — overrides Material's hardcoded
                           #   sidebar-dock breakpoint via regex on the compiled CSS; see State as of
 mkdocs.yml               # MkDocs config — docs_dir: docsite/, site_dir: site/ (v0.4 docs, 2026-08-05)
-docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, plus
-                          #   guides/ (page Guides + Sandbox walkthroughs) and javascripts/embed.js
+docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, nav in
+                          #   per-surface subtrees (Sandbox/Data Explorer/Workbench); similarity.md
+                          #   is a new top-level page (2026-08-08); javascripts/{embed,external-links}.js
 site/                    # `mkdocs build` output (gitignored) — served at /docs via a StaticFiles
                           #   mount in main.py. `mkdocs serve` (live preview) and this are two
                           #   separate things reading from different places — see Key endpoints.
@@ -327,11 +270,11 @@ ecoregions), Wikipedia summary + OneEarth link per ecoregion. Mostly a reference
 the Societies tab's "Ecoregions by realm" view, not a correspondence test of its own — whether it
 belongs on this page at all is still an open question (Karl's own note, `docs/_TODO.md`).
 
-**WH Cities** — 258 World Heritage Cities (OVPM), 254 basin-assigned. Two independent similarity
-searches per city: **Similar (env)** — regime-lens conjunction (Precipitation/Temperature/Terrain
-regime — 3 lenses here vs. Sandbox's 4, no combined Climate lens for cities); **Similar
-(semantic)** — Wikipedia-discourse text similarity by band (Composite/Environment/History/
-Culture/Modern).
+**WH Cities** — 258 World Heritage Cities (OVPM), 254 basin-assigned. Two dropdowns, three actually
+different mechanisms (not one shared method — see `docsite/similarity.md`): **Similar (env)** —
+Precipitation/Temperature "regime" (older composite-distance, not conjunction like Sandbox) and
+Terrain regime (gate+rank hybrid, live external elevation-grid fetch); **Similar (semantic)** —
+Wikipedia-discourse text similarity by band (Composite/Environment/History/Culture/Modern).
 
 Full mechanics for all three tabs (verified against the live templates, not just described):
 `docsite/workbench/overview.md`.
@@ -352,7 +295,7 @@ NOTE: see documentation/API_guide.md (master, public)
     `mkdocs serve`. Those are two different things reading from two different places —
     `mkdocs build` updates what this route serves; `mkdocs serve` (live preview, different port)
     never writes to site/ at all. Edited docsite/ content needs `mkdocs build` before it shows up
-    here or in the app's Guide modals (which iframe this route's built pages).
+    here or in the app's Documentation modal (which iframes this route's built pages).
 
 /api/signature?lat=X&lon=Y[&bands=ABCDET&from_year=N&to_year=N&level=6|8]
     Returns profile_groups A–T. Band T requires from_year+to_year.
@@ -544,11 +487,10 @@ Standing cross-phase notes:
   needs an nginx-level redirect
   to `edops.computingplace.org/workbench` at deploy time — that's a manual step Karl runs on the
   server, not tracked in this repo.
-- **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a, wired into
-  `workbench.html`, formerly `cdop_pilot.html`); `/api/whc-similar-env-lens` is
-  deprecated-pending-deletion, not dead — see
-  `CITYKIN_tracker.md`. The precip/temp regime lenses that were supposed to trigger its deletion are now
-  confirmed live too (2026-07-30) — whether the old path was actually removed alongside them is
-  unconfirmed, worth a direct check before assuming either way.
+- **`/whc-*` routes are not orphaned** — `/api/whc-similar-terrain` is live (CITYKIN WO1a). Resolved
+  2026-08-08 (was previously an open question here): `/api/whc-similar-env-lens` was never replaced —
+  it's still the live path behind WH Cities' precip/temp "regime" dropdown, and is a genuinely
+  different, older mechanism (composite-distance `LENS_REGISTRY`) than Sandbox's conjunction-based
+  regime lenses despite the shared naming. Full breakdown: `docsite/similarity.md`.
 - **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
