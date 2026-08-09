@@ -3,6 +3,8 @@
 
 .md-typeset p {
   margin: 0.5em 0;
+  font-size: 0.9rem;
+  line-height: 1.3rem;
 }
 
 .md-typeset h1,
@@ -27,4 +29,18 @@
 
 .md-typeset li {
   margin-bottom: 0.25em;
+}
+
+.md-nav__title {
+  color: #993333;
+  font-size: 0.8rem;
+}
+
+/* Old-school blue underlined links for in-content text, not nav/TOC links. */
+.md-typeset a {
+  color: #0645ad;
+  text-decoration: underline;
+}
+.md-typeset a:hover {
+  color: #0b0080;
 }

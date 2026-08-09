@@ -19,6 +19,7 @@ extra_css:
 
 extra_javascript:
   - javascripts/embed.js
+  - javascripts/external-links.js
 
 nav:
   - Start here: index.md
@@ -32,7 +33,7 @@ nav:
       - Overview: explorer/overview.md
   - Workbench:
       - Overview: workbench/overview.md
-      - Instruments: workbench/instruments.md
+  - Similarity instruments: similarity.md
   - Codebook: codebook.md
   - Data sources: data-sources.md
   - API: api.md
