@@ -2695,8 +2695,9 @@ def societies_env_scan(trait: str, value: str):
     """CITYKIN WO4 -- replaces the legacy PCA 'Basin clusters' option. `(trait, value)` -> a
     composition note (top-3 language families by name, plus soc_id lists per bucket for the
     donut's map-hover linking) and the trait's hook metadata, plus either the confirmatory
-    scatter (subsistence, EA042 -- has a named theoretical correlate) or per-variable meter-bar
-    percentiles (religion, EA034 -- no hook; see `docs/cdop/citykin/wo4_whc-grouping.md`).
+    scatter (subsistence, EA042 -- has a named theoretical correlate) or per-variable strip-plot
+    ticks, one per focus society (religion, EA034 -- no hook; see
+    `docs/cdop/citykin/wo4_whc-grouping.md`, `docs/edop/docsv4/wo4_EA045 -viz-change.md`).
 
     trait: 'subsistence' (EA042) or 'religion' (EA034) -- the tab's two wired traits, not a raw
     D-PLACE variable code. No percentile/resampling language anywhere in this payload's own
