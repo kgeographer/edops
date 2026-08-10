@@ -2868,7 +2868,7 @@
 
       const caption = document.createElement('div');
       caption.className = 'wo4-caption';
-      caption.textContent = `Each tick is one society, positioned by its own value on that variable's global range, against all basin-joined D-PLACE societies. Hover a family to highlight its societies within the same picture.`;
+      caption.textContent = `Each tick is one society, positioned by its own value on that variable's global range, against all basin-joined D-PLACE societies. Hover a language family to highlight its societies within the same picture.`;
       wrap.appendChild(caption);
 
       return wrap;
@@ -2992,6 +2992,13 @@
       figure.appendChild(svg);
       row.appendChild(figure);
 
+      const legendWrap = document.createElement('div');
+      legendWrap.className = 'wo4-comp-legend-wrap';
+      const legendTitle = document.createElement('div');
+      legendTitle.className = 'wo4-comp-legend-title';
+      legendTitle.textContent = 'Language family';
+      legendWrap.appendChild(legendTitle);
+
       const legend = document.createElement('ul');
       legend.className = 'wo4-comp-legend';
       const legendRows = {};
@@ -3029,7 +3036,8 @@
         wedgeEls[i].addEventListener('mouseenter', enter);
         wedgeEls[i].addEventListener('mouseleave', leave);
       });
-      row.appendChild(legend);
+      legendWrap.appendChild(legend);
+      row.appendChild(legendWrap);
 
       wrap.appendChild(row);
 

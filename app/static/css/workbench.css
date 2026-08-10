@@ -82,7 +82,13 @@
 .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }
 .wo4-donut-figure { flex: none; }
 .wo4-donut-total { font-family: inherit; }
-.wo4-comp-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 12rem; }
+.wo4-comp-legend-wrap { flex: 1; min-width: 12rem; }
+.wo4-comp-legend-title {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--wo4-text-primary); background: var(--wo4-gridline);
+  padding: 0.1rem 0.55rem; border-radius: 3px;
+}
+.wo4-comp-legend { list-style: none; margin: 0; padding: 0; }
 .wo4-comp-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.3rem; border-radius: 5px; cursor: pointer; transition: background 0.12s ease; }
 .wo4-comp-row:hover, .wo4-comp-row.is-active { background: var(--wo4-gridline); }
 .wo4-comp-name { font-size: 0.85rem; color: var(--wo4-text-primary); flex: 1; }
