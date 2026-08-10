@@ -72,6 +72,14 @@ pre {
   color: #993333;
 }
 
+.bold-ital {
+  font-weight: bold;
+  font-style: italic;
+}
+
+.modal-body p {
+  font-size: 1.2rem;
+}
 /* Computing Place splash tiles */
 .cp-tiles {
   display: flex;
