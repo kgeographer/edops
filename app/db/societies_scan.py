@@ -147,8 +147,50 @@ def run_societies_env_scan(trait: str, value: str) -> Dict[str, object]:
         )["variables"]
     else:
         payload["variables"] = variable_percentiles(sub, trait_col=trait_col, value=value)["variables"]
+        # WO4 strip-plot redesign (2026-08-10): one tick per focus society, not just its group
+        # mean -- see _per_society_ticks() below for why this is a separate pass rather than an
+        # addition inside variable_percentiles() itself.
+        ticks_by_var = _per_society_ticks(sub, is_focus)
+        for key, ticks in ticks_by_var.items():
+            if key in payload["variables"]:
+                payload["variables"][key]["ticks"] = ticks
 
     return payload
+
+
+def _per_society_ticks(sub: pd.DataFrame, is_focus: pd.Series,
+                        variables: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, list]:
+    """Per-society percentile position for the strip plot -- one tick per focus-group society
+    per variable, each against the FULL basin-joined backdrop (`sub`, not the focus subset),
+    matching the WO's own caption rule ("positions are always against all basin-joined
+    societies"). Separate from `variable_percentiles()` rather than folded into it: that
+    function reports one percentile per (trait, value) -- the group MEAN's position -- and nine
+    lines of module docstring already explain why that single-number, no-resampling design is
+    deliberate; this is a different shape of output (an array per variable) for a different
+    consumer (the strip plot's ticks), not a variant of the same computation.
+
+    `rank(pct=True)` (default `na_option='keep'`) excludes NaNs from both the ranking and the
+    denominator, so a focus row's tick position is its percentile among backdrop rows that have
+    a non-null value for that column -- same complete-case convention `variable_percentiles()`
+    uses via `.dropna()`.
+    """
+    variables = variables or VARIABLES
+    out: Dict[str, list] = {}
+    for key, cfg in variables.items():
+        col = cfg["column"]
+        pct = sub[col].rank(pct=True) * 100
+        rows = pd.DataFrame({
+            "soc_id": sub["soc_id"], "family_id": sub["family_id"], "percentile": pct,
+        })[is_focus].dropna(subset=["percentile"])
+        out[key] = [
+            {
+                "soc_id": str(r.soc_id),
+                "family_id": str(r.family_id) if pd.notna(r.family_id) else None,
+                "percentile": float(r.percentile),
+            }
+            for r in rows.itertuples(index=False)
+        ]
+    return out
 
 
 def _build_scatter(sub: pd.DataFrame, trait_col: str, value: str, cfg: Dict[str, object]) -> Dict[str, object]:

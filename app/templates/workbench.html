@@ -202,15 +202,15 @@
               <hr class="my-2">
               <div class="d-flex align-items-center small">
                 <span class="text-muted me-2">Show:</span>
-                <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
-                  <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
-                </div>
                 <!-- CITYKIN WO4 (2026-07-30): EA034 has no theoretical hook (WO8d could not test a
                      predicted axis) -- shows the exploratory four-lens scan instead of a scatter. -->
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-envscan" value="envscan">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-envscan" value="envscan" checked>
                   <label class="form-check-label" for="soc-rel-mode-envscan">Environment scan</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions">
+                  <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
               </div>
             </div>
@@ -2063,6 +2063,9 @@
     let socData = null;   // Cached societies data
     let socMarkerIndex = {};   // soc_id -> Leaflet marker, for CITYKIN WO4's donut hover-to-map linking
     let socScatterIndex = {};  // soc_id -> SVG circle in the confirmatory scatter, same hover linking
+    let socStripIndex = {};    // soc_id -> array of SVG ticks in the env-scan strip plot (WO4 EA045
+                                // redesign) -- a society can appear once per variable row, so this
+                                // index is array-valued, unlike the other two (one element per id)
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2209,8 +2212,8 @@
       socReligionFilter = 'all';
       document.querySelectorAll('input[name="soc-religion"]').forEach(r => { r.checked = (r.value === 'all'); });
       if (resetDisplayMode) {
-        document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
-        socDisplayMode = 'ecoregions';
+        document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'envscan'); });
+        socDisplayMode = 'envscan';
       }
     }
 
@@ -2357,6 +2360,13 @@
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
           resetSubsistenceSelection(false);
+          // socDisplayMode is shared with the subsistence accordion's own "Show:" radios and
+          // only gets synced on an accordion-switch reset -- read it fresh off this accordion's
+          // own checked radio so a value pick made before ever touching "Show:" (the common
+          // path now that Environment scan is the religion default) doesn't render against a
+          // stale value from a previous accordion or the initial page-load default.
+          const checkedMode = document.querySelector('input[name="soc-religion-display-mode"]:checked');
+          if (checkedMode) socDisplayMode = checkedMode.value;
           displaySocieties(socData);
         });
       });
@@ -2505,11 +2515,12 @@
     // CITYKIN WO4 (2026-07-30, meter-bar redesign) — replaces the retired PCA "Basin clusters"
     // option. Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and
     // gets the confirmatory Climate envelope scatter; EA034 (religion) has none and gets the
-    // exploratory five-variable meter scan (aridity/temperature/seasonality/ruggedness/landform,
-    // each a plain percentile-of-global-range, no lens-level resampling — Karl's review of the
-    // original four-lens scan found "tighter than X% of random draws" unusable on a GUI page).
-    // Composition (both displays) is a donut, not a bullet list, with hover-to-map linking.
-    // See docs/cdop/citykin/wo4_whc-grouping.md.
+    // exploratory five-variable environment scan (aridity/temperature/seasonality/ruggedness/
+    // landform). WO4 EA045 (2026-08-10) replaced that scan's mean-position bars with per-society
+    // strip plots — a single position couldn't distinguish a clustered group from a bimodal or
+    // smeared one. Composition (both displays) is a donut, not a bullet list, with hover-to-map
+    // (and, for the strip plot, hover-to-tick) linking.
+    // See docs/cdop/citykin/wo4_whc-grouping.md, docs/edop/docsv4/wo4_EA045 -viz-change.md.
     // ---------------------------------------------------------------------
 
     let envScanRequestId = 0;
@@ -2518,6 +2529,24 @@
       aridity: 'Aridity', temperature: 'Temperature', seasonality: 'Seasonality',
       ruggedness: 'Ruggedness', landform: 'Landform',
     };
+    const WO4_VARIABLE_HELP = {
+      aridity: "Composite of precipitation and potential evapotranspiration.",
+      temperature: "Mean annual temperature across twelve months.",
+      seasonality: 'Temperature swing: warmest month minus coldest month.',
+      ruggedness: "Elevation range (max−min) in a small grid around the society's coordinates.",
+      landform: 'Where a society\'s point sits within local relief range — near the valley floor or near a ridge/peak.',
+    };
+
+    // Title text plus a smaller muted "(n = X)" on the same line -- keeps the count out of its
+    // own vertical line (WO4 EA045 nit, 2026-08-10: the panel needs to stay compact).
+    function wo4SetHeadingN(heading, text, n) {
+      heading.textContent = '';
+      heading.appendChild(document.createTextNode(text));
+      const span = document.createElement('span');
+      span.className = 'wo4-heading-n text-muted';
+      span.textContent = ` (n = ${n})`;
+      heading.appendChild(span);
+    }
 
     function wo4SvgEl(tag, attrs) {
       const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -2588,6 +2617,7 @@
 
       const myRequestId = ++envScanRequestId;
       socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
+      socStripIndex = {};     // stale ticks from the previous strip-plot render are about to be discarded
       container.style.display = 'block';
       heading.textContent = `Environment for ${activeFilter}`;
       content.innerHTML = '';
@@ -2626,8 +2656,8 @@
         heading.textContent = `Climate envelope for ${activeFilter}`;
         root.appendChild(wo4ClimateEnvelopeScatter(scan));
       } else {
-        heading.textContent = `Environment scan for ${activeFilter}`;
-        root.appendChild(wo4EnvScanMeters(scan));
+        wo4SetHeadingN(heading, `Environment scan for ${activeFilter}`, scan.n_focus);
+        root.appendChild(wo4EnvScanStrips(scan));
       }
       // Subsistence gets its own in-panel target; religion uses the shared one below both panels.
       const donutTargetId = socActiveQuery === 'religion' ? 'soc-content' : 'soc-subsistence-content';
@@ -2638,6 +2668,9 @@
         donutWrap.appendChild(wo4CompositionDonut(scan.composition));
         socContent.appendChild(donutWrap);
       }
+      // Strip-plot variable labels carry their own help icons, added after page load -- the
+      // shared harness only auto-scans on DOMContentLoaded, so a fetched render needs this.
+      if (window.initEdopsHelpTooltips) window.initEdopsHelpTooltips();
     }
 
     function wo4ClimateEnvelopeScatter(scan) {
@@ -2754,91 +2787,100 @@
       return res.qualifier === 'typical' ? 'typical' : `${res.qualifier} ${res.direction.toLowerCase()}`;
     }
 
-    function wo4EnvScanMeters(scan) {
+    // WO4 EA045 strip-plot redesign (2026-08-10): one tick per society, not a mean-position bar --
+    // a single position can't distinguish a genuinely clustered group from a bimodal or a smeared
+    // one, and the verbal qualifier ("somewhat rugged") asserted the first regardless. Ticks are
+    // computed once per trait-value selection (the fetch in renderEnvScan()) and never
+    // recomputed on hover; family hover only changes which ticks are emphasized via
+    // wo4HighlightMarkers()/socStripIndex, same linkage the map markers and scatter dots use.
+    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 15, WO4_STRIP_MARGIN = 4;
+    const WO4_THIN_FAMILY_FLOOR = 20;   // matches the notebooks' own n-floor convention
+
+    function wo4StripX(pct) {
+      const plotW = WO4_STRIP_WIDTH - 2 * WO4_STRIP_MARGIN;
+      return WO4_STRIP_MARGIN + (pct / 100) * plotW;
+    }
+
+    function wo4EnvScanStrips(scan) {
       const wrap = document.createElement('div');
-      const meters = document.createElement('div');
-      meters.className = 'wo4-meters';
+      const strips = document.createElement('div');
+      strips.className = 'wo4-strips';
 
       WO4_VARIABLE_ORDER.forEach(key => {
         const res = scan.variables[key];
         const row = document.createElement('div');
-        row.className = 'wo4-meter-row';
+        row.className = 'wo4-strip-row';
 
-        const top = document.createElement('div');
-        top.className = 'wo4-meter-top';
         const label = document.createElement('span');
-        label.className = 'wo4-meter-label';
-        label.textContent = WO4_VARIABLE_LABELS[key] || key;
-        top.appendChild(label);
+        label.className = 'wo4-strip-label';
+        const labelText = WO4_VARIABLE_LABELS[key] || key;
+        const help = document.createElement('i');
+        help.className = 'bi bi-question-circle edops-help';
+        help.dataset.helpText = WO4_VARIABLE_HELP[key] || labelText;
+        label.append(labelText + ' ', help);
+        row.appendChild(label);
 
-        if (!res || !res.n_focus) {
+        if (!res || !res.ticks || !res.ticks.length) {
           const none = document.createElement('span');
-          none.className = 'wo4-meter-qual';
+          none.className = 'wo4-strip-none';
           none.textContent = 'no data';
-          top.appendChild(none);
-          row.appendChild(top);
-          meters.appendChild(row);
+          row.appendChild(none);
+          strips.appendChild(row);
           return;
         }
 
-        const qual = document.createElement('span');
-        qual.className = 'wo4-meter-qual';
-        qual.textContent = wo4Qualifier(res);
-        top.appendChild(qual);
-        row.appendChild(top);
+        const trackWrap = document.createElement('div');
+        trackWrap.className = 'wo4-strip-track-wrap';
 
-        const trackRow = document.createElement('div');
-        trackRow.className = 'wo4-meter-track-row';
+        const svg = wo4SvgEl('svg', {
+          viewBox: `0 0 ${WO4_STRIP_WIDTH} ${WO4_STRIP_HEIGHT}`, class: 'wo4-strip-svg',
+          role: 'img', 'aria-label': `${WO4_VARIABLE_LABELS[key] || key} positions for ${scan.value}`,
+        });
+        res.ticks.forEach(t => {
+          const x = wo4StripX(t.percentile);
+          const tick = wo4SvgEl('line', {
+            x1: x, y1: 1, x2: x, y2: WO4_STRIP_HEIGHT - 1,
+            stroke: 'var(--wo4-focus)', 'stroke-width': 1, 'stroke-opacity': 0.5,
+          });
+          tick._wo4Type = 'svg';
+          tick._wo4Base = { stroke: 'var(--wo4-focus)', 'stroke-opacity': 0.5 };
+          svg.appendChild(tick);
+          if (!socStripIndex[t.soc_id]) socStripIndex[t.soc_id] = [];
+          socStripIndex[t.soc_id].push(tick);
+        });
+        trackWrap.appendChild(svg);
 
+        const poles = document.createElement('div');
+        poles.className = 'wo4-strip-poles';
         const poleLow = document.createElement('span');
-        poleLow.className = 'wo4-pole';
         poleLow.textContent = res.pole_low;
-        trackRow.appendChild(poleLow);
-
-        const track = document.createElement('div');
-        track.className = 'wo4-track';
-        const fill = document.createElement('div');
-        fill.className = 'wo4-fill';
-        fill.style.width = `${res.percentile}%`;
-        const midline = document.createElement('div');
-        midline.className = 'wo4-midline';
-        track.append(fill, midline);
-        const tipLines = [WO4_VARIABLE_LABELS[key] || key, wo4Qualifier(res)];
-        track.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
-        track.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
-        track.addEventListener('pointerleave', wo4HideTooltip);
-        trackRow.appendChild(track);
-
         const poleHigh = document.createElement('span');
-        poleHigh.className = 'wo4-pole right';
         poleHigh.textContent = res.pole_high;
-        trackRow.appendChild(poleHigh);
+        poles.append(poleLow, poleHigh);
+        trackWrap.appendChild(poles);
 
-        const pct = document.createElement('span');
-        pct.className = 'wo4-pct';
-        pct.textContent = `${Math.round(res.percentile)}%`;
-        trackRow.appendChild(pct);
+        row.appendChild(trackWrap);
 
-        row.appendChild(trackRow);
-        meters.appendChild(row);
+        strips.appendChild(row);
       });
 
-      wrap.appendChild(meters);
+      wrap.appendChild(strips);
 
       const caption = document.createElement('div');
       caption.className = 'wo4-caption';
-      caption.textContent = `Where ${scan.value} societies typically sit on each variable's own global range, against all basin-joined D-PLACE societies.`;
+      caption.textContent = `Each tick is one society, positioned by its own value on that variable's global range, against all basin-joined D-PLACE societies. Hover a family to highlight its societies within the same picture.`;
       wrap.appendChild(caption);
 
       return wrap;
     }
 
-    // Highlight the given society IDs across every linked view (map markers, and the confirmatory
-    // scatter's dots when that display is showing), dim everyone else; wo4RestoreMarkers() undoes
-    // it. Two element types, one shared index-and-snapshot pattern: Leaflet markers restyle via
-    // .setStyle(), SVG circles via .setAttribute() -- _wo4Type picks the branch, _wo4Base is never
-    // hand-computed (it varies per element: isMatch-driven opacity on the map, nothing on the
-    // scatter) so restore always returns to what was actually there, not a guessed default.
+    // Highlight the given society IDs across every linked view (map markers, the confirmatory
+    // scatter's dots when that display is showing, and the strip plot's ticks when that display
+    // is showing), dim everyone else; wo4RestoreMarkers() undoes it. Two element types, one
+    // shared index-and-snapshot pattern: Leaflet markers restyle via .setStyle(), SVG elements
+    // (scatter circles, strip ticks) via .setAttribute() -- _wo4Type picks the branch, _wo4Base
+    // is never hand-computed (it varies per element) so restore always returns to what was
+    // actually there, not a guessed default.
     function wo4ApplyStyle(el, style) {
       if (el._wo4Type === 'svg') {
         Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
@@ -2847,29 +2889,50 @@
       }
     }
 
+    // socStripIndex is array-valued (a society can appear once per variable row); the other two
+    // are one element per id. Normalizing both shapes here keeps the highlight styles themselves
+    // the only thing that varies per index.
+    function wo4StyleForIndex(index, matched) {
+      if (index === socMarkerIndex) {
+        return matched
+          ? { radius: 7, weight: 2, opacity: 1, fillOpacity: 1 }
+          : { opacity: 0.08, fillOpacity: 0.04 };
+      }
+      if (index === socScatterIndex) {
+        return matched
+          ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
+          : { 'fill-opacity': 0.08 };
+      }
+      // socStripIndex: ticks stay visible when dimmed, just greyed -- the WO wants the rest of
+      // the trait group's shape still legible, not near-invisible like the map/scatter's 0.08.
+      return matched
+        ? { stroke: 'var(--wo4-focus)', 'stroke-opacity': 1 }
+        : { stroke: 'var(--wo4-backdrop)', 'stroke-opacity': 0.4 };
+    }
+
     function wo4HighlightMarkers(socIds) {
       const idSet = new Set(socIds);
-      [socMarkerIndex, socScatterIndex].forEach(index => {
-        Object.entries(index).forEach(([id, el]) => {
-          if (idSet.has(id)) {
-            wo4ApplyStyle(el, el._wo4Type === 'svg'
-              ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
-              : { radius: 7, weight: 2, opacity: 1, fillOpacity: 1 });
-            if (el.bringToFront) el.bringToFront();
-            else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
-          } else {
-            wo4ApplyStyle(el, el._wo4Type === 'svg'
-              ? { 'fill-opacity': 0.08 }
-              : { opacity: 0.08, fillOpacity: 0.04 });
-          }
+      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+        Object.entries(index).forEach(([id, elOrEls]) => {
+          const matched = idSet.has(id);
+          const style = wo4StyleForIndex(index, matched);
+          const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
+          els.forEach(el => {
+            wo4ApplyStyle(el, style);
+            if (matched) {
+              if (el.bringToFront) el.bringToFront();
+              else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
+            }
+          });
         });
       });
     }
 
     function wo4RestoreMarkers() {
-      [socMarkerIndex, socScatterIndex].forEach(index => {
-        Object.values(index).forEach(el => {
-          if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base);
+      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+        Object.values(index).forEach(elOrEls => {
+          const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
+          els.forEach(el => { if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base); });
         });
       });
     }
@@ -2943,7 +3006,9 @@
         name.textContent = b.label;
         const count = document.createElement('span');
         count.className = 'wo4-comp-count';
-        count.textContent = `${b.n} (${Math.round(b.share * 100)}%)`;
+        const isThin = b.n < WO4_THIN_FAMILY_FLOOR;
+        if (isThin) count.classList.add('is-thin');
+        count.textContent = `${b.n} (${Math.round(b.share * 100)}%)` + (isThin ? ' · small n' : '');
         li.append(swatch, name, count);
         legend.appendChild(li);
         legendRows[i] = li;
