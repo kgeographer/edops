@@ -3149,7 +3149,13 @@
           const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
           els.forEach(el => {
             wo4ApplyStyle(el, style);
-            if (matched) {
+            // Raising z-order only means something for SVG (no z-index, later-in-DOM draws on
+            // top) and Leaflet markers (bringToFront()). For plain list rows (_wo4Type 'dom'),
+            // DOM order IS the visual sort order -- appendChild() would move the hovered row to
+            // the end of the list instead of raising it, which put a DIFFERENT row under the
+            // cursor, firing its own hover, which moved it too: a self-sustaining reorder loop
+            // (Karl's browser review, 2026-08-10 -- "furiously reordering").
+            if (matched && el._wo4Type !== 'dom') {
               if (el.bringToFront) el.bringToFront();
               else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
             }
