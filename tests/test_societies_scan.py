@@ -103,9 +103,10 @@ def test_religion_scan_includes_per_society_records(client):
             "family_global_n", "env"} <= s.keys()
     assert set(s["env"].keys()) == {"aridity", "temperature", "seasonality", "ruggedness", "landform"}
 
-    # WO5 #2's own fix: family_global_n is the family's count across the WHOLE basin-joined
-    # corpus, not just this trait's coded set -- so it must be >= that society's family's count
-    # within this trait-filtered 40, for every resolved-family society in the response.
+    # WO5 #2's own fix: family_global_n is the family's count across the basin-joined AND
+    # EA034-coded corpus (not just this trait VALUE's coded set) -- so it must be >= that
+    # society's family's count within this trait-VALUE-filtered 40, for every resolved-family
+    # society in the response.
     trait_family_counts = {}
     for rec in socs:
         if rec["family_id"] is not None:
@@ -113,6 +114,20 @@ def test_religion_scan_includes_per_society_records(client):
     for rec in socs:
         if rec["family_id"] is not None:
             assert rec["family_global_n"] >= trait_family_counts[rec["family_id"]]
+
+
+def test_family_global_n_denominator_is_trait_coded_not_all_basin_joined(client):
+    # Second denominator bug, caught in review (Opus, 2026-08-11) after WO5 first shipped:
+    # family_global_n was counting ALL basin-joined members of a family, including ones EA034
+    # never coded at all. EA034 codes only 680 of 1,133 basin-joined societies, and the gap is
+    # very unevenly distributed across families -- Uto-Aztecan is 65 all-basin-joined members but
+    # only 18 actually EA034-coded. Pinned to that real family via Otiose (EA034 value with
+    # several Uto-Aztecan-family societies): family_global_n must read 18, not 65.
+    r = client.get("/api/societies/env-scan", params={"trait": "religion", "value": "Otiose"})
+    body = r.json()
+    uto_aztecan = [s for s in body["societies"] if s["family_id"] == "utoa1244"]
+    assert len(uto_aztecan) > 0
+    assert all(s["family_global_n"] == 18 for s in uto_aztecan)
 
 
 def test_subsistence_scan_has_no_per_society_records(client):
