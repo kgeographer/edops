@@ -89,10 +89,7 @@
 .wo4-isolates-row:first-child { border-top: none; }
 .wo4-isolates-row:hover { background: var(--wo4-gridline); }
 .wo4-isolates-name { font-size: 0.85rem; color: var(--wo4-text-primary); }
-.wo4-isolates-ranks {
-  font-size: 0.75rem; color: var(--wo4-text-muted); white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
+.wo4-isolates-ranks {font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums;}
 
 /* -- Results heading's inline n (WO4 EA045 nit, 2026-08-10 -- same line as the title, not its
    own row, to stay compact). Outside .wo4-viz's DOM scope (that wrapper is only appended inside
