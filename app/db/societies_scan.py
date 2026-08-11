@@ -156,7 +156,7 @@ def run_societies_env_scan(trait: str, value: str) -> Dict[str, object]:
                 payload["variables"][key]["ticks"] = ticks
         # WO5 (2026-08-10, experimental 'isolates' branch, EA034 only): per-society records for
         # client-side ancestral/geographic/environmental nearest-neighbor ranking.
-        payload["societies"] = _per_society_records(sub, is_focus)
+        payload["societies"] = _per_society_records(sub, is_focus, trait_col)
 
     return payload
 
@@ -196,17 +196,25 @@ def _per_society_ticks(sub: pd.DataFrame, is_focus: pd.Series,
     return out
 
 
-def _per_society_records(sub: pd.DataFrame, is_focus: pd.Series,
+def _per_society_records(sub: pd.DataFrame, is_focus: pd.Series, trait_col: str,
                           variables: Optional[Dict[str, Dict[str, str]]] = None) -> list:
     """WO5 'Isolates' view: one record per focus-group society -- soc_id/name/lat/lon/family,
-    the family's GLOBAL count across the whole basin-joined corpus (not just this trait's coded
-    set), and its percentile position on all five VARIABLES as one vector. The global family
-    count is WO5's own spec fix (originally `anc_size` was tallied only within the trait-filtered
-    set, so a family with one D-PLACE society *total* would trivially top the ancestral-isolation
-    ranking for whatever trait that one society happened to hold -- a corpus-sampling artifact,
-    not an independent-origin signal. Shipping both counts lets the client (or a reader) tell
-    "rare within this trait" from "rare in the corpus, period" apart, rather than conflating them
-    silently.
+    the family's GLOBAL count, and its percentile position on all five VARIABLES as one vector.
+    The global family count is WO5's own spec fix (originally `anc_size` was tallied only within
+    the trait-filtered set, so a family with one D-PLACE society *total* would trivially top the
+    ancestral-isolation ranking for whatever trait that one society happened to hold -- a
+    corpus-sampling artifact, not an independent-origin signal. Shipping both counts lets the
+    client (or a reader) tell "rare within this trait" from "rare in the corpus, period" apart,
+    rather than conflating them silently.
+
+    "GLOBAL" means basin-joined AND coded for `trait_col` -- not every basin-joined society,
+    which is a second denominator bug caught in review (Opus, 2026-08-11) after the first ship:
+    EA034 codes only 680 of 1,133 basin-joined societies, and that gap is very unevenly
+    distributed across families (confirmed empirically: 36 of 73 families with any EA034-coded
+    member have a >=1.5x gap between "all basin-joined" and "basin-joined and EA034-coded" counts,
+    up to 5x; Uto-Aztecan is 65 vs. 18). Counting uncoded members inflates the denominator and
+    understates how rare a family-within-trait actually is -- the exact overstatement the
+    family_global_n fix exists to prevent, just one level up.
 
     Ancestral/geographic/environmental nearest-neighbor ranking itself happens entirely
     client-side (n <= ~280, trivial); this only assembles the per-society inputs each ranking
@@ -215,7 +223,7 @@ def _per_society_records(sub: pd.DataFrame, is_focus: pd.Series,
     one 5-D vector per society, since nearest-neighbor distance needs all five values together.
     """
     variables = variables or VARIABLES
-    family_global_counts = sub["family_id"].value_counts()
+    family_global_counts = sub.loc[sub[trait_col].notna(), "family_id"].value_counts()
 
     pct_cols = {key: sub[cfg["column"]].rank(pct=True) * 100 for key, cfg in variables.items()}
 
