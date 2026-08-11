@@ -2074,6 +2074,9 @@
     let socStripIndex = {};    // soc_id -> array of SVG ticks in the env-scan strip plot (WO4 EA045
                                 // redesign) -- a society can appear once per variable row, so this
                                 // index is array-valued, unlike the other two (one element per id)
+    let socIsolatesIndex = {}; // soc_id -> row element in the WO5 isolates list -- rebuilt on every
+                                // renderList() call (measure-tab switch), not just once, since that
+                                // function replaces the list's DOM each time
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2653,6 +2656,7 @@
       const myRequestId = ++envScanRequestId;
       socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
       socStripIndex = {};     // stale ticks from the previous strip-plot render are about to be discarded
+      socIsolatesIndex = {};  // stale rows from the previous isolates render are about to be discarded
       container.style.display = 'block';
       heading.textContent = `Environment for ${activeFilter}`;
       content.innerHTML = '';
@@ -2889,14 +2893,17 @@
       return wrap;
     }
 
-    // WO5 (2026-08-10, experimental 'isolates' branch): three nearest-neighbor rankings over the
-    // EA034 focus group -- ancestral (family), geographic, environmental. Named societies, not an
-    // aggregate; deliberately no threshold/cutoff/combined score (WO5 Sec 4 -- the ranking IS the
-    // output, a reader reads down as far as interesting). n <= ~280, so O(n^2) is trivial here.
+    // WO5 (2026-08-10, experimental 'isolates' branch): nearest-neighbor rankings over the EA034
+    // focus group -- ancestral (family), geographic, environmental, plus WO5a's optional 4th
+    // (worst-of-three, Karl opted in). Named societies, not an aggregate; deliberately no
+    // threshold/cutoff/weighted score anywhere (WO5 Sec 4 -- the ranking IS the output, a reader
+    // reads down as far as interesting; "worst-of-three" is a max, not a weighted combination).
+    // n <= ~280, so O(n^2) is trivial here.
     const WO5_ISOLATION_MEASURES = [
-      { key: 'ancestral', label: 'Ancestral', rankKey: 'anc_rank' },
-      { key: 'geographic', label: 'Geographic', rankKey: 'geo_rank' },
-      { key: 'environmental', label: 'Environmental', rankKey: 'env_rank' },
+      { key: 'ancestral', label: 'Ancestral', rankKey: 'anc_rank', excludedKey: 'n_no_family' },
+      { key: 'geographic', label: 'Geographic', rankKey: 'geo_rank', excludedKey: 'n_no_geo' },
+      { key: 'environmental', label: 'Environmental', rankKey: 'env_rank', excludedKey: 'n_incomplete_env' },
+      { key: 'overall', label: 'Overall', rankKey: 'overall_rank', excludedKey: 'n_incomplete_overall' },
     ];
 
     function wo4Haversine(lat1, lon1, lat2, lon2) {
@@ -2979,11 +2986,36 @@
       geographic.forEach((s, i) => { s.geo_rank = i + 1; });
       environmental.forEach((s, i) => { s.env_rank = i + 1; });
 
+      // WO5a Sec 4 (optional 4th sort, Karl opted in): worst-of-three -- max is not a weighted
+      // combination and introduces no parameters, unlike an average or a score. Ascending by
+      // each society's WORST rank surfaces the "isolated on all three simultaneously" case the
+      // view exists to find, without violating WO5's own no-combined-score rule. Only societies
+      // with all three ranks are eligible; the rest are excluded and counted, same pattern as
+      // the other three measures.
+      const complete = societies.filter(s => s.anc_rank != null && s.geo_rank != null && s.env_rank != null);
+      complete.forEach(s => { s.worst_rank = Math.max(s.anc_rank, s.geo_rank, s.env_rank); });
+      const overall = [...complete].sort((a, b) => a.worst_rank - b.worst_rank);
+      overall.forEach((s, i) => { s.overall_rank = i + 1; });
+
       return {
-        ancestral, geographic, environmental,
+        ancestral, geographic, environmental, overall,
         n_no_family: societies.length - validFamily.length,
+        n_no_geo: societies.length - geographic.length,
         n_incomplete_env: societies.length - validEnv.length,
+        n_incomplete_overall: societies.length - complete.length,
       };
+    }
+
+    // WO5a Sec 1: ranks alone hide the gaps (two family singletons can be identical; two geo
+    // ranks a step apart can differ by 2000km or by 50). Each segment is "{rank} ({magnitude})",
+    // "--" when a society is excluded from that measure. Compact by design, per the WO's own
+    // call ("compactness matters more than completeness in the row").
+    function wo4IsolatesFormatRow(s) {
+      const anc = s.anc_rank != null ? `anc ${s.anc_rank} (${s.anc_size}/${s.family_global_n})` : 'anc —';
+      const geo = s.geo_rank != null ? `geo ${s.geo_rank} (${Math.round(s.geo_nn)}km)` : 'geo —';
+      const env = s.env_rank != null ? `env ${s.env_rank} (${s.env_nn.toFixed(1)})` : 'env —';
+      const ovr = s.overall_rank != null ? `ovr ${s.overall_rank} (max ${s.worst_rank})` : 'ovr —';
+      return [anc, geo, env, ovr].join('   ');
     }
 
     function wo4IsolatesView(scan) {
@@ -3003,7 +3035,11 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'wo4-isolates-measure-btn' + (m.key === activeMeasure ? ' is-active' : '');
-        btn.textContent = m.label;
+        // WO5a Sec 3: excluded count shown right on the pill, not just buried in the caption --
+        // only appended when non-zero, so measures that never exclude anyone (geographic, almost
+        // always) don't carry a pointless "(0 excluded)".
+        const excluded = result[m.excludedKey];
+        btn.textContent = excluded > 0 ? `${m.label} (${excluded} excluded)` : m.label;
         btn.addEventListener('click', () => {
           activeMeasure = m.key;
           Object.entries(measureBtns).forEach(([k, b]) => b.classList.toggle('is-active', k === m.key));
@@ -3020,6 +3056,7 @@
 
       function renderList() {
         list.innerHTML = '';
+        socIsolatesIndex = {};   // this render's rows replace the previous one's entirely
         const rankKey = WO5_ISOLATION_MEASURES.find(m => m.key === activeMeasure).rankKey;
         const sorted = [...societies].sort((a, b) => {
           const ra = a[rankKey], rb = b[rankKey];
@@ -3031,16 +3068,19 @@
         sorted.forEach(s => {
           const row = document.createElement('div');
           row.className = 'wo4-isolates-row';
+          row._wo4Type = 'dom';
+          row._wo4Base = { background: 'transparent' };   // for wo4RestoreMarkers()
           const name = document.createElement('span');
           name.className = 'wo4-isolates-name';
           name.textContent = s.name || s.soc_id;
           const ranks = document.createElement('span');
           ranks.className = 'wo4-isolates-ranks';
-          ranks.textContent = `anc ${s.anc_rank ?? '—'}   geo ${s.geo_rank ?? '—'}   env ${s.env_rank ?? '—'}`;
+          ranks.textContent = wo4IsolatesFormatRow(s);
           row.append(name, ranks);
           row.addEventListener('mouseenter', () => wo4HighlightMarkers([s.soc_id]));
           row.addEventListener('mouseleave', wo4RestoreMarkers);
           list.appendChild(row);
+          socIsolatesIndex[s.soc_id] = row;   // WO5a Sec 2: donut family-hover highlights these too
         });
       }
       renderList();
@@ -3049,8 +3089,8 @@
       coverage.className = 'wo4-caption';
       coverage.textContent = `${result.n_no_family} of ${societies.length} have no resolved language ` +
         `family (excluded from the ancestral ranking); ${result.n_incomplete_env} lack complete ` +
-        `environmental data (excluded from the environmental ranking). The three lists cover ` +
-        `different sets of societies.`;
+        `environmental data (excluded from the environmental and overall rankings). The lists ` +
+        `cover different sets of societies -- see each pill's own excluded count.`;
       wrap.appendChild(coverage);
 
       return wrap;
@@ -3066,12 +3106,14 @@
     function wo4ApplyStyle(el, style) {
       if (el._wo4Type === 'svg') {
         Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
+      } else if (el._wo4Type === 'dom') {
+        Object.assign(el.style, style);
       } else {
         el.setStyle(style);
       }
     }
 
-    // socStripIndex is array-valued (a society can appear once per variable row); the other two
+    // socStripIndex is array-valued (a society can appear once per variable row); the other three
     // are one element per id. Normalizing both shapes here keeps the highlight styles themselves
     // the only thing that varies per index.
     function wo4StyleForIndex(index, matched) {
@@ -3085,6 +3127,12 @@
           ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
           : { 'fill-opacity': 0.08 };
       }
+      if (index === socIsolatesIndex) {
+        // WO5a Sec 2: hovering a family highlights its rows in the isolates list too, same
+        // treatment the row already gets on its own :hover (no separate "louder" color needed --
+        // the point is visibility, not emphasis-over-emphasis).
+        return matched ? { background: 'var(--wo4-gridline)' } : { background: 'transparent' };
+      }
       // socStripIndex: ticks stay visible when dimmed, just greyed -- the WO wants the rest of
       // the trait group's shape still legible, not near-invisible like the map/scatter's 0.08.
       return matched
@@ -3094,7 +3142,7 @@
 
     function wo4HighlightMarkers(socIds) {
       const idSet = new Set(socIds);
-      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
         Object.entries(index).forEach(([id, elOrEls]) => {
           const matched = idSet.has(id);
           const style = wo4StyleForIndex(index, matched);
@@ -3111,7 +3159,7 @@
     }
 
     function wo4RestoreMarkers() {
-      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
         Object.values(index).forEach(elOrEls => {
           const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
           els.forEach(el => { if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base); });
