@@ -213,6 +213,13 @@
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions">
                   <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
+                <!-- WO5 (2026-08-10, experimental 'isolates' branch): societies sharing this
+                     trait value with no close ancestral/geographic/environmental neighbor also
+                     sharing it -- named-society ranked lists, not an aggregate view. -->
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-isolates" value="isolates">
+                  <label class="form-check-label" for="soc-rel-mode-isolates">Isolates</label>
+                </div>
               </div>
             </div>
           </div>
@@ -280,7 +287,12 @@
 
       <!-- D-PLACE query results (shown below map) -->
       <div id="dplace-results" class="mt-3" style="display:none;">
-        <h6 class="mb-1" id="dplace-results-heading"></h6>
+        <div class="d-flex justify-content-between align-items-start">
+          <h6 class="mb-1" id="dplace-results-heading"></h6>
+          <!-- Dynamic content per (trait, display mode) -- WO4_RESULTS_HELP registry, not the
+               shared edops-help tooltip/toggle harness (content varies per state, not static). -->
+          <i class="bi bi-question-circle edops-help ms-2" id="dplace-results-help"></i>
+        </div>
         <div id="dplace-results-content"></div>
       </div>
     </div>
@@ -290,7 +302,7 @@
 
 <!-- City Summaries Modal -->
 <div class="modal fade" id="summariesModal" tabindex="-1" aria-labelledby="summariesModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="summariesModalLabel">City Summaries</h5>
@@ -302,6 +314,47 @@
     </div>
   </div>
 </div>
+
+<!-- D-PLACE results help modal -- content swapped per (trait, display mode) by
+     showResultsHelpModal(), reading from the <template> blocks below it. -->
+<div class="modal fade" id="dplaceResultsHelpModal" tabindex="-1" aria-labelledby="dplaceResultsHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dplaceResultsHelpModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="dplaceResultsHelpModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Results help content, one <template> per (trait, display mode) -- id is
+     "wo4-help-{socActiveQuery}-{socDisplayMode}", data-title is the modal header. Body is a Jinja
+     include, one small file per slot (app/templates/_help_{trait}_{mode}.html) -- same pattern
+     _edops_modals.html already uses for the Documentation modal's per-page Guide body, so the
+     prose lives in its own short file (wordsmith-friendly, no JS string escaping) instead of
+     bulking out this already-large template. showResultsHelpModal() just looks one up by id and
+     clones it into the modal body. -->
+<template id="wo4-help-subsistence-envscan" data-title="Climate envelope">
+  {% include "_help_subsistence_envscan.html" %}
+</template>
+
+<template id="wo4-help-subsistence-ecoregions" data-title="Ecoregions by realm">
+  {% include "_help_subsistence_ecoregions.html" %}
+</template>
+
+<template id="wo4-help-religion-envscan" data-title="Environment scan">
+  {% include "_help_religion_envscan.html" %}
+</template>
+
+<template id="wo4-help-religion-ecoregions" data-title="Ecoregions by realm">
+  {% include "_help_religion_ecoregions.html" %}
+</template>
+
+<template id="wo4-help-religion-isolates" data-title="Isolates">
+  {% include "_help_religion_isolates.html" %}
+</template>
 
 <script>
   // ResolvedPlace shape (client-side):
@@ -2067,6 +2120,9 @@
     let socStripIndex = {};    // soc_id -> array of SVG ticks in the env-scan strip plot (WO4 EA045
                                 // redesign) -- a society can appear once per variable row, so this
                                 // index is array-valued, unlike the other two (one element per id)
+    let socIsolatesIndex = {}; // soc_id -> row element in the WO5 isolates list -- rebuilt on every
+                                // renderList() call (measure-tab switch), not just once, since that
+                                // function replaces the list's DOM each time
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2449,7 +2505,11 @@
         if (el) el.innerHTML = '';
       });
 
-      if (socDisplayMode === 'envscan') {
+      // 'envscan' and 'isolates' both need the /api/societies/env-scan payload -- renderEnvScan()
+      // fetches it once and branches internally (scatter / strips / isolates) so switching
+      // between those two doesn't re-fetch. 'ecoregions' uses the already-loaded full dataset
+      // instead and never hits that endpoint.
+      if (socDisplayMode === 'envscan' || socDisplayMode === 'isolates') {
         renderEnvScan(data);
       } else {
         renderTopEcoregions(data);
@@ -2504,7 +2564,7 @@
       })).sort((a, b) => b.total - a.total);
 
       // Render heading
-      heading.textContent = `Top ecoregions for ${activeFilter}`;
+      wo4SetResultsHeading(heading, 'Top ecoregions for ', activeFilter);
 
       // Two independently-flowing columns instead of a Bootstrap row/col-6 pairing, which locked
       // left/right realm blocks into fixed-height rows (row height = the taller of the pair) and
@@ -2561,15 +2621,53 @@
       landform: 'Where a society\'s point sits within local relief range — near the valley floor or near a ridge/peak.',
     };
 
-    // Title text plus a smaller muted "(n = X)" on the same line -- keeps the count out of its
-    // own vertical line (WO4 EA045 nit, 2026-08-10: the panel needs to stay compact).
-    function wo4SetHeadingN(heading, text, n) {
+    // D-PLACE results help modal (2026-08-11) -- one shared modal, content looked up per
+    // (socActiveQuery, socDisplayMode) at click time from a <template id="wo4-help-{trait}-
+    // {mode}"> in the markup (see near #dplaceResultsHelpModal), not a JS string literal --
+    // Karl's call: dynamically-inserted text should still live in markup he can wordsmith
+    // directly, not inside JS string concatenation (which he lost real time to once already,
+    // 2026-08-11). Deliberately NOT the shared edops-help tooltip/toggle harness
+    // (app/static/js/edops_help.js): that harness's two behaviors are both static declarative
+    // content picked by which data attribute is present on the icon; this icon's content varies
+    // with page state and needs a real modal for the prose length, a third shape the harness
+    // doesn't cover. Five templates -- Ecoregions by realm appears under both traits but gets an
+    // independent template, not a shared one, since Karl's count of "5 choices" was deliberate.
+    function showResultsHelpModal() {
+      const tpl = document.getElementById(`wo4-help-${socActiveQuery}-${socDisplayMode}`);
+      if (!tpl) return;
+      document.getElementById('dplaceResultsHelpModalLabel').textContent = tpl.dataset.title || '';
+      const bodyEl = document.getElementById('dplaceResultsHelpModalBody');
+      bodyEl.innerHTML = '';
+      bodyEl.appendChild(document.importNode(tpl.content, true));
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('dplaceResultsHelpModal')).show();
+    }
+
+    const dplaceResultsHelpIcon = document.getElementById('dplace-results-help');
+    if (dplaceResultsHelpIcon) {
+      dplaceResultsHelpIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showResultsHelpModal();
+      });
+    }
+
+    // #dplace-results-heading builder: plain prefix text, the dynamic trait VALUE colored
+    // (Karl's browser review, 2026-08-11 -- the value was hard to pick out in a plain-text
+    // heading), and an optional smaller muted "(n = X)" on the same line (WO4 EA045 nit,
+    // 2026-08-10: keeps the count out of its own vertical line). `n` omitted where not known yet
+    // (e.g. the pre-fetch loading-state heading).
+    function wo4SetResultsHeading(heading, prefix, value, n) {
       heading.textContent = '';
-      heading.appendChild(document.createTextNode(text));
-      const span = document.createElement('span');
-      span.className = 'wo4-heading-n text-muted';
-      span.textContent = ` (n = ${n})`;
-      heading.appendChild(span);
+      heading.appendChild(document.createTextNode(prefix));
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'wo4-heading-value';
+      valueSpan.textContent = value;
+      heading.appendChild(valueSpan);
+      if (n !== undefined && n !== null) {
+        const nSpan = document.createElement('span');
+        nSpan.className = 'wo4-heading-n text-muted';
+        nSpan.textContent = ` (n = ${n})`;
+        heading.appendChild(nSpan);
+      }
     }
 
     function wo4SvgEl(tag, attrs) {
@@ -2642,8 +2740,9 @@
       const myRequestId = ++envScanRequestId;
       socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
       socStripIndex = {};     // stale ticks from the previous strip-plot render are about to be discarded
+      socIsolatesIndex = {};  // stale rows from the previous isolates render are about to be discarded
       container.style.display = 'block';
-      heading.textContent = `Environment for ${activeFilter}`;
+      wo4SetResultsHeading(heading, 'Environment for ', activeFilter);
       content.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'wo4-viz text-muted small py-3';
@@ -2677,10 +2776,13 @@
       }
 
       if (scan.hook && scan.hook.has_hook) {
-        heading.textContent = `Climate envelope for ${activeFilter}`;
+        wo4SetResultsHeading(heading, 'Climate envelope for ', activeFilter);
         root.appendChild(wo4ClimateEnvelopeScatter(scan));
+      } else if (socDisplayMode === 'isolates') {
+        wo4SetResultsHeading(heading, 'Isolates for ', activeFilter, scan.n_focus);
+        root.appendChild(wo4IsolatesView(scan));
       } else {
-        wo4SetHeadingN(heading, `Environment scan for ${activeFilter}`, scan.n_focus);
+        wo4SetResultsHeading(heading, 'Environment scan for ', activeFilter, scan.n_focus);
         root.appendChild(wo4EnvScanStrips(scan));
       }
       // Subsistence gets its own in-panel target; religion uses the shared one below both panels.
@@ -2875,6 +2977,209 @@
       return wrap;
     }
 
+    // WO5 (2026-08-10, experimental 'isolates' branch): nearest-neighbor rankings over the EA034
+    // focus group -- ancestral (family), geographic, environmental, plus WO5a's optional 4th
+    // (worst-of-three, Karl opted in). Named societies, not an aggregate; deliberately no
+    // threshold/cutoff/weighted score anywhere (WO5 Sec 4 -- the ranking IS the output, a reader
+    // reads down as far as interesting; "worst-of-three" is a max, not a weighted combination).
+    // n <= ~280, so O(n^2) is trivial here.
+    const WO5_ISOLATION_MEASURES = [
+      { key: 'ancestral', label: 'Ancestral', rankKey: 'anc_rank', excludedKey: 'n_no_family' },
+      { key: 'geographic', label: 'Geographic', rankKey: 'geo_rank', excludedKey: 'n_no_geo' },
+      { key: 'environmental', label: 'Environmental', rankKey: 'env_rank', excludedKey: 'n_incomplete_env' },
+      { key: 'overall', label: 'Overall', rankKey: 'overall_rank', excludedKey: 'n_incomplete_overall' },
+    ];
+
+    function wo4Haversine(lat1, lon1, lat2, lon2) {
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * 6371 * Math.asin(Math.sqrt(a));   // km -- units don't matter for a ranking
+    }
+
+    function wo4EnvEuclidean(envA, envB, keys) {
+      let sum = 0;
+      keys.forEach(k => { const d = envA[k] - envB[k]; sum += d * d; });
+      return Math.sqrt(sum);
+    }
+
+    // Assigns anc_size/anc_nn/geo_nn/env_nn onto (copies of) the input records and returns the
+    // three sorted rankings plus how many societies each ranking had to drop (missing family /
+    // incomplete env data -- WO5's own "coverage note" requirement, Sec 5).
+    function wo4ComputeIsolation(societies) {
+      const ENV_KEYS = WO4_VARIABLE_ORDER;
+
+      const validFamily = societies.filter(s => s.family_id != null);
+      const familyCountsInTrait = {};
+      validFamily.forEach(s => {
+        familyCountsInTrait[s.family_id] = (familyCountsInTrait[s.family_id] || 0) + 1;
+      });
+      const validEnv = societies.filter(s => ENV_KEYS.every(k => s.env[k] != null));
+
+      // 1. Ancestral isolation -- family singletons (within THIS trait's coded set -- WO5's
+      // own anc_size definition, unchanged; family_global_n ships separately in the payload
+      // so a reader can tell a genuine trait-specific singleton from a corpus-sampling one,
+      // WO5 Sec 4's spec fix) float to the top, ties broken by distance to nearest UNRELATED
+      // instance.
+      validFamily.forEach(s => {
+        s.anc_size = familyCountsInTrait[s.family_id];
+        let best = Infinity;
+        validFamily.forEach(t => {
+          if (t.family_id !== s.family_id) {
+            const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+            if (d < best) best = d;
+          }
+        });
+        s.anc_nn = isFinite(best) ? best : null;
+      });
+
+      // 2. Geographic isolation -- unrelated-instance-only variant (WO5 Sec 3: "the more
+      // useful one" if only one is built). A society with unresolved family has no family to
+      // match against, so every other society counts as a valid neighbor for it.
+      societies.forEach(s => {
+        let best = Infinity;
+        societies.forEach(t => {
+          if (t === s) return;
+          if (s.family_id != null && t.family_id != null && t.family_id === s.family_id) return;
+          const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+          if (d < best) best = d;
+        });
+        s.geo_nn = isFinite(best) ? best : null;
+      });
+
+      // 3. Environmental isolation -- nearest OTHER member of the SAME trait group in 5-D
+      // percentile space (within-group atypicality, not distance from the global backdrop --
+      // WO5 Sec 4's spec correction; the global-distribution version is a named next increment,
+      // not this one).
+      validEnv.forEach(s => {
+        let best = Infinity;
+        validEnv.forEach(t => {
+          if (t === s) return;
+          const d = wo4EnvEuclidean(s.env, t.env, ENV_KEYS);
+          if (d < best) best = d;
+        });
+        s.env_nn = isFinite(best) ? best : null;
+      });
+
+      const ancestral = [...validFamily].sort((a, b) => a.anc_size - b.anc_size || b.anc_nn - a.anc_nn);
+      const geographic = [...societies].filter(s => s.geo_nn != null).sort((a, b) => b.geo_nn - a.geo_nn);
+      const environmental = [...validEnv].sort((a, b) => b.env_nn - a.env_nn);
+
+      ancestral.forEach((s, i) => { s.anc_rank = i + 1; });
+      geographic.forEach((s, i) => { s.geo_rank = i + 1; });
+      environmental.forEach((s, i) => { s.env_rank = i + 1; });
+
+      // WO5a Sec 4 (optional 4th sort, Karl opted in): worst-of-three -- max is not a weighted
+      // combination and introduces no parameters, unlike an average or a score. Ascending by
+      // each society's WORST rank surfaces the "isolated on all three simultaneously" case the
+      // view exists to find, without violating WO5's own no-combined-score rule. Only societies
+      // with all three ranks are eligible; the rest are excluded and counted, same pattern as
+      // the other three measures.
+      const complete = societies.filter(s => s.anc_rank != null && s.geo_rank != null && s.env_rank != null);
+      complete.forEach(s => { s.worst_rank = Math.max(s.anc_rank, s.geo_rank, s.env_rank); });
+      const overall = [...complete].sort((a, b) => a.worst_rank - b.worst_rank);
+      overall.forEach((s, i) => { s.overall_rank = i + 1; });
+
+      return {
+        ancestral, geographic, environmental, overall,
+        n_no_family: societies.length - validFamily.length,
+        n_no_geo: societies.length - geographic.length,
+        n_incomplete_env: societies.length - validEnv.length,
+        n_incomplete_overall: societies.length - complete.length,
+      };
+    }
+
+    // WO5a Sec 1: ranks alone hide the gaps (two family singletons can be identical; two geo
+    // ranks a step apart can differ by 2000km or by 50). Each segment is "{rank} ({magnitude})",
+    // "--" when a society is excluded from that measure. Compact by design, per the WO's own
+    // call ("compactness matters more than completeness in the row").
+    function wo4IsolatesFormatRow(s) {
+      const anc = s.anc_rank != null ? `anc ${s.anc_rank} (${s.anc_size}/${s.family_global_n})` : 'anc —';
+      const geo = s.geo_rank != null ? `geo ${s.geo_rank} (${Math.round(s.geo_nn)}km)` : 'geo —';
+      const env = s.env_rank != null ? `env ${s.env_rank} (${s.env_nn.toFixed(1)})` : 'env —';
+      const ovr = s.overall_rank != null ? `ovr ${s.overall_rank} (max ${s.worst_rank})` : 'ovr —';
+      return [anc, geo, env, ovr].join('   ');
+    }
+
+    function wo4IsolatesView(scan) {
+      const wrap = document.createElement('div');
+      // Shallow-copy each record -- wo4ComputeIsolation() writes rank fields onto them, and
+      // scan.societies must stay clean if this view re-renders (measure-switch) without a
+      // fresh fetch.
+      const societies = scan.societies.map(s => ({ ...s, env: { ...s.env } }));
+      const result = wo4ComputeIsolation(societies);
+
+      let activeMeasure = 'ancestral';
+
+      const measureRow = document.createElement('div');
+      measureRow.className = 'wo4-isolates-measures';
+      const measureBtns = {};
+      WO5_ISOLATION_MEASURES.forEach(m => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'wo4-isolates-measure-btn' + (m.key === activeMeasure ? ' is-active' : '');
+        // WO5a Sec 3: excluded count shown right on the pill, not just buried in the caption --
+        // only appended when non-zero, so measures that never exclude anyone (geographic, almost
+        // always) don't carry a pointless "(0 excluded)".
+        const excluded = result[m.excludedKey];
+        btn.textContent = excluded > 0 ? `${m.label} (${excluded} excluded)` : m.label;
+        btn.addEventListener('click', () => {
+          activeMeasure = m.key;
+          Object.entries(measureBtns).forEach(([k, b]) => b.classList.toggle('is-active', k === m.key));
+          renderList();
+        });
+        measureRow.appendChild(btn);
+        measureBtns[m.key] = btn;
+      });
+      wrap.appendChild(measureRow);
+
+      const list = document.createElement('div');
+      list.className = 'wo4-isolates-list';
+      wrap.appendChild(list);
+
+      function renderList() {
+        list.innerHTML = '';
+        socIsolatesIndex = {};   // this render's rows replace the previous one's entirely
+        const rankKey = WO5_ISOLATION_MEASURES.find(m => m.key === activeMeasure).rankKey;
+        const sorted = [...societies].sort((a, b) => {
+          const ra = a[rankKey], rb = b[rankKey];
+          if (ra == null && rb == null) return 0;
+          if (ra == null) return 1;
+          if (rb == null) return -1;
+          return ra - rb;
+        });
+        sorted.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'wo4-isolates-row';
+          row._wo4Type = 'dom';
+          row._wo4Base = { background: 'transparent' };   // for wo4RestoreMarkers()
+          const name = document.createElement('span');
+          name.className = 'wo4-isolates-name';
+          name.textContent = s.name || s.soc_id;
+          const ranks = document.createElement('span');
+          ranks.className = 'wo4-isolates-ranks';
+          ranks.textContent = wo4IsolatesFormatRow(s);
+          row.append(name, ranks);
+          row.addEventListener('mouseenter', () => wo4HighlightMarkers([s.soc_id]));
+          row.addEventListener('mouseleave', wo4RestoreMarkers);
+          list.appendChild(row);
+          socIsolatesIndex[s.soc_id] = row;   // WO5a Sec 2: donut family-hover highlights these too
+        });
+      }
+      renderList();
+
+      const coverage = document.createElement('div');
+      coverage.className = 'wo4-caption';
+      coverage.textContent = `${result.n_no_family} of ${societies.length} have no resolved language ` +
+        `family (excluded from the ancestral ranking); ${result.n_incomplete_env} lack complete ` +
+        `environmental data (excluded from the environmental and overall rankings). The lists ` +
+        `cover different sets of societies -- see each pill's own excluded count.`;
+      wrap.appendChild(coverage);
+
+      return wrap;
+    }
+
     // Highlight the given society IDs across every linked view (map markers, the confirmatory
     // scatter's dots when that display is showing, and the strip plot's ticks when that display
     // is showing), dim everyone else; wo4RestoreMarkers() undoes it. Two element types, one
@@ -2885,12 +3190,14 @@
     function wo4ApplyStyle(el, style) {
       if (el._wo4Type === 'svg') {
         Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
+      } else if (el._wo4Type === 'dom') {
+        Object.assign(el.style, style);
       } else {
         el.setStyle(style);
       }
     }
 
-    // socStripIndex is array-valued (a society can appear once per variable row); the other two
+    // socStripIndex is array-valued (a society can appear once per variable row); the other three
     // are one element per id. Normalizing both shapes here keeps the highlight styles themselves
     // the only thing that varies per index.
     function wo4StyleForIndex(index, matched) {
@@ -2904,6 +3211,12 @@
           ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
           : { 'fill-opacity': 0.08 };
       }
+      if (index === socIsolatesIndex) {
+        // WO5a Sec 2: hovering a family highlights its rows in the isolates list too, same
+        // treatment the row already gets on its own :hover (no separate "louder" color needed --
+        // the point is visibility, not emphasis-over-emphasis).
+        return matched ? { background: 'var(--wo4-gridline)' } : { background: 'transparent' };
+      }
       // socStripIndex: ticks stay visible when dimmed, just greyed -- the WO wants the rest of
       // the trait group's shape still legible, not near-invisible like the map/scatter's 0.08.
       return matched
@@ -2913,14 +3226,20 @@
 
     function wo4HighlightMarkers(socIds) {
       const idSet = new Set(socIds);
-      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
         Object.entries(index).forEach(([id, elOrEls]) => {
           const matched = idSet.has(id);
           const style = wo4StyleForIndex(index, matched);
           const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
           els.forEach(el => {
             wo4ApplyStyle(el, style);
-            if (matched) {
+            // Raising z-order only means something for SVG (no z-index, later-in-DOM draws on
+            // top) and Leaflet markers (bringToFront()). For plain list rows (_wo4Type 'dom'),
+            // DOM order IS the visual sort order -- appendChild() would move the hovered row to
+            // the end of the list instead of raising it, which put a DIFFERENT row under the
+            // cursor, firing its own hover, which moved it too: a self-sustaining reorder loop
+            // (Karl's browser review, 2026-08-10 -- "furiously reordering").
+            if (matched && el._wo4Type !== 'dom') {
               if (el.bringToFront) el.bringToFront();
               else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
             }
@@ -2930,7 +3249,7 @@
     }
 
     function wo4RestoreMarkers() {
-      [socMarkerIndex, socScatterIndex, socStripIndex].forEach(index => {
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
         Object.values(index).forEach(elOrEls => {
           const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
           els.forEach(el => { if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base); });

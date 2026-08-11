@@ -72,10 +72,32 @@
 .wo4-strip-poles { display: flex; justify-content: space-between; font-size: 0.8rem;
   color: var(--wo4-text-muted); margin-top: 0.1rem; }
 
-/* -- Results heading's inline n (WO4 EA045 nit, 2026-08-10 -- same line as the title, not its
-   own row, to stay compact). Outside .wo4-viz's DOM scope (that wrapper is only appended inside
-   #dplace-results-content), so this can't use the --wo4-* custom properties -- text-muted
-   utility class carries the color. */
+/* -- Isolates view (WO5, experimental, 2026-08-10) -- three nearest-neighbor rankings, named
+   societies not an aggregate. List can run to the full focus-group size, so it scrolls
+   internally same as the ecoregions list below. */
+.wo4-isolates-measures { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.wo4-isolates-measure-btn {
+  font-size: 0.78rem; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--wo4-gridline);
+  background: var(--wo4-surface); color: var(--wo4-text-secondary); cursor: pointer;
+}
+.wo4-isolates-measure-btn.is-active { background: var(--wo4-focus); color: #fff; border-color: var(--wo4-focus); }
+.wo4-isolates-list { max-height: 50vh; overflow-y: auto; }
+.wo4-isolates-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  padding: 0.3rem 0.3rem; border-top: 1px solid var(--wo4-gridline); cursor: default;
+}
+.wo4-isolates-row:first-child { border-top: none; }
+.wo4-isolates-row:hover { background: var(--wo4-gridline); }
+.wo4-isolates-name { font-size: 0.85rem; color: var(--wo4-text-primary); }
+.wo4-isolates-ranks {font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums;}
+
+/* -- Results heading (#dplace-results-heading) -- the dynamic trait value colored so it's easy
+   to pick out of the plain-text prefix (Karl's browser review, 2026-08-11); matches
+   .edops-help's existing red-ish accent for a consistent "this is a live value" color across the
+   page, not a new one-off. Plus the smaller muted "(n = X)" suffix (WO4 EA045 nit, 2026-08-10 --
+   same line as the title, not its own row). Outside .wo4-viz's DOM scope (that wrapper is only
+   appended inside #dplace-results-content), so neither can use the --wo4-* custom properties. */
+.wo4-heading-value { color: #993333; }
 .wo4-heading-n { font-size: 0.78rem; font-weight: 400; }
 
 /* Ecoregions-by-realm list can run to dozens of realms -- scroll internally instead of pushing
