@@ -72,7 +72,7 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-08 (branch `docsv4`, 5 commits ahead of `origin/docsv4` — not yet merged to
+**State as of 2026-08-10 (branch `docsv4`, pushed and even with `origin/docsv4` — not yet merged to
 `main`, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build
 output gitignored). Swagger moved `/docs` → `/api/schema`; `/docs` serves the built MkDocs site via
 a `StaticFiles` mount. All three page Guides drafted, plus a new top-level `docsite/similarity.md`.
@@ -82,6 +82,17 @@ Basin ring rebuild (preview/commit ring-member selector, bearing-numbered neighb
 merged 2026-08-06 and stable. Full history: `logs/session_log_20260804.md` through
 `logs/session_log_20260807.md`.
 
+**A second sub-track opened 2026-08-09/10: exploratory environment↔culture correspondence
+notebooks**, Opus-authored WOs in `docs/edop/docsv4/wo{1,2,3}*.md`, notebooks in
+`notebooks/edop/docsv4/`. WO1 (High Gods × subsistence × environment) and WO2 (range-based
+spread vs. causal distance) complete; WO3 (ω²/η² variance decomposition with continent held
+fixed) complete 2026-08-10 with a headline finding — the declared "discrimination attenuates with
+cultural distance from material constraint" prediction is falsified: EA034 (High Gods) not only
+survives continent control, it amplifies (marginal ω² 0.110 → within-continent 0.267), the single
+largest within-continent value across all six traits tested. Ready to go back to Opus. This
+sub-track runs in parallel with the Workbench nit/feature work below, not sequentially before or
+after it.
+
 **Today (2026-08-08) — full detail `logs/session_log_20260808.md`:** Nit-review pass across
 Sandbox/Workbench (ring-basin state bugs, signature headings now name place/slice instead of raw
 IDs, accessibility pass converting muted-gray text to black in the signature accordions,
@@ -90,6 +101,22 @@ which corrects a conflated description of how Sandbox's and Workbench WH Cities'
 methods actually differ — open `[decide]` and scoping notes in
 `docs/design/DOCSv4 — TODO.md` §5.5. Tests: 509 passed / 14 skipped / 668 warnings — same baseline
 as 2026-08-07, nothing broken. Milestone: Braga (2026-09-20) — UNED Digital Humanities conference.
+
+**Today (2026-08-10) — full detail `logs/session_log_20260810.md`:** WO3 notebook (above), then a
+Workbench feature WO landed and shipped same day — WO4 EA045 replaced the Societies tab's EA034
+"environment scan" mean-position bars with per-society strip plots (`envscan` branch, merged to
+`docsv4`), plus a nits round (donut legend title, EA042 scatter cleanup, subsistence-accordion
+default-view parity with religion's, ecoregions-list scroll+column layout fix) committed straight
+to `docsv4`. Then a genuinely experimental WO, **WO5/WO5a "Isolates"** — a third EA034 result
+type surfacing *named* societies with no close ancestral/geographic/environmental neighbor sharing
+the same trait, not another aggregate view. Built on a new `isolates` branch off `docsv4`
+(3 commits ahead, **left unmerged, Karl's explicit call — evaluate in the browser next session
+before any merge decision**). This WO involved real design back-and-forth with Opus before any
+code was written (see session log for the four review points and how they were resolved) and
+surfaced a genuine post-build bug (hovering a list row triggered a self-sustaining DOM-reorder
+loop — fixed, root-caused to a "bring element to front" step that made sense for SVG/Leaflet but
+not a plain list). Tests: 511 passed (+2 new, WO5's backend contract) / 14 skipped / 668 warnings
+throughout the day, nothing broken.
 
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
 WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
@@ -260,10 +287,20 @@ panel stay visible on the right across all three tabs; results are necessary-not
 evidence, not causal claims. Three tabs:
 
 **Societies** — 1,291 D-PLACE societies. Two queries, deliberately asymmetric: **Dominant
-subsistence (EA042)** offers *Ecoregions by realm* or a confirmatory **Climate envelope** scatter
-(has a named theoretical hook); **High gods (EA034)** offers *Ecoregions by realm* or an
-exploratory **Environment scan** (no hook to confirm against). Composition donut (Glottolog-
-resolved family names), hover-linked to map and scatter.
+subsistence (EA042)** offers a confirmatory **Climate envelope** scatter (has a named theoretical
+hook, default view as of 2026-08-10) or *Ecoregions by realm*; **High gods (EA034)** offers an
+exploratory **Environment scan** (no hook to confirm against; default view as of 2026-08-10) or
+*Ecoregions by realm*. Environment scan is per-society **strip plots** as of 2026-08-10 (WO4
+EA045) — one tick per society at its own percentile position, not the earlier mean-position meter
+bars. Composition donut (Glottolog-resolved family names), hover-linked to map, scatter, and the
+strip plots.
+
+**Experimental, unmerged (`isolates` branch off `docsv4` as of 2026-08-10, not yet reviewed):** a
+third EA034 result type, **Isolates** — named societies with no close ancestral/geographic/
+environmental neighbor sharing the same trait value, ranked three ways (plus an opt-in
+worst-of-three) rather than characterized in aggregate. See `logs/session_log_20260810.md` for
+the full design discussion and Karl's evaluation is still pending — do not describe this as live
+on `docsv4` until it's merged.
 
 **Ecoregions** — OneEarth Bioregions drill-down (14 realms → 53 subrealms → 185 bioregions → 847
 ecoregions), Wikipedia summary + OneEarth link per ecoregion. Mostly a reference browser feeding
