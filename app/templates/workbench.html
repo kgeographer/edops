@@ -2564,7 +2564,7 @@
       })).sort((a, b) => b.total - a.total);
 
       // Render heading
-      heading.textContent = `Top ecoregions for ${activeFilter}`;
+      wo4SetResultsHeading(heading, 'Top ecoregions for ', activeFilter);
 
       // Two independently-flowing columns instead of a Bootstrap row/col-6 pairing, which locked
       // left/right realm blocks into fixed-height rows (row height = the taller of the pair) and
@@ -2650,15 +2650,24 @@
       });
     }
 
-    // Title text plus a smaller muted "(n = X)" on the same line -- keeps the count out of its
-    // own vertical line (WO4 EA045 nit, 2026-08-10: the panel needs to stay compact).
-    function wo4SetHeadingN(heading, text, n) {
+    // #dplace-results-heading builder: plain prefix text, the dynamic trait VALUE colored
+    // (Karl's browser review, 2026-08-11 -- the value was hard to pick out in a plain-text
+    // heading), and an optional smaller muted "(n = X)" on the same line (WO4 EA045 nit,
+    // 2026-08-10: keeps the count out of its own vertical line). `n` omitted where not known yet
+    // (e.g. the pre-fetch loading-state heading).
+    function wo4SetResultsHeading(heading, prefix, value, n) {
       heading.textContent = '';
-      heading.appendChild(document.createTextNode(text));
-      const span = document.createElement('span');
-      span.className = 'wo4-heading-n text-muted';
-      span.textContent = ` (n = ${n})`;
-      heading.appendChild(span);
+      heading.appendChild(document.createTextNode(prefix));
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'wo4-heading-value';
+      valueSpan.textContent = value;
+      heading.appendChild(valueSpan);
+      if (n !== undefined && n !== null) {
+        const nSpan = document.createElement('span');
+        nSpan.className = 'wo4-heading-n text-muted';
+        nSpan.textContent = ` (n = ${n})`;
+        heading.appendChild(nSpan);
+      }
     }
 
     function wo4SvgEl(tag, attrs) {
@@ -2733,7 +2742,7 @@
       socStripIndex = {};     // stale ticks from the previous strip-plot render are about to be discarded
       socIsolatesIndex = {};  // stale rows from the previous isolates render are about to be discarded
       container.style.display = 'block';
-      heading.textContent = `Environment for ${activeFilter}`;
+      wo4SetResultsHeading(heading, 'Environment for ', activeFilter);
       content.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'wo4-viz text-muted small py-3';
@@ -2767,13 +2776,13 @@
       }
 
       if (scan.hook && scan.hook.has_hook) {
-        heading.textContent = `Climate envelope for ${activeFilter}`;
+        wo4SetResultsHeading(heading, 'Climate envelope for ', activeFilter);
         root.appendChild(wo4ClimateEnvelopeScatter(scan));
       } else if (socDisplayMode === 'isolates') {
-        wo4SetHeadingN(heading, `Isolates for ${activeFilter}`, scan.n_focus);
+        wo4SetResultsHeading(heading, 'Isolates for ', activeFilter, scan.n_focus);
         root.appendChild(wo4IsolatesView(scan));
       } else {
-        wo4SetHeadingN(heading, `Environment scan for ${activeFilter}`, scan.n_focus);
+        wo4SetResultsHeading(heading, 'Environment scan for ', activeFilter, scan.n_focus);
         root.appendChild(wo4EnvScanStrips(scan));
       }
       // Subsistence gets its own in-panel target; religion uses the shared one below both panels.

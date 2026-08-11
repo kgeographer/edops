@@ -91,10 +91,13 @@
 .wo4-isolates-name { font-size: 0.85rem; color: var(--wo4-text-primary); }
 .wo4-isolates-ranks {font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums;}
 
-/* -- Results heading's inline n (WO4 EA045 nit, 2026-08-10 -- same line as the title, not its
-   own row, to stay compact). Outside .wo4-viz's DOM scope (that wrapper is only appended inside
-   #dplace-results-content), so this can't use the --wo4-* custom properties -- text-muted
-   utility class carries the color. */
+/* -- Results heading (#dplace-results-heading) -- the dynamic trait value colored so it's easy
+   to pick out of the plain-text prefix (Karl's browser review, 2026-08-11); matches
+   .edops-help's existing red-ish accent for a consistent "this is a live value" color across the
+   page, not a new one-off. Plus the smaller muted "(n = X)" suffix (WO4 EA045 nit, 2026-08-10 --
+   same line as the title, not its own row). Outside .wo4-viz's DOM scope (that wrapper is only
+   appended inside #dplace-results-content), so neither can use the --wo4-* custom properties. */
+.wo4-heading-value { color: #993333; }
 .wo4-heading-n { font-size: 0.78rem; font-weight: 400; }
 
 /* Ecoregions-by-realm list can run to dozens of realms -- scroll internally instead of pushing
