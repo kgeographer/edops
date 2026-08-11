@@ -56,8 +56,8 @@
   opacity: 0; transition: opacity 0.1s ease;
 }
 .wo4-viz .wo4-bar-label { fill: var(--wo4-text-secondary); font-size: 11px; }
-.wo4-viz .wo4-axis-label { fill: var(--wo4-text-muted); font-size: 11px; }
-.wo4-viz .wo4-axis-pole { fill: var(--wo4-text-muted); font-size: 10px; }
+.wo4-viz .wo4-axis-label { fill: var(--wo4-text-primary); font-size: 15px; }
+.wo4-viz .wo4-axis-pole { fill: var(--wo4-text-secondary); font-size: 12px; }
 
 /* -- Strip plots (the five-variable environment scan, WO4 EA045 2026-08-10 -- one tick per
    society, replacing the earlier mean-position meter bars) -- */
@@ -77,6 +77,15 @@
    #dplace-results-content), so this can't use the --wo4-* custom properties -- text-muted
    utility class carries the color. */
 .wo4-heading-n { font-size: 0.78rem; font-weight: 400; }
+
+/* Ecoregions-by-realm list can run to dozens of realms -- scroll internally instead of pushing
+   the page well below the fold (Karl's browser review, 2026-08-10). Two flex columns (JS-split,
+   see renderTopEcoregions()) instead of CSS multi-column -- multicol's scroll-instead-of-adding-
+   columns behavior didn't hold in testing (it added columns sideways, not a vertical scrollbar),
+   so plain overflow-y:auto on ordinary block content is used instead, which has no such
+   ambiguity. */
+.wo4-ecoregions-scroll { max-height: 50vh; overflow-y: auto; padding-right: 0.5rem; }
+.wo4-ecoregion-block { margin-bottom: 0.75rem; }
 
 /* -- Composition donut + legend -- */
 .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }

@@ -159,7 +159,8 @@
         <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
-          <p class="" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb">Dominant Subsistence (EA042) and High Gods (EA034) below are two exemplar traits from the Ethnographic Atlas dataset, chosen for their differing <i>potential</i> association with environmental settings.</p>
           <!-- Loading spinner -->
           <div id="soc-loading" class="text-center py-3" style="display:none;">
             <div class="spinner-border spinner-border-sm text-secondary" role="status">
@@ -168,11 +169,11 @@
             <span class="ms-2 text-muted">Loading societies data...</span>
           </div>
           <div id="soc-queries" class="list-group list-group-flush mb-3">
-            <a href="#" class="list-group-item list-group-item-action soc-accordion-toggle d-flex justify-content-between align-items-center" id="soc-query-subsistence">
+            <a href="#" class="list-group-item list-group-item-action soc-accordion-toggle soc-open d-flex justify-content-between align-items-center" id="soc-query-subsistence">
               <span>Dominant subsistence (EA042) <i class="bi bi-question-circle text-muted small" id="soc-info-subsistence" style="cursor:help;"></i></span>
-              <i class="bi bi-chevron-down small"></i>
+              <i class="bi bi-chevron-up small"></i>
             </a>
-            <div id="soc-subsistence-panel" class="p-2 border-start border-end border-bottom" style="display:none;">
+            <div id="soc-subsistence-panel" class="p-2 border-start border-end border-bottom" style="display:block;">
               <div id="soc-subsistence-radios" class="d-flex flex-wrap gap-2">
                 <!-- Radio buttons populated by JS -->
               </div>
@@ -180,12 +181,12 @@
               <div class="d-flex align-items-center small">
                 <span class="text-muted me-2">Show:</span>
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
-                  <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-envscan" value="envscan" checked>
+                  <label class="form-check-label" for="soc-mode-envscan">Climate envelope</label>
                 </div>
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-envscan" value="envscan">
-                  <label class="form-check-label" for="soc-mode-envscan">Climate envelope</label>
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions">
+                  <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
                 </div>
               </div>
               <!-- Composition donut target for this panel specifically. -->
@@ -2203,8 +2204,8 @@
       socSubsistenceFilter = 'all';
       document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => { r.checked = (r.value === 'all'); });
       if (resetDisplayMode) {
-        document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'ecoregions'); });
-        socDisplayMode = 'ecoregions';
+        document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'envscan'); });
+        socDisplayMode = 'envscan';
       }
     }
 
@@ -2287,6 +2288,12 @@
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
           resetReligionSelection(false);
+          // socDisplayMode is shared with the religion accordion's own "Show:" radios and only
+          // gets synced on an accordion-switch reset -- read it fresh off this accordion's own
+          // checked radio so a value pick made before ever touching "Show:" doesn't render
+          // against a stale value from a previous accordion or the initial page-load default.
+          const checkedMode = document.querySelector('input[name="soc-display-mode"]:checked');
+          if (checkedMode) socDisplayMode = checkedMode.value;
           displaySocieties(socData);
         });
       });
@@ -2499,12 +2506,29 @@
       // Render heading
       heading.textContent = `Top ecoregions for ${activeFilter}`;
 
-      // Render 2-column layout with realm subheadings
-      const html = '<div class="row small">' +
-        realmTotals.map(r => {
-          const items = r.ecos.map(e => `<li>${escapeHtml(e.name)} (${e.count})</li>`).join('');
-          return `<div class="col-6 mb-2"><strong>${escapeHtml(r.realm)}</strong><ol class="mb-0 ps-3">${items}</ol></div>`;
-        }).join('') +
+      // Two independently-flowing columns instead of a Bootstrap row/col-6 pairing, which locked
+      // left/right realm blocks into fixed-height rows (row height = the taller of the pair) and
+      // left uneven gaps wherever the two sides' list lengths didn't match. CSS multi-column
+      // (column-count + column-fill:auto) was tried first for genuine newspaper flow, but its
+      // scroll-instead-of-adding-columns behavior didn't hold in testing -- it added columns
+      // sideways instead of scrolling vertically. Greedy weight-balance (weight = 1 header line +
+      // ecoregion count) approximates the same visual balance without CSS columns at all, so
+      // overflow-y:auto on the wrapper is unambiguous plain block scrolling (Karl's browser
+      // review, 2026-08-10).
+      const renderRealmBlock = (r) => {
+        const items = r.ecos.map(e => `<li>${escapeHtml(e.name)} (${e.count})</li>`).join('');
+        return `<div class="wo4-ecoregion-block"><strong>${escapeHtml(r.realm)}</strong><ol class="mb-0 ps-3">${items}</ol></div>`;
+      };
+      const colWeights = [0, 0];
+      const cols = [[], []];
+      realmTotals.forEach(r => {
+        const target = colWeights[0] <= colWeights[1] ? 0 : 1;
+        cols[target].push(r);
+        colWeights[target] += 1 + r.ecos.length;
+      });
+
+      const html = '<div class="d-flex gap-4 small wo4-ecoregions-scroll">' +
+        cols.map(col => `<div class="flex-fill">${col.map(renderRealmBlock).join('')}</div>`).join('') +
         '</div>';
 
       content.innerHTML = html;
@@ -2682,23 +2706,9 @@
         { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
       ]));
 
-      // Plain-language read of the same two axes, so the reader isn't left to eyeball ~1,000 dots
-      // unaided (Karl, 2026-07-30: "can we do better?" -- Fishing's cloud is scattered across
-      // nearly the whole range, and the caption is what surfaces that its mean is still real
-      // signal -- "somewhat Wet, very Cool" -- that the dispersed scatter alone obscures).
-      if (sc.summary) {
-        const summaryLine = document.createElement('div');
-        summaryLine.className = 'wo4-caption';
-        summaryLine.style.color = 'var(--wo4-text-primary)';
-        summaryLine.style.fontWeight = '600';
-        summaryLine.textContent = [sc.summary.aridity, sc.summary.temperature]
-          .map((res, i) => `${i === 0 ? 'Aridity' : 'Temperature'}: ${wo4Qualifier(res)}`)
-          .join('  ·  ');
-        wrap.appendChild(summaryLine);
-      }
-
       const width = 480, height = 300;
-      const margin = { top: 10, right: 16, bottom: 40, left: 56 };
+      const margin = { top: 10, right: 16, bottom: 25, left:36 };
+      // const margin = { top: 10, right: 16, bottom: 40, left: 56 };
       const plotW = width - margin.left - margin.right;
       const plotH = height - margin.top - margin.bottom;
 
@@ -2775,16 +2785,7 @@
 
       wrap.appendChild(svg);
 
-      const caption = document.createElement('div');
-      caption.className = 'wo4-caption';
-      caption.textContent = `Confirmatory view — ${scan.hook.source}.`;
-      wrap.appendChild(caption);
-
       return wrap;
-    }
-
-    function wo4Qualifier(res) {
-      return res.qualifier === 'typical' ? 'typical' : `${res.qualifier} ${res.direction.toLowerCase()}`;
     }
 
     // WO4 EA045 strip-plot redesign (2026-08-10): one tick per society, not a mean-position bar --
