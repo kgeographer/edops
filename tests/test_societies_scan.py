@@ -88,6 +88,39 @@ def test_religion_scan_has_no_hook_metadata(client):
     assert "qualifier" in temp and "direction" in temp
 
 
+def test_religion_scan_includes_per_society_records(client):
+    # WO5 (isolates view, experimental): per-society records for client-side ancestral/
+    # geographic/environmental nearest-neighbor ranking. EA034 (no-hook) only, matching the
+    # strip-plot ticks this reuses the same percentile machinery for.
+    r = client.get("/api/societies/env-scan",
+                    params={"trait": "religion", "value": "Active, but not supporting morality"})
+    body = r.json()
+    socs = body["societies"]
+    assert len(socs) == body["n_focus"] == 40
+
+    s = socs[0]
+    assert {"soc_id", "name", "lat", "lon", "family_id", "family_name",
+            "family_global_n", "env"} <= s.keys()
+    assert set(s["env"].keys()) == {"aridity", "temperature", "seasonality", "ruggedness", "landform"}
+
+    # WO5 #2's own fix: family_global_n is the family's count across the WHOLE basin-joined
+    # corpus, not just this trait's coded set -- so it must be >= that society's family's count
+    # within this trait-filtered 40, for every resolved-family society in the response.
+    trait_family_counts = {}
+    for rec in socs:
+        if rec["family_id"] is not None:
+            trait_family_counts[rec["family_id"]] = trait_family_counts.get(rec["family_id"], 0) + 1
+    for rec in socs:
+        if rec["family_id"] is not None:
+            assert rec["family_global_n"] >= trait_family_counts[rec["family_id"]]
+
+
+def test_subsistence_scan_has_no_per_society_records(client):
+    # EA042 keeps the confirmatory scatter -- the isolates view is EA034-only (WO5 scope).
+    r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Pastoralism"})
+    assert "societies" not in r.json()
+
+
 def test_composition_note_no_dominance_threshold(client):
     r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Pastoralism"})
     body = r.json()

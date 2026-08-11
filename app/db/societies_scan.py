@@ -154,6 +154,9 @@ def run_societies_env_scan(trait: str, value: str) -> Dict[str, object]:
         for key, ticks in ticks_by_var.items():
             if key in payload["variables"]:
                 payload["variables"][key]["ticks"] = ticks
+        # WO5 (2026-08-10, experimental 'isolates' branch, EA034 only): per-society records for
+        # client-side ancestral/geographic/environmental nearest-neighbor ranking.
+        payload["societies"] = _per_society_records(sub, is_focus)
 
     return payload
 
@@ -191,6 +194,48 @@ def _per_society_ticks(sub: pd.DataFrame, is_focus: pd.Series,
             for r in rows.itertuples(index=False)
         ]
     return out
+
+
+def _per_society_records(sub: pd.DataFrame, is_focus: pd.Series,
+                          variables: Optional[Dict[str, Dict[str, str]]] = None) -> list:
+    """WO5 'Isolates' view: one record per focus-group society -- soc_id/name/lat/lon/family,
+    the family's GLOBAL count across the whole basin-joined corpus (not just this trait's coded
+    set), and its percentile position on all five VARIABLES as one vector. The global family
+    count is WO5's own spec fix (originally `anc_size` was tallied only within the trait-filtered
+    set, so a family with one D-PLACE society *total* would trivially top the ancestral-isolation
+    ranking for whatever trait that one society happened to hold -- a corpus-sampling artifact,
+    not an independent-origin signal. Shipping both counts lets the client (or a reader) tell
+    "rare within this trait" from "rare in the corpus, period" apart, rather than conflating them
+    silently.
+
+    Ancestral/geographic/environmental nearest-neighbor ranking itself happens entirely
+    client-side (n <= ~280, trivial); this only assembles the per-society inputs each ranking
+    needs. Percentiles reuse `_per_society_ticks()`'s convention (rank against the full
+    basin-joined backdrop, complete-case per variable) but pivoted from per-variable arrays to
+    one 5-D vector per society, since nearest-neighbor distance needs all five values together.
+    """
+    variables = variables or VARIABLES
+    family_global_counts = sub["family_id"].value_counts()
+
+    pct_cols = {key: sub[cfg["column"]].rank(pct=True) * 100 for key, cfg in variables.items()}
+
+    records = []
+    for idx, row in sub[is_focus].iterrows():
+        fam = row.get("family_id")
+        has_fam = pd.notna(fam)
+        env = {key: (float(pct_cols[key].loc[idx]) if pd.notna(pct_cols[key].loc[idx]) else None)
+               for key in variables}
+        records.append({
+            "soc_id": str(row["soc_id"]),
+            "name": str(row["name"]) if pd.notna(row.get("name")) else None,
+            "lat": float(row["lat"]) if pd.notna(row.get("lat")) else None,
+            "lon": float(row["lon"]) if pd.notna(row.get("lon")) else None,
+            "family_id": str(fam) if has_fam else None,
+            "family_name": family_name(fam) if has_fam else None,
+            "family_global_n": int(family_global_counts.get(fam, 0)) if has_fam else None,
+            "env": env,
+        })
+    return records
 
 
 def _build_scatter(sub: pd.DataFrame, trait_col: str, value: str, cfg: Dict[str, object]) -> Dict[str, object]:

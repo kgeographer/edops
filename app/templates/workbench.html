@@ -213,6 +213,13 @@
                   <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions">
                   <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
                 </div>
+                <!-- WO5 (2026-08-10, experimental 'isolates' branch): societies sharing this
+                     trait value with no close ancestral/geographic/environmental neighbor also
+                     sharing it -- named-society ranked lists, not an aggregate view. -->
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-isolates" value="isolates">
+                  <label class="form-check-label" for="soc-rel-mode-isolates">Isolates</label>
+                </div>
               </div>
             </div>
           </div>
@@ -2449,7 +2456,11 @@
         if (el) el.innerHTML = '';
       });
 
-      if (socDisplayMode === 'envscan') {
+      // 'envscan' and 'isolates' both need the /api/societies/env-scan payload -- renderEnvScan()
+      // fetches it once and branches internally (scatter / strips / isolates) so switching
+      // between those two doesn't re-fetch. 'ecoregions' uses the already-loaded full dataset
+      // instead and never hits that endpoint.
+      if (socDisplayMode === 'envscan' || socDisplayMode === 'isolates') {
         renderEnvScan(data);
       } else {
         renderTopEcoregions(data);
@@ -2679,6 +2690,9 @@
       if (scan.hook && scan.hook.has_hook) {
         heading.textContent = `Climate envelope for ${activeFilter}`;
         root.appendChild(wo4ClimateEnvelopeScatter(scan));
+      } else if (socDisplayMode === 'isolates') {
+        wo4SetHeadingN(heading, `Isolates for ${activeFilter}`, scan.n_focus);
+        root.appendChild(wo4IsolatesView(scan));
       } else {
         wo4SetHeadingN(heading, `Environment scan for ${activeFilter}`, scan.n_focus);
         root.appendChild(wo4EnvScanStrips(scan));
@@ -2871,6 +2885,173 @@
       caption.className = 'wo4-caption';
       caption.textContent = `Each tick is one society, positioned by its own value on that variable's global range, against all basin-joined D-PLACE societies. Hover a language family to highlight its societies within the same picture.`;
       wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    // WO5 (2026-08-10, experimental 'isolates' branch): three nearest-neighbor rankings over the
+    // EA034 focus group -- ancestral (family), geographic, environmental. Named societies, not an
+    // aggregate; deliberately no threshold/cutoff/combined score (WO5 Sec 4 -- the ranking IS the
+    // output, a reader reads down as far as interesting). n <= ~280, so O(n^2) is trivial here.
+    const WO5_ISOLATION_MEASURES = [
+      { key: 'ancestral', label: 'Ancestral', rankKey: 'anc_rank' },
+      { key: 'geographic', label: 'Geographic', rankKey: 'geo_rank' },
+      { key: 'environmental', label: 'Environmental', rankKey: 'env_rank' },
+    ];
+
+    function wo4Haversine(lat1, lon1, lat2, lon2) {
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * 6371 * Math.asin(Math.sqrt(a));   // km -- units don't matter for a ranking
+    }
+
+    function wo4EnvEuclidean(envA, envB, keys) {
+      let sum = 0;
+      keys.forEach(k => { const d = envA[k] - envB[k]; sum += d * d; });
+      return Math.sqrt(sum);
+    }
+
+    // Assigns anc_size/anc_nn/geo_nn/env_nn onto (copies of) the input records and returns the
+    // three sorted rankings plus how many societies each ranking had to drop (missing family /
+    // incomplete env data -- WO5's own "coverage note" requirement, Sec 5).
+    function wo4ComputeIsolation(societies) {
+      const ENV_KEYS = WO4_VARIABLE_ORDER;
+
+      const validFamily = societies.filter(s => s.family_id != null);
+      const familyCountsInTrait = {};
+      validFamily.forEach(s => {
+        familyCountsInTrait[s.family_id] = (familyCountsInTrait[s.family_id] || 0) + 1;
+      });
+      const validEnv = societies.filter(s => ENV_KEYS.every(k => s.env[k] != null));
+
+      // 1. Ancestral isolation -- family singletons (within THIS trait's coded set -- WO5's
+      // own anc_size definition, unchanged; family_global_n ships separately in the payload
+      // so a reader can tell a genuine trait-specific singleton from a corpus-sampling one,
+      // WO5 Sec 4's spec fix) float to the top, ties broken by distance to nearest UNRELATED
+      // instance.
+      validFamily.forEach(s => {
+        s.anc_size = familyCountsInTrait[s.family_id];
+        let best = Infinity;
+        validFamily.forEach(t => {
+          if (t.family_id !== s.family_id) {
+            const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+            if (d < best) best = d;
+          }
+        });
+        s.anc_nn = isFinite(best) ? best : null;
+      });
+
+      // 2. Geographic isolation -- unrelated-instance-only variant (WO5 Sec 3: "the more
+      // useful one" if only one is built). A society with unresolved family has no family to
+      // match against, so every other society counts as a valid neighbor for it.
+      societies.forEach(s => {
+        let best = Infinity;
+        societies.forEach(t => {
+          if (t === s) return;
+          if (s.family_id != null && t.family_id != null && t.family_id === s.family_id) return;
+          const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+          if (d < best) best = d;
+        });
+        s.geo_nn = isFinite(best) ? best : null;
+      });
+
+      // 3. Environmental isolation -- nearest OTHER member of the SAME trait group in 5-D
+      // percentile space (within-group atypicality, not distance from the global backdrop --
+      // WO5 Sec 4's spec correction; the global-distribution version is a named next increment,
+      // not this one).
+      validEnv.forEach(s => {
+        let best = Infinity;
+        validEnv.forEach(t => {
+          if (t === s) return;
+          const d = wo4EnvEuclidean(s.env, t.env, ENV_KEYS);
+          if (d < best) best = d;
+        });
+        s.env_nn = isFinite(best) ? best : null;
+      });
+
+      const ancestral = [...validFamily].sort((a, b) => a.anc_size - b.anc_size || b.anc_nn - a.anc_nn);
+      const geographic = [...societies].filter(s => s.geo_nn != null).sort((a, b) => b.geo_nn - a.geo_nn);
+      const environmental = [...validEnv].sort((a, b) => b.env_nn - a.env_nn);
+
+      ancestral.forEach((s, i) => { s.anc_rank = i + 1; });
+      geographic.forEach((s, i) => { s.geo_rank = i + 1; });
+      environmental.forEach((s, i) => { s.env_rank = i + 1; });
+
+      return {
+        ancestral, geographic, environmental,
+        n_no_family: societies.length - validFamily.length,
+        n_incomplete_env: societies.length - validEnv.length,
+      };
+    }
+
+    function wo4IsolatesView(scan) {
+      const wrap = document.createElement('div');
+      // Shallow-copy each record -- wo4ComputeIsolation() writes rank fields onto them, and
+      // scan.societies must stay clean if this view re-renders (measure-switch) without a
+      // fresh fetch.
+      const societies = scan.societies.map(s => ({ ...s, env: { ...s.env } }));
+      const result = wo4ComputeIsolation(societies);
+
+      let activeMeasure = 'ancestral';
+
+      const measureRow = document.createElement('div');
+      measureRow.className = 'wo4-isolates-measures';
+      const measureBtns = {};
+      WO5_ISOLATION_MEASURES.forEach(m => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'wo4-isolates-measure-btn' + (m.key === activeMeasure ? ' is-active' : '');
+        btn.textContent = m.label;
+        btn.addEventListener('click', () => {
+          activeMeasure = m.key;
+          Object.entries(measureBtns).forEach(([k, b]) => b.classList.toggle('is-active', k === m.key));
+          renderList();
+        });
+        measureRow.appendChild(btn);
+        measureBtns[m.key] = btn;
+      });
+      wrap.appendChild(measureRow);
+
+      const list = document.createElement('div');
+      list.className = 'wo4-isolates-list';
+      wrap.appendChild(list);
+
+      function renderList() {
+        list.innerHTML = '';
+        const rankKey = WO5_ISOLATION_MEASURES.find(m => m.key === activeMeasure).rankKey;
+        const sorted = [...societies].sort((a, b) => {
+          const ra = a[rankKey], rb = b[rankKey];
+          if (ra == null && rb == null) return 0;
+          if (ra == null) return 1;
+          if (rb == null) return -1;
+          return ra - rb;
+        });
+        sorted.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'wo4-isolates-row';
+          const name = document.createElement('span');
+          name.className = 'wo4-isolates-name';
+          name.textContent = s.name || s.soc_id;
+          const ranks = document.createElement('span');
+          ranks.className = 'wo4-isolates-ranks';
+          ranks.textContent = `anc ${s.anc_rank ?? '—'}   geo ${s.geo_rank ?? '—'}   env ${s.env_rank ?? '—'}`;
+          row.append(name, ranks);
+          row.addEventListener('mouseenter', () => wo4HighlightMarkers([s.soc_id]));
+          row.addEventListener('mouseleave', wo4RestoreMarkers);
+          list.appendChild(row);
+        });
+      }
+      renderList();
+
+      const coverage = document.createElement('div');
+      coverage.className = 'wo4-caption';
+      coverage.textContent = `${result.n_no_family} of ${societies.length} have no resolved language ` +
+        `family (excluded from the ancestral ranking); ${result.n_incomplete_env} lack complete ` +
+        `environmental data (excluded from the environmental ranking). The three lists cover ` +
+        `different sets of societies.`;
+      wrap.appendChild(coverage);
 
       return wrap;
     }
