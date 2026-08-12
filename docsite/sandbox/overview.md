@@ -43,30 +43,42 @@ For both forks, the **Get signature** button always fires the query for the curr
 
 ## The seven tabs
 
-**Map** shows the basin boundaries for the current neighborhood scope. Selecting a variable from the
+### Map
+
+Shows the basin boundaries for the current neighborhood scope. Selecting a variable from the
 dropdown list paints all basins globally while focused on the current neighborhood, providing useful context. 
 
-**Signature** lists every requested variable, organized into accordions by band.
+### Signature
 
-**Analysis** is auto-generated interpretation, not raw values: a basin-context table (upstream
+Lists every requested variable, organized into accordions by band.
+
+### Analysis
+
+Auto-generated interpretation, not raw values: a basin-context table (upstream
 catchment area, distance to ocean outlet, drainage type), a local–upstream divergence table
 comparing "local" (s) against "upstream" (u) values for key variables, and a water-provenance
 classification — *Endorheic*, *Coastal terminal*, *Exogenous water supply*, *Catchment-uniform*,
 *Local-dominant*, or *Undetermined* (the last when the upstream catchment is too small at the
 current level to resolve distant sources — switching to L06 usually resolves it).
 
-**Seasonality** plots monthly precipitation and temperature as both a histogram and a radial
+### Seasonality
+
+Plots monthly precipitation and temperature as both a histogram and a radial
 (polar) chart, with an auto-generated prose summary of the precip/temp phase relationship
 (e.g. Mediterranean-type anti-phase vs. monsoon-type co-incidence) and a stats table of derived
 seasonality variables (precip concentration, peak month, precip–temp phase offset).
 
-**Context** answers "how typical is this basin?" — a table of global percentiles for seven key
+### Context
+
+Answers "how typical is this basin?" — a table of global percentiles for seven key
 variables, computed two ways: against all basins worldwide, and against just the basins within a
 chosen radius (250/500/1000/2500 km, default 500) of this one — plus a map painting the mean
 value of a chosen variable across that radius. The two percentile columns can diverge sharply: a
 basin can be unremarkable globally but an outlier regionally, or vice versa.
 
-**Similarity** paints every basin that satisfies *all* the tolerance conditions of a chosen
+### Similarity
+
+Paints every basin that satisfies *all* the tolerance conditions of a chosen
 regime lens — a non-compensatory conjunction, not a distance ranking. Four lenses are available:
 Precipitation regime, Temperature regime, Climate (precip + temp combined), and Terrain regime.
 Each lens exposes a subset of tolerance dials relevant to it (e.g. precipitation shape/annual
@@ -74,7 +86,9 @@ total/amplitude for the precip lens; elevation/relief range for terrain), each a
 three-way choice — there's no single strict/moderate/loose ladder across the whole panel, each
 dial is independently query-relative.
 
-**Atlas** is the one tab that isn't about the currently-selected place — it's a standing world
+### Atlas
+
+The one tab that isn't about the currently-selected place — it's a standing world
 map of precipitation regime classification, viewable by Modality (Arid, Even year-round, One wet
 season, Two wet seasons, Undetermined) or Phase (which season the wet period falls in, e.g.
 "Mediterranean" = one wet season with cool-season rain).
