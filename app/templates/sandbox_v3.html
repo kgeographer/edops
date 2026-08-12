@@ -75,7 +75,7 @@
               <!-- WHG resolve field -->
               <div class="input-group input-group-sm mb-1">
                 <input type="text" id="v3-place-input" class="form-control"
-                       placeholder="Name (+ optional ', Country') or lat,Lon">
+                       placeholder="Enter name (+ optional ', Country') or Lat,Lon">
                 <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
               </div>
               <!-- WHG status line (hidden at cold start) -->
@@ -348,10 +348,10 @@
       <div id="v3-intro" class="px-1 mt-2">
 
         <!-- Intro text: hidden after first scope render -->
-        <div id="v3-intro-text" class="text-muted small">
+        <div id="v3-intro-text" >
           <p><strong>EDOPS Signatures</strong> deliver multi-band environmental profiles for any
           point or area on Earth, drawn from global datasets covering hydrology, climate, terrain,
-          ecoregion, and historical land use.</p>
+            ecoregion, and historical land use. See the <a href="/docs/sandbox/overview/" target="_blank">page documentation</a> to learn more.</p>
           <p>Choose <em>Settlements</em> to look up a place by name or coordinates.
           Choose <em>Polities</em> to query a historical polity by name and time slice.</p>
         </div>
@@ -381,7 +381,7 @@
             </optgroup>
           </select>
           <div id="v3-basin-status"
-               style="font-size:0.75rem; color:#6c757d; min-height:1.2em; margin-top:0.4rem;"></div>
+               style="font-size:0.85rem; color:#6c757d; min-height:1.2em; margin-top:0.4rem;"></div>
           <div id="v3-basin-legend" style="display:none; margin-top:0.75rem;">
             <div id="v3-basin-legend-bar"
                  style="height:12px; border-radius:2px; margin-bottom:0.25rem;"></div>
@@ -493,7 +493,7 @@
         <div class="tab-pane fade" id="v3-pane-context" role="tabpanel">
           <p class="text-muted mt-3 px-1" id="v3-ctx-placeholder">Click a location and run <strong>Get signature</strong> to load context.</p>
           <div id="v3-ctx-content" style="display:none;">
-            <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center justify-content-between px-1 flex-wrap gap-2">
               <div class="d-flex align-items-baseline gap-2">
                 <div id="v3-ctx-title"></div>
                 <span class="text-muted small" id="v3-ctx-count"></span>
@@ -502,13 +502,13 @@
                 <span class="text-muted small fw-semibold">Within:</span>
                 <div class="btn-group btn-group-sm" role="group" id="v3-ctx-radius-group">
                   <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-250" value="250" autocomplete="off">
-                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-250" style="font-size:0.75rem; line-height:1.6;">250 km</label>
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-250" style="font-size:0.85rem; line-height:1.6;">250 km</label>
                   <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-500" value="500" autocomplete="off" checked>
-                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-500" style="font-size:0.75rem; line-height:1.6;">500 km</label>
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-500" style="font-size:0.85rem; line-height:1.6;">500 km</label>
                   <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-1000" value="1000" autocomplete="off">
-                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-1000" style="font-size:0.75rem; line-height:1.6;">1000 km</label>
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-1000" style="font-size:0.85rem; line-height:1.6;">1000 km</label>
                   <input type="radio" class="btn-check" name="v3ctx-radius" id="v3ctx-radius-2500" value="2500" autocomplete="off">
-                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-2500" style="font-size:0.75rem; line-height:1.6;">2500 km</label>
+                  <label class="btn btn-outline-secondary py-0" for="v3ctx-radius-2500" style="font-size:0.85rem; line-height:1.6;">2500 km</label>
                 </div>
               </div>
             </div>
@@ -524,15 +524,15 @@
                 <tbody id="v3-ctx-tbody"></tbody>
               </table>
             </div>
-            <p class="text-muted px-1" style="font-size:0.72rem;">
-              "All basins" includes the full land surface at this level — deserts, ice sheets,
-              and uninhabited terrain alongside settled regions.
-            </p>
+<!--            <p class="text-muted px-1" style="font-size:0.72rem;">-->
+<!--              "All basins" includes the full land surface at this level — deserts, ice sheets,-->
+<!--              and uninhabited terrain alongside settled regions.-->
+<!--            </p>-->
             <div id="v3-ctx-map" style="height:420px; border-radius:6px;"></div>
             <div class="d-flex align-items-center gap-2 px-1 pt-2" id="v3-ctx-legend" style="display:none;">
-              <span class="text-muted" id="v3-ctx-legend-low" style="font-size:0.75rem;"></span>
+              <span class="text-muted" id="v3-ctx-legend-low" style="font-size:0.85rem;"></span>
               <div id="v3-ctx-legend-bar" style="width:120px; height:8px; border-radius:3px; border:1px solid #ddd;"></div>
-              <span class="text-muted" id="v3-ctx-legend-high" style="font-size:0.75rem;"></span>
+              <span class="text-muted" id="v3-ctx-legend-high" style="font-size:0.85rem;"></span>
             </div>
           </div>
         </div>
@@ -544,7 +544,7 @@
           <!-- Conjunction panel (WO6c) — painted set, declared bands. The validated instrument;
                the pre-WO6 composite-distance panel this replaced was retired in CITYKIN WO1. -->
           <div id="v3-cj-content" style="display:none;">
-            <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center justify-content-between px-1 flex-wrap gap-2">
               <div id="v3-cj-title"></div>
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="text-muted small fw-semibold">Lens:</span>
@@ -558,9 +558,11 @@
             </div>
 
             <!-- Declared bands, per-variable units. No strict/moderate/loose ladder. -->
-            <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.75rem;">
+            <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.85rem;">
               <div class="cj-band" data-cond="precip_shape">
-                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)</label>
+                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Shape"></i>
+                </label>
                 <select id="v3-cj-corr" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="0.85">0.85 · broad</option>
                   <option value="0.90" selected>0.90</option>
@@ -568,7 +570,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="precip_magnitude">
-                <label class="text-muted d-block mb-0">Annual total (×/÷)</label>
+                <label class="text-muted d-block mb-0">Annual total (×/÷)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Annual total"></i>
+                </label>
                 <select id="v3-cj-ratio" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="1.25">1.25 · tight</option>
                   <option value="1.5" selected>1.5</option>
@@ -576,7 +580,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="precip_amplitude_cv">
-                <label class="text-muted d-block mb-0">Amplitude (±cv)</label>
+                <label class="text-muted d-block mb-0">Amplitude (±cv)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Amplitude"></i>
+                </label>
                 <select id="v3-cj-cv" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="0.10">0.10 · tight</option>
                   <option value="0.15" selected>0.15</option>
@@ -584,7 +590,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="temp_level">
-                <label class="text-muted d-block mb-0">Temp level (±°C)</label>
+                <label class="text-muted d-block mb-0">Temp level (±°C)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Temp level"></i>
+                </label>
                 <select id="v3-cj-tlevel" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="2">2 · tight</option>
                   <option value="3" selected>3</option>
@@ -592,7 +600,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="temp_range">
-                <label class="text-muted d-block mb-0">Temp range (±°C)</label>
+                <label class="text-muted d-block mb-0">Temp range (±°C)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Temp range"></i>
+                </label>
                 <select id="v3-cj-trange" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="2">2 · tight</option>
                   <option value="4" selected>4</option>
@@ -600,7 +610,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="terrain_elev">
-                <label class="text-muted d-block mb-0">Elevation (±m)</label>
+                <label class="text-muted d-block mb-0">Elevation (±m)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Terrain>Elevation"></i>
+                </label>
                 <select id="v3-cj-elev" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="25">25 · tight</option>
                   <option value="50" selected>50</option>
@@ -608,7 +620,9 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="terrain_relief">
-                <label class="text-muted d-block mb-0">Relief range (±m)</label>
+                <label class="text-muted d-block mb-0">Relief range (±m)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Terrain>Relief range"></i>
+                </label>
                 <select id="v3-cj-relief" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="50">50 · tight</option>
                   <option value="100" selected>100</option>
@@ -618,7 +632,7 @@
             </div>
 
             <div id="v3-cj-readout" class="px-1 pb-2" style="font-size:0.9rem;"></div>
-            <div id="v3-cj-legend" class="d-flex align-items-center gap-2 px-1 pb-1" style="font-size:0.75rem;"></div>
+            <div id="v3-cj-legend" class="d-flex align-items-center gap-2 px-1 pb-1" style="font-size:0.85rem;"></div>
             <div id="v3-cj-map" style="height:420px; border-radius:6px;"></div>
             <p id="v3-cj-container" class="text-muted px-1 pt-2 mb-0" style="font-size:0.78rem;"></p>
           </div>
@@ -644,7 +658,7 @@
           </div>
           <div id="v3-atlas-legend" class="d-flex align-items-center gap-3 px-1 pb-2 flex-wrap" style="font-size:0.78rem;"></div>
           <div id="v3-atlas-map" style="height:460px; border-radius:6px;"></div>
-          <p id="v3-atlas-note" class="text-muted px-1 pt-2 mb-0" style="font-size:0.75rem;">A global view — no place is queried. Colours are declared climate classes.</p>
+          <p id="v3-atlas-note" class="text-muted px-1 pt-2 mb-0" style="font-size:0.85rem;">A global view — no place is queried. Colours are declared climate classes.</p>
         </div>
 
       </div>
@@ -1085,10 +1099,10 @@
       if (alts.length) {
         const shown = alts.slice(0, 3).map(escapeHtml).join(', ');
         const rest  = alts.slice(3);
-        altHtml = `<span class="text-muted d-block" style="font-size:0.75rem;">${shown}`;
+        altHtml = `<span class="text-muted d-block" style="font-size:0.85rem;">${shown}`;
         if (rest.length) {
           altHtml += ` <a href="#" class="whg-more-link text-muted"
-            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.75rem;">+${rest.length} more</a>`;
+            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.85rem;">+${rest.length} more</a>`;
         }
         altHtml += '</span>';
       }
@@ -1357,7 +1371,7 @@
     const content = document.getElementById('v3-seas-content');
     content.style.display = '';
     content.innerHTML = `
-      <div class="px-1 pt-2">
+      <div class="px-1">
         ${nameHtml}
         <div style="font-size:0.8rem;" class="text-muted">L0${level} basin · monthly climatology (BasinATLAS)</div>
       </div>
@@ -1849,7 +1863,7 @@
       _ctxRows = ctxData.rows || [];
       _ctxPopulation = popData;
       document.getElementById('v3-ctx-count').textContent =
-        `${popData.radius_count} basins within ${radius} km`;
+        `${popData.radius_count} surrounding basins within ${radius} km`;
 
       if (!_ctxRows.find(r => r.variable === _ctxCurrentVariable)) {
         _ctxCurrentVariable = _ctxRows.length ? _ctxRows[0].variable : 'pre_mm_syr';
@@ -2152,7 +2166,7 @@
       ? `<h5 class="mb-2">${escapeHtml(_currentPlaceName)}${analysisRingLabel ? ` · ${escapeHtml(analysisRingLabel)}` : ''}</h5>` : '';
 
     el.innerHTML = `
-      <div class="pt-3 px-1" style="font-size:0.85rem;">
+      <div class="px-1" style="font-size:0.85rem;">
         ${analysisNameHtml}
         ${levelNote}
 
@@ -2961,7 +2975,7 @@
 
   function renderTimeMarginal(rows) {
     if (!rows || rows.length < 2) return '';
-    const W = 260, CH = 56, LH = 14;
+    const W = 170, CH = 56, LH = 14;
     const p10s  = rows.map(r => r.detail?.distribution?.p10 ?? r.representative_raw);
     const p90s  = rows.map(r => r.detail?.distribution?.p90 ?? r.representative_raw);
     const means = rows.map(r => r.representative_raw);
@@ -2999,23 +3013,27 @@
     let html = `<div class="px-2 py-2">`;
 
     if (LMR_VARS.some(v => byVar[v])) {
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-bottom:6px;">
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-bottom:6px;">
         LMR climate &mdash; ${nLmr} cells &middot; ${spanStr}</div>`;
       for (const v of LMR_VARS) {
         const vRows = byVar[v];
         if (!vRows) continue;
         const midRow = vRows[Math.floor(vRows.length / 2)];
-        html += `<div class="mb-3">
+        html += `<div class="mb-3 pb-3" style="border-bottom:1px solid #dee2e6;">
           <div style="font-size:0.78rem;color:#000;margin-bottom:2px;">${LMR_LABELS[v] || v}</div>
-          ${renderTimeMarginal(vRows)}
-          <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
-            <span>Year</span>
-            <input type="range" id="v3-t-sl-${v}"
-                   min="${vRows[0].year}" max="${vRows[vRows.length-1].year}"
-                   step="1" value="${midRow.year}" style="width:160px;height:14px;">
-            <span id="v3-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
+          <div class="d-flex align-items-start" style="gap:24px;">
+            <div style="flex:none;">
+              <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {})}</div>
+              <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
+                <span>Year</span>
+                <input type="range" id="v3-t-sl-${v}"
+                       min="${vRows[0].year}" max="${vRows[vRows.length-1].year}"
+                       step="1" value="${midRow.year}" style="width:110px;height:14px;">
+                <span id="v3-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
+              </div>
+            </div>
+            <div style="flex:none;">${renderTimeMarginal(vRows)}</div>
           </div>
-          <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {})}</div>
         </div>`;
       }
     }
@@ -3024,7 +3042,7 @@
     if (hydePresent.length) {
       const epochRows    = byVar[hydePresent[0]];
       const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
         <table class="table table-sm mb-1" style="font-size:0.78rem;">
           <thead><tr><th></th>`;
       for (const r of epochRows) {
@@ -3054,7 +3072,7 @@
         ? ` <a href="#" style="font-weight:normal;font-size:0.7rem;"
                onclick="(function(el){var tb=document.getElementById('v3-evolv-minor');var hidden=tb.style.display==='none';tb.style.display=hidden?'':'none';el.textContent=hidden?'show fewer':'show all ${allEvolv.length}'})(this);return false"
             >show all ${allEvolv.length}</a>` : '';
-      html += `<div style="font-size:0.75rem;font-weight:600;color:#000;margin-top:4px;margin-bottom:4px;">
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:14px;margin-bottom:4px;">
         eVolv2k volcanic events — ${shown.length}${showToggle ? ` &ge; ${VSSI_THRESHOLD} Tg S` : ''}${toggleLink}</div>
         <table class="table table-sm mb-0" style="font-size:0.78rem;">
           <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead><tbody>`;
@@ -3140,7 +3158,7 @@
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
         <h5 class="mb-0">${headingHtml}</h5>
-        <a href="#" class="text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle"></i></a>
+        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle"></i></a>
       </div>
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
     for (const band of BAND_ORDER) {
@@ -3181,6 +3199,19 @@
     </tr>`;
   }
 
+  // Compact percentile-position indicator: a dot on a plain track, no distribution implied.
+  // Used in place of the coherence badge + histogram for n_units===1 rows (see renderLeaf()) --
+  // that machinery is only meaningful across multiple basins.
+  function renderPercentileTrack(score) {
+    const W = 90, cy = 5;
+    const clamped = Math.max(0, Math.min(100, score));
+    const x = 2 + (clamped / 100) * (W - 4);
+    return `<svg width="${W}" height="10" style="vertical-align:middle;">
+      <line x1="2" y1="${cy}" x2="${W-2}" y2="${cy}" stroke="#ccc" stroke-width="1.5"/>
+      <circle cx="${x.toFixed(1)}" cy="${cy}" r="3" fill="#2c5f8a"/>
+    </svg>`;
+  }
+
   function renderLeaf(row) {
     const score = row.representative_score;
     const raw   = row.representative_raw;
@@ -3188,14 +3219,26 @@
     switch (row.method) {
       case 'area_weighted': {
         const s = score !== null && score !== undefined
-          ? `${score.toFixed(1)}<span class="ms-1" style="font-size:0.75rem;">pct</span>` : '—';
+          ? `${score.toFixed(1)} percentile` : '—';
+        if (row.n_units === 1) {
+          // Single-basin queries (containing-basin lookups) have exactly one score -- p90/p10
+          // both collapse to that one value, so spread is always 0 and coherence is always
+          // 'concentrated' by construction, never a real signal (confirmed in engine.py's
+          // aggregate_b1()). The histogram's narrow axis window is likewise fabricated: a +-0.5
+          // fallback window _weighted_histogram() draws around the single value so it has
+          // something to render. Neither means anything here -- a one-line position indicator
+          // instead (Karl, 2026-08-12). Coherence badge + histogram stay as they were for
+          // multi-basin rows (settlement>buffer, polity), where they're real.
+          const track = (score !== null && score !== undefined) ? renderPercentileTrack(score) : '';
+          return `<div class="d-flex align-items-center gap-2">${s}${track}</div>`;
+        }
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
         return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {})}`;
       }
       case 'dominant_basin': {
-        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
         const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
@@ -3206,13 +3249,13 @@
         return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
       case 'distribution_only': {
         const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
-          ? `<div>${score.toFixed(1)}<span class="ms-1" style="font-size:0.75rem;">pct</span></div>` : '';
+          ? `<div>${score.toFixed(1)} percentile</div>` : '';
         const caveat = row.score_suppressed
           ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
         return `${scoreHtml}<div style="margin-top:3px;">${renderRangeBar(det)}</div>${caveat}`;
       }
       case 'extreme': {
-        const s = score !== null ? `${score.toFixed(1)} pct` : '—';
+        const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
         const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
