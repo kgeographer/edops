@@ -558,10 +558,11 @@
             </div>
 
             <!-- Declared bands, per-variable units. No strict/moderate/loose ladder. -->
+            <div class="text-muted px-1" style="font-size:0.8rem; font-style: italic;">Adjust similarity thresholds for:</div>
             <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.85rem;">
               <div class="cj-band" data-cond="precip_magnitude">
-                <label class="text-muted d-block mb-0">Annual total (×/÷)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Annual total"></i>
+                <label class="text-muted d-block mb-0">Magnitude
+                  <i class="bi bi-question-circle edops-help" data-help-text="How much a basin's total annual rainfall may differ from the query basin's, as a multiplicative factor — 1.5 allows anywhere from two-thirds to one-and-a-half times as much."></i>
                 </label>
                 <select id="v3-cj-ratio" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="1.25">1.25 · tight</option>
@@ -570,8 +571,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="precip_amplitude_cv">
-                <label class="text-muted d-block mb-0">Amplitude (±cv)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Amplitude"></i>
+                <label class="text-muted d-block mb-0">Amplitude
+                  <i class="bi bi-question-circle edops-help" data-help-text="How closely a basin's month-to-month rainfall variability must match the query basin's — how sharply seasonal the rainfall is."></i>
                 </label>
                 <select id="v3-cj-cv" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="0.10">0.10 · tight</option>
@@ -580,8 +581,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="precip_shape">
-                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Shape"></i>
+                <label class="text-muted d-block mb-0">Shape
+                  <i class="bi bi-question-circle edops-help" data-help-text="How strongly a basin's month-by-month rainfall pattern must correlate with the query basin's — compares the timing of wet and dry months."></i>
                 </label>
                 <select id="v3-cj-corr" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="0.85">0.85 · broad</option>
@@ -590,8 +591,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="temp_level">
-                <label class="text-muted d-block mb-0">Temp level (±°C)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Temp level"></i>
+                <label class="text-muted d-block mb-0">Temp level
+                  <i class="bi bi-question-circle edops-help" data-help-text="How close a basin's average annual temperature must be to the query basin's, in degrees Celsius."></i>
                 </label>
                 <select id="v3-cj-tlevel" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="2">2 · tight</option>
@@ -600,8 +601,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="temp_range">
-                <label class="text-muted d-block mb-0">Temp range (±°C)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Temp range"></i>
+                <label class="text-muted d-block mb-0">Temp range
+                  <i class="bi bi-question-circle edops-help" data-help-text="How close a basin's seasonal temperature swing — warmest month minus coldest — must be to the query basin's."></i>
                 </label>
                 <select id="v3-cj-trange" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="2">2 · tight</option>
@@ -610,8 +611,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="terrain_elev">
-                <label class="text-muted d-block mb-0">Elevation (±m)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Terrain>Elevation"></i>
+                <label class="text-muted d-block mb-0">Elevation
+                  <i class="bi bi-question-circle edops-help" data-help-text="How close a basin's average elevation must be to the query basin's, in meters."></i>
                 </label>
                 <select id="v3-cj-elev" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="25">25 · tight</option>
@@ -620,8 +621,8 @@
                 </select>
               </div>
               <div class="cj-band" data-cond="terrain_relief">
-                <label class="text-muted d-block mb-0">Relief range (±m)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Terrain>Relief range"></i>
+                <label class="text-muted d-block mb-0">Relief range
+                  <i class="bi bi-question-circle edops-help" data-help-text="How close a basin's internal relief — highest point minus lowest — must be to the query basin's, in meters."></i>
                 </label>
                 <select id="v3-cj-relief" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
                   <option value="50">50 · tight</option>
