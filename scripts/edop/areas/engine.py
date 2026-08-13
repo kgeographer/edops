@@ -430,7 +430,7 @@ def load_catalog(level=6, codebook_path=None):
     -------
     DataFrame indexed by api_key; columns:
         schema_key, su, db_col, kind, band, position_method,
-        typology_cluster, zero_fraction, derived (bool)
+        typology_cluster, zero_fraction, derived (bool), units
 
     Integrity note
     --------------
@@ -466,6 +466,7 @@ def load_catalog(level=6, codebook_path=None):
             pm         = (rec.get('position_method')   or '').strip() or None
             col_s      = (rec.get('basin08_col_s')     or '').strip() or None
             col_u      = (rec.get('basin08_col_u')     or '').strip() or None
+            units      = (rec.get('units')             or '').strip() or None
 
             def _emit(ak, su, col, zf_raw):
                 if not ak or ak in _SKIP_API_KEYS:
@@ -498,6 +499,7 @@ def load_catalog(level=6, codebook_path=None):
                     'typology_cluster': tc,
                     'zero_fraction':    _parse_zf(zf_raw),
                     'derived':          is_derived,
+                    'units':            units,
                 })
 
             _emit(
@@ -1997,6 +1999,62 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
     return rows
 
 
+# ── Single-basin raw-value backfill (Karl's browser review, 2026-08-12) ────────
+
+def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
+    """
+    n_units==1 post-pass, called only when basin_set has exactly one row (the only caller
+    is single_basin_signature() -- reached directly for a basin lookup, a basin-ring core,
+    or a basin-ring member click, all via /api/areas?type=single_basin).
+
+    B1 (area_weighted) and B5's distribution_only branch never compute
+    representative_raw -- deliberately deferred for the multi-basin case (a native-unit
+    weighted mean is a harder problem there). But there is no aggregation to defer for a
+    single basin: the raw value is just that basin's own column, already sitting in raw_df
+    from attach_values(). This backfills it directly -- a lookup, not a computation.
+
+    Also clears 'coherence' ('concentrated'/'spread') on these same rows: at n=1, p10/p90
+    always collapse to the single score (spread is always exactly 0 by construction), so
+    'concentrated' was firing unconditionally and never carried real signal.
+
+    Deliberately NOT touched: status, representative_score, the zero-fraction
+    outside_active_domain guard (B1's own domain-validity check, real regardless of n), and
+    B6 modality (skipped entirely for n=1 by the caller, not run_modality=False here) --
+    those are meaningful independent of basin count and stay exactly as B1/B5 computed them.
+    B2 (dominant_basin) and B5's extreme branch are untouched too: both already populate
+    representative_raw (their whole method is "pick one carrier basin"), and neither ever
+    sets coherence.
+
+    Parameters
+    ----------
+    rows     : list of make_row dicts (B1 + B5 rows; mutated in place)
+    hybas_id : int -- the single basin's ID
+    raw_df   : DataFrame -- hybas_id as index; native-unit raw value columns, keyed by
+               api_key (the persist view already aliases db_col -> api_key), not db_col
+    meta_df  : DataFrame -- api_key as index; used only as a validity check (var in index)
+
+    Returns
+    -------
+    The same list, mutated in place (returned for call-site convenience).
+    """
+    for row in rows:
+        if row['method'] not in ('area_weighted', 'distribution_only'):
+            continue
+        var = row['variable']
+        if row['representative_raw'] is None and row['status'] == 'ok':
+            # raw_df's columns are already the friendly api_key names, not db_col -- the
+            # persist view aliases them (confirmed directly: db_col='ele_mt_smx' but
+            # raw_df's column is 'elev_max').
+            if var in raw_df.columns and hybas_id in raw_df.index:
+                v = raw_df.loc[hybas_id, var]
+                if pd.notna(v):
+                    row['representative_raw'] = round(float(v), 3)
+                    if row['units'] is None and var in meta_df.index:
+                        row['units'] = meta_df.loc[var, 'units']
+        row['coherence'] = None
+    return rows
+
+
 # ── WO11b: assembly ───────────────────────────────────────────────────────────
 
 def _areal_signature_from_basin_set(
@@ -2046,7 +2104,20 @@ def _areal_signature_from_basin_set(
     if run_modality:
         apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
 
+    # Single-basin sets (n_units==1): backfill representative_raw and clear the meaningless
+    # coherence badge on B1/B5 rows -- see _backfill_single_basin_raw()'s own docstring.
+    if len(basin_set) == 1:
+        bs_indexed = basin_set.set_index('hybas_id') if 'hybas_id' in basin_set.columns else basin_set
+        hybas_id = int(bs_indexed.index[0])
+        _backfill_single_basin_raw(b1_rows + b5_rows, hybas_id, raw_df, meta_df)
+
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    # Raw DB column name alongside the friendly api_key -- static catalog lookup, same for
+    # every neighborhood type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
+    for row in basin_rows:
+        row['db_col'] = meta_df.loc[row['variable'], 'db_col'] \
+            if row['variable'] in meta_df.index else None
 
     # ── 5. Band T path (gated on span presence) ───────────────────────────────
     want_t    = (bands is None or 'T' in bands)

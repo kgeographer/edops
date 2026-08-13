@@ -404,13 +404,30 @@ class TestSingleBasinDegeneracy:
             assert r['coverage'] == 1.0, \
                 f'{r["variable"]}: coverage={r["coverage"]}, expected 1.0'
 
-    def test_b1_all_concentrated(self, sb_rows):
-        """n=1: all B1 rows are concentrated (spread is impossible)."""
-        b1 = [r for r in sb_rows
-              if r['method'] == 'area_weighted' and r['status'] == 'ok']
-        for r in b1:
-            assert r['coherence'] == 'concentrated', \
-                f'{r["variable"]}: n=1 B1 coherence={r["coherence"]!r}'
+    def test_b1_coherence_cleared(self, sb_rows):
+        """n=1: coherence is always None on B1/B5 rows, not 'concentrated'.
+
+        Was pinned the other way (always 'concentrated') until 2026-08-12: spread is
+        impossible at n=1 (p10/p90 collapse to the one score), so 'concentrated' fired
+        unconditionally and never carried real signal -- not a meaningful contract to keep.
+        _backfill_single_basin_raw() now clears it explicitly instead.
+        """
+        b1_b5 = [r for r in sb_rows
+                 if r['method'] in ('area_weighted', 'distribution_only') and r['status'] == 'ok']
+        assert b1_b5, 'expected at least one ok B1/B5 row to check'
+        for r in b1_b5:
+            assert r['coherence'] is None, \
+                f'{r["variable"]}: n=1 coherence={r["coherence"]!r}, expected None'
+
+    def test_b1_raw_backfilled(self, sb_rows):
+        """n=1: representative_raw is populated on ok B1/B5 rows -- no aggregation needed
+        to defer for a single basin, the raw value is just that basin's own column."""
+        b1_b5 = [r for r in sb_rows
+                 if r['method'] in ('area_weighted', 'distribution_only') and r['status'] == 'ok']
+        assert b1_b5, 'expected at least one ok B1/B5 row to check'
+        for r in b1_b5:
+            assert r['representative_raw'] is not None, \
+                f'{r["variable"]}: n=1 representative_raw is still None'
 
     def test_no_two_regime_at_n1(self, sb_rows):
         """n=1: modality is never two_regime (single basin cannot be bimodal)."""
