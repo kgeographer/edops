@@ -549,26 +549,16 @@
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="text-muted small fw-semibold">Lens:</span>
                 <select id="v3-cj-lens" class="form-select form-select-sm" style="width:auto;">
-                  <option value="climate.precip" selected>Precipitation regime</option>
-                  <option value="climate.temp">Temperature regime</option>
+                  <option value="climate.precip" selected>Precipitation</option>
+                  <option value="climate.temp">Temperature</option>
                   <option value="climate.union">Climate (precip + temp)</option>
-                  <option value="terrain.regime">Terrain regime</option>
+                  <option value="terrain.regime">Terrain</option>
                 </select>
               </div>
             </div>
 
             <!-- Declared bands, per-variable units. No strict/moderate/loose ladder. -->
             <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.85rem;">
-              <div class="cj-band" data-cond="precip_shape">
-                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)
-                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Shape"></i>
-                </label>
-                <select id="v3-cj-corr" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
-                  <option value="0.85">0.85 · broad</option>
-                  <option value="0.90" selected>0.90</option>
-                  <option value="0.95">0.95 · tight</option>
-                </select>
-              </div>
               <div class="cj-band" data-cond="precip_magnitude">
                 <label class="text-muted d-block mb-0">Annual total (×/÷)
                   <i class="bi bi-question-circle edops-help" data-help-text="TODO: Annual total"></i>
@@ -587,6 +577,16 @@
                   <option value="0.10">0.10 · tight</option>
                   <option value="0.15" selected>0.15</option>
                   <option value="0.25">0.25 · broad</option>
+                </select>
+              </div>
+              <div class="cj-band" data-cond="precip_shape">
+                <label class="text-muted d-block mb-0">Shape (r&nbsp;≥)
+                  <i class="bi bi-question-circle edops-help" data-help-text="TODO: Shape"></i>
+                </label>
+                <select id="v3-cj-corr" class="form-select form-select-sm py-0" style="width:auto; font-size:0.8rem;">
+                  <option value="0.85">0.85 · broad</option>
+                  <option value="0.90" selected>0.90</option>
+                  <option value="0.95">0.95 · tight</option>
                 </select>
               </div>
               <div class="cj-band" data-cond="temp_level">
@@ -3193,8 +3193,10 @@
     const resolverYear = row.detail?.distribution?.resolver_year;
     const asOf = resolverYear != null
       ? `<div style="font-size:0.65rem;color:#000;">as of ${resolverYear} CE</div>` : '';
+    const dbCol = row.db_col
+      ? ` <span style="font-size:0.72rem;color:#000;">(${escapeHtml(row.db_col)})</span>` : '';
     return `<tr>
-      <td class="ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}${asOf}</td>
+      <td class="ps-3" style="width:42%;">${escapeHtml(humanizeKey(row.variable))}${dbCol}${asOf}</td>
       <td>${renderLeaf(row)}</td>
     </tr>`;
   }
@@ -3212,26 +3214,36 @@
     </svg>`;
   }
 
+  // Shared by area_weighted and distribution_only when n_units===1: raw value (with units)
+  // + percentile + a one-line position indicator. Single-basin queries (containing-basin
+  // lookups, basin-ring core/member clicks) have exactly one score, so the coherence badge
+  // ('concentrated'/'spread') and histogram/range-bar are trivially degenerate there --
+  // spread is always 0, the axis window a fabricated +-0.5 fallback around the one value.
+  // engine.py's _backfill_single_basin_raw() (2026-08-12) now populates representative_raw
+  // for exactly this case (previously always null -- deferred for real multi-basin
+  // aggregation, but there's no aggregation to defer for one basin) and clears coherence.
+  // Multi-basin rows (settlement>buffer, polity) are untouched below -- badge + histogram/
+  // range-bar stay, since there the distribution is real.
+  function renderSingleBasinContinuousLeaf(row) {
+    const score = row.representative_score;
+    const raw   = row.representative_raw;
+    const rawHtml = raw !== null && raw !== undefined
+      ? `${fmtNum(raw)}${row.units ? ' ' + escapeHtml(row.units) : ''}` : null;
+    const pctHtml = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+    const track   = score !== null && score !== undefined ? renderPercentileTrack(score) : '';
+    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || '—';
+    return `<div class="d-flex align-items-center gap-2">${parts}${track}</div>`;
+  }
+
   function renderLeaf(row) {
     const score = row.representative_score;
     const raw   = row.representative_raw;
     const det   = row.detail || {};
     switch (row.method) {
       case 'area_weighted': {
+        if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         const s = score !== null && score !== undefined
           ? `${score.toFixed(1)} percentile` : '—';
-        if (row.n_units === 1) {
-          // Single-basin queries (containing-basin lookups) have exactly one score -- p90/p10
-          // both collapse to that one value, so spread is always 0 and coherence is always
-          // 'concentrated' by construction, never a real signal (confirmed in engine.py's
-          // aggregate_b1()). The histogram's narrow axis window is likewise fabricated: a +-0.5
-          // fallback window _weighted_histogram() draws around the single value so it has
-          // something to render. Neither means anything here -- a one-line position indicator
-          // instead (Karl, 2026-08-12). Coherence badge + histogram stay as they were for
-          // multi-basin rows (settlement>buffer, polity), where they're real.
-          const track = (score !== null && score !== undefined) ? renderPercentileTrack(score) : '';
-          return `<div class="d-flex align-items-center gap-2">${s}${track}</div>`;
-        }
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
@@ -3240,7 +3252,10 @@
       case 'dominant_basin': {
         const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
-        const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        // Carrier-basin ID is meaningless at n=1 -- there's only ever one basin, it's the one
+        // being queried, "which basin was selected" isn't a question (Karl, 2026-08-12).
+        const b = (row.n_units !== 1 && det.dominant_hybas_id)
+          ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
       }
       case 'class_mixture':
@@ -3248,6 +3263,7 @@
       case 'flag_fraction':
         return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
       case 'distribution_only': {
+        if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
           ? `<div>${score.toFixed(1)} percentile</div>` : '';
         const caveat = row.score_suppressed
@@ -3257,7 +3273,8 @@
       case 'extreme': {
         const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
         const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
-        const b = det.dominant_hybas_id ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        const b = (row.n_units !== 1 && det.dominant_hybas_id)
+          ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${s}${r}${b}`;
       }
       default:
