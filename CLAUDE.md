@@ -118,6 +118,34 @@ loop — fixed, root-caused to a "bring element to front" step that made sense f
 not a plain list). Tests: 511 passed (+2 new, WO5's backend contract) / 14 skipped / 668 warnings
 throughout the day, nothing broken.
 
+**Today (2026-08-13) — full detail `logs/session_log_20260813.md`:** Day opened with `sigfix`
+(single-basin `representative_raw`/`units` backfill in `engine.py`, `db_col` surfaced in the
+signature UI) merged to `docsv4` and pushed. Then two docs threads: (1) the Sandbox Similarity
+panel's 7 conjunction-threshold tooltips redesigned with a shared lead-in line + bare-noun labels,
+committed `ad0f9eb`; (2) `docsite/similarity.md` rewritten in Karl's voice (an Opus raw draft used as
+source material only, then deleted once superseded) — landed **Two cases, three algorithms**
+(Sandbox's non-compensatory conjunction membership-test vs. Workbench WH Cities' two ranking
+mechanisms, statistical/composite-distance and semantic/text-embedding) and **Areas, not points**
+(basin/basin-ring/buffer similarity all quietly fall back to the single containing basin even though
+basin-ring/buffer *display* distributions across their basin sets; polities are signature sets too,
+with no similarity measure offered at all — "similarity for an area" is a genuinely open problem
+across all three, not an oversight).
+
+A third sub-track opened: reconciling the frozen `documentation/EDOP_summary_20260608.pdf` (v0.3-era)
+for v0.4. Recovered an editable source via `pdfplumber` + `pandoc` (PDF → md → odt; the LibreOffice
+PDF-import path tried first produces a non-reflowable Draw object, not usable) — working files live
+in the gitignored `documentation/drafts/`, with the old v0.3 text kept alongside as a claw-back
+reference. Reconciliation approach settled: post-CHAR phases don't get their internal WO history
+documented in this externally-facing doc ("who cares how this progressed") — collapsed into one
+outcome-focused **§4.3 Platform Implementation** section (areal query architecture, variable catalog
+growth, similarity tooling, web interfaces), which superseded the old forthcoming §5.2
+"Neighborhoods and Aggregation" (now done, deleted, remaining §5.x renumbered). §5.2 (was §5.3)
+"Correspondence Evaluation" rewritten to reflect that D-PLACE correspondence work has substantially
+started (Workbench Societies tab + the notebook sub-track above) while Cliopatria and Tracks of Yu
+remain untouched. §5.1/§5.3 (Signature Extensions, Dashboard) checked against the repo and left
+as-is, still accurate. Not yet committed — gitignored working files, and §1–§2 (framing/citations)
+not yet reconciled.
+
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
 WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
 (`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on

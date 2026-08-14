@@ -28,7 +28,7 @@ change defaults for:
   from-year/to-year range to set the aggregation window for those temporal layers.
 
 **Polities:** Either search the Seshat project's 
-<a href="https://github.com/Seshat-Global-History-Databank/cliopatria" target="_blank">Cliopatria polities</a> by name, 
+[Cliopatria polities](https://github.com/Seshat-Global-History-Databank/cliopatria) by name, 
 or load of one of six worked examples (Northern
 Song, Abbasid Caliphate, Tibetan Empire, Tang Dynasty, Pagan Kingdom, Qin — the last flagged "no
 LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals two independent

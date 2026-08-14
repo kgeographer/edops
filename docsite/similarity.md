@@ -1,65 +1,45 @@
-# Similarity instruments
+## **Why similarity**
 
-*Placeholder — content in development. Scoped 2026-08-08; see `logs/session_log_20260808.md`
-for the working session this was scoped in.*
+EDOPS is being developed to support a variety of research perspectives, including investigations of correspondences between cultural practices and environmental settings at places. Before you can ask whether environment and culture align in any particular case, you need a defensible way to say which environmental settings are alike. You can then discover whether the practice tends to occur in any particular setting, or whether environment truly is not a determining factor.
 
-This page covers the app's similarity-search features: Sandbox's Similarity panel and
-Workbench's WH Cities similarity dropdowns. They share vocabulary ("regime," "similar") but are
-**not** the same mechanism — that's the reason this page exists, rather than folding a paragraph
-into each surface's own overview. It does not cover Workbench's Societies-tab environment↔culture
-correspondence testing (PERMANOVA, family-restricted permutation) — a statistical-correlation
-question, not a nearest-neighbor retrieval one; out of scope here, see [Out of scope](#out-of-scope).
+Environmental settings are characterized in EDOPS as “signatures” comprising dozens of variables grouped thematically in “persistence bands” using the spatial unit of hydrological basins at two scale “levels.” Naively, basins and sets of basins could be compared in their totality—their similarity to all basins globally at a given scale measurable as distances in a multidimensional space. But offering comparisons across composites of all signature variables would simply lead to the followup question, “similar with respect to what?”
 
-## Comparison at a glance
+## **There is no such thing as similar**
 
-- [ ] `[wire]` Table: surface/lens, mechanism (conjunction / distance-rank / gate+rank / text),
-      output shape (unranked set vs. ranked top-N), data source, level.
+Two places are never simply similar. They are similar in one or more aspects of precipitation (amount, seasonality), or of terrain (elevation, slope, ruggedness), or in the shape of their annual temperature curve. Being alike in one of those says nothing about the others. Timbuktu and Dakar share a precipitation regime and share almost nothing else. Two Alpine valleys twenty kilometres apart can differ more in seasonal rainfall than either does from a valley in Anatolia.
 
-## Sandbox's Similarity panel — one method
+For this reason, the EDOPS platform has adopted a “lens” approach for the similarity tools in its Sandbox and Workbench pages. A similarity lens incorporates values from related variables. So far we have implemented four lenses, three for thematic “regimes” and one combining precipitation and temperature as “Climate”:
 
-- [ ] `[prose]` Non-compensatory **conjunction** (`find_conjunction`,
-      `GET /api/similarity/conjunction`, `app/db/seasonality.py:CONJ_LENSES`). Four lenses:
-      `climate.precip` (raw monthly-curve shape correlation + magnitude ratio + amplitude CV),
-      `climate.temp` (level + seasonal range), `climate.union` (both combined, 5 conditions),
-      `terrain.regime` (basin-aggregate `ele_mt_sav`/`relief_range` from precomputed BasinATLAS
-      columns). Every condition is a query-relative ± band; membership is AND across all of them.
-      Output is the **full unranked set** of matching basins — no limit, no distance sort ("a
-      painted set, not a ranked list," per the route's own docstring). Level toggles L06/L08.
+**Precipitation**:  *annual\_total*, *amplitude*, *shape*  
+**Temperature**: *temperature\_level*, *temperature\_range*  
+**Terrain**: *elevation*, *relief\_range*  
+**Climate**: Precipitation+Temperature
 
-## Workbench WH Cities — three separate mechanisms
+In the Sandbox page’s Similarity panel, we expose the thresholds used to judge variable values similar, and offer the option to adjust thresholds to “tight” or “broad” levels. Variable definitions are supplied in help tooltips. The Workbench page’s WH Cities panel offers two similarity measures, “environmental (env)” and “semantic.” Thresholds are not applicable for either, as explained below.
 
-### Precipitation / Temperature regime ("Similar (env)" dropdown)
+Lenses in EDOPS let you ask one question at a time, which is what you need when you don't yet know which question matters.
 
-- [ ] `[prose]` Despite the "regime" label matching Sandbox, this is a **different, older**
-      mechanism: `find_similar`/`LENS_REGISTRY` (`GET /api/whc-similar-env-lens`) — composite
-      distance (Euclidean for precip, Mahalanobis for temp) on z-scored **derived/compressed**
-      variables (harmonic components a1/b1/a2/b2 + log-total for precip; seasonal amplitude +
-      concentration for temp), ranked, top-5. Corpus fixed to the 254 L08-assigned WH cities.
-      CLAUDE.md flags `/api/whc-similar-env-lens` as deprecated-pending-deletion, but it's
-      confirmed still the live wired path as of this scoping (`workbench.html`'s own comment:
-      "Climate lenses via LENS_REGISTRY (L08, topN=5)") — the conjunction rewrite implied by
-      CITYKIN's original plan never happened for cities. Worth a decision, not just a doc note:
-      retire the deprecation label (nothing is replacing it) or actually do the rewrite.
+## **Two cases, three algorithms**
 
-### Terrain regime
+The two panels are not asking the same question, and they don't use the same method to answer it. The Sandbox panel asks: given a place and a declared threshold on each variable, which basins — out of roughly sixteen thousand at the coarse scale, nearly two hundred thousand at the fine one — actually meet it? The Workbench's WH Cities panel asks something narrower: within a fixed collection of 254 named places, which are most similar to the one selected? These sound like the same question asked at different scales but they are not, and each gets its own algorithm.
 
-- [ ] `[prose]` A third, distinct mechanism (`GET /api/whc-similar-terrain`,
-      `scripts/cdop/citykin/terrain_lens.py` + `terrain_grid.py`). Query-relative tolerance bands
-      (elev/relief/landform-position — "the three dials") act as an eligibility gate, then
-      results are **ranked by a weighted distance score within the eligible set**, top-8 default
-      — a gate+rank hybrid, not a pure membership set. Data source also differs in kind from
-      Sandbox's terrain lens: a **live external elevation-grid fetch** (OpenTopoData, 5×5 points
-      over ±10km around the literal coordinate) rather than precomputed BasinATLAS aggregates.
+**The Sandbox question is a membership test**. A basin clears every declared threshold or it doesn't — no partial credit, no compensating a poor score on one condition with a good one on another. The result is a set, and the set can be small, large, or empty; an empty one, meaning nothing else on Earth meets these conditions together, is as real and useful an answer as a crowded one. Ranking has no role here, because nothing beyond passing or failing is being measured. Questions the Sandbox can answer, *per lens* include:
 
-### Semantic similarity ("Similar (semantic)" dropdown)
+- Does this place have environmental counterparts elsewhere?
 
-- [ ] `[prose]` Wikipedia-discourse text similarity by band (Composite/Environment/History/
-      Culture/Modern) — `GET /api/whc-similar-text`. No numeric-environmental content at all; a
-      different paradigm (text/NLP) from every lens above. No Sandbox equivalent.
+- Is this place environmentally unusual or ordinary?
 
-## Out of scope
+**The two Workbench options are rankings, one statistical the other semantic**. World Heritage cities are a small, fixed, named collection, and someone who picks one wants to know which of the other 253 come closest—not which clear some declared bar, since a strict bar applied to a set this small could easily return nothing, or everything. That calls for distance measures and sorted lists, not a pass/fail test: genuinely different computations, not looser or stricter versions of the same one.
 
-- [ ] `[prose]` Workbench Societies tab's environment↔culture correspondence testing (PERMANOVA,
-      family-restricted permutation, necessary-not-sufficient floor) — a different question from
-      similarity retrieval. Belongs on its own page or folded into Workbench's overview; not
-      decided yet.
+- **Statistical**. Ranked by distance on environmental variables—precipitation, temperature, terrain—computed against the other 257 cities rather than the full basin corpus. Answering, _which World Heritage cities have environmental settings most similar to this one?_
+
+- **Semantic**. Ranked by cosine similarity between Wikipedia-article text embeddings, computed for the whole article as a Composite, or separately for one of four thematic sections — Environment, History, Culture, Modern. Answering, _which World Heritage cities are written about, in that respect, most like this one?_
+
+## **The remaining challenge: Areas**
+
+All the similarity measures above, apart from the "semantics" of Wikipedia articles for cities, resolve to a single place-containing basin compared to the global set at one of two scales. Whichever neighborhood a settlement query returns—basin, basin-ring, or buffer—the similarity lenses offered compare the single basin containing the place to the global set. The ring and buffer choices widen what is returned to sets of basin signatures, and distributions of their values are displayed in histograms, but the similarity measure does not extend to the entire set. 
+
+Polities are the other case. Their signatures are always sets, their values likewise displayed as distributions and nothing is ever averaged down to one value. Unlike the settlement neighborhoods, no similarity measure is offered for them at all, because there is no single focus basin in this case.
+
+That leaves "similarity for an area" open in three places: basin-ring and buffer neighborhoods, where what the user actually sees is a set of signatures even though the similarity tool quietly falls back to the one containing basin; and polities, where no similarity is attempted at all. In all three the underlying payload is a set of signatures, and the outstanding problem is comparing sets of sets of variables — even after they've been reduced to lenses.
+
