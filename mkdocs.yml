@@ -10,6 +10,7 @@ markdown_extensions:
   - toc:
       title: "Sections"
 #      title: "Section contents"
+  - abbr
 
 hooks:
   - mkdocs_hooks.py
