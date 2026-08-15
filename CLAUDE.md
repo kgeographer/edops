@@ -72,15 +72,16 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-10 (branch `docsv4`, pushed and even with `origin/docsv4` — not yet merged to
+**State as of 2026-08-14 (branch `docsv4`, pushed and even with `origin/docsv4` — not yet merged to
 `main`, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build
 output gitignored). Swagger moved `/docs` → `/api/schema`; `/docs` serves the built MkDocs site via
-a `StaticFiles` mount. All three page Guides drafted, plus a new top-level `docsite/similarity.md`.
-The header's old separate "Guide" (sidebar-stripped modal) and "Docs" (plain link) were merged
-2026-08-08 into one "Documentation" modal that iframes the built site with its sidebar showing.
-Basin ring rebuild (preview/commit ring-member selector, bearing-numbered neighbors, compass glyph)
-merged 2026-08-06 and stable. Full history: `logs/session_log_20260804.md` through
-`logs/session_log_20260807.md`.
+a `StaticFiles` mount. All three page Guides drafted. `documentation/EDOP_summary_v04.md` is
+finished and tracked — the v0.4 project summary, reorganized and copy-edited. The "About EDOPS"
+material across the app is now coordinated on a specificity ladder: an in-app modal (project
+framing only), `docsite/project.md` (status/roadmap/changelog), `docsite/data-sources.md` (complete
+grouped source list), and the Summary itself (full citations) — each linking out rather than
+duplicating the others. `main` got its first-ever tag/release, `v0.3`, matching what's actually
+deployed. Full history: `logs/session_log_20260804.md` through `logs/session_log_20260814.md`.
 
 **A second sub-track opened 2026-08-09/10: exploratory environment↔culture correspondence
 notebooks**, Opus-authored WOs in `docs/edop/docsv4/wo{1,2,3}*.md`, notebooks in

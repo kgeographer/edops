@@ -56,8 +56,7 @@ Three phases of work lie ahead:
 ## Published findings
 
 The EDA and ESDA characterization findings, the augmented variable codebook, and other research
-records referenced above live in the repository's `documentation/` folder, alongside the project
-summary.
+records referenced above live in [the repository's `documentation/` folder](https://github.com/kgeographer/edops/tree/main/documentation), alongside the project summary.
 
 *[EDA]: Exploratory Data Analysis
 *[ESDA]: Exploratory Spatial Data Analysis

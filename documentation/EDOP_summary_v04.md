@@ -69,6 +69,8 @@ EDOPS relies on a set of open global environmental datasets. The most central of
 
 The MapZen digital elevation model is accessed via OpenTopoData for point elevations. The bio- and eco-region framework developed by One Earth is made available in the Workbench, as is an experimental connection with D-PLACE anthropological data. Planned near-term additions for coastal enrichment include ICOADS marine climate data (1662 CE to present day) and seafloor topography (dataset TBD) for those basins where adjacent sea conditions are environmentally significant.
 
+[Complete listing of EDOPS data resources](https://edops.computingplace.org/docs/data-sources/)
+
 Variables from BasinATLAS are grouped in four "bands" corresponding to their relative persistence and applicability to successive historical eras: A - Physiographic bedrock, B - Hydroclimatic baselines, C - Bioclimatic proxies, and D - Anthropocene markers. This banding allows for a relatively coarse temporal scoping of queries: analyses of pre-industrial periods can suppress variables by group, e.g. the Group D variables, which reflect modern land cover and human pressure, are not indicative for many questions.
 
 The signature’s 6-band structure also includes E - Coastality (a bucket for outlet type, distance to sink, and the future marine variables mentioned above), and T - Temporal (holding the HYDE and LMR variables).
