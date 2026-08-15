@@ -1,9 +1,9 @@
 # Data sources
 
-EDOPS draws on two distinct groups of external resources: the datasets that make up the
-environmental signature itself, and the services the platform calls on for search, mapping, and
-correspondence testing. Full academic citations for the signature datasets are in the
-[project summary](project.md); this page is the complete, grouped list with a link on each name.
+EDOPS draws on two groups of external resources: datasets that contribute to the
+environmental signature itself, and the datasets and services the platform uses for search, mapping, and
+correspondence testing. Full academic citations for the signature datasets are in the repo's 
+[detailed project summary](https://github.com/kgeographer/edops/blob/main/documentation/EDOP_summary_v04.md); this page maintains the complete, grouped list.
 
 ## Signature data
 
