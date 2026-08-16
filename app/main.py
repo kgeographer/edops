@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
+from app.api.routes_common import router as api_common_router
+from app.api.routes_cliopatria import router as api_cliopatria_router
 from app.web.pages import router as page_router
 from app.db.connection import db_connect
 from app.db.seasonality import load_similarity_index
@@ -44,6 +46,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(api_common_router)
+app.include_router(api_cliopatria_router)
 app.include_router(page_router)
 
 app.mount(
