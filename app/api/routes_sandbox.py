@@ -152,7 +152,7 @@ def _gaz_join(conn, hybas_ids: list) -> dict:
         return {int(r[0]): r for r in cur.fetchall()}
 
 
-@router.get("/similarity/conjunction/lenses")
+@router.get("/similarity/conjunction/lenses", include_in_schema=False)
 def similarity_conjunction_lenses():
     """Return the conjunction lens registry (WO6c) for the panel's lens selector.
 
@@ -164,7 +164,7 @@ def similarity_conjunction_lenses():
     return {"lenses": get_conjunction_registry()}
 
 
-@router.get("/similarity/conjunction")
+@router.get("/similarity/conjunction", include_in_schema=False)
 def similarity_conjunction(
     lat: float,
     lon: float,

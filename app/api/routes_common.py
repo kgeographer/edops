@@ -228,7 +228,7 @@ def signature(
         query["to_year"] = to_year
 
     sig["meta"] = {
-        "signature_version": "0.3",
+        "signature_version": "0.4",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "query": query,
         "neighborhood": {
