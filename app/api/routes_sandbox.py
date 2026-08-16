@@ -1100,7 +1100,7 @@ def area(
 
 
 # -----------------------
-# /areas endpoint — type-dispatched areal signature (v2 sandbox)
+# /areas endpoint — type-dispatched areal signature
 # -----------------------
 
 @router.get("/areas")
@@ -1117,7 +1117,11 @@ def areas(
     to_year: Optional[int] = None,
     detail: bool = False,
 ):
-    """Areal signature dispatcher for the v2 sandbox.
+    """Areal signature dispatcher — resolves to a set of member basins by type, then
+    aggregates their signature as a distribution (not an average). 'type' is confusingly
+    named "area" alongside GET /api/area, but the four resolver types are not all areas
+    in the geometric sense: single_basin and polity are bounded regions, buffer is an
+    arbitrary radius, and basin_ring is a topological set of basins, not a shape.
 
     Parameters
     ----------

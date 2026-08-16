@@ -28,6 +28,12 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 @router.get("/health")
 def health():
+    """Confirm the service is running.
+
+    Response
+    --------
+    {"status": "ok"}
+    """
     return {"status": "ok"}
 
 
