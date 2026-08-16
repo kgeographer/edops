@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import router as api_router
+from app.api.routes_sandbox import router as api_sandbox_router
 from app.api.routes_common import router as api_common_router
 from app.api.routes_cliopatria import router as api_cliopatria_router
 from app.api.routes_explorer import router as api_explorer_router
@@ -47,7 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router)
+app.include_router(api_sandbox_router)
 app.include_router(api_common_router)
 app.include_router(api_cliopatria_router)
 app.include_router(api_explorer_router)

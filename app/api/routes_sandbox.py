@@ -1,3 +1,10 @@
+"""
+app/api/routes_sandbox.py
+---------------------------
+Routes used only by the Sandbox page (sandbox.html). Renamed from routes.py
+(2026-08-16) once the last other page's routes were split out of it -- see
+docs/edop/routes_audit.txt for the classification this split is based on.
+"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
@@ -112,11 +119,6 @@ def _whg_search_candidates(query: str, limit: int = 10) -> List[Dict]:
 # -----------------------
 # API endpoints
 # -----------------------
-
-@router.get("/health")
-def health():
-    return {"status": "ok"}
-
 
 def _resolve_basin(conn, lat: float, lon: float, level: int = 6) -> int:
     """Return the hybas_id at the given level containing (lat, lon); raises 404 if none found."""

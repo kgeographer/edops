@@ -26,6 +26,11 @@ from app.settings import settings
 router = APIRouter(prefix="/api", tags=["api"])
 
 
+@router.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # -----------------------
 # WHG suggest/entity helpers — shared by Sandbox's /whg/suggest and
 # Workbench's /resolve. (WHG reconcile+extend helpers, used only by
