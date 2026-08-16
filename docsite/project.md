@@ -5,7 +5,7 @@ covers where v0.4 (September 2026) stands, what's changed since v0.3, and what's
 the full research framing — citations, worked examples, the complete argument — see the
 [project summary](https://github.com/kgeographer/edops/blob/main/documentation/EDOP_summary_v04.md)
 in the repository's `documentation/` folder. For the intellectual foundations behind Computing
-Place, EDOP, and CDOP, see Karl Grossner's posts at [kgeographer.org](https://kgeographer.org).
+Place, EDOP, and CDOP, see Karl Grossner's posts at [kgeographer.org](https://kgeographer.org/category/research/).
 
 ## Status
 

@@ -9,6 +9,7 @@ theme:
 markdown_extensions:
   - toc:
       title: "Sections"
+      toc_depth: 4
 #      title: "Section contents"
   - abbr
 
@@ -30,10 +31,8 @@ nav:
       - Reading a signature: sandbox/reading-a-signature.md
       - "Walkthrough: Settlement": sandbox/walkthrough-settlement.md
       - "Walkthrough: Polity": sandbox/walkthrough-polity.md
-  - Data Explorer:
-      - Overview: explorer/overview.md
-  - Workbench:
-      - Overview: workbench/overview.md
+  - Data Explorer: explorer/overview.md
+  - Workbench: workbench/overview.md
   - Similarity in EDOPS: similarity.md
   - Codebook: codebook.md
   - Data sources: data-sources.md
