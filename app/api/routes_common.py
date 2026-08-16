@@ -7,18 +7,122 @@ split is based on — re-run that audit after adding/removing/renaming any route
 before assuming a helper is still page-scoped.
 """
 import json
+import ssl
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+import certifi
 from fastapi import APIRouter, HTTPException
 
 from app.db.signature import get_signature
 from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
+from app.settings import settings
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+
+# -----------------------
+# WHG suggest/entity helpers — shared by Sandbox's /whg/suggest and
+# Workbench's /resolve. (WHG reconcile+extend helpers, used only by
+# /whg-reconcile, live in routes_workbench.py instead.)
+# -----------------------
+
+def _http_get_json(url: str, timeout_sec: int = 20) -> Dict[str, Any]:
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://whgazetteer.org/",
+    })
+    with urllib.request.urlopen(req, timeout=timeout_sec, context=ctx) as resp:
+        raw = resp.read().decode("utf-8")
+    return json.loads(raw)
+
+
+def _whg_suggest_first(prefix: str) -> Optional[Dict[str, Any]]:
+    """Call WHG suggest endpoint and return the top-ranked result, if any."""
+    if not settings.WHG_API_TOKEN:
+        raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
+
+    params = {
+        "prefix": prefix,
+        "limit": 3,
+        "cursor": 0,
+        "exact": "false",
+        "type": "place",
+        "token": settings.WHG_API_TOKEN,
+    }
+
+    url = "https://whgazetteer.org/suggest/entity?" + urllib.parse.urlencode(params)
+    data = _http_get_json(url)
+    results = data.get("result") or []
+    return results[0] if results else None
+
+
+def _whg_suggest(prefix: str, limit: int = 5, fclasses: str = None, countries: str = None) -> List[Dict[str, Any]]:
+    """Call WHG suggest endpoint and return up to `limit` results."""
+    if not settings.WHG_API_TOKEN:
+        raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
+
+    params = {
+        "prefix": prefix,
+        "limit": limit,
+        "cursor": 0,
+        "type": "place",
+        "token": settings.WHG_API_TOKEN,
+    }
+    if fclasses:
+        params["fclasses"] = fclasses
+    if countries:
+        params["countries"] = countries
+
+    url = "https://whgazetteer.org/suggest/entity?" + urllib.parse.urlencode(params)
+    data = _http_get_json(url)
+    return data.get("result") or []
+
+
+def _whg_entity(place_id: str) -> Dict[str, Any]:
+    """Fetch WHG entity detail for a place id (e.g. 'place:5424806')."""
+    if not settings.WHG_API_TOKEN:
+        raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
+
+    encoded_id = urllib.parse.quote(place_id, safe="")
+    token = urllib.parse.quote(settings.WHG_API_TOKEN)
+    url = f"https://whgazetteer.org/entity/{encoded_id}/api?token={token}"
+    return _http_get_json(url)
+
+
+def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
+    """Extract (lon, lat) from a WHG entity response."""
+    # Current format: GeoJSON Feature with geometry.coordinates
+    geom = entity.get("geometry") or {}
+    if geom.get("type") == "Point":
+        coords = geom.get("coordinates") or []
+        if len(coords) >= 2:
+            return float(coords[0]), float(coords[1])
+
+    # Legacy format: geoms[0].geojson.coordinates
+    geoms = entity.get("geoms") or []
+    if geoms:
+        g0 = geoms[0] or {}
+        gj = g0.get("geojson")
+        if isinstance(gj, dict):
+            coords = gj.get("coordinates")
+            if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+                return float(coords[0]), float(coords[1])
+        coords = g0.get("coordinates")
+        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            return float(coords[0]), float(coords[1])
+        centroid = g0.get("centroid")
+        if isinstance(centroid, (list, tuple)) and len(centroid) >= 2:
+            return float(centroid[0]), float(centroid[1])
+
+    return None
 
 
 @router.get("/signature")
