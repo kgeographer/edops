@@ -335,73 +335,6 @@ def _merge_reconcile_results(candidates: List[Dict], extended: Dict[str, Dict]) 
 
 
 # -----------------------
-# World Heritage seed helpers
-# -----------------------
-
-_WH_SEED_PATH = Path(__file__).resolve().parents[1] / "data" / "world_heritage_seed.json"
-
-
-def _parse_wkt_point(wkt: str) -> Optional[Tuple[float, float]]:
-    """Parse WKT like 'POINT (lon lat)' or 'POINT(lon lat)' into (lon, lat)."""
-    if not wkt:
-        return None
-    m = re.match(r"^\s*POINT\s*\(\s*([-0-9.]+)\s+([-0-9.]+)\s*\)\s*$", wkt)
-    if not m:
-        return None
-    return float(m.group(1)), float(m.group(2))
-
-
-def _load_wh_seed() -> list[Dict[str, Any]]:
-    """Load and normalize the WH seed JSON into a list of dicts with GeoJSON Point."""
-    if not _WH_SEED_PATH.exists():
-        raise FileNotFoundError(f"World Heritage seed file not found at {_WH_SEED_PATH}")
-
-    raw = json.loads(_WH_SEED_PATH.read_text(encoding="utf-8"))
-    out: list[Dict[str, Any]] = []
-
-    if not isinstance(raw, list):
-        raise ValueError("World Heritage seed file must be a JSON array")
-
-    for row in raw:
-        if not isinstance(row, dict):
-            continue
-        wkt = row.get("geom")
-        lonlat = _parse_wkt_point(wkt) if isinstance(wkt, str) else None
-        if not lonlat:
-            continue
-        lon, lat = lonlat
-        out.append(
-            {
-                "id_no": row.get("id_no"),
-                "name_en": row.get("name_en"),
-                "states_name_en": row.get("states_name_en"),
-                "short_description_en": row.get("short_description_en"),
-                "location": {"type": "Point", "coordinates": [lon, lat]},
-            }
-        )
-
-    return out
-
-
-def _get_cluster_labels() -> Dict[int, str]:
-    """Fetch cluster labels for WH sites from database."""
-    try:
-        conn = db_connect()
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT s.id_no, c.cluster_label
-                FROM edop_clusters c
-                JOIN edop_wh_sites s ON s.site_id = c.site_id
-            """)
-            return {row[0]: row[1] for row in cur.fetchall()}
-    except Exception:
-        return {}
-    finally:
-        if 'conn' in locals():
-            conn.close()
-
-
-# -----------------------
 # API endpoints
 # -----------------------
 
@@ -1022,54 +955,6 @@ def whg_suggest(q: str, limit: int = 5):
     return {"results": results}
 
 
-@router.get("/whg-place", include_in_schema=False)
-def whg_place(id: str):
-    """Fetch WHG entity by ID and return coordinates + metadata.
-
-    Use this after user selects from whg-suggest dropdown.
-    """
-    id = (id or "").strip()
-    if not id:
-        raise HTTPException(status_code=400, detail="Missing required query parameter: id")
-
-    try:
-        entity = _whg_entity(id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"WHG entity failed: {e}")
-
-    lonlat = _extract_lonlat(entity)
-    if not lonlat:
-        return {
-            "id": id,
-            "label": entity.get("title"),
-            "source": "whg",
-            "meta": {
-                "status": "no_geometry",
-                "ccodes": entity.get("ccodes"),
-                "fclasses": entity.get("fclasses"),
-            },
-        }
-
-    lon, lat = lonlat
-    return {
-        "id": id,
-        "label": entity.get("title"),
-        "source": "whg",
-        "location": {
-            "type": "Point",
-            "coordinates": [lon, lat],
-        },
-        "meta": {
-            "status": "ok",
-            "ccodes": entity.get("ccodes"),
-            "fclasses": entity.get("fclasses"),
-            "dataset": entity.get("dataset"),
-        },
-    }
-
-
 @router.get("/whg-reconcile", include_in_schema=False)
 def whg_reconcile(q: str, size: int = 10, bounds: str = None):
     """
@@ -1177,24 +1062,6 @@ def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
     return {"results": results}
 
 
-@router.get("/wh-sites", include_in_schema=False)
-def wh_sites():
-    """Return the small World Heritage seed set used by the pilot UI."""
-    try:
-        sites = _load_wh_seed()
-        cluster_labels = _get_cluster_labels()
-
-        # Add cluster_label to each site
-        for site in sites:
-            id_no = site.get("id_no")
-            site["cluster_label"] = cluster_labels.get(id_no)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {"count": len(sites), "sites": sites}
-
-
 @router.get("/similar", include_in_schema=False)
 def similar(id_no: int, limit: int = 5):
     """Return most similar WH sites to the given site by id_no."""
@@ -1226,49 +1093,6 @@ def similar(id_no: int, limit: int = 5):
                     "lon": float(row[2]),
                     "lat": float(row[3]),
                     "distance": float(row[4]),
-                    "cluster_label": row[5]
-                })
-
-            return {"source_id_no": id_no, "similar": results}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals():
-            conn.close()
-
-
-@router.get("/similar-text", include_in_schema=False)
-def similar_text(id_no: int, limit: int = 5):
-    """Return most similar WH sites by text/semantic similarity."""
-    try:
-        conn = db_connect()
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    b.id_no,
-                    b.name_en,
-                    b.lon,
-                    b.lat,
-                    ROUND(sim.similarity::numeric, 3) as similarity,
-                    c.cluster_label
-                FROM edop_text_similarity sim
-                JOIN edop_wh_sites a ON a.site_id = sim.site_a
-                JOIN edop_wh_sites b ON b.site_id = sim.site_b
-                LEFT JOIN edop_text_clusters c ON c.site_id = b.site_id
-                WHERE a.id_no = %s
-                ORDER BY sim.similarity DESC
-                LIMIT %s
-            """, (id_no, limit))
-
-            results = []
-            for row in cur.fetchall():
-                results.append({
-                    "id_no": row[0],
-                    "name_en": row[1],
-                    "lon": float(row[2]),
-                    "lat": float(row[3]),
-                    "similarity": float(row[4]),
                     "cluster_label": row[5]
                 })
 
@@ -1792,88 +1616,6 @@ def whc_summaries(city_id: int):
 # -----------------------
 # Basin Cluster endpoints
 # -----------------------
-
-@router.get("/basin-clusters", include_in_schema=False)
-def basin_clusters():
-    """Return all basin clusters with basin counts, city counts, and labels."""
-    try:
-        conn = db_connect()
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    b.cluster_id,
-                    COUNT(DISTINCT b.id) as basin_count,
-                    COUNT(DISTINCT c.id) as city_count,
-                    lbl.label
-                FROM basin08 b
-                LEFT JOIN gaz.wh_cities c ON c.basin_id = b.id
-                LEFT JOIN basin_cluster_labels lbl ON lbl.cluster_id = b.cluster_id
-                WHERE b.cluster_id IS NOT NULL
-                GROUP BY b.cluster_id, lbl.label
-                ORDER BY b.cluster_id
-            """)
-
-            clusters = []
-            for row in cur.fetchall():
-                clusters.append({
-                    "cluster_id": row[0],
-                    "basin_count": row[1],
-                    "city_count": row[2],
-                    "label": row[3]
-                })
-
-            return {"clusters": clusters}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals():
-            conn.close()
-
-
-@router.get("/basin-clusters/{cluster_id}/cities", include_in_schema=False)
-def basin_cluster_cities(cluster_id: int):
-    """Return cities in basins of a given cluster."""
-    try:
-        conn = db_connect()
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    c.id,
-                    c.city,
-                    c.country,
-                    c.region,
-                    ST_X(c.geom) as lon,
-                    ST_Y(c.geom) as lat
-                FROM gaz.wh_cities c
-                JOIN basin08 b ON c.basin_id = b.id
-                WHERE b.cluster_id = %s
-                ORDER BY c.country, c.city
-            """, (cluster_id,))
-
-            cities = []
-            for row in cur.fetchall():
-                cities.append({
-                    "id": row[0],
-                    "city": row[1],
-                    "country": row[2],
-                    "region": row[3],
-                    "lon": float(row[4]) if row[4] else None,
-                    "lat": float(row[5]) if row[5] else None
-                })
-
-            return {
-                "cluster_id": cluster_id,
-                "city_count": len(cities),
-                "cities": cities
-            }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals():
-            conn.close()
-
 
 # -----------------------
 # Gazetteer endpoints
