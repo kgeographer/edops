@@ -1703,6 +1703,12 @@
       } else if (v?.monthly_series) {
         lisaRadio.disabled = true; lisaLabel.title = 'LISA not available for monthly series';
         document.getElementById('ex-view-values').checked = true; currentViewMode = 'values';
+      } else if (v?.status === 'planned') {
+        // Preview variables aren't part of the precomputed LISA sweep — the fetch would
+        // always 404. Disable up front rather than letting fetchAndRender() try it and
+        // fall back a second later (was visible as an unexplained repaint-then-revert).
+        lisaRadio.disabled = true; lisaLabel.title = 'LISA not available for preview variables';
+        document.getElementById('ex-view-values').checked = true; currentViewMode = 'values';
       } else {
         lisaRadio.disabled = false; lisaLabel.title = '';
       }
