@@ -285,22 +285,10 @@ def explorer_climate_class(axis: str, level: int = 6):
     }
 
 
-@router.get("/similarity/climate-class", include_in_schema=False)
-def similarity_climate_class(lat: float, lon: float, level: int = 6):
-    """Same-climate-class set for the basin containing (lat, lon) — the coarse, hemisphere-blind
-    Similarity lens (WO7a). Paints every basin sharing the query's cell; reports size + spatial
-    spread. Contrast the conjunction lens: this is calendar-blind and coarser (hundreds, not ~14).
-    """
-    if level not in (6, 8):
-        raise HTTPException(status_code=400, detail="level must be 6 or 8")
-    conn = db_connect()
-    try:
-        qid = _resolve_basin(conn, lat, lon, level=level)   # raises 404 if no basin
-        return cc.class_lens(level, qid, conn=conn)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    finally:
-        conn.close()
+# /similarity/climate-class removed 2026-08-16 -- superseded by the WO6b/WO6c conjunction
+# panel; not called by any live template, confirmed unrelated to Workbench's WH Cities
+# similarity mechanisms (find_similar/LENS_REGISTRY in seasonality.py never referenced
+# app.db.climate_classes).
 
 
 # Radius options per level (WO5 Part B): 2500km excluded at L08 -- across a
@@ -491,31 +479,9 @@ def narrative(
     return {"narrative": text}
 
 
-@router.get("/temporal", include_in_schema=False)
-def temporal(
-    lat: float,
-    lon: float,
-    year_start: int = 0,
-    year_end: int = 1998,
-    vssi_min: float = 5.0,
-):
-    """Return LMR v2.1 PDSI time series and significant volcanic events for a location.
-
-    Parameters
-    ----------
-    lat, lon    : coordinates of the place of interest
-    year_start  : first year CE (0–1998); default 0
-    year_end    : last year CE (0–1998); default 1998
-    vssi_min    : minimum volcanic sulfur injection in Tg to include; default 5.0
-    """
-    result = get_temporal_context(
-        lat=lat, lon=lon,
-        year_start=year_start, year_end=year_end,
-        vssi_min=vssi_min,
-    )
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
+# /temporal removed 2026-08-16 -- a pre-integration standalone LMR/volcanic fetch; superseded
+# once Band T was folded into /api/signature's own bands=...T... handling (routes_common.py).
+# Not called by any live template.
 
 
 # /resolve moved to routes_workbench.py (2026-08-16, routes split).
