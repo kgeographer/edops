@@ -151,6 +151,18 @@ def signature(
     to_year    : end year CE for Band T temporal enrichment (0–1998)
     flat       : if true, return flat field values instead of nested profile_groups;
                  Band T temporal data appears at key "temporal" rather than in profile_groups
+
+    Response
+    --------
+    Default (flat=False): basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
+    "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
+    for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
+    its own "_status" ("ok" | "not_requested" | "error").
+
+    flat=True: the same identity/geometry fields plus every variable as a top-level key (no
+    profile_groups nesting); Band T appears at top-level key "temporal" instead.
+
+    Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Basin level {level} not available; supported levels: 6, 8")

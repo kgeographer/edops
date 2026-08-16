@@ -1413,7 +1413,7 @@ def societies():
             conn.close()
 
 
-@router.get("/societies/env-scan")
+@router.get("/societies/env-scan", include_in_schema=False)
 def societies_env_scan(trait: str, value: str):
     """CITYKIN WO4 -- replaces the legacy PCA 'Basin clusters' option. `(trait, value)` -> a
     composition note (top-3 language families by name, plus soc_id lists per bucket for the

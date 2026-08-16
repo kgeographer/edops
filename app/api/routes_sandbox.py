@@ -154,7 +154,13 @@ def _gaz_join(conn, hybas_ids: list) -> dict:
 
 @router.get("/similarity/conjunction/lenses")
 def similarity_conjunction_lenses():
-    """Return the conjunction lens registry (WO6c) for the panel's lens selector."""
+    """Return the conjunction lens registry (WO6c) for the panel's lens selector.
+
+    Response
+    --------
+    {"lenses": [{"lens_id", "group", "label", "shade_by",
+                 "conditions": [{"condition", "kind", "default"}, ...]}, ...]}
+    """
     return {"lenses": get_conjunction_registry()}
 
 
@@ -304,7 +310,7 @@ _CONTEXT_RADII_BY_LEVEL: Dict[int, List[int]] = {
 }
 
 
-@router.get("/context")
+@router.get("/context", include_in_schema=False)
 def context(lat: float, lon: float, level: int = 6, radius_km: int = 500):
     """Return a basin's position against two reference populations: all basins
     at the level, and basins within radius_km of (lat, lon).
@@ -362,7 +368,7 @@ def context(lat: float, lon: float, level: int = 6, radius_km: int = 500):
         conn.close()
 
 
-@router.get("/context/population")
+@router.get("/context/population", include_in_schema=False)
 def context_population(lat: float, lon: float, level: int = 6, radius_km: int = 500):
     """Return raw per-variable values for every basin within radius_km of
     (lat, lon) -- the population the Context tab's map choropleths. Pair with
@@ -409,7 +415,7 @@ def _fetch_basin_geom(hybas_ids: list, level: int) -> dict:
         conn.close()
 
 
-@router.get("/basin-geom")
+@router.get("/basin-geom", include_in_schema=False)
 def basin_geom(ids: str, level: int = 6):
     """Return GeoJSON geometry strings for a list of basin hybas_ids (GET, max 200).
 
@@ -431,7 +437,7 @@ class BasinGeomRequest(BaseModel):
     level: int = 6
 
 
-@router.post("/basin-geom")
+@router.post("/basin-geom", include_in_schema=False)
 def basin_geom_post(body: BasinGeomRequest):
     """Return GeoJSON geometry strings for a list of basin hybas_ids (POST, max 6000).
 
@@ -528,7 +534,7 @@ def whg_suggest(q: str, limit: int = 5):
 # /whg-reconcile moved to routes_workbench.py (2026-08-16, routes split).
 
 
-@router.get("/whg/suggest")
+@router.get("/whg/suggest", include_in_schema=False)
 def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
     """Settlement/site lookup via WHG suggest, filtered to fclasses P (populated) and S (site).
 
@@ -995,6 +1001,17 @@ def area(
     from_year  : Band T span start (CE); required only when T is in bands
     to_year    : Band T span end (CE); required only when T is in bands
     detail     : if true, include per-variable histogram objects in the response
+
+    Response
+    --------
+    Same profile_groups envelope as GET /api/signature, but each value is a distribution across
+    the polity's member basins, not an average (see engine.py). Adds:
+      "resolver": {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
+      "member_ids": [hybas_id, ...]
+      "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
+    detail=true adds a per-variable "distribution" histogram object.
+
+    Full variable inventory: see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
@@ -1114,6 +1131,12 @@ def areas(
     from_year  : Band T span start CE (required when T in bands)
     to_year    : Band T span end CE (required when T in bands)
     detail     : include per-variable histogram objects in the response
+
+    Response
+    --------
+    Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
+    basins, not averages), plus a "resolver" block whose shape depends on `type`. detail=true adds
+    per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
