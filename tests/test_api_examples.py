@@ -14,7 +14,7 @@ Examples tested:
   7. Seasonality    — WO5 contract tests (pinned values + ordering)
 
 (The old WO7a /api/similarity + /api/similarity/lenses examples — items 8/9 — were retired
-CITYKIN WO1: the pre-WO6 climate.precip/climate.temp lenses and their vestigial sandbox_v3
+CITYKIN WO1: the pre-WO6 climate.precip/climate.temp lenses and their vestigial sandbox
 fallback panel are gone, superseded by the WO6c conjunction panel at /api/similarity/conjunction.)
 """
 

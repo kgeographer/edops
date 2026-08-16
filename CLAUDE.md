@@ -150,7 +150,7 @@ not yet reconciled.
 **CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
 WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
 (`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on
-`cdop_pilot.html`. The sandbox Similarity panel (`sandbox_v3.html`) has a 4th lens, basin-scale
+`cdop_pilot.html`. The sandbox Similarity panel (`sandbox.html`) has a 4th lens, basin-scale
 **Terrain regime** (`ele_mt_sav` + `relief_range`, a non-compensatory tolerance-band conjunction in
 `app/db/seasonality.py`). **WO4** replaced the Societies tab's legacy PCA "Basin clusters" option
 (`#panel-soc`, `cdop_pilot.html`) with a confirmatory Climate envelope scatter (EA042/subsistence) and
@@ -244,19 +244,22 @@ metadata/                # gitignored
 ## The sandbox pages
 
 **Routing note (local `main`/`docsv4`, not yet deployed — see Current work above):** as of the
-2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox_v3.html` (old
+2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox.html` (old
 `/sandbox/lookup3` still works too); `/explorer` is the new canonical route for `explorer.html`
 (old `/sandbox/explorer` still works too); `/sandbox/lookup` now 301-redirects to `/sandbox`, and
-`sandbox.html` (old Phase 1 Lookup page, described below) is fully retired — no route renders it
-on `main`. `/workbench` is the third canonical route (`workbench.html`, formerly `cdop_pilot.html`
-— renamed 2026-08-05, see Open/deferred items below); `/cdop` and `/cdop_tests`, which used to
-serve it, were dropped outright rather than redirected, since nothing's deployed yet. **In
-production today none of this has happened:** `/sandbox/lookup` still serves `sandbox.html` live,
-and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is still what's actually deployed, until
-this branch ships.
+the old Phase 1 Lookup page (renamed `sandbox_v03.html` on 2026-08-15, described below) is fully
+retired — no route renders it on `main`. `/workbench` is the third canonical route
+(`workbench.html`, formerly `cdop_pilot.html` — renamed 2026-08-05, see Open/deferred items below);
+`/cdop` and `/cdop_tests`, which used to serve it, were dropped outright rather than redirected,
+since nothing's deployed yet. **In production today none of this has happened:** `/sandbox/lookup`
+still serves the old Lookup page live (under its old production filename, `sandbox.html` — the
+rename only exists on `docsv4`), and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is
+still what's actually deployed, until this branch ships.
 
 ### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
-`app/templates/sandbox_v3.html` — Demo phase product; current focus.
+`app/templates/sandbox.html` — Demo phase product; current focus. (Renamed from
+`sandbox_v3.html` on 2026-08-15 — the `_v3` distinction stopped meaning anything once the old
+Phase 1 page was renamed out of the way; see the Lookup entry below.)
 
 Two-tab surface: **Settlements** (WHG place lookup → scope → BasinATLAS/LMR/HYDE choropleth + signature)
 and **Polities** (search → slice slider + VCR → choropleth + signature).
@@ -269,8 +272,9 @@ and **Polities** (search → slice slider + VCR → choropleth + signature).
 - Line spec reference: `docs/design/demo/sandbox_v3_line_specs.md`
 
 ### `/sandbox/lookup` — Lookup (retired on `main`, still live in production)
-`app/templates/sandbox.html` — Phase 1 product; was the primary researcher tool, superseded by
-`sandbox_v3.html`. File remains in the repo, unreferenced by any route once deployed.
+`app/templates/sandbox_v03.html` (renamed from `sandbox.html` on 2026-08-15) — Phase 1 product; was
+the primary researcher tool, superseded by `sandbox.html` (formerly `sandbox_v3.html`). File remains
+in the repo, unreferenced by any route once deployed.
 
 WHG place lookup → basin assignment → neighborhood map → Band A–T signature.
 - Level 08/06 toggle; s/u/Δ toggle; Band T temporal charts (PDSI/Temp/Precip + eVolv2k)
@@ -558,5 +562,5 @@ Standing cross-phase notes:
   it's still the live path behind WH Cities' precip/temp "regime" dropdown, and is a genuinely
   different, older mechanism (composite-distance `LENS_REGISTRY`) than Sandbox's conjunction-based
   regime lenses despite the shared naming. Full breakdown: `docsite/similarity.md`.
-- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
+- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox.html; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
