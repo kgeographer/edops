@@ -700,7 +700,7 @@ class TestWhgSuggestRouteValidation:
             },
         ]
 
-        import app.api.routes as routes_mod
+        import app.api.routes_sandbox as routes_mod
         monkeypatch.setattr(routes_mod, "_whg_suggest", lambda *a, **kw: fake_suggest)
 
         r = client.get("/api/whg/suggest?q=Timbuktu")
@@ -720,7 +720,7 @@ class TestWhgSuggestRouteValidation:
 
     def test_no_repr_point_filtered_out(self, client, monkeypatch):
         """Results without repr_point are excluded from the response."""
-        import app.api.routes as routes_mod
+        import app.api.routes_sandbox as routes_mod
         monkeypatch.setattr(routes_mod, "_whg_suggest",
                             lambda *a, **kw: [{"id": "x", "name": "X", "repr_point": None}])
         r = client.get("/api/whg/suggest?q=test")
@@ -729,7 +729,7 @@ class TestWhgSuggestRouteValidation:
 
     def test_fclasses_passed_to_suggest(self, client, monkeypatch):
         """Route always passes fclasses='P,S' to _whg_suggest."""
-        import app.api.routes as routes_mod
+        import app.api.routes_sandbox as routes_mod
         captured = {}
 
         def fake(prefix, limit=8, fclasses=None, countries=None):
@@ -742,7 +742,7 @@ class TestWhgSuggestRouteValidation:
 
     def test_country_hint_resolves_to_ccode(self, client, monkeypatch):
         """A country= param is resolved via gaz.ccodes ILIKE and passed as countries= to WHG."""
-        import app.api.routes as routes_mod
+        import app.api.routes_sandbox as routes_mod
         captured = {}
 
         def fake(prefix, limit=8, fclasses=None, countries=None):
@@ -768,7 +768,7 @@ class TestWhgSuggestRouteValidation:
 
     def test_country_no_match_proceeds_without_filter(self, client, monkeypatch):
         """Unrecognised country hint does not block the search (countries=None)."""
-        import app.api.routes as routes_mod
+        import app.api.routes_sandbox as routes_mod
         captured = {}
 
         def fake(prefix, limit=8, fclasses=None, countries=None):

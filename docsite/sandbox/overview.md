@@ -95,7 +95,7 @@ season, Two wet seasons, Undetermined) or Phase (which season the wet period fal
 
 ---
 
-*Draft — grounded directly in `sandbox_v3.html`, cross-checked against
+*Draft — grounded directly in `sandbox.html`, cross-checked against
 `docs/design/sitemap_aug2026.txt`. Flagging for review: the water-provenance badge names and the
 exact regime-lens tolerance dial set are copied verbatim from the code's current labels/logic and
 may be more implementation detail than a first-time reader needs — trim as you see fit. Voice is

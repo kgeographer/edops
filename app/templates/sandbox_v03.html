@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="utf-8">
+  <title>Sandbox | Computing Place</title>
+  <link rel="stylesheet" href="/static/css/site.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    body { font-size: 1rem; }
+    #left-col  { position: sticky; top: 1rem; }
+    .param-row label { font-size: 0.8rem; color: #666; }
+    .accordion-button { font-size: 0.85rem; padding: 0.4rem 0.75rem; }
+    .accordion-body  { font-size: 0.8rem; padding: 0.5rem 0.75rem; }
+    .spinner-border-sm { width: 1rem; height: 1rem; }
+    #sb-band-checks {background-color: aliceblue;}
+    #sb-band-checks .form-check { margin-bottom: 0; }
+    #sb-band-checks .form-check-label { font-size: 0.8rem; }
+    #band-list {list-style: none;}
+    #sb-intro-text p {margin-bottom: .5rem}
+  </style>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-5K56B8BCD9');
+  </script>
+</head>
+<body>
+
+<header class="mb-2">
+  <h4 class="d-flex align-items-center justify-content-between py-2 border-bottom">
+    <span>
+      <a href="/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height:48px;" class="me-2"></a>
+      <a href="/edops" class="text-decoration-none text-reset">EDOPS </a>
+      <span class="me-1">Sandbox:</span>
+      <strong class="me-1">Lookup</strong>
+      <span class="text-muted me-1">|</span>
+      <a href="/sandbox/explorer" class="text-decoration-none">Explorer</a>
+    </span>
+    <span class="d-flex align-items-center gap-3">
+      <a href="#" class="text-decoration-none small" data-bs-toggle="modal" data-bs-target="#aboutModal" style="font-size:0.8rem;">About</a>
+      <span class="text-secondary" style="font-size:0.8rem;">|</span>
+      <a href="#" class="text-decoration-none small" data-bs-toggle="modal" data-bs-target="#apiGuideModal" style="font-size:0.8rem;">API Guide</a>
+      <span class="badge bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">EDOPS v0.3</span>
+    </span>
+  </h4>
+</header>
+
+<div class="container-fluid px-3">
+  <div class="row g-3">
+
+    <!-- ===================== LEFT COLUMN ===================== -->
+    <div class="col-md-4" id="left-col">
+
+      <!-- Place lookup -->
+      <div class="card mb-2">
+        <div class="card-body p-2">
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" id="sb-place-input" class="form-control" placeholder="Enter name or lat, lon">
+            <button class="btn btn-outline-primary" id="sb-resolve-btn">Resolve</button>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="text-muted small fw-semibold flex-shrink-0">OR</span>
+            <select id="sb-example-select" class="form-select form-select-sm text-muted">
+              <option value="">load an example</option>
+              <option value="16.8167,-2.9833,Timbuktu,8,1100,1200">Timbuktu (L8)</option>
+              <option value="16.8167,-2.9833,Timbuktu,6,1100,1200">Timbuktu (L6)</option>
+              <option value="41.8933,12.4828,Rome,8,0,300">Rome (L8)</option>
+              <option value="41.8933,12.4828,Rome,6,0,300">Rome (L6)</option>
+              <option value="34.7972,114.3069,Kaifeng,8,1000,1100">Kaifeng (L8)</option>
+              <option value="34.7972,114.3069,Kaifeng,6,1000,1100">Kaifeng (L6)</option>
+              <option value="30.9626,46.1029,Tell el-Muqayyar (Ur),8,-3000,-2000">Tell el-Muqayyar / Ur (L8)</option>
+            </select>
+          </div>
+          <div id="sb-resolve-status" class="text-muted small mb-2" style="display:none;"></div>
+
+
+          <!-- Candidate list when multiple results -->
+          <div id="sb-candidates" class="list-group list-group-flush small mb-2" style="display:none;"></div>
+          <!-- Resolved place chip -->
+          <div id="sb-place-chip" class="d-none align-items-center gap-2 mb-2">
+            <span class="badge bg-primary" id="sb-place-name-badge"></span>
+            <span class="text-muted small" id="sb-coords-display"></span>
+            <button class="btn btn-link btn-sm p-0 text-danger" id="sb-clear-btn" title="Clear"><i class="bi  bi-x-circle"></i> clear</button>
+          </div>
+
+          <!-- Level + Bands -->
+          <div class="d-flex gap-2 align-items-start mb-2">
+            <div style="flex:0 0 auto;">
+              <label class="form-label mb-0" style="font-size:0.9rem;">Level</label>
+              <select class="form-select form-select-sm" id="sb-level" style="width:auto;">
+                <option value="8" selected>08</option>
+                <option value="6">06</option>
+              </select>
+            </div>
+            <div style="flex:1 1 auto;">
+              <label class="form-label mb-0" style="font-size:0.9rem;">Signature Bands</label>
+              <div id="sb-band-checks" class="d-flex flex-wrap gap-2 mt-1 ps-1">
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-A" value="A" checked>
+                  <label class="form-check-label" for="band-A" title="Physiographic">A</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-B" value="B" checked>
+                  <label class="form-check-label" for="band-B" title="Hydroclimatic">B</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-C" value="C" checked>
+                  <label class="form-check-label" for="band-C" title="Bioclimatic">C</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-D" value="D" checked>
+                  <label class="form-check-label" for="band-D" title="Anthropocene">D</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-E" value="E" checked>
+                  <label class="form-check-label" for="band-E" title="Coastality">E</label>
+                </div>
+                <div class="form-check form-check-inline me-0">
+                  <input class="form-check-input sb-band-chk" type="checkbox" id="band-T" value="T">
+                  <label class="form-check-label" for="band-T" title="Temporal (needs year range)">T</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- F-band year inputs — shown when F is checked -->
+          <div id="f-year-row" class="d-none mb-2">
+            <div class="d-flex gap-1 align-items-center">
+              <input type="number" id="f-year-start" class="form-control form-control-sm" style="width:80px" placeholder="from" min="-10000" max="2023">
+              <span class="text-muted small">–</span>
+              <input type="number" id="f-year-end" class="form-control form-control-sm" style="width:80px" placeholder="to" min="-10000" max="2023">
+              <input type="number" id="f-vssi-min" class="visually-hidden" value="5" min="0" step="1">
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-sm w-100" id="sb-sig-btn" disabled>
+            Get signature
+          </button>
+
+          <!-- Intro / instructions — hidden after first resolution -->
+          <div id="sb-intro-text" class="text-muted small mt-2"">
+            <p>On the map, <strong>zoom to a study area</strong>. This constrains the name search spatially</p>
+            <p>Enter a place name or coordinates and <strong>click Resolve</strong></p>
+            <p><strong>Select a candidate</strong> to preview its hydrological neighborhood at the selected basin scale level (08 is default)</p>
+            <p>Choose any combination of signature bands and click <strong>Get signature</strong> for the full environmental profile</p>
+              <ul id="band-list">
+                <li>A - Physiographic bedrock <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Elevation, slope, relief, lithology, karst. Stable over geological timescales; valid baseline for any historical period."></i></li>
+                <li>B - Hydro-climatic baselines <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="River discharge, runoff, groundwater, soils, wetlands. Discharge reflects the full upstream catchment, not just the local site."></i></li>
+                <li>C - Bioclimatic proxies <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Temperature, precipitation, aridity, biome, ecoregion. Contemporary climate baseline from BasinATLAS; Band T supersedes for period-specific queries."></i></li>
+                <li>D - Anthropocene markers <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Population density, cropland, human footprint, GDP. Present-day only — exclude for pre-modern analyses."></i></li>
+                <li>E - Coastality <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Distance to marine outlet, endorheic flag, outlet type. Captures hydrological connectivity to the sea."></i></li>
+                <li>T - Temporal context <i class="bi bi-question-circle text-muted" style="cursor:help;" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content="Period-specific land use from HYDE 3.4 (10000 BCE–2023 CE), climate reconstruction from LMR v2.1 (0–1998 CE), and volcanic events from eVolv2k (491 BCE–1890 CE). Requires a date range."></i></li>
+              </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explorer cross-link -->
+      <div class="text-muted small mt-1 mb-2 px-1">
+        Want to see how variables distribute globally? <a href="/sandbox/explorer" class="text-decoration-none">→ Open Explorer</a>
+      </div>
+
+      <!-- Signature summary -->
+      <div id="sb-summary-card" class="card" style="display:none;">
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+          <span>Summary</span>
+          <a href="#" id="sb-interp-link" class="d-none small text-decoration-none text-secondary" title="LLM interpretation">
+            <i class="bi bi-stars"></i> interpret
+          </a>
+        </div>
+        <div class="card-body p-2">
+          <div id="sb-summary"></div>
+        </div>
+      </div>
+
+    </div><!-- /left col -->
+
+    <!-- ===================== RIGHT COLUMN ===================== -->
+    <div class="col-md-8">
+
+      <!-- Map | Signature tabs -->
+      <div id="sb-right-tabs">
+        <ul class="nav nav-tabs mb-2" id="sbTabList" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-map-btn" data-bs-toggle="tab"
+                    data-bs-target="#pane-map" type="button" role="tab">Map</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link disabled" id="tab-sig-btn" data-bs-toggle="tab"
+                    data-bs-target="#pane-sig" type="button" role="tab">Signature</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link disabled" id="tab-analysis-btn" data-bs-toggle="tab"
+                    data-bs-target="#pane-analysis" type="button" role="tab">Analysis <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">α</span></button>
+          </li>
+        </ul>
+        <div class="tab-content">
+
+          <!-- Map pane -->
+          <div class="tab-pane fade show active" id="pane-map" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-baseline mb-1">
+              <h6 class="mb-0 text-muted" id="sb-map-title">Zoom to study area</h6>
+              <span class="small text-muted" id="sb-preview-meta"></span>
+            </div>
+            <div id="sb-preview-map" style="height:440px; border-radius:6px;"></div>
+            <div class="mt-1 small text-muted">Neighboring basins shaded by catchment size (darker = larger). <span style="color:#e8660a;font-weight:600;">Orange</span> = containing basin for queried point. Blue lines = main rivers.</div>
+          </div>
+
+          <!-- Signature pane -->
+          <div class="tab-pane fade" id="pane-sig" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+              <h5 id="sb-sig-heading" class="mb-0"></h5>
+              <span class="" id="sb-basin-meta"></span>
+            </div>
+            <div id="sb-accordions"></div>
+          </div>
+
+          <!-- Analysis pane -->
+          <div class="tab-pane fade" id="pane-analysis" role="tabpanel">
+            <div id="sb-analysis-body" class="text-muted small" style="line-height:1.6;">
+              <p class="mt-3">Run <strong>Get signature</strong> to populate analysis.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /right col -->
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<!-- About modal -->
+<div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="aboutModalLabel">EDOPS Sandbox — Research Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body fs-6">
+        <p>This sandbox is a pilot interface for <strong>EDOPS</strong> (Environmental Dimensions of Place Signature), a system for generating structured environmental profiles of geographic locations drawn from global physical and climatic data. EDOPS is designed and developed by <a href="https://kgeographer.org" target="_blank">Dr. Karl Grossner (@kgeographer)</a> with support and collaboration from the <a href="https://ishi.pitt.edu/" target="_blank">Institute for Spatial History Innovation (ISHI)</a> at the University of Pittsburgh.</p>
+        <p>For any place — located by name or coordinates — EDOPS returns a multi-band signature characterizing the local and upstream hydrological environment, bioclimate, physiography, and coastality. Band T adds period-specific paleoclimate reconstruction for queries anchored to a historical date ranges (0–1998 CE in one case, 10,000 BCE-2025 CE in another).</p>
+        <h6 class="mt-3">Status</h6>
+        <p>The signature data schema, API, and the sandbox page are under active development as of June 2026 and may change without notice. This sandbox interface is shared for early feedback from collaborators and potential users of the service. The public <a href="https://github.com/kgeographer/edops/" target="_blank">project GitHub repository</a> holds code and extensive documentation.</p>
+        <p>Place lookup uses the reconcile API of <a href="https://whgazetteer.org/" target="_blank">World Historical Gazetteer</a>,  which is itself a work in progress; coverage varies by region and period, and results will improve over time.</p>
+        <p>EDOPS is one component of a broader <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank"><i>Computing Place</i> initiative</a></p>
+        <p>The newly added <a href="/sandbox/explorer" target="_blank">EDOPS Explorer</a> page offers multiple views of the underlying datasets at global and regional scales.</p>
+        <h6 class="mt-3">Roadmap</h6>
+        <p>A future researcher dashboard will provide guidance on selection of signature bands and basin levels matched to specific research questions — moving from raw parameters toward users' interpretive workflows.</p>
+        <h6 class="mt-3">Feedback</h6>
+        <p>Comments, questions, and bug reports are welcome: <a id="about-contact-link">email</a></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API Guide modal -->
+<div class="modal fade" id="apiGuideModal" tabindex="-1" aria-labelledby="apiGuideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 80%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="apiGuideModalLabel">EDOPS API Guide</h5>
+        <div class="ms-auto me-3">
+          <a href="/docs" target="_blank" class="btn btn-sm btn-outline-secondary">Interactive schema (Swagger) ↗</a>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe src="/docs/api/" style="width:100%; height:80vh; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared modal: ecoregion Wikipedia + LLM interpretation -->
+<div class="modal fade" id="ecoModal" tabindex="-1" aria-labelledby="ecoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ecoModalLabel">Ecoregion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="ecoModalBody">
+        <p class="text-muted">Loading…</p>
+      </div>
+      <div class="modal-footer">
+        <a id="ecoModalWikiLink" href="#" target="_blank" class="btn btn-outline-secondary btn-sm" style="display:none;">
+          View Wikipedia page
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+// Initialize Bootstrap popovers
+document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el));
+
+// Obfuscated contact link
+(function() {
+  const u = 'karl.geog', d = 'gmail.com';
+  const a = document.getElementById('about-contact-link');
+  if (a) a.href = 'mailto:' + u + '@' + d;
+})();
+
+(() => {
+  // ── State ──────────────────────────────────────────────────────────────
+  let resolvedLat = null;
+  let resolvedLon = null;
+  let resolvedName = null;
+  let currentSig = null;
+  let mapPreview = null;
+  let previewLayers = {};
+  let candidateMarkers = [];
+  let previewData = null;
+
+  const CANDIDATE_COLORS = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#66c2a5','#999999','#ffff33'];
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function humanizeKey(k) {
+    return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function formatValue(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(3);
+    return String(v);
+  }
+  function setStatus(elId, msg, show = true) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = show ? '' : 'none';
+  }
+
+  // ── Place resolution ───────────────────────────────────────────────────
+  const placeInput    = document.getElementById('sb-place-input');
+  const resolveBtn    = document.getElementById('sb-resolve-btn');
+  const sigBtn        = document.getElementById('sb-sig-btn');
+  const clearBtn      = document.getElementById('sb-clear-btn');
+  const placeChip     = document.getElementById('sb-place-chip');
+  const candidatesEl  = document.getElementById('sb-candidates');
+
+  let whgResults = [];
+
+  resolveBtn.addEventListener('click', resolvePlace);
+  placeInput.addEventListener('keydown', e => { if (e.key === 'Enter') resolvePlace(); });
+  clearBtn.addEventListener('click', clearPlace);
+
+  async function resolvePlace() {
+    const q = placeInput.value.trim();
+    if (!q) return;
+
+    // Direct lat,lon entry
+    const coordMatch = q.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      setResolved(parseFloat(coordMatch[1]), parseFloat(coordMatch[2]), q);
+      return;
+    }
+
+    // Require map to be zoomed in before searching
+    if (!mapPreview || mapPreview.getZoom() < 4) {
+      setStatus('sb-resolve-status', 'Zoom in to your study region first, then search.');
+      return;
+    }
+
+    // WHG reconcile — returns candidate list with lat/lon/country
+    hideCandidates();
+    setStatus('sb-resolve-status', 'Searching WHG…');
+    try {
+      const b = mapPreview.getBounds();
+      const sw = b.getSouthWest(), ne = b.getNorthEast();
+      const poly = {type:'Polygon', coordinates:[[[sw.lng,sw.lat],[ne.lng,sw.lat],[ne.lng,ne.lat],[sw.lng,ne.lat],[sw.lng,sw.lat]]]};
+      const boundsParam = '&bounds=' + encodeURIComponent(JSON.stringify(poly));
+      const res = await fetch(`/api/whg-reconcile?q=${encodeURIComponent(q)}&size=10${boundsParam}`);
+      if (!res.ok) throw new Error(`WHG search failed (${res.status})`);
+      const data = await res.json();
+      whgResults = data.results || [];
+      window.whgResults = whgResults;  // dev: inspect in console
+      if (!whgResults.length) {
+        setStatus('sb-resolve-status', `No results found for "${q}".`);
+        return;
+      }
+      setStatus('sb-resolve-status', '', false);
+      showCandidates(whgResults);
+    } catch (err) {
+      setStatus('sb-resolve-status', `Error: ${err.message}`);
+    }
+  }
+
+  function renderCandidates(results) {
+    const html = results.map((r, idx) => {
+      const name    = escapeHtml(r.name);
+      const country = r.country ? ` <span class="text-muted">[${escapeHtml(r.country)}]</span>` : '';
+      const badge   = r.match ? ' <span class="badge bg-success" style="font-size:0.7rem;">exact</span>' : '';
+      const alts    = (r.alt_names && r.alt_names.length)
+        ? `<div class="text-muted" style="font-size:0.75rem;">aka: ${r.alt_names.slice(0,3).map(escapeHtml).join(', ')}</div>`
+        : '';
+      const hasCoords = r.lat && r.lon;
+      const dimStyle = !hasCoords ? ' style="opacity:0.5;cursor:default;pointer-events:none;"' : '';
+      const origIdx = whgResults.indexOf(r);
+      return `
+        <a href="#" class="list-group-item list-group-item-action py-1 px-2 whg-candidate"${dimStyle} data-idx="${origIdx}">
+          <div>
+            <span class="fw-semibold">${idx+1}. ${name}</span>${badge}${country}
+            ${alts}
+            ${!hasCoords ? '<div class="text-muted" style="font-size:0.72rem;">(no geometry)</div>' : ''}
+          </div>
+        </a>`;
+    }).join('');
+    candidatesEl.innerHTML = html || '<div class="list-group-item text-muted small">No results found.</div>';
+    candidatesEl.style.display = '';
+
+    candidatesEl.querySelectorAll('.whg-candidate[data-idx]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.preventDefault();
+        const idx = parseInt(el.getAttribute('data-idx'), 10);
+        const place = whgResults[idx];
+        if (!place || !place.lat || !place.lon) return;
+        setResolved(place.lat, place.lon, place.name);
+      });
+    });
+    showCandidateMarkers(results.filter(r => r.lat && r.lon));
+  }
+
+  function showCandidates(results) {
+    renderCandidates(results);
+  }
+
+  function hideCandidates() {
+    candidatesEl.style.display = 'none';
+    candidatesEl.innerHTML = '';
+    whgResults = [];
+    clearCandidateMarkers();
+  }
+
+  function clearCandidateMarkers() {
+    candidateMarkers.forEach(m => { if (mapPreview) mapPreview.removeLayer(m); });
+    candidateMarkers = [];
+  }
+
+  function showCandidateMarkers(results) {
+    clearCandidateMarkers();
+    if (!mapPreview) return;
+    const bounds = [];
+    results.forEach((r, idx) => {
+      if (!r.lat || !r.lon) return;
+      const color = CANDIDATE_COLORS[idx % CANDIDATE_COLORS.length];
+      bounds.push([r.lat, r.lon]);
+      const circle = L.circleMarker([r.lat, r.lon], {
+        radius: 10, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.85,
+      }).addTo(mapPreview);
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:22px;height:22px;background:${color};border:2px solid #fff;border-radius:50%;color:#fff;font-weight:bold;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.3);">${idx+1}</div>`,
+        iconSize: [22, 22], iconAnchor: [11, 11],
+      });
+      const label = L.marker([r.lat, r.lon], { icon }).addTo(mapPreview);
+      const ccodes = (r.countries || []).map(c => c.code).join(', ');
+      circle.bindPopup(`<strong>${idx+1}. ${escapeHtml(r.name)}</strong>${ccodes ? ` [${ccodes}]` : ''}`);
+      candidateMarkers.push(circle, label);
+    });
+    if (bounds.length === 1) {
+      mapPreview.setView(bounds[0], 8);
+    } else if (bounds.length > 1) {
+      mapPreview.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+    }
+  }
+
+  function setResolved(lat, lon, name) {
+    resolvedLat = lat; resolvedLon = lon; resolvedName = name;
+    document.getElementById('sb-place-name-badge').textContent = name;
+    document.getElementById('sb-coords-display').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    placeChip.classList.replace('d-none', 'd-flex');
+    sigBtn.disabled = false;
+    hideCandidates();   // clears candidate markers too
+    setStatus('sb-resolve-status', '', false);
+    // Switch to Map tab and auto-preview
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-map-btn')).show();
+    fetchPreview();
+    // Hide intro text after first use
+    const intro = document.getElementById('sb-intro-text');
+    if (intro) intro.style.display = 'none';
+  }
+
+  function clearPlace() {
+    resolvedLat = resolvedLon = resolvedName = currentSig = null;
+    previewData = null;
+    placeInput.value = '';
+    placeChip.classList.replace('d-flex', 'd-none');
+    sigBtn.disabled = true;
+    hideCandidates();
+    // Clear map layers
+    Object.values(previewLayers).forEach(l => mapPreview && mapPreview.removeLayer(l));
+    previewLayers = {};
+    document.getElementById('sb-preview-meta').textContent = '';
+    document.getElementById('sb-map-title').textContent = 'Zoom to study area';
+    // Clear signature tab
+    document.getElementById('sb-summary-card').style.display = 'none';
+    document.getElementById('sb-sig-heading').textContent = '';
+    document.getElementById('sb-basin-meta').textContent = '';
+    document.getElementById('sb-accordions').innerHTML = '';
+    // Clear analysis tab
+    document.getElementById('sb-analysis-body').innerHTML =
+      '<p class="mt-3">Run <strong>Get signature</strong> to populate analysis.</p>';
+    // Disable sig/analysis tabs until next signature fetch
+    document.getElementById('tab-sig-btn').classList.add('disabled');
+    document.getElementById('tab-analysis-btn').classList.add('disabled');
+    // Return to map tab and reset map view
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-map-btn')).show();
+    if (mapPreview) mapPreview.setView([20, 10], 2);
+    const intro = document.getElementById('sb-intro-text');
+    if (intro) intro.style.display = '';
+  }
+
+  // ── sigVal: read a field value from profile_groups items by key ────────
+  // Used by renderAnalysis so it doesn't depend on flat top-level fields.
+  function sigVal(sig, key) {
+    const groups = sig.profile_groups || {};
+    for (const g of Object.values(groups)) {
+      for (const item of (g.items || [])) {
+        if (item.key === key) return item.value;
+      }
+    }
+    return undefined;
+  }
+
+  // ── Bands checkboxes ───────────────────────────────────────────────────
+  function updateBandsDisplay() {
+    const selected = Array.from(document.querySelectorAll('.sb-band-chk:checked')).map(c => c.value);
+    document.getElementById('f-year-row').classList.toggle('d-none', !selected.includes('T'));
+  }
+
+  document.querySelectorAll('.sb-band-chk').forEach(cb => {
+    cb.addEventListener('change', updateBandsDisplay);
+  });
+
+  // ── Example selector ────────────────────────────────────────────────────
+  document.getElementById('sb-example-select').addEventListener('change', function() {
+    if (!this.value) return;
+    const [lat, lon, name, level, fromYear, toYear] = this.value.split(',');
+    this.value = '';  // reset dropdown
+    document.getElementById('sb-level').value = level;
+    document.getElementById('band-T').checked = true;
+    document.getElementById('f-year-start').value = fromYear;
+    document.getElementById('f-year-end').value = toYear;
+    updateBandsDisplay();
+    setResolved(parseFloat(lat), parseFloat(lon), name);
+    fetchSignature(false);  // keep user on map tab; sig loads in background
+  });
+
+  // ── Level switch: re-fetch sig + neighborhood if place already resolved ─
+  // Invalidate Leaflet size whenever map tab becomes visible (fixes L6 blank map)
+  document.getElementById('tab-map-btn').addEventListener('shown.bs.tab', () => {
+    mapPreview.invalidateSize();
+  });
+
+  document.getElementById('sb-level').addEventListener('change', () => {
+    if (resolvedLat === null) return;
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-map-btn')).show();
+    fetchPreview();
+    if (currentSig !== null) fetchSignature(false);
+  });
+
+  // ── Signature ──────────────────────────────────────────────────────────
+  sigBtn.addEventListener('click', fetchSignature);
+
+  async function fetchSignature(switchTab = true) {
+    if (resolvedLat === null) return;
+
+    const sigBands = Array.from(document.querySelectorAll('.sb-band-chk:checked'))
+      .map(cb => cb.value).join('');
+    const wantT   = document.getElementById('band-T').checked;
+    const ys      = document.getElementById('f-year-start').value.trim();
+    const ye      = document.getElementById('f-year-end').value.trim();
+
+    if (!sigBands) { alert('Select at least one band.'); return; }
+    if (wantT && (!ys || !ye)) { alert('Band T requires a year range (from – to).'); return; }
+
+    const level = document.getElementById('sb-level').value;
+    sigBtn.disabled = true;
+    sigBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Loading…';
+
+    try {
+      let sig = null;
+
+      let sigUrl = `/api/signature?lat=${resolvedLat}&lon=${resolvedLon}&bands=${sigBands}&level=${level}`;
+      if (wantT) sigUrl += `&from_year=${ys}&to_year=${ye}`;
+      const res = await fetch(sigUrl);
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Signature request failed'); }
+      sig = await res.json();
+      currentSig = sig;
+      window.currentSig = sig;  // dev: inspect in console
+
+      document.getElementById('tab-sig-btn').classList.remove('disabled');
+      document.getElementById('tab-analysis-btn').classList.remove('disabled');
+      renderSignature(sig, sig?.profile_groups?.T || null, switchTab);
+      if (sig) renderAnalysis(sig, previewData, parseInt(level));
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      sigBtn.disabled = false;
+      sigBtn.innerHTML = 'Get signature';
+    }
+  }
+
+  function buildAccordionPanel(code, label, body, isFirst, accId, note) {
+    const hId = `sb-h-${code}`, cId = `sb-c-${code}`;
+    const noteHtml = note
+      ? ` <small class="ms-2 fw-normal text-warning-emphasis" style="font-size:0.7rem">${escapeHtml(note.slice(0, 55))}… <span style="text-decoration:underline">more</span></small>`
+      : '';
+    return `
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="${hId}">
+          <button class="accordion-button ${isFirst?'':'collapsed'}" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#${cId}"
+                  aria-expanded="${isFirst}" aria-controls="${cId}">
+            ${escapeHtml(code)} — ${escapeHtml(label)}${noteHtml}
+          </button>
+        </h2>
+        <div id="${cId}" class="accordion-collapse collapse ${isFirst?'show':''}"
+             aria-labelledby="${hId}" data-bs-parent="#${accId}">
+          <div class="accordion-body p-2">${body}</div>
+        </div>
+      </div>`;
+  }
+
+  function buildClimSvg(series, valKey, posColor, negColor) {
+    const W = 560, H = 110, PL = 38, PB = 16, PT = 6, PR = 6;
+    const w = W - PL - PR, h = H - PB - PT;
+    const vals = series.map(d => d[valKey]);
+    const years = series.map(d => d.year);
+    const vMin = Math.min(Math.min(...vals), 0);
+    const vMax = Math.max(Math.max(...vals), 0);
+    const vRange = vMax - vMin || 1;
+    const toY  = v => PT + h * (1 - (v - vMin) / vRange);
+    const zeroY = toY(0);
+    const bw = w / series.length;
+
+    const bars = series.map((d, i) => {
+      const v  = d[valKey];
+      const x  = PL + i * bw;
+      const y  = v >= 0 ? toY(v) : zeroY;
+      const bh = Math.max(0.8, Math.abs(toY(v) - zeroY));
+      const fill = v >= 0 ? posColor : negColor;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, bw).toFixed(1)}" height="${bh.toFixed(1)}" fill="${fill}" opacity="0.75"/>`;
+    }).join('');
+
+    const fmt = v => Math.abs(v) < 0.01 ? v.toExponential(1) : v.toFixed(4);
+    const yLabels = [[vMax, fmt(vMax)], [0, '0'], [vMin, fmt(vMin)]].map(([v, lbl]) =>
+      `<text x="${PL - 3}" y="${(toY(v) + 3).toFixed(1)}" font-size="7.5" text-anchor="end" fill="#888">${lbl}</text>`,
+    ).join('');
+
+    const step = Math.max(1, Math.floor(series.length / 5));
+    const xLabels = series.filter((_, i) => i % step === 0 || i === series.length - 1).map(d => {
+      const x = PL + years.indexOf(d.year) * bw + bw / 2;
+      return `<text x="${x.toFixed(1)}" y="${(H - 2).toFixed(1)}" font-size="8" text-anchor="middle" fill="#888">${d.year}</text>`;
+    }).join('');
+
+    const zeroLine = `<line x1="${PL}" y1="${zeroY.toFixed(1)}" x2="${W - PR}" y2="${zeroY.toFixed(1)}" stroke="#555" stroke-width="0.6"/>`;
+
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;margin-bottom:0.75rem;">${bars}${zeroLine}${yLabels}${xLabels}</svg>`;
+  }
+
+  // Bar chart for a single non-negative HYDE pct variable.
+  // Optional p10/p90 band rendered behind bars (from per-cell km² → inferred basin pct).
+  function buildHydeSvg(epochs, varPct, barColor, p10Key, p90Key) {
+    const vals = epochs.map(e => e[varPct] || 0);
+    if (vals.every(v => v === 0))
+      return `<p class="text-muted small fst-italic mb-1">No ${varPct.replace('_pct','')} recorded for this basin and period.</p>`;
+    const W = 560, H = 90, PL = 42, PB = 18, PT = 6, PR = 6;
+    const w = W - PL - PR, h = H - PB - PT;
+    // include p90 projected values in vMax so bands are never clipped at chart ceiling
+    const p90Vals = p90Key ? epochs.map(e => {
+      const p90 = e[p90Key], area = e.basin_area_km2, n = e.n_cells;
+      return (p90 != null && area && n > 1) ? p90 * n / area * 100 : 0;
+    }) : [];
+    const vMax = Math.max(...vals, ...p90Vals, 0.01);
+    const toY  = v => PT + h * (1 - v / vMax);
+    const botY = PT + h;
+    const bw   = w / epochs.length;
+    let s = '';
+    // p10/p90 bands (behind bars)
+    epochs.forEach((e, i) => {
+      if (!p10Key || !p90Key) return;
+      const p10 = e[p10Key], p90 = e[p90Key];
+      const area = e.basin_area_km2, n = e.n_cells;
+      if (p10 == null || p90 == null || !area || n <= 1) return;
+      const lo = p10 * n / area * 100;
+      const hi = p90 * n / area * 100;
+      if (hi - lo < 0.001) return;
+      s += `<rect x="${(PL+i*bw).toFixed(1)}" y="${toY(hi).toFixed(1)}" width="${bw.toFixed(1)}" height="${(toY(lo)-toY(hi)).toFixed(1)}" fill="${barColor}" opacity="0.18"/>`;
+    });
+    // bars
+    epochs.forEach((e, i) => {
+      const v  = e[varPct] || 0;
+      const bh = Math.max(0.8, botY - toY(v));
+      s += `<rect x="${(PL+i*bw+0.5).toFixed(1)}" y="${toY(v).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${barColor}" opacity="0.75"/>`;
+    });
+    // y labels
+    const fmtP = v => v < 0.1 ? v.toFixed(3) : v.toFixed(1);
+    s += `<text x="${PL-3}" y="${(PT+4).toFixed(1)}" font-size="7.5" text-anchor="end" fill="#888">${fmtP(vMax)}%</text>`;
+    s += `<text x="${PL-3}" y="${(botY+3).toFixed(1)}" font-size="7.5" text-anchor="end" fill="#888">0</text>`;
+    // baseline
+    s += `<line x1="${PL}" y1="${botY.toFixed(1)}" x2="${W-PR}" y2="${botY.toFixed(1)}" stroke="#555" stroke-width="0.6"/>`;
+    // x labels
+    const step = Math.max(1, Math.floor(epochs.length / 5));
+    epochs.forEach((e, i) => {
+      if (i % step !== 0 && i !== epochs.length - 1) return;
+      const x = PL + i * bw + bw / 2;
+      const yr = e.year_ce < 0 ? `${Math.abs(e.year_ce)} BCE` : `${e.year_ce}`;
+      s += `<text x="${x.toFixed(1)}" y="${(H-2).toFixed(1)}" font-size="8" text-anchor="middle" fill="#888">${yr}</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;margin-bottom:0.4rem;">${s}</svg>`;
+  }
+
+  // Stacked bar chart for two non-negative HYDE pct variables (botPct on bottom, topPct stacked above).
+  // Optional p10/p90 band on the combined total.
+  function buildHydeStackedSvg(epochs, botPct, topPct, botColor, topColor, p10Key, p90Key) {
+    const totals = epochs.map(e => (e[botPct] || 0) + (e[topPct] || 0));
+    if (totals.every(v => v === 0))
+      return `<p class="text-muted small fst-italic mb-1">No grazing land recorded for this basin and period.</p>`;
+    const W = 560, H = 90, PL = 42, PB = 18, PT = 6, PR = 6;
+    const w = W - PL - PR, h = H - PB - PT;
+    // include p90 projected values in vMax so bands are never clipped at chart ceiling
+    const p90Vals = p90Key ? epochs.map(e => {
+      const p90 = e[p90Key], area = e.basin_area_km2, n = e.n_cells;
+      return (p90 != null && area && n > 1) ? p90 * n / area * 100 : 0;
+    }) : [];
+    const vMax = Math.max(...totals, ...p90Vals, 0.01);
+    const toY  = v => PT + h * (1 - v / vMax);
+    const botY = PT + h;
+    const bw   = w / epochs.length;
+    let s = '';
+    // p10/p90 bands on total (behind bars)
+    epochs.forEach((e, i) => {
+      if (!p10Key || !p90Key) return;
+      const p10 = e[p10Key], p90 = e[p90Key];
+      const area = e.basin_area_km2, n = e.n_cells;
+      if (p10 == null || p90 == null || !area || n <= 1) return;
+      const lo = p10 * n / area * 100;
+      const hi = p90 * n / area * 100;
+      if (hi - lo < 0.001) return;
+      s += `<rect x="${(PL+i*bw).toFixed(1)}" y="${toY(hi).toFixed(1)}" width="${bw.toFixed(1)}" height="${(toY(lo)-toY(hi)).toFixed(1)}" fill="${topColor}" opacity="0.18"/>`;
+    });
+    // stacked bars
+    epochs.forEach((e, i) => {
+      const vB = e[botPct] || 0;
+      const vT = e[topPct] || 0;
+      const x  = PL + i * bw + 0.5;
+      const bWidth = Math.max(1, bw - 1);
+      if (vB > 0) {
+        s += `<rect x="${x.toFixed(1)}" y="${toY(vB).toFixed(1)}" width="${bWidth.toFixed(1)}" height="${Math.max(0.8, botY-toY(vB)).toFixed(1)}" fill="${botColor}" opacity="0.85"/>`;
+      }
+      if (vT > 0) {
+        s += `<rect x="${x.toFixed(1)}" y="${toY(vB+vT).toFixed(1)}" width="${bWidth.toFixed(1)}" height="${Math.max(0.8, toY(vB)-toY(vB+vT)).toFixed(1)}" fill="${topColor}" opacity="0.75"/>`;
+      }
+    });
+    // y labels
+    const fmtP = v => v < 0.1 ? v.toFixed(3) : v.toFixed(1);
+    s += `<text x="${PL-3}" y="${(PT+4).toFixed(1)}" font-size="7.5" text-anchor="end" fill="#888">${fmtP(vMax)}%</text>`;
+    s += `<text x="${PL-3}" y="${(botY+3).toFixed(1)}" font-size="7.5" text-anchor="end" fill="#888">0</text>`;
+    // baseline
+    s += `<line x1="${PL}" y1="${botY.toFixed(1)}" x2="${W-PR}" y2="${botY.toFixed(1)}" stroke="#555" stroke-width="0.6"/>`;
+    // x labels
+    const step = Math.max(1, Math.floor(epochs.length / 5));
+    epochs.forEach((e, i) => {
+      if (i % step !== 0 && i !== epochs.length - 1) return;
+      const x = PL + i * bw + bw / 2;
+      const yr = e.year_ce < 0 ? `${Math.abs(e.year_ce)} BCE` : `${e.year_ce}`;
+      s += `<text x="${x.toFixed(1)}" y="${(H-2).toFixed(1)}" font-size="8" text-anchor="middle" fill="#888">${yr}</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;margin-bottom:0.4rem;">${s}</svg>`;
+  }
+
+  function buildTemporalBody(data) {
+    const gc  = data.grid_cell;
+    const uid = `tbf-${Date.now()}`;
+    const lmrAvailable = data.lmr_status === 'available';
+    const tipIcon = tip =>
+      `<i class="bi bi-question-circle text-muted ms-1" style="font-size:0.8rem;cursor:help;"
+          data-bs-toggle="tooltip" data-bs-title="${escapeHtml(tip)}"></i>`;
+
+    // ── CLIMATE TAB (LMR 2.1) ──
+    const gcStr = gc ? `${gc.lat}°N, ${gc.lon}°E` : 'n/a';
+    const tNotes = [data.lmr_out_of_range_note, data.lmr_fidelity_note, data.lmr_proxy_bias_note].filter(Boolean);
+    const tNoteAlerts = tNotes.map(n =>
+      `<div class="alert alert-warning py-1 px-2 mb-2" style="font-size:0.78rem">${escapeHtml(n)}</div>`
+    ).join('');
+
+    const pdsiSeries = data.pdsi_series || [];
+    const pdsiContent = pdsiSeries.length
+      ? `<div class="small mb-1 text-muted">
+           Mean <strong>${data.pdsi_mean}</strong> &nbsp;
+           Min <strong>${data.pdsi_min}</strong> &nbsp;
+           Max <strong>${data.pdsi_max}</strong>
+           ${tipIcon('Palmer Drought Severity Index from LMR v2.1. Positive = wetter than average; negative = drier. Anomaly relative to 1951–1980 reference.')}
+         </div>
+         ${buildClimSvg(pdsiSeries, 'pdsi', '#4e8fbf', '#b05a2f')}`
+      : `<div class="text-muted small">No PDSI data for this period.</div>`;
+
+    const airSeries = data.air_series || [];
+    const airContent = airSeries.length
+      ? `<div class="small mb-1 text-muted">
+           Mean anomaly <strong>${data.air_mean_anom_k} K</strong>
+           ${tipIcon('2m air temperature anomaly (K) from LMR v2.1 ensemble mean. Positive = warmer than the 20th-century reference period average (1951–1980).')}
+         </div>
+         ${buildClimSvg(airSeries, 'air_anom_k', '#c0392b', '#2980b9')}`
+      : `<div class="text-muted small">No temperature data for this period.</div>`;
+
+    const prateSeries = data.prate_series || [];
+    const prateContent = prateSeries.length
+      ? `<div class="small mb-1 text-muted">
+           Mean anomaly <strong>${data.prate_mean_anom_mm_day} mm/day</strong>
+           ${tipIcon('Precipitation rate anomaly (mm/day) from LMR v2.1 ensemble mean. Positive = wetter than the 20th-century reference period average (1951–1980).')}
+         </div>
+         ${buildClimSvg(prateSeries, 'prate_anom_mm_day', '#27ae60', '#8e44ad')}`
+      : `<div class="text-muted small">No precipitation data for this period.</div>`;
+
+    const climTabContent = `
+      ${lmrAvailable ? `<div class="small mb-2 text-muted">
+        <strong>Grid cell</strong>: ${gcStr} &nbsp;|&nbsp;
+        <strong>Period</strong>: ${data.year_start}–${data.year_end} CE
+      </div>` : ''}
+      ${tNoteAlerts}
+      ${lmrAvailable ? `<ul class="nav nav-tabs nav-sm mb-0" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active py-1 px-2" id="${uid}-pdsi-tab"
+            data-bs-toggle="tab" data-bs-target="#${uid}-pdsi"
+            type="button" role="tab" style="font-size:0.82rem;">PDSI</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link py-1 px-2" id="${uid}-air-tab"
+            data-bs-toggle="tab" data-bs-target="#${uid}-air"
+            type="button" role="tab" style="font-size:0.82rem;">Temperature</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link py-1 px-2" id="${uid}-prate-tab"
+            data-bs-toggle="tab" data-bs-target="#${uid}-prate"
+            type="button" role="tab" style="font-size:0.82rem;">Precipitation</button>
+        </li>
+      </ul>
+      <div class="tab-content border border-top-0 rounded-bottom p-2">
+        <div class="tab-pane fade show active" id="${uid}-pdsi" role="tabpanel">${pdsiContent}</div>
+        <div class="tab-pane fade" id="${uid}-air"              role="tabpanel">${airContent}</div>
+        <div class="tab-pane fade" id="${uid}-prate"            role="tabpanel">${prateContent}</div>
+      </div>` : ''}`;
+
+    // ── LAND USE TAB (HYDE 3.4) ──
+    const hydeData   = data.hyde_land_use || {};
+    const hydeEpochs = hydeData.epochs || [];
+    const hydeNote   = hydeData._note  || '';
+    let hydeTabContent;
+    if (!hydeEpochs.length) {
+      hydeTabContent = `<div class="text-muted small">No HYDE land-use data for this period.</div>`;
+    } else {
+      const ep0    = hydeEpochs[0];
+      const nCells = ep0.n_cells;
+      const areaKm2 = ep0.basin_area_km2;
+      const bandNote = nCells > 1
+        ? ` &nbsp;|&nbsp; ${nCells} cells (band = cell spread)`
+        : ` &nbsp;|&nbsp; Single cell`;
+      hydeTabContent = `
+        <div class="small fw-semibold mb-1">Cropland
+          ${tipIcon('Cropland (HYDE 3.4, ~10 km resolution) as % of basin area. The light band behind each bar shows the p10–p90 spread of individual cell values: a tall band above a short bar means cropland is concentrated in a few cells (patchy); band flush with bar means it is spread evenly across the basin.')}
+        </div>
+        ${buildHydeSvg(hydeEpochs, 'cropland_pct', '#c8963e', 'cropland_p10', 'cropland_p90')}
+        <div class="small fw-semibold mb-1 mt-1">Grazing land
+          <span class="text-muted fw-normal" style="font-size:0.78rem;">
+            &nbsp;<span style="display:inline-block;width:10px;height:10px;background:#7ba05b;opacity:0.85;vertical-align:middle;"></span> Pasture (managed)
+            &nbsp;<span style="display:inline-block;width:10px;height:10px;background:#b5c98a;opacity:0.75;vertical-align:middle;"></span> Rangeland (extensive)
+          </span>
+          ${tipIcon('Total grazing land = managed pasture + extensive rangeland (HYDE 3.4), stacked by type. The light band shows the p10–p90 spread of total grazing across cells: tall band = patchy distribution; band flush with bar = evenly spread.')}
+        </div>
+        ${buildHydeStackedSvg(hydeEpochs, 'pasture_pct', 'rangeland_pct', '#7ba05b', '#b5c98a', 'grazing_p10', 'grazing_p90')}
+        <div class="text-muted" style="font-size:0.76rem;border-top:1px solid #eee;padding-top:0.35rem;margin-top:0.1rem;">
+          Basin area ${areaKm2 ? areaKm2.toFixed(0) : '—'} km²${bandNote}
+          ${hydeNote ? ` &nbsp;|&nbsp; ${escapeHtml(hydeNote)}` : ''}
+        </div>`;
+    }
+
+    // ── VOLCANO TAB (eVolv2k) ──
+    let volcTabContent;
+    if (data.volcanic_events && data.volcanic_events.length) {
+      const tipV = tipIcon('Stratospheric aerosol injection (VSSI, Tg) from eVolv2k v4. Larger values indicate eruptions with stronger global cooling potential.');
+      const rows = data.volcanic_events.map(e =>
+        `<tr><td>${e.year_ad}</td><td>${e.vssi_tg}</td><td>${e.vssi_1sig ?? '—'}</td>
+         <td>${e.asymmetry !== null ? e.asymmetry.toFixed(2) : '—'}</td>
+         <td>${e.location || 'unknown'}</td><td>${e.tephra ? 'Y' : 'N'}</td></tr>`,
+      ).join('');
+      volcTabContent = `<table class="table table-sm table-bordered mb-0" style="font-size:0.78rem;">
+        <thead class="table-light">
+          <tr><th>Year</th><th>vssi (Tg) ${tipV}</th><th>±1σ</th><th>Asym.</th><th>Location</th><th>Tephra</th></tr>
+        </thead><tbody>${rows}</tbody>
+      </table>`;
+    } else {
+      const volcNote = data.volcanic_events_note
+        ? `<div class="alert alert-warning py-1 px-2 mt-2 mb-0" style="font-size:0.78rem">${escapeHtml(data.volcanic_events_note)}</div>`
+        : '';
+      volcTabContent = `<div class="text-muted small">No volcanic events above threshold in this period.</div>${volcNote}`;
+    }
+
+    // ── OUTER 3-TAB STRUCTURE ──
+    // Default active tab: Land use when LMR out of range (HYDE is the only data source),
+    // otherwise Climate.
+    const climActive = lmrAvailable ? 'active' : '';
+    const hydeActive = lmrAvailable ? '' : 'active';
+    const climShow   = lmrAvailable ? 'show active' : '';
+    const hydeShow   = lmrAvailable ? '' : 'show active';
+
+    return `
+    <ul class="nav nav-tabs mb-0" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link ${climActive} px-3 py-1" id="${uid}-clim-tab"
+          data-bs-toggle="tab" data-bs-target="#${uid}-clim"
+          type="button" role="tab">Climate (LMR 2.1)</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link ${hydeActive} px-3 py-1" id="${uid}-hyde-tab"
+          data-bs-toggle="tab" data-bs-target="#${uid}-hyde"
+          type="button" role="tab">Land use (HYDE 3.4)</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link px-3 py-1" id="${uid}-volc-tab"
+          data-bs-toggle="tab" data-bs-target="#${uid}-volc"
+          type="button" role="tab">Volcanic events (eVolv2k)</button>
+      </li>
+    </ul>
+    <div class="tab-content border border-top-0 rounded-bottom p-2" style="min-height:8rem;">
+      <div class="tab-pane fade ${climShow}" id="${uid}-clim" role="tabpanel">${climTabContent}</div>
+      <div class="tab-pane fade ${hydeShow}" id="${uid}-hyde" role="tabpanel">${hydeTabContent}</div>
+      <div class="tab-pane fade"             id="${uid}-volc" role="tabpanel">${volcTabContent}</div>
+    </div>`;
+  }
+
+  function renderSignature(sig, temporalData = null, switchTab = true) {
+    if (switchTab) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-sig-btn')).show();
+
+    document.getElementById('sb-summary-card').style.display = sig ? '' : 'none';
+    const interpLink = document.getElementById('sb-interp-link');
+    if (interpLink) interpLink.classList.toggle('d-none', !sig);
+
+    const level = document.getElementById('sb-level').value;
+    document.getElementById('sb-sig-heading').textContent =
+      (resolvedName || 'Environmental signature') + ` (Level 0${level})`;
+
+    // Basin meta: ID + API/JSON link
+    const metaEl = document.getElementById('sb-basin-meta');
+    if (sig) {
+      const sigBands = Array.from(document.querySelectorAll('.sb-band-chk:checked'))
+        .map(cb => cb.value).join('');
+      const wantT = document.getElementById('band-T').checked;
+      const ys = document.getElementById('f-year-start').value.trim();
+      const ye = document.getElementById('f-year-end').value.trim();
+      let apiUrl = `/api/signature?lat=${resolvedLat}&lon=${resolvedLon}&bands=${sigBands}&level=${document.getElementById('sb-level').value}`;
+      if (wantT && ys && ye) apiUrl += `&from_year=${ys}&to_year=${ye}`;
+      metaEl.innerHTML = `Basin ${escapeHtml(String(sig.id ?? ''))}
+        &ensp;<i class="bi bi-braces"></i>
+        <a href="#" id="sb-json-link" class="text-primary text-decoration-none" title="API URL &amp; JSON">
+           JSON / API
+        </a>`;
+      // Attach handler (replace any prior listener by cloning the node)
+      const jsonLink = metaEl.querySelector('#sb-json-link');
+      jsonLink.addEventListener('click', e => {
+        e.preventDefault();
+        document.getElementById('ecoModalLabel').textContent = 'API URL & JSON payload';
+        document.getElementById('ecoModalWikiLink').style.display = 'none';
+        document.getElementById('ecoModalBody').innerHTML = `
+          <div class="mb-3">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="fw-semibold small">API URL</span>
+              <button class="btn btn-outline-secondary btn-sm py-0 px-1" id="sb-copy-url-btn" title="Copy URL">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <code id="sb-api-url-text" class="d-block small p-2 bg-light rounded" style="word-break:break-all;">${escapeHtml(window.location.origin + apiUrl)}</code>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="fw-semibold small">JSON payload</span>
+              <button class="btn btn-outline-secondary btn-sm py-0 px-1" id="sb-copy-json-btn" title="Copy JSON">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <pre class="small p-2 bg-light rounded mt-1" style="max-height:400px;overflow-y:auto;">${escapeHtml(JSON.stringify(sig, null, 2))}</pre>
+          </div>`;
+        ecoModal.show();
+        document.getElementById('sb-copy-url-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(window.location.origin + apiUrl).then(() => {
+            document.getElementById('sb-copy-url-btn').innerHTML = '<i class="bi bi-clipboard-check"></i>';
+          });
+        });
+        document.getElementById('sb-copy-json-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(JSON.stringify(sig, null, 2)).then(() => {
+            document.getElementById('sb-copy-json-btn').innerHTML = '<i class="bi bi-clipboard-check"></i>';
+          });
+        });
+      });
+    } else {
+      metaEl.innerHTML = '';
+    }
+
+    if (sig) {
+      const summaryEl = document.getElementById('sb-summary');
+      const items = Array.isArray(sig.profile_summary) ? sig.profile_summary : [];
+      summaryEl.innerHTML = items.map(it => {
+        const label = escapeHtml(it.label || humanizeKey(it.key || ''));
+        const isEco = it.key === 'ecoregion';
+        const valueHtml = isEco
+          ? `<a href="#" class="sb-eco-link" data-eco-id="${escapeHtml(String(sig.eco_id ?? ''))}">${escapeHtml(formatValue(it.value))}</a>`
+          : escapeHtml(formatValue(it.value));
+        return `<div class="d-flex justify-content-between gap-2 py-1 border-bottom">
+           <div class="text-muted">${label}</div>
+           <div class="text-end">${valueHtml}</div>
+         </div>`;
+      }).join('') || '<div class="text-muted">No summary fields.</div>';
+    }
+
+    const accEl = document.getElementById('sb-accordions');
+    const accId = 'sbAccordion';
+    let panels = '';
+    let first = true;
+
+    if (sig) {
+      const groups = sig.profile_groups || {};
+      ['A','B','C','D','E'].filter(c => groups[c]).forEach(code => {
+        const g = groups[code];
+        const notes = Array.isArray(g._note) ? g._note : (g._note ? [g._note] : []);
+        const noteAlerts = notes.map(n =>
+          `<div class="alert alert-warning py-1 px-2 mb-2" style="font-size:0.78rem">${escapeHtml(n)}</div>`
+        ).join('');
+        const rows = (g.items || []).map(it =>
+          `<div class="d-flex justify-content-between gap-2 py-1 border-bottom">
+             <div class="text-muted">${escapeHtml(it.label || humanizeKey(it.key || ''))}</div>
+             <div class="text-end">${escapeHtml(formatValue(it.value))}</div>
+           </div>`,
+        ).join('') || '<div class="text-muted">(no fields)</div>';
+        const body = noteAlerts + rows;
+        panels += buildAccordionPanel(code, g.label || code, body, first, accId, notes[0] || null);
+        first = false;
+      });
+      if (temporalData && temporalData._status === 'ok') {
+        panels += buildAccordionPanel('T', 'Temporal context', buildTemporalBody(temporalData), first, accId);
+      }
+    }
+
+    accEl.innerHTML = `<div class="accordion" id="${accId}">${panels}</div>`;
+    // Init tooltips on dynamically inserted content
+    accEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      new bootstrap.Tooltip(el);
+    });
+  }
+
+  // ── Map initialization (eager, so candidate markers can appear before any preview) ──
+  function initMap() {
+    mapPreview = L.map('sb-preview-map').setView([20, 10], 2);
+    L.tileLayer('https://tiles.openstreetmap.us/raster/hillshade/{z}/{x}/{y}.jpg', {
+      maxZoom: 12, opacity: 1.0,
+      attribution: 'Hillshade: &copy; OpenStreetMap US',
+    }).addTo(mapPreview);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, opacity: 0.50,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(mapPreview);
+  }
+  initMap();
+  window.mapPreview = mapPreview;  // dev: expose for console inspection
+
+  // ── Analysis (alpha) ───────────────────────────────────────────────────
+
+  function renderAnalysis(sig, preview, level = 8) {
+    const el = document.getElementById('sb-analysis-body');
+    if (!el) return;
+
+    // ── helpers ──
+    const fmt  = v => (v == null) ? '—' : (Number.isInteger(v) ? v.toLocaleString() : Number(v).toLocaleString(undefined, {maximumFractionDigits: 1}));
+    const fmtR = v => (v == null || !isFinite(v)) ? '—' : v.toFixed(2) + '×';
+    const ratio = (a, b) => (a && b && b !== 0) ? a / b : null;
+
+    // ── extract fields ──
+    const upArea   = sig.up_area;                          // km² — top-level (not in profile_groups)
+    const distSink = sigVal(sig, 'dist_sink');             // km
+    const coast    = sigVal(sig, 'coast_flag');
+    const endo     = sigVal(sig, 'endorheic');
+    const precip_s = sigVal(sig, 'precip_yr'),   precip_u = sigVal(sig, 'precip_yr_upstream');
+    const arid_s   = sigVal(sig, 'aridity'),     arid_u   = sigVal(sig, 'aridity_upstream');
+    const temp_s   = sigVal(sig, 'temp_yr'),     temp_u   = sigVal(sig, 'temp_yr_upstream');
+    const disch    = sigVal(sig, 'discharge_yr');          // m³/s
+    const runoff   = sigVal(sig, 'runoff');                // mm/yr
+
+    const precipR  = ratio(precip_u, precip_s);
+    const aridR    = ratio(arid_u, arid_s);
+    const tempR    = ratio(temp_u, temp_s);
+
+    // ── scale mismatch from preview (only meaningful when preview and sig are same level) ──
+    let scaleHtml = '';
+    if (level === 8 && preview && preview.containing_basin && preview.adjacent_basins) {
+      const cUp = preview.containing_basin.properties.up_area;
+      const adjAreas = preview.adjacent_basins.features.map(f => f.properties.up_area);
+      const maxAdj = adjAreas.length ? Math.max(...adjAreas) : null;
+      const mismatch = (cUp && maxAdj) ? maxAdj / cUp : null;
+      if (mismatch && mismatch > 50) {
+        scaleHtml = `<div class="alert alert-warning py-2 px-3 mb-3" style="font-size:0.82rem;">
+          <strong>Scale mismatch</strong> — assigned basin (${fmt(cUp)} km²) is
+          ${Math.round(mismatch).toLocaleString()}× smaller than the largest adjacent basin
+          (${fmt(maxAdj)} km²). The signature may not capture the dominant hydrological setting.
+          See Map tab.
+        </div>`;
+      }
+    }
+
+    // ── drainage fate badge ──
+    // dist_sink=0 means this basin IS the outlet — coastal regardless of coast_flag
+    let fateBadge = '';
+    if (endo && endo !== 0) {
+      fateBadge = '<span class="badge bg-secondary me-1">Endorheic</span>';
+    } else if (distSink != null && (distSink < 1 || (coast && distSink < 10))) {
+      fateBadge = '<span class="badge bg-info text-dark me-1">Coastal terminal</span>';
+    } else {
+      fateBadge = '<span class="badge bg-light text-dark border me-1">Exorheic interior</span>';
+    }
+
+    // ── divergence row coloring ──
+    const ratioClass = r => {
+      if (r == null) return '';
+      const d = Math.abs(r - 1);
+      if (d < 0.1) return 'text-muted';
+      if (d < 0.3) return 'text-warning-emphasis';
+      return 'fw-semibold text-danger';
+    };
+
+    // ── small-basin caveat ──
+    // Threshold is level-dependent: L08 micro-basins < 5000 km²; L06 basins are inherently
+    // larger so only flag genuinely tiny ones (< 500 km²). Ratios of 1.0× at L06 usually
+    // reflect genuine homogeneity, not a data artifact.
+    const smallBasinThreshold = level === 6 ? 500 : 5000;
+    const smallBasin = upArea != null && upArea < smallBasinThreshold;
+    const suNote = smallBasin
+      ? `<p class="text-muted fst-italic mb-2" style="font-size:0.8rem;">Small upstream catchment (${fmt(upArea)} km²) — local and upstream conditions are nearly identical at this scale. The ratios below reflect basin-internal averaging, not a meaningful local/upstream contrast.</p>`
+      : '';
+
+    // ── water provenance classification ──
+    let provLabel = '', provNote = '';
+    if (endo && endo !== 0) {
+      provLabel = '<span class="badge bg-secondary">Endorheic</span>';
+      provNote  = 'Basin has no ocean outlet. Water accumulates locally (evaporation, infiltration).';
+    } else if (coast && distSink != null && distSink < 10) {
+      provLabel = '<span class="badge bg-info text-dark">Coastal terminal</span>';
+      provNote  = 'Direct coastal drainer. Local precipitation dominates water supply.';
+    } else if (!smallBasin && precipR != null && precipR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream catchment delivers ${fmtR(precipR)} the precipitation of the local basin — water originating outside the local drainage area is the dominant supply.`;
+    } else if (!smallBasin && aridR != null && aridR > 1.5) {
+      provLabel = '<span class="badge bg-primary">Exogenous water supply</span>';
+      provNote  = `Upstream moisture index is ${fmtR(aridR)} that of the local basin — the catchment is substantially wetter than the local setting.`;
+    } else if (smallBasin) {
+      provLabel = '<span class="badge bg-secondary">Undetermined — small basin</span>';
+      provNote  = 'Basin too small to resolve local/upstream contrast. Consult neighborhood context.';
+    } else {
+      // Check whether all ratios are near 1.0 (uniform catchment) vs. modest divergence (local-dominant)
+      const nearUnity = r => r == null || (r >= 0.9 && r <= 1.1);
+      const uniform = nearUnity(precipR) && nearUnity(aridR) && nearUnity(tempR);
+      if (uniform) {
+        provLabel = '<span class="badge bg-secondary">Catchment-uniform</span>';
+        provNote  = 'Climate conditions are consistent throughout the upstream catchment — no significant local/upstream contrast.';
+      } else {
+        provLabel = '<span class="badge bg-success">Local-dominant</span>';
+        provNote  = 'Upstream conditions differ modestly from local — water supply is primarily generated within the regional catchment.';
+      }
+    }
+
+    el.innerHTML = `
+      ${scaleHtml}
+
+      <h6 class="fw-semibold mb-2">Basin context <span class="badge bg-light text-dark border ms-1" style="font-size:0.7rem;">Level 0${level}</span></h6>
+      <table class="table table-sm table-borderless mb-3" style="font-size:0.83rem;">
+        <tbody>
+          <tr><td class="text-muted pe-3" style="width:55%;">Upstream catchment</td>
+              <td><strong>${fmt(upArea)}</strong> km²</td></tr>
+          <tr><td class="text-muted pe-3">Distance to ocean outlet</td>
+              <td><strong>${fmt(distSink)}</strong> km</td></tr>
+          <tr><td class="text-muted pe-3">Drainage type</td>
+              <td>${fateBadge}</td></tr>
+        </tbody>
+      </table>
+
+      <h6 class="fw-semibold mb-1">Local–upstream divergence</h6>
+      ${suNote}
+      <table class="table table-sm mb-3" style="font-size:0.83rem;">
+        <thead class="table-light">
+          <tr>
+            <th style="width:38%;">Variable</th>
+            <th>Local (s)</th>
+            <th>Upstream (u)</th>
+            <th>Ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-muted">Precipitation (mm/yr)</td>
+            <td>${fmt(precip_s)}</td>
+            <td>${fmt(precip_u)}</td>
+            <td class="${ratioClass(precipR)}">${fmtR(precipR)}</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Moisture index (P/PET)</td>
+            <td>${fmt(arid_s)}</td>
+            <td>${fmt(arid_u)}</td>
+            <td class="${ratioClass(aridR)}">${fmtR(aridR)}</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Temperature (°C)</td>
+            <td>${fmt(temp_s)}</td>
+            <td>${fmt(temp_u)}</td>
+            <td class="${ratioClass(tempR)}">${fmtR(tempR)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h6 class="fw-semibold mb-1">Water provenance</h6>
+      <div class="mb-1">${provLabel}</div>
+      <p class="text-muted mb-0" style="font-size:0.82rem;">${provNote}</p>
+    `;
+  }
+
+  // ── Neighborhood preview ───────────────────────────────────────────────
+  async function fetchPreview() {
+    if (resolvedLat === null) return;
+    const level = document.getElementById('sb-level').value;
+    try {
+      const res = await fetch(`/api/basin-preview?lat=${resolvedLat}&lon=${resolvedLon}&level=${level}`);
+      if (!res.ok) throw new Error('Preview failed');
+      renderPreview(await res.json());
+    } catch (err) {
+      document.getElementById('sb-preview-meta').textContent = 'Preview unavailable';
+      console.warn(`Preview error: ${err.message}`);
+    }
+  }
+
+  function basinColor(up_area) {
+    // Log scale: log10(100)≈2 (tiny) → log10(400000)≈5.6 (Niger main)
+    const t = Math.min(Math.max((Math.log10(Math.max(up_area, 1)) - 2) / 3.6, 0), 1);
+    return `rgb(${Math.round(220 - t*170)},${Math.round(220 - t*130)},${Math.round(220 + t*35)})`;
+  }
+
+  function renderPreview(data) {
+    previewData = data;
+    // Clear previous basin/river layers (candidate markers already cleared by setResolved)
+    Object.values(previewLayers).forEach(l => mapPreview.removeLayer(l));
+    previewLayers = {};
+    mapPreview.invalidateSize();
+
+    // Adjacent basins — choropleth by upstream area
+    if (data.adjacent_basins) {
+      previewLayers.adjacent = L.geoJSON(data.adjacent_basins, {
+        style: f => ({
+          fillColor: basinColor(f.properties.up_area),
+          fillOpacity: 0.65,
+          color: '#888', weight: 0.5,
+        }),
+        onEachFeature: (f, layer) => {
+          layer.bindTooltip(`upstream area: ${f.properties.up_area.toLocaleString()} km²`);
+        },
+      }).addTo(mapPreview);
+    }
+
+    // Containing basin — orange
+    if (data.containing_basin) {
+      previewLayers.containing = L.geoJSON(data.containing_basin, {
+        style: { fillColor: '#e8660a', fillOpacity: 0.55, color: '#b84a00', weight: 2 },
+      }).bindTooltip(
+        `Current assignment<br>upstream area: ${data.containing_basin.properties.up_area.toLocaleString()} km²`,
+      ).addTo(mapPreview);
+    }
+
+    // Rivers — blue, weight by order class (1=largest)
+    if (data.rivers) {
+      previewLayers.rivers = L.geoJSON(data.rivers, {
+        style: f => ({
+          color: '#1a6fbd',
+          weight: f.properties.ord_clas === 1 ? 2.5 : 1.2,
+          opacity: 0.85,
+        }),
+      }).addTo(mapPreview);
+    }
+
+    // Point marker
+    previewLayers.point = L.circleMarker([data.point.lat, data.point.lon], {
+      radius: 7, fillColor: '#e03030', color: '#fff', weight: 2, fillOpacity: 1,
+    }).bindTooltip(
+      `${resolvedName || ''}<br>${data.point.lat.toFixed(4)}, ${data.point.lon.toFixed(4)}`,
+    ).addTo(mapPreview);
+
+    // Fit to adjacent basins extent — defer until after container is fully visible
+    setTimeout(() => {
+      mapPreview.invalidateSize();
+      if (previewLayers.adjacent) {
+        const bounds = previewLayers.adjacent.getBounds();
+        if (bounds && bounds.isValid()) {
+          mapPreview.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+          mapPreview.setView([data.point.lat, data.point.lon], 9);
+        }
+      } else {
+        mapPreview.setView([data.point.lat, data.point.lon], 9);
+      }
+    }, 100);
+
+    // Meta line
+    const containUp = data.containing_basin
+      ? data.containing_basin.properties.up_area.toLocaleString() : '—';
+    const maxAdj = data.adjacent_basins && data.adjacent_basins.features.length
+      ? data.adjacent_basins.features[0].properties.up_area.toLocaleString() : '—';
+    document.getElementById('sb-preview-meta').textContent =
+      `Assigned: ${containUp} km²  ·  Largest nearby: ${maxAdj} km²`;
+    document.getElementById('sb-map-title').textContent =
+      `Neighborhood preview (level ${document.getElementById('sb-level').value})`;
+  }
+
+  // ── Shared modal: ecoregion Wikipedia + LLM interpretation ─────────────
+  const ecoModal     = new bootstrap.Modal(document.getElementById('ecoModal'));
+  const ecoModalBody = document.getElementById('ecoModalBody');
+  const ecoModalLink = document.getElementById('ecoModalWikiLink');
+
+  // Ecoregion link click → Wikipedia summary
+  document.addEventListener('click', async e => {
+    const link = e.target.closest('.sb-eco-link');
+    if (!link) return;
+    e.preventDefault();
+    const ecoId = link.dataset.ecoId;
+    const ecoName = link.textContent.trim();
+    document.getElementById('ecoModalLabel').textContent = ecoName;
+    ecoModalBody.innerHTML = '<p class="text-muted">Loading…</p>';
+    ecoModalLink.style.display = 'none';
+    ecoModal.show();
+    try {
+      const resp = await fetch(`/api/eco/wikitext?eco_id=${encodeURIComponent(ecoId)}`);
+      const data = await resp.json();
+      if (data.summary) {
+        ecoModalBody.innerHTML = `<p>${escapeHtml(data.summary)}</p>`;
+      } else {
+        ecoModalBody.innerHTML = '<p class="text-muted">No Wikipedia summary available for this ecoregion.</p>';
+      }
+      if (data.wiki_url) {
+        ecoModalLink.href = data.wiki_url;
+        ecoModalLink.style.display = '';
+      }
+    } catch (err) {
+      ecoModalBody.innerHTML = '<p class="text-danger">Failed to load ecoregion summary.</p>';
+    }
+  });
+
+  // Interpretation link click → LLM narrative in same modal
+  document.getElementById('sb-interp-link').addEventListener('click', async e => {
+    e.preventDefault();
+    if (!currentSig || resolvedLat === null) return;
+    document.getElementById('ecoModalLabel').textContent =
+      `Interpretation: ${resolvedName || 'Place'}`;
+    ecoModalBody.innerHTML = '<p class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Calling Claude API…</p>';
+    ecoModalLink.style.display = 'none';
+    ecoModal.show();
+
+    const ys = document.getElementById('f-year-start').value.trim();
+    const ye = document.getElementById('f-year-end').value.trim();
+    let url = `/api/narrative?lat=${resolvedLat}&lon=${resolvedLon}`;
+    if (resolvedName) url += `&name=${encodeURIComponent(resolvedName)}`;
+    if (ys && ye) url += `&year_start=${ys}&year_end=${ye}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail); }
+      const data = await res.json();
+      ecoModalBody.innerHTML =
+        `<pre style="white-space:pre-wrap;font-size:0.85rem;line-height:1.6;">${escapeHtml(data.narrative)}</pre>`;
+    } catch (err) {
+      ecoModalBody.innerHTML = `<p class="text-danger">Error: ${escapeHtml(err.message)}</p>`;
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

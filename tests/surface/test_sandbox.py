@@ -1,10 +1,10 @@
 """
-tests/surface/test_sandbox_v3.py
----------------------------------
-Structural tests for sandbox_v3.html (/sandbox/lookup3).
+tests/surface/test_sandbox.py
+------------------------------
+Structural tests for sandbox.html (/sandbox).
 
 Step 1 (WO21): tab structure, cold-start control visibility, initial CSS state.
-JS runtime behaviour is verified by Playwright tests (test_sandbox_v3_ui.py — WO21+).
+JS runtime behaviour is verified by Playwright tests (test_sandbox_ui.py — WO21+).
 """
 
 import pytest

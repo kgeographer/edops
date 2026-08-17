@@ -19,7 +19,7 @@ Settlement query); it does not apply to Workbench's environmental-profile panel,
 ## The row forms
 
 - [ ] `[prose]` Not every row renders the same way — `row.method` in the payload selects one of
-      six forms. Grounded in `sandbox_v3.html`'s `renderLeaf()` (~line 3119):
+      six forms. Grounded in `sandbox.html`'s `renderLeaf()` (~line 3119):
     - `area_weighted` — pct + concentrated/spread badge + real per-basin histogram
     - `distribution_only` — pct, **no badge**, single solid range bar (p10–p90) instead of a
       histogram — easy to mistake for a degenerate histogram; it's a different renderer

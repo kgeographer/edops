@@ -25,16 +25,17 @@ predate this convention are grandfathered; new WOs get summary + `findings:` lin
 ## What this project is
 
 **EDOPS** (Environmental Dimensions of Place Service) is a FastAPI service that delivers
-structured environmental "signatures" for any point on Earth. Signatures characterize the
-drainage basin containing a given point using BasinATLAS variables covering hydrology,
-climate baselines, terrain, and ecoregion, plus temporal enrichment layers: LMR v2.1
-paleoclimate, HYDE 3.4 land-use history, and eVolv2k v4 volcanic forcing.
+structured environmental "signatures" for any location on Earth. Signatures characterize a
+drainage basin — or a set of basins, for areal queries like a basin ring, buffer neighborhood,
+or historical polity — using BasinATLAS variables covering hydrology, climate baselines,
+terrain, and ecoregion, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.4
+land-use history, and eVolv2k v4 volcanic forcing.
 
 EDOPS is the active component of **Computing Place** (CEDOP), a spatial humanities research
 platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
 earlier exploratory scripts are archived in the `cedop`.
 
-Research framing: `docs/edop/project_summary_20260606.md`
+Research framing: `documentation/EDOP_summary_v04.md`
 
 ---
 
@@ -60,7 +61,8 @@ Research framing: `docs/edop/project_summary_20260606.md`
 **v0.4 docs is the active track.** v0.4 (CDOP2/CITYKIN's product work plus the 2026-08-03 reorg) is
 feature-complete. What remains before it replaces v0.3 in production is a documentation/legibility
 pass — the site is about to get wider visibility as a public-facing WIP. No tracker exists yet for
-this phase; goto the latest `logs/session_log_YYYYMMDD.md` until one is set up.
+this phase; goto the latest `logs/session_log_YYYYMMDD.md` until one is set up. **Milestone: Braga
+(2026-09-20) — UNED Digital Humanities conference.**
 
 **Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real coding
 work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now closed),
@@ -72,103 +74,48 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-14 (branch `docsv4`, pushed and even with `origin/docsv4` — not yet merged to
-`main`, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build
-output gitignored). Swagger moved `/docs` → `/api/schema`; `/docs` serves the built MkDocs site via
-a `StaticFiles` mount. All three page Guides drafted. `documentation/EDOP_summary_v04.md` is
-finished and tracked — the v0.4 project summary, reorganized and copy-edited. The "About EDOPS"
-material across the app is now coordinated on a specificity ladder: an in-app modal (project
-framing only), `docsite/project.md` (status/roadmap/changelog), `docsite/data-sources.md` (complete
-grouped source list), and the Summary itself (full citations) — each linking out rather than
-duplicating the others. `main` got its first-ever tag/release, `v0.3`, matching what's actually
-deployed. Full history: `logs/session_log_20260804.md` through `logs/session_log_20260814.md`.
+**State as of 2026-08-16 (branch `varnaming_routes`, cut off `docsv4`, not yet merged back —
+nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build output
+gitignored) with a generated Codebook (`scripts/edop/docsite/generate_codebook.py`, TSV →
+compact markdown) and a full "About EDOPS" specificity ladder (in-app modal → `docsite/project.md`
+→ `docsite/data-sources.md` → `documentation/EDOP_summary_v04.md`, each linking out rather than
+duplicating). `main` has its first tag/release, `v0.3`, matching what's deployed. The Sandbox
+template naming collision is resolved (`sandbox.html` is the live one, old Lookup is
+`sandbox_v03.html`). **`app/api/routes.py` (formerly ~4000 lines) no longer exists** — split into
+`routes_common.py`, `routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, and
+`routes_sandbox.py` (the renamed remainder), using `docs/edop/routes_audit.txt` as the map;
+`main.py` and the two external module-path dependents (`tests/test_areas.py`,
+`scripts/cdop/wo5_part_b_context_probe.py`) updated to match. Seven confirmed-dead/superseded API
+routes removed across the two days (`/basin-clusters(+cities)`, `/similar-text`, `/wh-sites`,
+`/whg-place`, `/similarity/climate-class`, `/temporal`); route count now 77. Two working-reference
+docs exist in `docs/edop/` that later sessions should consult rather than re-derive:
+`pageload_explorer.txt` (on-load + variable-selection pseudocode, more pages planned) and
+`routes_audit.txt` (kept current through the split — re-run after any future route change). Two
+real UI bugs surfaced and fixed via browser review during the split, unrelated to the routes work
+itself: Cliopatria's basin-variable select didn't clear the map on reset (`clearBasinVar()`), and
+Explorer's preview variables triggered a doomed LISA fetch that caused a visible repaint-then-revert
+(LISA now disabled up front for preview variables, matching the existing categorical/monthly
+guard). Full history: `logs/session_log_20260804.md` through `logs/session_log_20260816.md`.
 
-**A second sub-track opened 2026-08-09/10: exploratory environment↔culture correspondence
-notebooks**, Opus-authored WOs in `docs/edop/docsv4/wo{1,2,3}*.md`, notebooks in
-`notebooks/edop/docsv4/`. WO1 (High Gods × subsistence × environment) and WO2 (range-based
-spread vs. causal distance) complete; WO3 (ω²/η² variance decomposition with continent held
-fixed) complete 2026-08-10 with a headline finding — the declared "discrimination attenuates with
-cultural distance from material constraint" prediction is falsified: EA034 (High Gods) not only
-survives continent control, it amplifies (marginal ω² 0.110 → within-continent 0.267), the single
-largest within-continent value across all six traits tested. Ready to go back to Opus. This
-sub-track runs in parallel with the Workbench nit/feature work below, not sequentially before or
-after it.
+**Same day, continued:** public API surface narrowed to `/health`, `/signature`, `/area`,
+`/areas` (everything else marked `include_in_schema=False`); `docsite/api.md` is now generated
+(`scripts/edop/docsite/generate_api_guide.py`, same pattern as the Codebook) from the live
+route set + docstrings — retired the old hand-maintained `documentation/API_guide.md` and
+`app/static/api_guide.html`; `documentation/edops_schema.json` regenerated against live output
+(real Band T shape drift found); Codebook rows now link to their own
+`BasinATLAS_Catalog_v10.pdf` page (`scripts/edop/docsite/split_basinatlas_catalog.py`), which
+surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. `app/static/
+basinatlas_pages/` (gitignored, split-PDF output) still needs adding to the rsync deploy step.
+Full detail: `logs/session_log_20260816.md` Part 2.
 
-**Today (2026-08-08) — full detail `logs/session_log_20260808.md`:** Nit-review pass across
-Sandbox/Workbench (ring-basin state bugs, signature headings now name place/slice instead of raw
-IDs, accessibility pass converting muted-gray text to black in the signature accordions,
-Guide+Docs merged into one Documentation modal) plus the new top-level `docsite/similarity.md`,
-which corrects a conflated description of how Sandbox's and Workbench WH Cities' similarity
-methods actually differ — open `[decide]` and scoping notes in
-`docs/design/DOCSv4 — TODO.md` §5.5. Tests: 509 passed / 14 skipped / 668 warnings — same baseline
-as 2026-08-07, nothing broken. Milestone: Braga (2026-09-20) — UNED Digital Humanities conference.
+**2026-08-17:** lat/lon range validation added to `/signature`/`/areas` (punch-list #6); the
+`level`-default reconciliation (#7) investigated and deliberately left as-is — see reasoning in
+the log, not repeated here. All three public routes now use `Query(..., description=...)` per
+parameter instead of free-text docstring parsing. `/api/schema` (Swagger) got a real styling
+pass — minimal EDOPS branding, a proper intro paragraph, Schemas panel hidden, `/signature`
+open by default — custom route + `app/static/css/swagger_custom.css`, both new this session.
+Full detail: `logs/session_log_20260817.md`.
 
-**Today (2026-08-10) — full detail `logs/session_log_20260810.md`:** WO3 notebook (above), then a
-Workbench feature WO landed and shipped same day — WO4 EA045 replaced the Societies tab's EA034
-"environment scan" mean-position bars with per-society strip plots (`envscan` branch, merged to
-`docsv4`), plus a nits round (donut legend title, EA042 scatter cleanup, subsistence-accordion
-default-view parity with religion's, ecoregions-list scroll+column layout fix) committed straight
-to `docsv4`. Then a genuinely experimental WO, **WO5/WO5a "Isolates"** — a third EA034 result
-type surfacing *named* societies with no close ancestral/geographic/environmental neighbor sharing
-the same trait, not another aggregate view. Built on a new `isolates` branch off `docsv4`
-(3 commits ahead, **left unmerged, Karl's explicit call — evaluate in the browser next session
-before any merge decision**). This WO involved real design back-and-forth with Opus before any
-code was written (see session log for the four review points and how they were resolved) and
-surfaced a genuine post-build bug (hovering a list row triggered a self-sustaining DOM-reorder
-loop — fixed, root-caused to a "bring element to front" step that made sense for SVG/Leaflet but
-not a plain list). Tests: 511 passed (+2 new, WO5's backend contract) / 14 skipped / 668 warnings
-throughout the day, nothing broken.
-
-**Today (2026-08-13) — full detail `logs/session_log_20260813.md`:** Day opened with `sigfix`
-(single-basin `representative_raw`/`units` backfill in `engine.py`, `db_col` surfaced in the
-signature UI) merged to `docsv4` and pushed. Then two docs threads: (1) the Sandbox Similarity
-panel's 7 conjunction-threshold tooltips redesigned with a shared lead-in line + bare-noun labels,
-committed `ad0f9eb`; (2) `docsite/similarity.md` rewritten in Karl's voice (an Opus raw draft used as
-source material only, then deleted once superseded) — landed **Two cases, three algorithms**
-(Sandbox's non-compensatory conjunction membership-test vs. Workbench WH Cities' two ranking
-mechanisms, statistical/composite-distance and semantic/text-embedding) and **Areas, not points**
-(basin/basin-ring/buffer similarity all quietly fall back to the single containing basin even though
-basin-ring/buffer *display* distributions across their basin sets; polities are signature sets too,
-with no similarity measure offered at all — "similarity for an area" is a genuinely open problem
-across all three, not an oversight).
-
-A third sub-track opened: reconciling the frozen `documentation/EDOP_summary_20260608.pdf` (v0.3-era)
-for v0.4. Recovered an editable source via `pdfplumber` + `pandoc` (PDF → md → odt; the LibreOffice
-PDF-import path tried first produces a non-reflowable Draw object, not usable) — working files live
-in the gitignored `documentation/drafts/`, with the old v0.3 text kept alongside as a claw-back
-reference. Reconciliation approach settled: post-CHAR phases don't get their internal WO history
-documented in this externally-facing doc ("who cares how this progressed") — collapsed into one
-outcome-focused **§4.3 Platform Implementation** section (areal query architecture, variable catalog
-growth, similarity tooling, web interfaces), which superseded the old forthcoming §5.2
-"Neighborhoods and Aggregation" (now done, deleted, remaining §5.x renumbered). §5.2 (was §5.3)
-"Correspondence Evaluation" rewritten to reflect that D-PLACE correspondence work has substantially
-started (Workbench Societies tab + the notebook sub-track above) while Cliopatria and Tracks of Yu
-remain untouched. §5.1/§5.3 (Signature Extensions, Dashboard) checked against the repo and left
-as-is, still accurate. Not yet committed — gitignored working files, and §1–§2 (framing/citations)
-not yet reconciled.
-
-**CDOP2 — CITYKIN, closed 2026-07-30, frozen reference:** WO1/WO1a/WO2a/WO2b/WO3/WO4 all complete. The
-WH Cities retrieval head has a validated raw-curve distance, a query-relative point-window terrain lens
-(`GET /api/whc-similar-terrain`), and precip/temp regime lenses, all live in the WH Cities dropdown on
-`cdop_pilot.html`. The sandbox Similarity panel (`sandbox_v3.html`) has a 4th lens, basin-scale
-**Terrain regime** (`ele_mt_sav` + `relief_range`, a non-compensatory tolerance-band conjunction in
-`app/db/seasonality.py`). **WO4** replaced the Societies tab's legacy PCA "Basin clusters" option
-(`#panel-soc`, `cdop_pilot.html`) with a confirmatory Climate envelope scatter (EA042/subsistence) and
-a five-variable meter scan (EA034/religion — `variable_percentiles()`, a deterministic
-percentile-of-global-range statistic; the original four-lens/resampling design was rebuilt after
-Karl's browser review found "tighter than X% of random draws" unusable as GUI language), both with a
-composition donut (Glottolog-resolved family names) hover-linked to the map and the scatter. All
-Karl-reviewed live in the browser. Full detail, every locked decision, day-by-day narrative:
-`docs/cdop/citykin/CITYKIN_tracker.md`, `docs/cdop/citykin/wo4_findings.md`,
-`logs/session_log_20260728.md` through `logs/session_log_20260730.md`. Named-not-started ideas left on
-the table: L08 terrain knobs, a residual-facet design idea (WO2), Tier-2/3 terrain fidelity upgrades.
-Whether the old `/api/whc-similar-env-lens` path was deleted alongside the lens wiring is resolved
-2026-08-08 — see Open/deferred items below and `docsite/similarity.md`.
-
-**CDOP Pilot (WO1–WO8d) is closed, frozen reference:** `docs/cdop/pilot/CDOP_PILOT_tracker.md`. Headline
-carried forward — the WO8d environment↔culture correspondence arc's real open question is an unexplained
-singleton residual (~14 EA034 societies) not resolved by lineage, climate, or proximity; not part of
-CDOP2/CITYKIN scope.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
@@ -188,13 +135,17 @@ TSV with `hybas_id` or `dominant_hybas_id`; forces Int64.
 ```
 app/
 ├── main.py              # FastAPI app
-├── api/routes.py        # All REST endpoints
+├── api/routes_{sandbox,common,cliopatria,explorer,workbench}.py  # All REST endpoints,
+│   #   split by page 2026-08-16 (routes.py no longer exists) — common.py holds routes/helpers
+│   #   shared across ≥2 pages; see docs/edop/routes_audit.txt for the classification
 ├── db/
 │   ├── connection.py    # db_connect()
 │   └── signature.py     # Core signature query; loads codebook at startup
 ├── web/pages.py         # Jinja2 page routes
 ├── templates/
-│   ├── sandbox.html     # Lookup page — Phase 1 product; retired on main, still live in prod pending deploy
+│   ├── sandbox.html     # Sandbox page — Demo phase product; current focus (renamed from
+│   │                     #   sandbox_v3.html 2026-08-15; old retired Lookup page is
+│   │                     #   sandbox_v03.html, unreferenced by any route)
 │   ├── explorer.html    # Explorer page — Phase 2 product
 │   ├── workbench.html   # Workbench page — standalone doc like the other two (2026-08-07;
 │   │                     #   formerly base.html-extending, base.html deleted, nothing else used it)
@@ -213,6 +164,8 @@ mkdocs.yml               # MkDocs config — docs_dir: docsite/, site_dir: site/
 docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, nav in
                           #   per-surface subtrees (Sandbox/Data Explorer/Workbench); similarity.md
                           #   is a new top-level page (2026-08-08); javascripts/{embed,external-links}.js
+                          #   codebook.md is generated (scripts/edop/docsite/generate_codebook.py
+                          #   from the variable catalog TSV) — do not hand-edit it, edit the script
 site/                    # `mkdocs build` output (gitignored) — served at /docs via a StaticFiles
                           #   mount in main.py. `mkdocs serve` (live preview) and this are two
                           #   separate things reading from different places — see Key endpoints.
@@ -224,6 +177,10 @@ docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
 docs/edop/demo/          #   Demo tracker + findings (tracked) ← active
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
+docs/edop/pageload_explorer.txt  # per-page pseudocode reference (gitignored) — Explorer done,
+                          #   Sandbox/Workbench to follow; consult before re-deriving page behavior
+docs/edop/routes_audit.txt       # every app/api/routes.py route classified live/shared/orphaned
+                          #   (gitignored) — re-run the audit after any route add/remove/rename
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 scripts/edop/areas/      # Areas engine — engine.py is the primary artifact
 notebooks/edop/explore/  # CHAR phase EDA notebooks
@@ -244,19 +201,22 @@ metadata/                # gitignored
 ## The sandbox pages
 
 **Routing note (local `main`/`docsv4`, not yet deployed — see Current work above):** as of the
-2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox_v3.html` (old
+2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox.html` (old
 `/sandbox/lookup3` still works too); `/explorer` is the new canonical route for `explorer.html`
 (old `/sandbox/explorer` still works too); `/sandbox/lookup` now 301-redirects to `/sandbox`, and
-`sandbox.html` (old Phase 1 Lookup page, described below) is fully retired — no route renders it
-on `main`. `/workbench` is the third canonical route (`workbench.html`, formerly `cdop_pilot.html`
-— renamed 2026-08-05, see Open/deferred items below); `/cdop` and `/cdop_tests`, which used to
-serve it, were dropped outright rather than redirected, since nothing's deployed yet. **In
-production today none of this has happened:** `/sandbox/lookup` still serves `sandbox.html` live,
-and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is still what's actually deployed, until
-this branch ships.
+the old Phase 1 Lookup page (renamed `sandbox_v03.html` on 2026-08-15, described below) is fully
+retired — no route renders it on `main`. `/workbench` is the third canonical route
+(`workbench.html`, formerly `cdop_pilot.html` — renamed 2026-08-05, see Open/deferred items below);
+`/cdop` and `/cdop_tests`, which used to serve it, were dropped outright rather than redirected,
+since nothing's deployed yet. **In production today none of this has happened:** `/sandbox/lookup`
+still serves the old Lookup page live (under its old production filename, `sandbox.html` — the
+rename only exists on `docsv4`), and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is
+still what's actually deployed, until this branch ships.
 
 ### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
-`app/templates/sandbox_v3.html` — Demo phase product; current focus.
+`app/templates/sandbox.html` — Demo phase product; current focus. (Renamed from
+`sandbox_v3.html` on 2026-08-15 — the `_v3` distinction stopped meaning anything once the old
+Phase 1 page was renamed out of the way; see the Lookup entry below.)
 
 Two-tab surface: **Settlements** (WHG place lookup → scope → BasinATLAS/LMR/HYDE choropleth + signature)
 and **Polities** (search → slice slider + VCR → choropleth + signature).
@@ -269,8 +229,9 @@ and **Polities** (search → slice slider + VCR → choropleth + signature).
 - Line spec reference: `docs/design/demo/sandbox_v3_line_specs.md`
 
 ### `/sandbox/lookup` — Lookup (retired on `main`, still live in production)
-`app/templates/sandbox.html` — Phase 1 product; was the primary researcher tool, superseded by
-`sandbox_v3.html`. File remains in the repo, unreferenced by any route once deployed.
+`app/templates/sandbox_v03.html` (renamed from `sandbox.html` on 2026-08-15) — Phase 1 product; was
+the primary researcher tool, superseded by `sandbox.html` (formerly `sandbox_v3.html`). File remains
+in the repo, unreferenced by any route once deployed.
 
 WHG place lookup → basin assignment → neighborhood map → Band A–T signature.
 - Level 08/06 toggle; s/u/Δ toggle; Band T temporal charts (PDSI/Temp/Precip + eVolv2k)
@@ -350,7 +311,9 @@ Full mechanics for all three tabs (verified against the live templates, not just
 ## Key endpoints
 
 ```
-NOTE: see documentation/API_guide.md (master, public)
+NOTE: see docsite/api.md (master, public; generated by
+scripts/edop/docsite/generate_api_guide.py from live route signatures + docstrings —
+edit those, not the .md directly; served at /docs/api/)
 
 /api/schema
     FastAPI's interactive Swagger UI — moved here from /docs 2026-08-04 to free that route for
@@ -558,5 +521,5 @@ Standing cross-phase notes:
   it's still the live path behind WH Cities' precip/temp "regime" dropdown, and is a genuinely
   different, older mechanism (composite-distance `LENS_REGISTRY`) than Sandbox's conjunction-based
   regime lenses despite the shared naming. Full breakdown: `docsite/similarity.md`.
-- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox_v3; remove when convenient.
+- **Deprecated route** — `/api/seasonality/similar` is a backward-compat wrapper for `climate.phase`; marked `# DEPRECATED` in routes.py. Permanently pinned to `mode='topn'` (WO7b). New callers use `/api/similarity?lens=climate.phase`. No active callers in sandbox.html; remove when convenient.
 - **CHAR open design questions** (F8.5, F8.6, F9.6, F11.4, F11.6) — held pending expert review
