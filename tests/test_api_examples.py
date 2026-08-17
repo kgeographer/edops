@@ -12,6 +12,9 @@ Examples tested:
   5. Timbuktu       — bands=ABT,  from_year=1200, to_year=1600 (medieval)
   6. Kaifeng L6     — bands=ABC,  level=6         (regional scale)
   7. Seasonality    — WO5 contract tests (pinned values + ordering)
+  8. Band T shape   — contract tests for the 2026-08 restructuring (lmr_status,
+                       hyde_land_use.epochs, per-source availability notes); the
+                       tripwire for the next time this shape changes
 
 (The old WO7a /api/similarity + /api/similarity/lenses examples — items 8/9 — were retired
 CITYKIN WO1: the pre-WO6 climate.precip/climate.temp lenses and their vestigial sandbox
@@ -78,6 +81,7 @@ def test_rome_bands_abct(client):
     assert len(t["pdsi_series"]) > 0, "pdsi_series empty for Rome 1–400 CE"
     assert len(t["air_series"]) > 0
     assert len(t["prate_series"]) > 0
+    assert t.get("lmr_status") == "available"
 
 
 # ---------------------------------------------------------------------------
@@ -100,9 +104,15 @@ def test_kaifeng_bands_abct(client):
     assert len(t["pdsi_series"]) == 1127 - 960 + 1, (
         f"Expected {1127-960+1} PDSI years; got {len(t['pdsi_series'])}"
     )
-    # HYDE land use should be present for this medieval window
-    hyde = t.get("hyde_land_use", [])
-    assert len(hyde) > 0, "Expected HYDE land-use epochs for Kaifeng 960–1127"
+    # HYDE land use should be present for this medieval window. hyde_land_use is a
+    # dict ({epochs, n_epochs, _note}), not a list, since the 2026-08 restructuring --
+    # check the epochs list itself, not len() of the dict's own keys.
+    hyde = t.get("hyde_land_use", {})
+    epochs = hyde.get("epochs", [])
+    assert len(epochs) > 0, "Expected HYDE land-use epochs for Kaifeng 960–1127"
+    assert "cropland_pct" in epochs[0] and "cropland_std" in epochs[0], (
+        "hyde_land_use epochs missing expected stats fields (cropland_pct/cropland_std)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -194,3 +204,61 @@ def test_seasonality_discrimination(client):
     # London has low precip concentration (year-round rain)
     assert london_conc is not None
     assert london_conc < 0.2, f"London pre_concentration {london_conc:.3f} — expected < 0.2"
+
+
+# ---------------------------------------------------------------------------
+# 8. Band T shape contract — pins the 2026-08-16 restructuring so the next shape
+#    change fails a test instead of silently going stale in the docs for months.
+# ---------------------------------------------------------------------------
+
+def test_band_t_out_of_range_status_stays_ok(client):
+    """_status stays "ok" even when a source has no data for the period -- LMR,
+    eVolv2k, and HYDE each have independent coverage windows, and availability is
+    now signaled per-source (lmr_status, the *_note fields), not via _status itself.
+    Confirmed against live output 2026-08-16; update this test in the same commit
+    as any future Band T shape change, and re-run generate_api_guide.py + refresh
+    documentation/edops_schema.json alongside it.
+    """
+    r = client.get("/api/signature", params={
+        "lat": 16.8167, "lon": -2.9833,
+        "bands": "T", "from_year": -2100, "to_year": -1800,
+    })
+    assert r.status_code == 200
+    t = r.json()["profile_groups"]["T"]
+
+    assert t.get("_status") == "ok", (
+        "_status should stay 'ok' once years are supplied, even when LMR/eVolv2k "
+        "have no coverage for the period -- unavailability is per-source, not all-or-nothing"
+    )
+    assert t.get("lmr_status") == "out_of_range"
+    assert t.get("pdsi_series") == []
+    assert t.get("lmr_out_of_range_note"), "Expected a note explaining LMR has no coverage here"
+    assert t.get("volcanic_events_note"), "Expected a note explaining eVolv2k has no coverage here"
+
+    # HYDE still has coverage this far back even though LMR/eVolv2k don't
+    hyde = t.get("hyde_land_use", {})
+    assert len(hyde.get("epochs", [])) > 0, "HYDE should still return epochs for -2100..-1800 CE"
+
+
+def test_band_t_available_shape(client):
+    """Full-availability Band T response has the current field set -- lmr_status,
+    the four *_note fields (null when nothing to report), and hyde_land_use's
+    {epochs, n_epochs, _note} structure. Same tripwire purpose as the test above.
+    """
+    r = client.get("/api/signature", params={
+        "lat": 16.8167, "lon": -2.9833,
+        "bands": "T", "from_year": 1350, "to_year": 1600,
+    })
+    assert r.status_code == 200
+    t = r.json()["profile_groups"]["T"]
+
+    assert t.get("_status") == "ok"
+    assert t.get("lmr_status") == "available"
+    for note_field in ("volcanic_events_note", "lmr_out_of_range_note", "lmr_fidelity_note",
+                        "lmr_proxy_bias_note"):
+        assert note_field in t, f"Missing {note_field} -- per-source availability fields changed shape"
+
+    hyde = t.get("hyde_land_use", {})
+    assert set(hyde.keys()) >= {"epochs", "n_epochs", "_note"}, (
+        f"hyde_land_use shape changed -- got keys {list(hyde.keys())}"
+    )
