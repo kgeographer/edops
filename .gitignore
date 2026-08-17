@@ -31,6 +31,10 @@ app/static/explorer/
 # Pre-computed Sandbox static assets (rivers.pmtiles etc — rsync to server)
 app/static/sandbox/
 
+# Per-attribute BasinATLAS catalog pages, split from documentation/BasinATLAS_Catalog_v10.pdf
+# by scripts/edop/docsite/split_basinatlas_catalog.py — rsync to server
+app/static/basinatlas_pages/
+
 # Large data files
 app/data/world_heritage*.*
 app/data/clio/

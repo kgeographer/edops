@@ -2,7 +2,12 @@
      "## The bands" section below; edit BAND_INTROS in that script instead, then re-run. -->
 # EDOPS Codebook
 
-The Codebook is a strict per-variable reference.See [Reading a signature](sandbox/reading-a-signature.md) for explanation of their display in the Sandbox Signature tab.
+The Codebook is a strict per-variable reference. See [Reading a signature](sandbox/reading-a-signature.md) for explanation of their display in the Sandbox Signature tab.
+
+BasinATLAS-sourced variables link to their own page in the provider's catalog rather than
+being re-described here — each links to its specific attribute page; the full catalog
+(<a href="/documentation/BasinATLAS_Catalog_v10.pdf" target="_blank">BasinATLAS_Catalog_v10.pdf ↗</a>)
+is also linkable directly, for browsing rather than looking up one variable.
 
 ## Local, upstream, and delta
 
@@ -17,18 +22,18 @@ Stable over geological timescales; defensible as a historical baseline for any p
 #### Cryosphere
 
 **Glacier/permanent snow** (`glacier_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/L11.pdf" target="_blank">BasinATLAS source page (L11) ↗</a>
 
 #### Elevation
 
 **Elevation maximum** (`elevation_max`) — implemented · m · local only<br>
-Basin maximum elevation
+Basin maximum elevation <a href="/static/basinatlas_pages/P01.pdf" target="_blank">BasinATLAS source page (P01) ↗</a>
 
 **Elevation mean** (`elevation_mean`) — planned · m · local + upstream<br>
-Mean basin elevation; u available in basin08
+Mean basin elevation; u available in basin08 <a href="/static/basinatlas_pages/P01.pdf" target="_blank">BasinATLAS source page (P01) ↗</a>
 
 **Elevation minimum** (`elevation_min`) — implemented · m · local only<br>
-Basin minimum elevation
+Basin minimum elevation <a href="/static/basinatlas_pages/P01.pdf" target="_blank">BasinATLAS source page (P01) ↗</a>
 
 **Point elevation** (`elevation_point`) — implemented · Derived · m · point value<br>
 Derived from OpenTopoData/Open-Meteo; not a basin08 field
@@ -42,21 +47,21 @@ Derived: elev_max - elev_min
 #### Geology
 
 **Erosion rate** (`erosion_rate`) — planned · t/ha/yr · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/S08.pdf" target="_blank">BasinATLAS source page (S08) ↗</a>
 
 **Karst area** (`karst_pct`) — implemented · % · local + upstream<br>
-u already in view as karst_upstream
+u already in view as karst_upstream <a href="/static/basinatlas_pages/S07.pdf" target="_blank">BasinATLAS source page (S07) ↗</a>
 
 **Lithology class name** (`lithology_name`) — implemented · local only<br>
-Resolved via lu_lit
+Resolved via lu_lit <a href="/static/basinatlas_pages/S06.pdf" target="_blank">BasinATLAS source page (S06) ↗</a>
 
 #### Terrain
 
 **Slope** (`slope_deg`) — implemented · degrees · local + upstream<br>
-u already in view as slope_upstream
+u already in view as slope_upstream <a href="/static/basinatlas_pages/P02.pdf" target="_blank">BasinATLAS source page (P02) ↗</a>
 
 **Stream gradient** (`stream_gradient`) — implemented · m/km · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/P03.pdf" target="_blank">BasinATLAS source page (P03) ↗</a>
 
 ### Band B — Hydroclimatic
 
@@ -65,87 +70,87 @@ Hydrological fluxes and soil characteristics integrating the full upstream catch
 #### Discharge
 
 **Annual runoff** (`runoff`) — implemented · mm/yr · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/H02.pdf" target="_blank">BasinATLAS source page (H02) ↗</a>
 
 **Discharge annual mean** (`discharge_annual`) — implemented · m³/s · local only<br>
-Cumulative; no upstream avg meaningful
+Cumulative; no upstream avg meaningful <a href="/static/basinatlas_pages/H01.pdf" target="_blank">BasinATLAS source page (H01) ↗</a>
 
 **Discharge monthly maximum** (`discharge_max`) — implemented · m³/s · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/H01.pdf" target="_blank">BasinATLAS source page (H01) ↗</a>
 
 **Discharge monthly minimum** (`discharge_min`) — implemented · m³/s · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/H01.pdf" target="_blank">BasinATLAS source page (H01) ↗</a>
 
 #### Groundwater
 
 **Groundwater table depth** (`groundwater_depth`) — implemented · cm · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/H10.pdf" target="_blank">BasinATLAS source page (H10) ↗</a>
 
 **Soil water content annual** (`soil_water_content`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/S05.pdf" target="_blank">BasinATLAS source page (S05) ↗</a>
 
 #### Inundation
 
 **Inundation extent long-term** (`inundation_longterm`) — planned · % · local + upstream<br>
-Flood signal; not currently in signature
+Flood signal; not currently in signature <a href="/static/basinatlas_pages/H03.pdf" target="_blank">BasinATLAS source page (H03) ↗</a>
 
 **Inundation extent maximum** (`inundation_max`) — planned · % · local + upstream<br>
-Flood signal; not currently in signature
+Flood signal; not currently in signature <a href="/static/basinatlas_pages/H03.pdf" target="_blank">BasinATLAS source page (H03) ↗</a>
 
 **Inundation extent minimum** (`inundation_min`) — planned · % · local + upstream<br>
-Flood signal; not currently in signature
+Flood signal; not currently in signature <a href="/static/basinatlas_pages/H03.pdf" target="_blank">BasinATLAS source page (H03) ↗</a>
 
 #### Soils
 
 **Clay content** (`pct_clay`) — implemented · % · local + upstream<br>
-s+u both in signature
+s+u both in signature <a href="/static/basinatlas_pages/S01.pdf" target="_blank">BasinATLAS source page (S01) ↗</a>
 
 **Sand content** (`pct_sand`) — implemented · % · local + upstream<br>
-s+u both in signature; clay+silt+sand≈100 (compositional): drop pct_sand from classification feature matrices to avoid spurious linear dependency
+s+u both in signature; clay+silt+sand≈100 (compositional): drop pct_sand from classification feature matrices to avoid spurious linear dependency <a href="/static/basinatlas_pages/S03.pdf" target="_blank">BasinATLAS source page (S03) ↗</a>
 
 **Silt content** (`pct_silt`) — implemented · % · local + upstream<br>
-s+u both in signature
+s+u both in signature <a href="/static/basinatlas_pages/S02.pdf" target="_blank">BasinATLAS source page (S02) ↗</a>
 
 **Soil organic carbon** (`soil_organic_carbon`) — planned · t/ha · local + upstream<br>
-Not currently in signature; good agricultural fertility proxy
+Not currently in signature; good agricultural fertility proxy <a href="/static/basinatlas_pages/S04.pdf" target="_blank">BasinATLAS source page (S04) ↗</a>
 
 #### Surface Water
 
 **Lake area** (`lake_area_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/H04.pdf" target="_blank">BasinATLAS source page (H04) ↗</a>
 
 **Lake volume upstream** (`lake_volume_upstream`) — planned<br>
-u-only field
+u-only field <a href="/static/basinatlas_pages/H05.pdf" target="_blank">BasinATLAS source page (H05) ↗</a>
 
 **River area** (`river_area`) — implemented · ha · local + upstream<br>
-u already in view as river_area_upstream
+u already in view as river_area_upstream <a href="/static/basinatlas_pages/H08.pdf" target="_blank">BasinATLAS source page (H08) ↗</a>
 
 **River channel volume** (`river_volume`) — planned · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/H09.pdf" target="_blank">BasinATLAS source page (H09) ↗</a>
 
 #### Vegetation
 
 **Potential natural vegetation majority name** (`pnv_majority_name`) — implemented · local only<br>
-Resolved via lu_pnv; in Band B in v01 payload
+Resolved via lu_pnv; in Band B in v01 payload <a href="/static/basinatlas_pages/L03.pdf" target="_blank">BasinATLAS source page (L03) ↗</a>
 
 **Potential natural vegetation shares** (`pnv_shares`) — implemented · local only<br>
-JSON object of {name: pct}; in Band B in v01 payload
+JSON object of {name: pct}; in Band B in v01 payload <a href="/static/basinatlas_pages/L04.pdf" target="_blank">BasinATLAS source page (L04) ↗</a>
 
 #### Water Management
 
 **Degree of regulation by dams** (`degree_of_regulation`) — planned · % · local only<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/H07.pdf" target="_blank">BasinATLAS source page (H07) ↗</a>
 
 #### Wetlands
 
 **Wetland class ID** (`wetland_class_id`) — implemented · local only<br>
-Lookup: lu_wet
+Lookup: lu_wet <a href="/static/basinatlas_pages/L05.pdf" target="_blank">BasinATLAS source page (L05) ↗</a>
 
 **Wetland extent group 1** (`wetland_pct_g1`) — implemented · % · local + upstream<br>
-u available in basin08
+u available in basin08 <a href="/static/basinatlas_pages/L06.pdf" target="_blank">BasinATLAS source page (L06) ↗</a>
 
 **Wetland extent group 2** (`wetland_pct_g2`) — implemented · % · local + upstream<br>
-s+u both in signature
+s+u both in signature <a href="/static/basinatlas_pages/L06.pdf" target="_blank">BasinATLAS source page (L06) ↗</a>
 
 ### Band C — Bioclimatic
 
@@ -154,59 +159,59 @@ Contemporary climate baseline from BasinATLAS (WorldClim ~1970–2000 CE). These
 #### Climate Type
 
 **Biome name** (`biome_name`) — implemented · local only<br>
-Resolved via lu_tbi
+Resolved via lu_tbi <a href="/static/basinatlas_pages/L14.pdf" target="_blank">BasinATLAS source page (L14) ↗</a>
 
 **Climate stratum code** (`climate_stratum_code`) — implemented · local only<br>
-Resolved via lu_cls
+Resolved via lu_cls <a href="/static/basinatlas_pages/C02.pdf" target="_blank">BasinATLAS source page (C02) ↗</a>
 
 **Climate zone name** (`climate_zone_name`) — implemented · local only<br>
-Resolved via lu_clz
+Resolved via lu_clz <a href="/static/basinatlas_pages/C01.pdf" target="_blank">BasinATLAS source page (C01) ↗</a>
 
 #### Cryosphere
 
 **Permafrost extent** (`permafrost_pct`) — implemented · % · local + upstream<br>
-u available in basin08; placed in Band C in v01 payload
+u available in basin08; placed in Band C in v01 payload <a href="/static/basinatlas_pages/L12.pdf" target="_blank">BasinATLAS source page (L12) ↗</a>
 
 **Snow cover annual** (`snow_cover_annual`) — planned · % · local + upstream<br>
-u available in basin08
+u available in basin08 <a href="/static/basinatlas_pages/C09.pdf" target="_blank">BasinATLAS source page (C09) ↗</a>
 
 **Snow cover maximum** (`snow_cover_max`) — planned · % · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/C09.pdf" target="_blank">BasinATLAS source page (C09) ↗</a>
 
 #### Freshwater Ecology
 
 **Freshwater ecoregion name** (`freshwater_ecoregion_name`) — implemented · local only<br>
-Resolved via lu_fec
+Resolved via lu_fec <a href="/static/basinatlas_pages/L17.pdf" target="_blank">BasinATLAS source page (L17) ↗</a>
 
 **Freshwater habitat type name** (`freshwater_habitat_name`) — implemented · local only<br>
-Resolved via lu_fmh
+Resolved via lu_fmh <a href="/static/basinatlas_pages/L16.pdf" target="_blank">BasinATLAS source page (L16) ↗</a>
 
 #### Land Cover
 
 **Land cover class name** (`land_cover_name`) — implemented · local only<br>
-Resolved via lu_glc; in profile_summary only
+Resolved via lu_glc; in profile_summary only <a href="/static/basinatlas_pages/L01.pdf" target="_blank">BasinATLAS source page (L01) ↗</a>
 
 #### Moisture Balance
 
 **Actual evapotranspiration annual** (`aet_annual`) — planned · mm/yr · local + upstream<br>
-u available in basin08
+u available in basin08 <a href="/static/basinatlas_pages/C06.pdf" target="_blank">BasinATLAS source page (C06) ↗</a>
 
 **Aridity index (P/PET)** (`aridity_index`) — implemented · P/PET ×100 · local + upstream<br>
-Global Aridity Index: stored as P/PET × 100. Value of 100 = P equals PET (arid/humid boundary). Values >100 = humid (P > PET); wet tropics reach ~1000. Global median ~68 (semi-arid). Higher = wetter. Key s/u divergence variable. u available in basin08
+Global Aridity Index: stored as P/PET × 100. Value of 100 = P equals PET (arid/humid boundary). Values >100 = humid (P > PET); wet tropics reach ~1000. Global median ~68 (semi-arid). Higher = wetter. Key s/u divergence variable. u available in basin08 <a href="/static/basinatlas_pages/C07.pdf" target="_blank">BasinATLAS source page (C07) ↗</a>
 
 **Climate moisture index** (`climate_moisture_index`) — planned · local + upstream<br>
-u available in basin08
+u available in basin08 <a href="/static/basinatlas_pages/C08.pdf" target="_blank">BasinATLAS source page (C08) ↗</a>
 
 **Potential evapotranspiration annual** (`pet_annual`) — planned · mm/yr · local + upstream<br>
-u available in basin08
+u available in basin08 <a href="/static/basinatlas_pages/C05.pdf" target="_blank">BasinATLAS source page (C05) ↗</a>
 
 #### Precipitation
 
 **Precipitation annual** (`precipitation_annual`) — implemented · mm/yr · local + upstream<br>
-u available in basin08 as pre_mm_uyr
+u available in basin08 as pre_mm_uyr <a href="/static/basinatlas_pages/C04.pdf" target="_blank">BasinATLAS source page (C04) ↗</a>
 
 **Precipitation monthly** (`precipitation_monthly`) — implemented · mm · local only<br>
-Jan–Dec array (mm); delivered as float[12] via v_basin0{6,8}_persist_rev2
+Jan–Dec array (mm); delivered as float[12] via v_basin0{6,8}_persist_rev2 <a href="/static/basinatlas_pages/C04.pdf" target="_blank">BasinATLAS source page (C04) ↗</a>
 
 #### Seasonality
 
@@ -243,27 +248,27 @@ Discrete phase class from the direct Pearson correlation of the mean-centred 12-
 #### Temperature
 
 **Temperature annual mean** (`temperature_annual`) — implemented · °C · local + upstream<br>
-Stored ×10 in basin08; divide by 10. u available in basin08 as tmp_dc_uyr
+Stored ×10 in basin08; divide by 10. u available in basin08 as tmp_dc_uyr <a href="/static/basinatlas_pages/C03.pdf" target="_blank">BasinATLAS source page (C03) ↗</a>
 
 **Temperature monthly** (`temperature_monthly`) — implemented · °C · local only<br>
-Jan–Dec array (°C, already ÷10); delivered as float[12] via v_basin0{6,8}_persist_rev2
+Jan–Dec array (°C, already ÷10); delivered as float[12] via v_basin0{6,8}_persist_rev2 <a href="/static/basinatlas_pages/C03.pdf" target="_blank">BasinATLAS source page (C03) ↗</a>
 
 **Temperature monthly maximum** (`temperature_max`) — implemented · °C · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/C03.pdf" target="_blank">BasinATLAS source page (C03) ↗</a>
 
 **Temperature monthly minimum** (`temperature_min`) — implemented · °C · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/C03.pdf" target="_blank">BasinATLAS source page (C03) ↗</a>
 
 #### Vegetation
 
 **Forest cover** (`forest_cover_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/L07.pdf" target="_blank">BasinATLAS source page (L07) ↗</a>
 
 **Terrestrial ecoregion ID** (`ecoregion_terrestrial_id`) — implemented · local only<br>
-Lookup: lu_tec
+Lookup: lu_tec <a href="/static/basinatlas_pages/L15.pdf" target="_blank">BasinATLAS source page (L15) ↗</a>
 
 **Terrestrial ecoregion name** (`ecoregion_terrestrial_name`) — implemented · local only<br>
-Resolved via lu_tec
+Resolved via lu_tec <a href="/static/basinatlas_pages/L15.pdf" target="_blank">BasinATLAS source page (L15) ↗</a>
 
 ### Band D — Anthropocene
 
@@ -272,54 +277,54 @@ Present-day only. Exclude or qualify for pre-modern analyses; useful as a contra
 #### Economic
 
 **GDP mean** (`gdp_mean`) — implemented · USD/km² · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/A08.pdf" target="_blank">BasinATLAS source page (A08) ↗</a>
 
 #### Human Presence
 
 **Human footprint 1993** (`human_footprint_1993`) — planned · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/A06.pdf" target="_blank">BasinATLAS source page (A06) ↗</a>
 
 **Human footprint 2009** (`human_footprint_2009`) — implemented · local + upstream<br>
-s+u both in signature
+s+u both in signature <a href="/static/basinatlas_pages/A06.pdf" target="_blank">BasinATLAS source page (A06) ↗</a>
 
 **Nighttime lights index** (`nighttime_lights`) — planned · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/A04.pdf" target="_blank">BasinATLAS source page (A04) ↗</a>
 
 **Population count** (`pop_count`) — planned · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/A01.pdf" target="_blank">BasinATLAS source page (A01) ↗</a>
 
 **Population density** (`pop_density`) — implemented · pk/km² · local only<br>
-s only in signature; u available in basin08
+s only in signature; u available in basin08 <a href="/static/basinatlas_pages/A02.pdf" target="_blank">BasinATLAS source page (A02) ↗</a>
 
 **Protected area** (`protected_area_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/L13.pdf" target="_blank">BasinATLAS source page (L13) ↗</a>
 
 **Road density** (`road_density`) — planned · m/km² · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/A05.pdf" target="_blank">BasinATLAS source page (A05) ↗</a>
 
 #### Land Use
 
 **Cropland extent** (`cropland_pct`) — implemented · % · local + upstream<br>
-s+u both in signature; EarthStat ~2000 CE
+s+u both in signature; EarthStat ~2000 CE <a href="/static/basinatlas_pages/L08.pdf" target="_blank">BasinATLAS source page (L08) ↗</a>
 
 **Irrigated area** (`irrigated_area_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/L10.pdf" target="_blank">BasinATLAS source page (L10) ↗</a>
 
 **Pasture extent** (`pasture_pct`) — implemented · % · local + upstream<br>
-EarthStat ~2000 CE; s+u both in signature
+EarthStat ~2000 CE; s+u both in signature <a href="/static/basinatlas_pages/L09.pdf" target="_blank">BasinATLAS source page (L09) ↗</a>
 
 **Urban area** (`urban_area_pct`) — planned · % · local + upstream<br>
-Not currently in signature
+Not currently in signature <a href="/static/basinatlas_pages/A03.pdf" target="_blank">BasinATLAS source page (A03) ↗</a>
 
 #### Water Management
 
 **Reservoir volume upstream** (`reservoir_vol`) — implemented<br>
-u-only field; in Band D in v01 payload
+u-only field; in Band D in v01 payload <a href="/static/basinatlas_pages/H06.pdf" target="_blank">BasinATLAS source page (H06) ↗</a>
 
 #### (Uncategorized)
 
 **Human Development Index** (`hdi`) — implemented · local only<br>
-*No description yet in the catalog — needs a hand-written note.*
+*No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/A09.pdf" target="_blank">BasinATLAS source page (A09) ↗</a>
 
 ### Band E — Coastality
 
