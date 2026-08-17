@@ -118,9 +118,11 @@ NOTES_SECTION = """## Notes for application developers
   Check the per-source fields (`lmr_status`, the `*_note` fields) rather than
   `_status` alone. See [edops_schema.json](/documentation/edops_schema.json)
   for a full worked example.
-- **`level` default varies by endpoint** — `/signature` defaults to `8`; `/area` and
-  `/areas` default to `6`. Not yet reconciled; pass it explicitly if your use case
-  depends on which sub-basin resolution you get.
+- **`level` default varies by endpoint, deliberately left as-is** — `/signature`
+  defaults to `8`; `/area` and `/areas` default to `6`. `/signature` always returns a
+  single basin's data regardless of level, so this only affects resolution, not
+  payload shape or size. Pass it explicitly if your use case depends on which
+  sub-basin resolution you get.
 - **Rate limits:** None enforced currently.
 
 ---
