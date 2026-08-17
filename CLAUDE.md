@@ -108,14 +108,6 @@ surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. `
 basinatlas_pages/` (gitignored, split-PDF output) still needs adding to the rsync deploy step.
 Full detail: `logs/session_log_20260816.md` Part 2.
 
-**A second sub-track opened 2026-08-09/10: exploratory environment↔culture correspondence
-notebooks**, Opus-authored WOs in `docs/edop/docsv4/wo{1,2,3}*.md`, notebooks in
-`notebooks/edop/docsv4/`. WO1 (High Gods × subsistence × environment) and WO2 (range-based
-spread vs. causal distance) complete; WO3 (ω²/η² variance decomposition with continent held
-fixed) complete 2026-08-10 with a headline finding — the declared "discrimination attenuates with
-cultural distance from material constraint" prediction is falsified: EA034 (High Gods) not only
-survives continent control, it amplifies (marginal ω² 0.110 → within-continent 0.267), the single
-largest within-continent value across all six traits tested. Ready to go back to Opus.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
