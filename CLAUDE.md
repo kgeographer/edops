@@ -97,6 +97,17 @@ Explorer's preview variables triggered a doomed LISA fetch that caused a visible
 (LISA now disabled up front for preview variables, matching the existing categorical/monthly
 guard). Full history: `logs/session_log_20260804.md` through `logs/session_log_20260816.md`.
 
+**Same day, continued:** public API surface narrowed to `/health`, `/signature`, `/area`,
+`/areas` (everything else marked `include_in_schema=False`); `docsite/api.md` is now generated
+(`scripts/edop/docsite/generate_api_guide.py`, same pattern as the Codebook) from the live
+route set + docstrings — retired the old hand-maintained `documentation/API_guide.md` and
+`app/static/api_guide.html`; `documentation/edops_schema.json` regenerated against live output
+(real Band T shape drift found); Codebook rows now link to their own
+`BasinATLAS_Catalog_v10.pdf` page (`scripts/edop/docsite/split_basinatlas_catalog.py`), which
+surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. `app/static/
+basinatlas_pages/` (gitignored, split-PDF output) still needs adding to the rsync deploy step.
+Full detail: `logs/session_log_20260816.md` Part 2.
+
 **A second sub-track opened 2026-08-09/10: exploratory environment↔culture correspondence
 notebooks**, Opus-authored WOs in `docs/edop/docsv4/wo{1,2,3}*.md`, notebooks in
 `notebooks/edop/docsv4/`. WO1 (High Gods × subsistence × environment) and WO2 (range-based
