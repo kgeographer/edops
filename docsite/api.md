@@ -41,13 +41,13 @@ Return environmental signature for a coordinate.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `lat` | float (-90 to 90) | **yes** | — | coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180] |
-| `lon` | float (-180 to 180) | **yes** | — | coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180] |
-| `bands` | str | no | `ABCDE` | which profile groups to include, e.g. "ABCDE" or "ABCDET" (default ABCDE) |
-| `level` | int | no | `8` | basin hierarchy level — only 8 and 6 are currently supported |
-| `from_year` | int | no | — | start year CE for Band T temporal enrichment (0–1998) |
-| `to_year` | int | no | — | end year CE for Band T temporal enrichment (0–1998) |
-| `flat` | bool | no | `false` | if true, return flat field values instead of nested profile_groups; Band T temporal data appears at key "temporal" rather than in profile_groups |
+| `lat` | float (-90 to 90) | **yes** | — | Latitude, decimal degrees, in [-90, 90]. |
+| `lon` | float (-180 to 180) | **yes** | — | Longitude, decimal degrees, in [-180, 180]. |
+| `bands` | str | no | `ABCDE` | Which profile groups to include, e.g. "ABCDE" or "ABCDET". |
+| `level` | int | no | `8` | Basin hierarchy level: 8 or 6. |
+| `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
+| `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
+| `flat` | bool | no | `false` | If true, return flat field values instead of nested profile_groups; Band T temporal data appears at key "temporal" rather than in profile_groups. |
 
 **Response**
 
@@ -69,13 +69,13 @@ Return an areal environmental signature for a named Cliopatria polity.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `polity` | str | **yes** | — | Cliopatria polity name (exact match, e.g. "Northern Song") |
-| `year` | int | **yes** | — | resolver year — selects the polity boundary active at this year CE |
-| `level` | int | no | `6` | basin hierarchy level — 6 or 8 (default 6) |
-| `bands` | str | no | `ABCDET` | which bands to compute (default ABCDET) |
-| `from_year` | int | no | — | Band T span start (CE); required only when T is in bands |
-| `to_year` | int | no | — | Band T span end (CE); required only when T is in bands |
-| `detail` | bool | no | `false` | if true, include per-variable histogram objects in the response |
+| `polity` | str | **yes** | — | Cliopatria polity name, exact match (e.g. "Northern Song"). |
+| `year` | int | **yes** | — | Resolver year CE — selects the polity boundary active at this year. |
+| `level` | int | no | `6` | Basin hierarchy level: 6 or 8. |
+| `bands` | str | no | `ABCDET` | Band letters to compute, e.g. "ABCDET". Add T to include Band T (requires from_year and to_year). |
+| `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
+| `to_year` | int | no | — | Band T span end, year CE. Required when T is in bands. |
+| `detail` | bool | no | `false` | If true, include per-variable histogram objects in the response. |
 
 **Response**
 
@@ -96,17 +96,17 @@ Areal signature dispatcher — resolves to a set of member basins by type, then 
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `type` | str | **yes** | — | resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring' |
-| `lat` | float (-90 to 90) | no | — | WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180] (required for buffer, single_basin, basin_ring) |
-| `lon` | float (-180 to 180) | no | — | WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180] (required for buffer, single_basin, basin_ring) |
-| `radius_km` | float | no | — | buffer radius in km (required for buffer) |
-| `polity` | str | no | — | Cliopatria polity name (required for polity) |
-| `year` | int | no | — | resolver year — boundary slice CE (required for polity) |
-| `level` | int | no | `6` | basin hierarchy level — 6 or 8 (default 6) |
-| `bands` | str | no | `ABCDE` | band letters to compute (default ABCDE; add T for temporal) |
-| `from_year` | int | no | — | Band T span start CE (required when T in bands) |
-| `to_year` | int | no | — | Band T span end CE (required when T in bands) |
-| `detail` | bool | no | `false` | include per-variable histogram objects in the response |
+| `type` | str | **yes** | — | Resolver type: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the 'resolver' block in the response. |
+| `lat` | float (-90 to 90) | no | — | WGS-84 latitude, decimal degrees. Required for type=buffer, single_basin, basin_ring. |
+| `lon` | float (-180 to 180) | no | — | WGS-84 longitude, decimal degrees. Required for type=buffer, single_basin, basin_ring. |
+| `radius_km` | float | no | — | Buffer radius in km. Required for type=buffer. |
+| `polity` | str | no | — | Cliopatria polity name, exact match (e.g. "Northern Song"). Required for type=polity. |
+| `year` | int | no | — | Resolver year CE — selects the polity boundary active at this year. Required for type=polity. |
+| `level` | int | no | `6` | Basin hierarchy level: 6 or 8. |
+| `bands` | str | no | `ABCDE` | Band letters to compute, e.g. "ABCDE" or "ABCDET". Add T to include Band T (requires from_year and to_year). |
+| `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
+| `to_year` | int | no | — | Band T span end, year CE. Required when T is in bands. |
+| `detail` | bool | no | `false` | If true, include per-variable histogram objects in the response. |
 
 **Response**
 

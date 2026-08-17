@@ -238,33 +238,6 @@
   },
 
   "flat_response": {
-    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups.",
-    "_example_top_level_keys": [
-      "meta",
-      "pre_mm_monthly", "tmp_dc_monthly", "pre_concentration", "pre_peak_month",
-      "tmp_concentration", "tmp_peak_month", "seas_phase_offset", "tmp_seas_amp",
-      "id", "eco_id", "up_area", "geom_geojson",
-      "elev_point", "elev_source", "elev_dataset", "elev_resolution_m",
-      "relief_range_m", "relief_position", "profile_summary",
-      "elev_min", "elev_max", "slope_avg", "slope_upstream", "stream_gradient",
-      "lith_class", "karst", "karst_upstream",
-      "runoff", "discharge_yr", "discharge_min", "discharge_max",
-      "river_area", "river_area_upstream", "gw_table_depth",
-      "pnv_majority", "pnv_shares",
-      "pct_clay", "pct_silt", "pct_sand",
-      "pct_clay_upstream", "pct_silt_upstream", "pct_sand_upstream",
-      "wet_pct_grp1", "wet_pct_grp2", "wet_pct_grp1_upstream", "wet_pct_grp2_upstream",
-      "wetland_class",
-      "temp_yr", "temp_min", "temp_max", "temp_yr_upstream",
-      "precip_yr", "precip_yr_upstream", "aridity", "aridity_upstream",
-      "permafrost_extent", "biome", "ecoregion",
-      "freshwater_ecoregion_class", "freshwater_ecoregion_name",
-      "pop_density", "human_footprint_09", "human_footprint_09_upstream",
-      "cropland_extent", "cropland_extent_upstream",
-      "pasture_extent", "pasture_extent_upstream",
-      "reservoir_vol", "gdp_avg", "human_dev_idx",
-      "dist_sink", "endorheic", "coast_flag",
-      "temporal"
-    ]
+    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups."
   }
 }

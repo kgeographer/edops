@@ -108,6 +108,14 @@ surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. `
 basinatlas_pages/` (gitignored, split-PDF output) still needs adding to the rsync deploy step.
 Full detail: `logs/session_log_20260816.md` Part 2.
 
+**2026-08-17:** lat/lon range validation added to `/signature`/`/areas` (punch-list #6); the
+`level`-default reconciliation (#7) investigated and deliberately left as-is — see reasoning in
+the log, not repeated here. All three public routes now use `Query(..., description=...)` per
+parameter instead of free-text docstring parsing. `/api/schema` (Swagger) got a real styling
+pass — minimal EDOPS branding, a proper intro paragraph, Schemas panel hidden, `/signature`
+open by default — custom route + `app/static/css/swagger_custom.css`, both new this session.
+Full detail: `logs/session_log_20260817.md`.
+
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer

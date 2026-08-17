@@ -138,25 +138,20 @@ def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
 
 @router.get("/signature")
 def signature(
-    lat: float = Query(..., ge=-90, le=90),
-    lon: float = Query(..., ge=-180, le=180),
-    bands: str = "ABCDE",
-    level: int = 8,
-    from_year: Optional[int] = None,
-    to_year: Optional[int] = None,
-    flat: bool = False,
+    lat: float = Query(..., ge=-90, le=90, description="Latitude, decimal degrees, in [-90, 90]."),
+    lon: float = Query(..., ge=-180, le=180, description="Longitude, decimal degrees, in [-180, 180]."),
+    bands: str = Query("ABCDE", description=(
+        "Which profile groups to include, e.g. \"ABCDE\" or \"ABCDET\"."
+    )),
+    level: int = Query(8, description="Basin hierarchy level: 8 or 6."),
+    from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),
+    to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–1998)."),
+    flat: bool = Query(False, description=(
+        "If true, return flat field values instead of nested profile_groups; Band T "
+        "temporal data appears at key \"temporal\" rather than in profile_groups."
+    )),
 ):
     """Return environmental signature for a coordinate.
-
-    Parameters
-    ----------
-    lat, lon   : coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180]
-    bands      : which profile groups to include, e.g. "ABCDE" or "ABCDET" (default ABCDE)
-    level      : basin hierarchy level — only 8 and 6 are currently supported
-    from_year  : start year CE for Band T temporal enrichment (0–1998)
-    to_year    : end year CE for Band T temporal enrichment (0–1998)
-    flat       : if true, return flat field values instead of nested profile_groups;
-                 Band T temporal data appears at key "temporal" rather than in profile_groups
 
     Response
     --------

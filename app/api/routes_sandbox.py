@@ -982,25 +982,18 @@ def lmr_values(var: str, from_year: int, to_year: int):
 
 @router.get("/area")
 def area(
-    polity: str,
-    year: int,
-    level: int = 6,
-    bands: str = "ABCDET",
-    from_year: Optional[int] = None,
-    to_year: Optional[int] = None,
-    detail: bool = False,
+    polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
+    year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
+    level: int = Query(6, description="Basin hierarchy level: 6 or 8."),
+    bands: str = Query("ABCDET", description=(
+        "Band letters to compute, e.g. \"ABCDET\". Add T to include Band T (requires "
+        "from_year and to_year)."
+    )),
+    from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
+    to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
+    detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
 ):
     """Return an areal environmental signature for a named Cliopatria polity.
-
-    Parameters
-    ----------
-    polity     : Cliopatria polity name (exact match, e.g. "Northern Song")
-    year       : resolver year — selects the polity boundary active at this year CE
-    level      : basin hierarchy level — 6 or 8 (default 6)
-    bands      : which bands to compute (default ABCDET)
-    from_year  : Band T span start (CE); required only when T is in bands
-    to_year    : Band T span end (CE); required only when T is in bands
-    detail     : if true, include per-variable histogram objects in the response
 
     Response
     --------
@@ -1105,37 +1098,38 @@ def area(
 
 @router.get("/areas")
 def areas(
-    type: str,
-    lat: Optional[float] = Query(None, ge=-90, le=90),
-    lon: Optional[float] = Query(None, ge=-180, le=180),
-    radius_km: Optional[float] = None,
-    polity: Optional[str] = None,
-    year: Optional[int] = None,
-    level: int = 6,
-    bands: str = "ABCDE",
-    from_year: Optional[int] = None,
-    to_year: Optional[int] = None,
-    detail: bool = False,
+    type: str = Query(..., description=(
+        "Resolver type: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines "
+        "which of lat/lon/radius_km/polity/year are required (see each param's own "
+        "description) and the shape of the 'resolver' block in the response."
+    )),
+    lat: Optional[float] = Query(None, ge=-90, le=90, description=(
+        "WGS-84 latitude, decimal degrees. Required for type=buffer, single_basin, basin_ring."
+    )),
+    lon: Optional[float] = Query(None, ge=-180, le=180, description=(
+        "WGS-84 longitude, decimal degrees. Required for type=buffer, single_basin, basin_ring."
+    )),
+    radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for type=buffer."),
+    polity: Optional[str] = Query(None, description=(
+        "Cliopatria polity name, exact match (e.g. \"Northern Song\"). Required for type=polity."
+    )),
+    year: Optional[int] = Query(None, description=(
+        "Resolver year CE — selects the polity boundary active at this year. Required for type=polity."
+    )),
+    level: int = Query(6, description="Basin hierarchy level: 6 or 8."),
+    bands: str = Query("ABCDE", description=(
+        "Band letters to compute, e.g. \"ABCDE\" or \"ABCDET\". Add T to include Band T "
+        "(requires from_year and to_year)."
+    )),
+    from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
+    to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
+    detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by type, then
     aggregates their signature as a distribution (not an average). 'type' is confusingly
     named "area" alongside GET /api/area, but the four resolver types are not all areas
     in the geometric sense: single_basin and polity are bounded regions, buffer is an
     arbitrary radius, and basin_ring is a topological set of basins, not a shape.
-
-    Parameters
-    ----------
-    type       : resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring'
-    lat, lon   : WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180]
-                 (required for buffer, single_basin, basin_ring)
-    radius_km  : buffer radius in km (required for buffer)
-    polity     : Cliopatria polity name (required for polity)
-    year       : resolver year — boundary slice CE (required for polity)
-    level      : basin hierarchy level — 6 or 8 (default 6)
-    bands      : band letters to compute (default ABCDE; add T for temporal)
-    from_year  : Band T span start CE (required when T in bands)
-    to_year    : Band T span end CE (required when T in bands)
-    detail     : include per-variable histogram objects in the response
 
     Response
     --------

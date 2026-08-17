@@ -228,7 +228,10 @@ def format_default(required, default):
 
 def endpoint_params(fn):
     sig = inspect.signature(fn)
-    _, descriptions, _ = parse_docstring(fn.__doc__)
+    # Fallback only -- prefer each Query()'s own .description (the standard OpenAPI
+    # parameter field) once a route has been migrated to it; docstring "Parameters"
+    # parsing remains for routes that haven't been converted yet.
+    _, docstring_descriptions, _ = parse_docstring(fn.__doc__)
     out = []
     for name, p in sig.parameters.items():
         required, default = _required_and_default(p)
@@ -236,12 +239,13 @@ def endpoint_params(fn):
         rng = format_range(p)
         if rng:
             type_str += f" ({rng})"
+        query_description = p.default.description if isinstance(p.default, Param) else None
         out.append({
             "name": name,
             "type": type_str,
             "required": required,
             "default": format_default(required, default),
-            "description": descriptions.get(name, ""),
+            "description": query_description or docstring_descriptions.get(name, ""),
         })
     return out
 
