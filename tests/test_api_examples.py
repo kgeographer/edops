@@ -1,7 +1,7 @@
 """
 test_api_examples.py
 --------------------
-Smoke tests that mirror the example curl requests in app/static/api_guide.html.
+Smoke tests that mirror the example curl requests in docsite/api.md.
 One test per example; all are skipped if the DB is unavailable.
 
 Examples tested:

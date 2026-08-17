@@ -49,7 +49,7 @@ The Codebook is a strict per-variable reference.See [Reading a signature](sandbo
 
 ## Local, upstream, and delta
 
-*TODO — extend the existing API Guide paragraph (`documentation/API_guide.md`, "Local vs. upstream" note under Profile Bands).*
+*TODO — extend the existing API Guide paragraph (`docsite/api.md`, "Local vs. upstream" section).*
 
 ## The bands
 
