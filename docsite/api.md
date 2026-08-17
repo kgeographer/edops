@@ -41,8 +41,8 @@ Return environmental signature for a coordinate.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `lat` | float | **yes** | — | coordinates |
-| `lon` | float | **yes** | — | coordinates |
+| `lat` | float (-90 to 90) | **yes** | — | coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180] |
+| `lon` | float (-180 to 180) | **yes** | — | coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180] |
 | `bands` | str | no | `ABCDE` | which profile groups to include, e.g. "ABCDE" or "ABCDET" (default ABCDE) |
 | `level` | int | no | `8` | basin hierarchy level — only 8 and 6 are currently supported |
 | `from_year` | int | no | — | start year CE for Band T temporal enrichment (0–1998) |
@@ -97,8 +97,8 @@ Areal signature dispatcher — resolves to a set of member basins by type, then 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `type` | str | **yes** | — | resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring' |
-| `lat` | float | no | — | WGS-84 query point (required for buffer, single_basin, basin_ring) |
-| `lon` | float | no | — | WGS-84 query point (required for buffer, single_basin, basin_ring) |
+| `lat` | float (-90 to 90) | no | — | WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180] (required for buffer, single_basin, basin_ring) |
+| `lon` | float (-180 to 180) | no | — | WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180] (required for buffer, single_basin, basin_ring) |
 | `radius_km` | float | no | — | buffer radius in km (required for buffer) |
 | `polity` | str | no | — | Cliopatria polity name (required for polity) |
 | `year` | int | no | — | resolver year — boundary slice CE (required for polity) |

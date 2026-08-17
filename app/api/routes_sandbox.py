@@ -5,7 +5,7 @@ Routes used only by the Sandbox page (sandbox.html). Renamed from routes.py
 (2026-08-16) once the last other page's routes were split out of it -- see
 docs/edop/routes_audit.txt for the classification this split is based on.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 import json
@@ -1106,8 +1106,8 @@ def area(
 @router.get("/areas")
 def areas(
     type: str,
-    lat: Optional[float] = None,
-    lon: Optional[float] = None,
+    lat: Optional[float] = Query(None, ge=-90, le=90),
+    lon: Optional[float] = Query(None, ge=-180, le=180),
     radius_km: Optional[float] = None,
     polity: Optional[str] = None,
     year: Optional[int] = None,
@@ -1126,7 +1126,8 @@ def areas(
     Parameters
     ----------
     type       : resolver type — 'buffer', 'single_basin', 'polity', 'basin_ring'
-    lat, lon   : WGS-84 query point (required for buffer, single_basin, basin_ring)
+    lat, lon   : WGS-84 query point, decimal degrees -- lat in [-90, 90], lon in [-180, 180]
+                 (required for buffer, single_basin, basin_ring)
     radius_km  : buffer radius in km (required for buffer)
     polity     : Cliopatria polity name (required for polity)
     year       : resolver year — boundary slice CE (required for polity)

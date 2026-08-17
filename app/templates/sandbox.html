@@ -1041,7 +1041,13 @@
 
     const coordMatch = raw.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
     if (coordMatch) {
-      setResolvedPoint(parseFloat(coordMatch[1]), parseFloat(coordMatch[2]), raw);
+      const parsedLat = parseFloat(coordMatch[1]);
+      const parsedLon = parseFloat(coordMatch[2]);
+      if (parsedLat < -90 || parsedLat > 90 || parsedLon < -180 || parsedLon > 180) {
+        _whgSetStatus('Lat must be -90 to 90, lon must be -180 to 180.');
+        return;
+      }
+      setResolvedPoint(parsedLat, parsedLon, raw);
       return;
     }
 

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import certifi
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.db.signature import get_signature
 from app.db.temporal import get_temporal_context
@@ -138,8 +138,8 @@ def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
 
 @router.get("/signature")
 def signature(
-    lat: float,
-    lon: float,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
     bands: str = "ABCDE",
     level: int = 8,
     from_year: Optional[int] = None,
@@ -150,7 +150,7 @@ def signature(
 
     Parameters
     ----------
-    lat, lon   : coordinates
+    lat, lon   : coordinates in decimal degrees — lat in [-90, 90], lon in [-180, 180]
     bands      : which profile groups to include, e.g. "ABCDE" or "ABCDET" (default ABCDE)
     level      : basin hierarchy level — only 8 and 6 are currently supported
     from_year  : start year CE for Band T temporal enrichment (0–1998)

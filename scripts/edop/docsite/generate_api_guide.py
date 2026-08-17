@@ -17,6 +17,8 @@ import sys
 import typing
 from pathlib import Path
 
+from fastapi.params import Param  # base class of Query/Path/Body -- has is_required()/default
+
 ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 API_MD = ROOT / "docsite" / "api.md"
@@ -181,12 +183,45 @@ def format_annotation(annotation):
     return getattr(annotation, "__name__", str(annotation))
 
 
-def format_default(p):
-    if p.default is inspect.Parameter.empty or p.default is None:
+def format_range(p):
+    """Render any ge/le/gt/lt constraints from a Query()/Path()/Body() wrapper, e.g. '-90 to 90'."""
+    d = p.default
+    if not isinstance(d, Param):
+        return ""
+    lo = hi = None
+    for m in d.metadata:
+        if hasattr(m, "ge"):
+            lo = m.ge
+        elif hasattr(m, "gt"):
+            lo = m.gt
+        elif hasattr(m, "le"):
+            hi = m.le
+        elif hasattr(m, "lt"):
+            hi = m.lt
+    if lo is not None and hi is not None:
+        return f"{lo} to {hi}"
+    return ""
+
+
+def _required_and_default(p):
+    """Resolve (required, default_value) for a parameter -- handles plain defaults
+    (or none) as well as FastAPI Query()/Path()/Body() wrappers, whose own .default
+    is the FieldInfo object itself, not the value Swagger actually uses."""
+    d = p.default
+    if isinstance(d, Param):
+        required = d.is_required()
+        return required, (None if required else d.default)
+    if d is inspect.Parameter.empty:
+        return True, None
+    return False, d
+
+
+def format_default(required, default):
+    if required or default is None:
         return "—"
-    if isinstance(p.default, bool):
-        return "`true`" if p.default else "`false`"
-    return f"`{p.default}`"
+    if isinstance(default, bool):
+        return "`true`" if default else "`false`"
+    return f"`{default}`"
 
 
 def endpoint_params(fn):
@@ -194,11 +229,16 @@ def endpoint_params(fn):
     _, descriptions, _ = parse_docstring(fn.__doc__)
     out = []
     for name, p in sig.parameters.items():
+        required, default = _required_and_default(p)
+        type_str = format_annotation(p.annotation)
+        rng = format_range(p)
+        if rng:
+            type_str += f" ({rng})"
         out.append({
             "name": name,
-            "type": format_annotation(p.annotation),
-            "required": p.default is inspect.Parameter.empty,
-            "default": format_default(p),
+            "type": type_str,
+            "required": required,
+            "default": format_default(required, default),
             "description": descriptions.get(name, ""),
         })
     return out
