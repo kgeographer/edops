@@ -56,12 +56,19 @@
           <option value="network-topology">Network-topology</option>
           <option value="local-anomaly">Local-anomaly</option>
         </select>
-        <i class="bi bi-question-circle text-muted" style="cursor:help;" title="Typology class describes each variable's spatial structure: Continental-gradient = large-scale geographic patterning; Scale-dependent = changes with basin size; Network-topology = shaped by river network; Local-anomaly = isolated pockets."></i>
+        <i class="bi bi-question-circle edops-help" data-help-text="Typology class describes each variable's spatial structure: Continental-gradient = large-scale geographic patterning; Scale-dependent = changes with basin size; Network-topology = shaped by river network; Local-anomaly = isolated pockets."></i>
       </div>
 
       <!-- Variable accordion -->
       <div id="ex-accordion" class="accordion accordion-flush">
         <div class="text-muted small p-2">Loading variables…</div>
+      </div>
+
+      <div id="ex-panel-intro" class="small p-2 mt-2">
+        This panel visualizes the results of Exploratory Data Analysis (EDA) and Exploratory
+        Spatial Data Analysis (ESDA) steps in the Data Characterization phase of EDOPS
+        development. For the full explanation of what this page does and is for, see the
+        Documentation menu option above.
       </div>
 
     </div><!-- /left col -->
@@ -1600,6 +1607,7 @@
   // ── Select a variable ──
   function selectVar(key) {
     selectedKey = key;
+    document.getElementById('ex-panel-intro')?.classList.add('d-none');
     document.querySelectorAll('.ex-var-item').forEach(el => {
       el.classList.toggle('selected', el.dataset.key === key);
     });
