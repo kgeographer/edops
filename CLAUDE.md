@@ -74,48 +74,34 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-16 (branch `varnaming_routes`, cut off `docsv4`, not yet merged back —
-nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`, `site/` build output
-gitignored) with a generated Codebook (`scripts/edop/docsite/generate_codebook.py`, TSV →
-compact markdown) and a full "About EDOPS" specificity ladder (in-app modal → `docsite/project.md`
-→ `docsite/data-sources.md` → `documentation/EDOP_summary_v04.md`, each linking out rather than
-duplicating). `main` has its first tag/release, `v0.3`, matching what's deployed. The Sandbox
-template naming collision is resolved (`sandbox.html` is the live one, old Lookup is
-`sandbox_v03.html`). **`app/api/routes.py` (formerly ~4000 lines) no longer exists** — split into
-`routes_common.py`, `routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, and
-`routes_sandbox.py` (the renamed remainder), using `docs/edop/routes_audit.txt` as the map;
-`main.py` and the two external module-path dependents (`tests/test_areas.py`,
-`scripts/cdop/wo5_part_b_context_probe.py`) updated to match. Seven confirmed-dead/superseded API
-routes removed across the two days (`/basin-clusters(+cities)`, `/similar-text`, `/wh-sites`,
-`/whg-place`, `/similarity/climate-class`, `/temporal`); route count now 77. Two working-reference
-docs exist in `docs/edop/` that later sessions should consult rather than re-derive:
-`pageload_explorer.txt` (on-load + variable-selection pseudocode, more pages planned) and
-`routes_audit.txt` (kept current through the split — re-run after any future route change). Two
-real UI bugs surfaced and fixed via browser review during the split, unrelated to the routes work
-itself: Cliopatria's basin-variable select didn't clear the map on reset (`clearBasinVar()`), and
-Explorer's preview variables triggered a doomed LISA fetch that caused a visible repaint-then-revert
-(LISA now disabled up front for preview variables, matching the existing categorical/monthly
-guard). Full history: `logs/session_log_20260804.md` through `logs/session_log_20260816.md`.
-
-**Same day, continued:** public API surface narrowed to `/health`, `/signature`, `/area`,
-`/areas` (everything else marked `include_in_schema=False`); `docsite/api.md` is now generated
-(`scripts/edop/docsite/generate_api_guide.py`, same pattern as the Codebook) from the live
-route set + docstrings — retired the old hand-maintained `documentation/API_guide.md` and
-`app/static/api_guide.html`; `documentation/edops_schema.json` regenerated against live output
-(real Band T shape drift found); Codebook rows now link to their own
-`BasinATLAS_Catalog_v10.pdf` page (`scripts/edop/docsite/split_basinatlas_catalog.py`), which
-surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. `app/static/
-basinatlas_pages/` (gitignored, split-PDF output) still needs adding to the rsync deploy step.
-Full detail: `logs/session_log_20260816.md` Part 2.
-
-**2026-08-17:** lat/lon range validation added to `/signature`/`/areas` (punch-list #6); the
-`level`-default reconciliation (#7) investigated and deliberately left as-is — see reasoning in
-the log, not repeated here. All three public routes now use `Query(..., description=...)` per
-parameter instead of free-text docstring parsing. `/api/schema` (Swagger) got a real styling
-pass — minimal EDOPS branding, a proper intro paragraph, Schemas panel hidden, `/signature`
-open by default — custom route + `app/static/css/swagger_custom.css`, both new this session.
-Full detail: `logs/session_log_20260817.md`.
-
+**State as of 2026-08-19 (branch `docsv4`; the `varnaming_routes` phase branch merged back and
+pushed 2026-08-17, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`,
+`site/` build output gitignored) with a generated Codebook
+(`scripts/edop/docsite/generate_codebook.py`) and a generated API Guide
+(`scripts/edop/docsite/generate_api_guide.py` → `docsite/api.md`) — both sourced from live code
+(the variable catalog TSV; the public route set + docstrings) rather than hand-maintained.
+Swagger (`/api/schema`) is a custom-styled route reading that same route metadata (minimal EDOPS
+branding, a real intro paragraph, `/signature` open by default via deep-linking). Public API
+surface is exactly `/health`, `/signature`, `/area`, `/areas` — everything else marked
+`include_in_schema=False`; lat/lon are range-validated; the `level` default split between
+`/signature` (8) and `/area`/`/areas` (6) was investigated and deliberately left as-is (see
+`logs/session_log_20260817.md`). Codebook rows for BasinATLAS-sourced variables link to their own
+page in the provider's PDF catalog (`scripts/edop/docsite/split_basinatlas_catalog.py`), which
+also surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. A full "About
+EDOPS" specificity ladder exists (in-app modal → `docsite/project.md` → `docsite/data-sources.md`
+→ `documentation/EDOP_summary_v04.md`, each linking out rather than duplicating). **`app/api/
+routes.py` (formerly ~4000 lines) no longer exists** — split into `routes_common.py`,
+`routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, `routes_sandbox.py`; route
+count 77 after removing seven confirmed-dead routes. Two working-reference docs in `docs/edop/`
+worth consulting rather than re-deriving: `pageload_explorer.txt` (on-load + variable-selection
+pseudocode) and `routes_audit.txt` (re-run after any future route change). `main` has its first
+tag/release, `v0.3`, matching what's currently deployed — v0.4 itself is not deployed yet.
+`app/static/basinatlas_pages/` (gitignored, ~13MB split-PDF output) still needs adding to the
+rsync deploy step — see `MAINTAIN_DEPLOY.md` (repo root, gitignored, Karl's personal maintain/
+deploy reference) for the current full asset list and the signature-update-to-docs propagation
+steps. `docs/design/DOCSv4_TODO.md` (gitignored, renamed from the awkward `DOCSv4 — TODO.md`
+2026-08-17) is the fuller documentation-content punch list, reconciled against actual state as
+of that date. Full history: `logs/session_log_20260804.md` through `logs/session_log_20260819.md`.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
