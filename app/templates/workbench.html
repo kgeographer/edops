@@ -457,34 +457,16 @@
       const data = await resp.json();
       whcCities = (data && data.cities) ? data.cities : [];
 
-      // Tbilisi (CITYKIN WO1a/WO1's terrain acceptance fixture) is pinned at the top of the dropdown,
-      // above the region groups -- not because it's a bigger city, but because it's the instrument's
-      // own reference case. Pulled out of the region grouping so it appears exactly once.
-      const pinned = whcCities.filter((c) => c.city === 'Tbilisi');
-      const rest = whcCities.filter((c) => c.city !== 'Tbilisi');
-
       // Group by region
       const byRegion = {};
-      rest.forEach((c) => {
+      whcCities.forEach((c) => {
         const region = c.region || 'Other';
         if (!byRegion[region]) byRegion[region] = [];
         byRegion[region].push(c);
       });
 
-      // Build grouped dropdown, pinned city/cities first
+      // Build grouped dropdown
       sel.innerHTML = '<option value="">Select a city…</option>';
-      pinned.forEach((c) => {
-        const opt = document.createElement('option');
-        opt.value = String(c.id);
-        opt.textContent = `${c.city}, ${c.country}`;
-        sel.appendChild(opt);
-      });
-      if (pinned.length) {
-        const sep = document.createElement('option');
-        sep.disabled = true;
-        sep.textContent = '──────────';
-        sel.appendChild(sep);
-      }
       Object.keys(byRegion).sort().forEach((region) => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region;
@@ -530,12 +512,6 @@
     // Enable Similar dropdown buttons
     if (btnSimilarEnv) btnSimilarEnv.disabled = false;
     if (btnSimilarText) btnSimilarText.disabled = false;
-
-    // Tbilisi (CITYKIN's terrain fixture, added to gaz.wh_cities for terrain-lens purposes only) has
-    // no scraped Wikipedia summaries/embeddings, unlike the true WH Cities -- hide "Similar (semantic)"
-    // entirely for it rather than leave a dead control enabled.
-    const textDropdown = btnSimilarText ? btnSimilarText.closest('.dropdown') : null;
-    if (textDropdown) textDropdown.style.display = (whcSelected.city === 'Tbilisi') ? 'none' : '';
 
     // Clear Resolved place (this is not WHG resolution)
     renderResolvedPlace(null);
@@ -1304,7 +1280,7 @@
     }
 
     // WH Cities: environmental similarity dropdown (lens-based)
-    document.querySelectorAll('#whc-similar-env-btn + .dropdown-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('[aria-labelledby="whc-similar-env-btn"] .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
@@ -1332,7 +1308,7 @@
     });
 
     // WH Cities: semantic similarity dropdown
-    document.querySelectorAll('#whc-similar-text-btn + .dropdown-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('[aria-labelledby="whc-similar-text-btn"] .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
@@ -3425,7 +3401,7 @@
             if (bIdx !== -1) return 1;
             return a.name.localeCompare(b.name);
           });
-          const realmNote = '<div class="small text-muted mb-2">(first 3 have most complete bioregion data)</div>';
+          const realmNote = '<div class="text-bg-light text-danger mb-2">NOTE: first 3 relams have most complete bioregion data)</div>';
           ecoList.innerHTML = realmNote + items.map(r => `
             <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-eco-level="realm" data-eco-id="${escapeHtml(r.id)}">
               ${escapeHtml(r.name)}
