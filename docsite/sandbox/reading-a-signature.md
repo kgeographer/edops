@@ -62,4 +62,4 @@ Settlement query); it does not apply to Workbench's environmental-profile panel,
 ## Format decision
 
 Follows the same screenshot + caption pattern already settled for the Sandbox walkthroughs
-(`docs/design/DOCSv4 — TODO.md` §7) rather than prose-only, given how visual this content is.
+(`docs/design/DOCSv4_TODO.md` §7) rather than prose-only, given how visual this content is.

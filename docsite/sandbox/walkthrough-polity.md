@@ -6,4 +6,4 @@ Will be a scroll-through screenshot sequence for one full worked path: search a 
 step through its time slices → set level/bands → **Get signature** → tour the five dynamic tabs
 (Signature, Analysis, Seasonality, Context, Similarity).
 
-See `docs/design/DOCSv4 — TODO.md` §7.
+See `docs/design/DOCSv4_TODO.md` §7.
