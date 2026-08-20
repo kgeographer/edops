@@ -558,8 +558,9 @@
             </div>
 
             <!-- Declared bands, per-variable units. No strict/moderate/loose ladder. -->
-            <div class="text-muted px-1" style="font-size:0.8rem; font-style: italic;">Adjust similarity thresholds for:</div>
+<!--            <div class="text-muted px-1" style="font-size:0.8rem; font-style: italic;">Adjust similarity thresholds for:</div>-->
             <div class="d-flex align-items-end gap-3 px-1 pb-2 flex-wrap" style="font-size:0.85rem;">
+              Similarity thresholds:
               <div class="cj-band" data-cond="precip_magnitude">
                 <label class="text-muted d-block mb-0">Magnitude
                   <i class="bi bi-question-circle edops-help" data-help-text="How much a basin's total annual rainfall may differ from the query basin's, as a multiplicative factor — 1.5 allows anywhere from two-thirds to one-and-a-half times as much."></i>
@@ -642,7 +643,9 @@
         <!-- Atlas pane (WO7a) — global climate-class distributions; place-independent. -->
         <div class="tab-pane fade" id="v3-pane-atlas" role="tabpanel">
           <div class="d-flex align-items-center justify-content-between px-1 py-2 flex-wrap gap-2">
-            <h5 class="mb-0" id="v3-atlas-title">Global climate classes</h5>
+            <h5 class="mb-0" id="v3-atlas-title">Global climate classes
+            <i class="bi bi-question-circle edops-help" data-help-text="TODO: Level choice"></i>
+            </h5>
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="text-muted small fw-semibold">View:</span>
               <select id="v3-atlas-view" class="form-select form-select-sm" style="width:auto;">
@@ -1580,12 +1583,19 @@
       _cjRenderReadout(data);
       _cjRenderLegend(data);
 
-      if (!members.length) {
+      // The conjunction search excludes the query basin from its own candidate pool (it's not
+      // evaluated against itself), so it never appears in `members` -- fold it in here as a
+      // synthetic perfect match (corr=1.0) so it paints through the same cj-fill layer, same
+      // palette, as everything else, rather than needing a second source/color scheme.
+      const queryBasinId = data.query_basin_id;
+      const ids = members.map(m => m.basin_id);
+      if (queryBasinId && !ids.includes(queryBasinId)) ids.push(queryBasinId);
+
+      if (!ids.length) {
         _cjMap.getSource('cj-basins').setData({ type: 'FeatureCollection', features: [] });
         return;
       }
 
-      const ids = members.map(m => m.basin_id);
       const geomR = await fetch('/api/basin-geom', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids, level: lv }),
@@ -1608,6 +1618,23 @@
             ccodes:         JSON.stringify(m.ccodes || []),
           },
         }));
+
+      if (queryBasinId && geom[queryBasinId] && !members.some(m => m.basin_id === queryBasinId)) {
+        const qv = data.query_values || {};
+        features.push({
+          type: 'Feature',
+          geometry: JSON.parse(geom[queryBasinId]),
+          properties: {
+            basin_id:       queryBasinId,
+            corr:           1.0,
+            pre_total_mm:   qv.pre_total_mm,
+            elev_m:         qv.elev_m,
+            relief_range_m: qv.relief_range_m,
+            place_name:     _currentPlaceName || '',
+            ccodes:         '[]',
+          },
+        });
+      }
 
       _cjMap.getSource('cj-basins').setData({ type: 'FeatureCollection', features });
 
