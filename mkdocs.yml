@@ -25,7 +25,9 @@ extra_javascript:
 
 nav:
   - Introduction: index.md
-  - Claims and limits: claims.md
+  - Design notes:
+      - Premises and commitments: design/commitments.md
+      - Caveats and limits: design/caveats.md
   - Sandbox:
       - Overview: sandbox/overview.md
       - Reading a signature: sandbox/reading-a-signature.md
