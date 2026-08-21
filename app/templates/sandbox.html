@@ -3276,21 +3276,26 @@
     switch (row.method) {
       case 'area_weighted': {
         if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
-        const s = score !== null && score !== undefined
-          ? `${score.toFixed(1)} percentile` : '—';
+        let s;
+        if (row.status === 'outside_active_domain') s = 'outside active range';
+        else if (score !== null && score !== undefined) s = `${score.toFixed(1)} percentile`;
+        else s = '—';
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
-        return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {})}`;
+        const caveat = row.score_suppressed
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+        return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {})}${caveat}`;
       }
       case 'dominant_basin': {
-        const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
-        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
+        const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+        const main = [r, s].filter(Boolean).join(' · ') || '—';
         // Carrier-basin ID is meaningless at n=1 -- there's only ever one basin, it's the one
         // being queried, "which basin was selected" isn't a question (Karl, 2026-08-12).
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
-        return `${s}${r}${b}`;
+        return `${main}${b}`;
       }
       case 'class_mixture':
         return `<div>${raw !== null ? escapeHtml(String(raw)) : '—'}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
@@ -3305,11 +3310,12 @@
         return `${scoreHtml}<div style="margin-top:3px;">${renderRangeBar(det)}</div>${caveat}`;
       }
       case 'extreme': {
-        const s = score !== null ? `${score.toFixed(1)} percentile` : '—';
-        const r = raw   !== null ? ` · ${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : '';
+        const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
+        const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+        const main = [r, s].filter(Boolean).join(' · ') || '—';
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
-        return `${s}${r}${b}`;
+        return `${main}${b}`;
       }
       default:
         return `<span style="font-size:0.72rem;">[${escapeHtml(row.method)}]</span>`;

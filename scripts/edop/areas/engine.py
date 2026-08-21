@@ -1688,6 +1688,7 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
             representative_score=carrier_score,
             representative_raw=carrier_raw,
             coverage=round(cov, 4), status='ok', coherence=None,
+            units=(meta_df.loc[var, 'units'] if var in meta_df.index else None),
             detail={'dominant_hybas_id': carrier_id},
         ))
 
