@@ -110,7 +110,7 @@ Where a query has a temporal component, each variable label carries a small `as 
 This records the year the query resolved to. For variables in the persistence bands the value itself
 is contemporary — the stamp tells you the period the query was about, not the period the measurement
 comes from. How far a contemporary measurement can be carried back is what the bands encode; see
-[Premises and commitments](../commitments.md).
+[Premises and commitments](../design/commitments.md).
 
 ## Band T is different
 
