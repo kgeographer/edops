@@ -1,8 +1,10 @@
 # Caveats and limits
 
-Known gaps and defects in EDOPS v0.4. The design choices behind the framework — why basins, why
-two scales, why bands — are in [Premises and commitments](commitments.md); this page is about where
-the data thins out or misbehaves.
+Where EDOPS v0.4 thins out or misbehaves. The design choices behind the framework — why basins, why
+two scales, why bands — are in [Premises and commitments](commitments.md). Limitations belonging to
+the source datasets rather than to EDOPS are described alongside each source in
+[Data sources](../data-sources.md), which is worth reading before relying on any of the historical
+layers.
 
 EDOPS is a research prototype. Nothing here is a stability guarantee.
 
@@ -32,8 +34,7 @@ Persistence bands (see [Premises](commitments.md)) indicate how far back each ca
 carried; Band T holds the variables that are genuinely time-indexed.
 
 **Band T sources cover different spans**, so a single query date will return values from some
-temporal datasets and not others. Coverage per source is listed in
-[Data sources](../data-sources.md). {verify: state the three ranges — LMR v2.1, HYDE 3.4, eVolv2k v4}
+temporal datasets and not others. Coverage per source is in [Data sources](../data-sources.md).
 
 **{verify: BCE handling}** — how dates before the common era are accepted and interpreted, and any
 known rough edges.
@@ -56,6 +57,8 @@ distance to terminal lake?}
 
 ## Interpretive limits
 
+These are not defects and will not be fixed. They are properties of the instrument.
+
 **A basin value is not a site value.** Basin summaries can be poor descriptions of any particular
 location inside them, and the disagreement grows with basin size and internal heterogeneity. This
 is flagged at the point of use throughout the interface and is worth taking literally.
@@ -63,6 +66,11 @@ is flagged at the point of use throughout the interface and is worth taking lite
 **Level 6 and level 8 can disagree** about the same place. That is a real property of the landscape
 rather than an error, but it means a single-level result should not be reported as though it were
 the value for that place.
+
+**A modelled value is not an observation.** Several sources are reconstructions — estimates produced
+by a model under stated assumptions — and they render exactly like measured attributes. What a given
+value is, and how it was produced, is recorded in the [Codebook](../codebook.md) and in
+[Data sources](../data-sources.md).
 
 **Correspondence is not cause.** Where EDOPS supports comparison between environmental and cultural
 data, a correspondence is a starting point for interpretation, not evidence about mechanism or
