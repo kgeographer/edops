@@ -1,77 +1,59 @@
 # Caveats and limits
 
-Where EDOPS v0.4 thins out or misbehaves. The design choices behind the framework — why basins, why
-two scales, why bands — are in [Premises and commitments](commitments.md). Limitations belonging to
-the source datasets rather than to EDOPS are described alongside each source in
-[Data sources](../data-sources.md), which is worth reading before relying on any of the historical
-layers.
+EDOPS is a research prototype and work in progress, now at v0.4. Some signature variables and platform features planned for a Spring, 2027 v1.0 release are in development. Some limitations of the current release and overall project are listed below.
 
-EDOPS is a research prototype. Nothing here is a stability guarantee.
+The design choices behind the framework, e.g. why basins, why two scales, why bands, are discussed in [Premises and commitments](commitments.md). Limitations of the source datasets rather than to EDOPS are described alongside each source in
+[Data sources](../data-sources.md), worth reading particularly before relying on the current historical layers.
+
+
 
 ## Spatial coverage
 
-**Small islands are missed.** The basin framework is built from terrestrial drainage. Islands below
-the delineation threshold do not appear, and places on them do not resolve.
+**Some small islands are missed.** The basin framework is built from terrestrial drainage. Islands below
+the delineation threshold do not appear, so places on them do not resolve.
 
 **Coastline precision is unverified.** Basin boundaries at the coast inherit whatever the source
-delineation did there. We have not characterised how good this is, and it is probably not good.
-Treat coastal basin extents as approximate.
+delineation did there. We have not yet analyzed how good this is. Treat coastal basin extents as approximate.
 
 **Maritime environments are absent entirely.** Nothing in EDOPS describes what is offshore. For a
-coastal settlement, the half of the environment that may have mattered most — fisheries, shelf
-productivity, whether the site is usable as a harbour at all — is not represented. Bathymetry and
-shelf characterisation are wanted; port suitability would need a definition we do not yet have,
-since a coastline is not automatically a viable port.
+coastal settlement, important environmental attributes are missing, Bathymetry and shelf characterisation are planned, but absent so far. Derived measures of fishery potential or port suitability will need to be defined.
 
-**Terrain is described, accessibility is not.** Elevation and relief say something about a
-landscape, but not about the cost of crossing it. A walking-distance or terrain-cost measure would
-be a substantial addition and is not present.
+**Terrain is described, accessibility is not.** Elevation and relief are useful descriptors of a
+landscape, but measures of the the cost of crossing it are lacking and would be a useful addition.
 
 ## Temporal coverage
 
-**Most variables are contemporary.** The bulk of the catalogue describes a recent baseline.
-Persistence bands (see [Premises](commitments.md)) indicate how far back each can reasonably be
-carried; Band T holds the variables that are genuinely time-indexed.
+**Most variables are contemporary.** The bulk of the EDOPS catalogue comes from BasinATLAS data and describes a recent baseline. Grouping of variables in "persistence bands" (see [Premises](commitments.md)) imparts some rubric for how far back in time each can reasonably be carried, but ony Band T holds the variables that are genuinely time-indexed.
 
-**Band T sources cover different spans**, so a single query date will return values from some
-temporal datasets and not others. Coverage per source is in [Data sources](../data-sources.md).
+**Band T sources cover different spans** at different resolutions, so a single query date or timespan will return values from some temporal datasets and not others. Coverage per source is in [Data sources](../data-sources.md).
 
-**{verify: BCE handling}** — how dates before the common era are accepted and interpreted, and any
-known rough edges.
+**BCE handling.** For the HYDE and eVolv2k datasets, dates before year 1 use astronomical year numbering (year 0 = 1 BCE, year -1 = 2 BCE), not traditional historical calendars' no-year-zero convention. These are annually-resolved reconstructions, so a one-year offset in labeling isn't meaningful next to the datasets' own uncertainty. 
 
 **Global only, by design and by constraint.** For an ostensibly historical resource we are doing
 what we can with what exists globally. Regional paleoenvironmental reconstructions are often better
-than anything global, and we are not using them: mixing regional coverage into a global framework
-raises data-architecture and interface problems — what a user sees when their query falls inside a
-well-covered region versus outside one — that v0.4 does not attempt to solve. Pointers to global
+than anything global, but we are not using them at this time. Mixing regional coverage into EDOPS' global framework is under consideration, but would raise significant data-architecture and interface issues. Pointers to global
 datasets we have missed are welcome.
 
-## Known data defects
+## Known data anomalies and defects
 
-**Endorheic basins and `dist_sink`.** In closed basins the terminal sink is not the ocean, so
-distance-to-sink does not mean what it means elsewhere. Band E variables should be read with this
-in mind for any basin without a marine outlet. {verify: exact current behaviour — undefined, or
-distance to terminal lake?}
+**Endorheic basins and `dist_sink`.** In closed basins the terminal sink is not the ocean, so distance-to-sink does not mean what it means for the exorheic case - it measures distance to that system's own terminal sink (e.g. a lake, playa, salt flat)
 
-**{verify: any others.}** Candidates from earlier notes not yet confirmed as still live.
 
 ## Interpretive limits
 
-These are not defects and will not be fixed. They are properties of the instrument.
+These are properties of the instrument.
 
-**A basin value is not a site value.** Basin summaries can be poor descriptions of any particular
-location inside them, and the disagreement grows with basin size and internal heterogeneity. This
-is flagged at the point of use throughout the interface and is worth taking literally.
+**A basin value is not a site value.** Basin summaries can be poor descriptions of any particular location inside them, and the disagreement grows with basin size and internal heterogeneity. This is flagged at the point of use throughout the interface.
 
-**Level 6 and level 8 can disagree** about the same place. That is a real property of the landscape
-rather than an error, but it means a single-level result should not be reported as though it were
-the value for that place.
+**Level 6 and level 8 basins can disagree** about the same place. This well-known effect of alternative aggregation scale and shape is termed the Modifiable Areal Unit Problem (MAUP). Because a basin summarizes each measured property into a single value, larger units fold in more internal variation than smaller ones. In EDOPS, Level 8 describes a more immediate character of a location than the larger Level 6, which situates it in a broader context. Both are valid; they answer different questions, not the same question at different resolutions.
 
-**A modelled value is not an observation.** Several sources are reconstructions — estimates produced
-by a model under stated assumptions — and they render exactly like measured attributes. What a given
+Which to choose follows from the reach of the process you are asking about, not from the size of the place. A settlement's immediate terrain and agricultural land are Level 8 questions. Its water supply may originate far upstream, which is a Level 6 question even for a single point — the water-provenance classification can return "Undetermined" at Level 8 when the upstream catchment is too small to resolve distant sources. The two levels disagreeing sharply is itself informative: it says the place sits in a landscape that is heterogeneous at that scale. Fuller guidance on choosing a level is planned.
+
+**A modelled value is not an observation.** Sources in band T - Temporal are reconstructions — estimates produced
+by a model under stated assumptions — but they render exactly like measured attributes. What a given
 value is, and how it was produced, is recorded in the [Codebook](../codebook.md) and in
 [Data sources](../data-sources.md).
 
 **Correspondence is not cause.** Where EDOPS supports comparison between environmental and cultural
-data, a correspondence is a starting point for interpretation, not evidence about mechanism or
+data in the Workbench page, a correspondence is a starting point for interpretation, not evidence about mechanism or
 direction.
