@@ -901,11 +901,28 @@ _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
 def _agg_hyde_b7(df, var_col, buf_area_m2):
-    """Fractional-overlap-weighted mean + distribution for one HYDE variable.
+    """Fractional-overlap-weighted sum + per-cell distribution for one HYDE variable.
+
+    HYDE's four land-use variables (cropland/grazing/pasture/rangeland) are stored
+    as absolute km² within each cell -- an extensive quantity, not a rate or index.
+    representative_raw is therefore the overlap-weighted SUM across contributing
+    cells (each cell's value scaled by the fraction of that cell inside the query
+    area), the physically correct operator for an extensive quantity. Averaging
+    instead (dividing by cell count, as this function did before WO6) understated
+    totals by orders of magnitude for any query spanning more than a handful of
+    cells -- confirmed against Northern Song ca. 1000 CE, where cropland read
+    3.3 km2 pre-fix and ~124,000 km2 after, in line with independent historical
+    estimates of Song cultivated area.
+
+    p10/p90/sd/histogram describe the distribution of raw values across the
+    contributing cells themselves (weighted by fractional overlap, normalized to
+    sum to 1 for quantile purposes) -- a different, complementary quantity from
+    the total: "what's typical for one HYDE cell here," not "how much in total."
+    Left as a per-cell distribution by this fix; not the same axis as the headline.
 
     Weight = overlap_m2 / cell_area_m2 (fraction of each cell inside query area).
     Cells that are 10% inside contribute weight 0.1 regardless of their absolute size,
-    so unequal cell areas (which vary with latitude) don't bias the mean.
+    so unequal cell areas (which vary with latitude) don't bias the per-cell stats.
     Coverage is reported as sum(overlap_m2) / buf_area_m2 (physical coverage).
     w_eff = sum of fractional coverages; honest effective-cell-count for detail block.
     """
@@ -917,9 +934,10 @@ def _agg_hyde_b7(df, var_col, buf_area_m2):
     frac   = (valid['overlap_m2'] / (valid['area_km2'] * 1e6)).values
     w      = frac / frac.sum()
     v      = valid[var_col].values.astype(float)
+    total_ = float(np.dot(v, frac))
     mean_  = float(np.dot(v, w))
     return {
-        'representative_raw': mean_,
+        'representative_raw': total_,
         'p10':      weighted_quantile(v, w, 0.1),
         'p90':      weighted_quantile(v, w, 0.9),
         'sd':       float(np.sqrt(np.dot(w, (v - mean_) ** 2))),

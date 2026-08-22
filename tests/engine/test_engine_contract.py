@@ -33,6 +33,7 @@ from scripts.edop.areas.engine import (
     resolve_basin_ring,
     load_catalog,
     dispatch_variable,
+    _agg_hyde_b7,
 )
 from scripts.shared.db_utils import db_connect
 
@@ -801,3 +802,97 @@ class TestBasinRingSignature:
             for key in ('border_bearing', 'centroid_bearing'):
                 val = m[key]
                 assert 0 <= val < 360, f'{key}={val} out of [0, 360)'
+
+
+# ---------------------------------------------------------------------------
+# WO6 — HYDE extensive-quantity aggregation (sum, not mean)
+#
+# HYDE's four land-use variables (cropland/grazing/pasture/rangeland) are
+# stored as absolute km² per cell. Pre-fix, _agg_hyde_b7 computed an overlap-
+# weighted MEAN across contributing cells -- the correct operator for an
+# intensive quantity, the wrong one for an extensive one -- which understated
+# multi-cell query totals by orders of magnitude (Northern Song cropland at
+# 1000 CE read 3.3 km²; real estimates run in the hundreds of thousands).
+# ---------------------------------------------------------------------------
+
+class TestHydeExtensiveAggregation:
+    def test_sum_not_mean_synthetic(self):
+        """Direct unit test of the fixed operator, independent of live geometry.
+
+        Two cells: a 10 km² cell 50% inside the query area with 4 km² cropland,
+        and a 20 km² cell 100% inside with 8 km² cropland. The physically
+        correct total is (4*0.5 + 8*1.0) = 10 km² -- each cell's cropland
+        scaled by how much of that cell falls inside the query area, then
+        summed. The old normalized-mean bug would instead return
+        (4*0.5 + 8*1.0) / (0.5 + 1.0) = 6.667 -- this test fails under that
+        regression and passes under the sum.
+        """
+        import pandas as pd
+        df = pd.DataFrame({
+            'cropland':   [4.0, 8.0],
+            'overlap_m2': [5e6, 20e6],   # 50% of a 10 km² cell; 100% of a 20 km² cell
+            'area_km2':   [10.0, 20.0],
+        })
+        agg = _agg_hyde_b7(df, 'cropland', buf_area_m2=25e6)
+        assert agg['representative_raw'] == pytest.approx(10.0, abs=1e-6), \
+            f"expected the weighted SUM (10.0), got {agg['representative_raw']} " \
+            "-- looks like a regression to the normalized-mean bug"
+
+    def test_nsong_cropland_right_order_of_magnitude(self, nsong_geom, conn):
+        """Northern Song, 1000 CE -- the WO6 anchor case."""
+        payload = areal_signature_polygon(
+            nsong_geom, conn, level=NSONG_LEVEL, bands=['T'],
+            from_year=1000, to_year=1000,
+        )
+        # Single-year span returns exactly one epoch per variable, so filtering
+        # on variable name alone is unambiguous (no need to assume 1000 CE lands
+        # on an exact HYDE step rather than a nearest-fallback).
+        crop = [r for r in payload['rows'] if r['variable'] == 'hyde_cropland']
+        assert crop, 'No hyde_cropland row for Northern Song near 1000 CE'
+        raw = crop[0]['representative_raw']
+        # Pre-fix this read ~3.3 km²; published Song cultivated-area estimates
+        # run in the hundreds of thousands of km². 10,000 as a floor is well
+        # clear of the old bug and well under any plausible estimate's low end.
+        assert raw > 10_000, \
+            f'hyde_cropland={raw} km² -- looks like the pre-WO6 averaging bug'
+        assert raw < 1_000_000, \
+            f'hyde_cropland={raw} km² -- implausibly large, check for double-counting'
+
+    def test_abbasid_mesopotamia_cropland_plausible(self, conn):
+        """Abbasid Caliphate, 900-910 slice, ~905 CE -- second independent region."""
+        row = conn.execute(
+            "SELECT ST_AsText(geom) FROM gaz.clio_polities "
+            "WHERE name = 'Abbasid Caliphate' AND fromyear = 900"
+        ).fetchone()
+        if row is None:
+            pytest.skip('Abbasid Caliphate (900-910 slice) not found in DB')
+        geom = row[0]
+        payload = areal_signature_polygon(
+            geom, conn, level=NSONG_LEVEL, bands=['T'],
+            from_year=905, to_year=905,
+        )
+        # 905 isn't an exact HYDE epoch -- nearest-fallback resolves it to 900.
+        # A single-year span returns exactly one epoch per variable, so filtering
+        # on variable name alone is unambiguous here.
+        crop = [r for r in payload['rows'] if r['variable'] == 'hyde_cropland']
+        assert crop, 'No hyde_cropland row for Abbasid Caliphate near 905 CE'
+        raw = crop[0]['representative_raw']
+        assert raw > 10_000, \
+            f'hyde_cropland={raw} km² -- looks like the pre-WO6 averaging bug'
+
+    def test_santa_fe_cropland_small_but_nonzero(self, conn):
+        """Santa Fe, 900-1000 CE -- should be small (marginal, high-elevation
+        Ancestral Puebloan farming) but not near-zero the way the pre-fix mean
+        made every small multi-cell query look."""
+        payload = areal_signature(
+            35.6870, -105.9378, 200, conn,
+            level=6, bands=['T'], from_year=900, to_year=1000,
+        )
+        crop = [r for r in payload['rows'] if r['variable'] == 'hyde_cropland']
+        assert crop, 'No hyde_cropland rows for Santa Fe, 900-1000 CE'
+        for r in crop:
+            raw = r['representative_raw']
+            assert raw > 1.0, \
+                f"hyde_cropland={raw} km² at {r['year']} -- too close to zero to be plausible"
+            assert raw < 5_000, \
+                f"hyde_cropland={raw} km² at {r['year']} -- implausibly large for this buffer"
