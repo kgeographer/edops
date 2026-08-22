@@ -103,6 +103,14 @@ steps. `docs/design/DOCSv4_TODO.md` (gitignored, renamed from the awkward `DOCSv
 2026-08-17) is the fuller documentation-content punch list, reconciled against actual state as
 of that date. Full history: `logs/session_log_20260804.md` through `logs/session_log_20260819.md`.
 
+**As of 2026-08-21:** still on `docsv4`. The docs-content pass keeps surfacing real bugs, not just
+prose gaps — several found and fixed this week while drafting pages against actual behavior
+(slope units, HYDE aggregation, signature display edge cases), each landing as its own commit/WO
+rather than deferred. Content-wise, every page now has a draft except the two Sandbox walkthrough
+pages; what's left is Karl's close-read/wordsmithing pass over all of it plus the `?`-icon and
+tooltip-text work — see `docs/design/DOCSv4_TODO.md`'s "Status as of 2026-08-21" for the current
+punch list, not reconciled here in full.
+
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity; served on `GET /api/area`
