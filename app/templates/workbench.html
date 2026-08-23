@@ -71,7 +71,7 @@
               <button class="btn btn-outline-primary dropdown-toggle" type="button" id="whc-similar-env-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (env)
               </button>
-              <i class="bi bi-question-circle edops-help" data-help-text="TODO: WH Cities env sim"></i>
+              <i class="bi bi-question-circle edops-help" data-help-modal="#whcEnvSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
                 <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
                 <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
@@ -85,7 +85,7 @@
               <button class="btn btn-outline-info dropdown-toggle" type="button" id="whc-similar-text-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (semantic)
               </button>
-               <i class="bi bi-question-circle edops-help" data-help-text="TODO: WH Cities semantic sim"></i>
+               <i class="bi bi-question-circle edops-help" data-help-modal="#whcSemanticSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-text-btn">
                 <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
                 <li><hr class="dropdown-divider"></li>
@@ -360,6 +360,37 @@
 <template id="wo4-help-religion-isolates" data-title="Isolates">
   {% include "_help_religion_isolates.html" %}
 </template>
+
+<!-- WH Cities help modals -- static content, one icon per modal (unlike the D-PLACE modal
+     above, nothing here varies with page state), wired via the edops-help harness's
+     data-help-modal mode. -->
+<div class="modal fade" id="whcEnvSimHelpModal" tabindex="-1" aria-labelledby="whcEnvSimHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whcEnvSimHelpModalLabel">Environmental similarity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% include "_help_whc_env_similarity.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="whcSemanticSimHelpModal" tabindex="-1" aria-labelledby="whcSemanticSimHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whcSemanticSimHelpModalLabel">Semantic similarity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% include "_help_whc_semantic_similarity.html" %}
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   // ResolvedPlace shape (client-side):

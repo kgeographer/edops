@@ -1,0 +1,14 @@
+<p>Precipitation regime and Temperature regime both rank the 254 corpus cities by a composite
+  distance: each city's monthly rainfall or temperature pattern — magnitude, seasonal shape, how
+  sharply it swings across the year — is reduced to a handful of numbers, standardized, and
+  compared to the query city's own numbers. The smaller the distance, the closer the match;
+  results are a ranked list, not a fixed set.</p>
+<p>Terrain regime works differently. Each of three measures — mean elevation, the range of relief
+  nearby, and where the point sits within that relief (valley floor vs. ridge) — is computed live
+  from a small elevation grid around each city rather than read from a stored value, and compared
+  to the query city's own measures via its own tolerance band rather than one combined score. A
+  city only qualifies if all three measures fall within the query's bands; qualifying cities are
+  then ranked within that eligible set.</p>
+<p>All three predate Sandbox's own similarity panel and use this older composite-distance /
+  tolerance-band approach rather than the all-conditions-must-hold conjunction method Sandbox
+  uses — see the project documentation's Similarity page for the fuller comparison.</p>
