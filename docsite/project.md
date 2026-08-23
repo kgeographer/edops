@@ -38,7 +38,7 @@ Three phases of work lie ahead:
 
 - This documentation site was added. 
 - The interactive API docs moved to <a href="/api/schema" target="_blank" rel="noopener">/api/schema</a>.
-- The signature service now supports areal queries in addition to a single containing basin for a place — basin ring and buffer neighborhood choices for settlements, or an arbitrary polygon (so far, only historical polities from the Cliopatria dataset) — 
+- The signature service now supports areal queries in addition to a single containing basin for a place — basin ring and buffer scope choices for settlements, or an arbitrary polygon (so far, only historical polities from the Cliopatria dataset) — 
   Areal results are returned as distributions across their member basins, not averaged down to single values.
 - The former **Lookup** page was replaced by a two-part **Sandbox**: a Settlements interface and a
   Polities interface, both built on the areal query architecture above.

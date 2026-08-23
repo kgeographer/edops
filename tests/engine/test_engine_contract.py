@@ -218,7 +218,7 @@ class TestCatalog:
 # ---------------------------------------------------------------------------
 
 class TestPayloadEnvelope:
-    REQUIRED_TOP_KEYS = {'neighborhood', 'shortfall', 'bands', 'caveats', 'rows', 'temporal'}
+    REQUIRED_TOP_KEYS = {'scope', 'shortfall', 'bands', 'caveats', 'rows', 'temporal'}
     REQUIRED_ROW_KEYS = {
         'variable', 'method', 'status', 'representative_score',
         'representative_raw', 'n_units', 'coverage', 'band', 'unit_type',
@@ -649,11 +649,11 @@ class TestArealSignaturePolygon:
             assert not df['modality'].notna().any(), \
                 'modality values present — apply_modality ran on polygon path'
 
-    def test_neighborhood_type_polygon(self, nsong_payload):
-        assert nsong_payload['neighborhood']['type'] == 'polygon'
+    def test_scope_type_polity(self, nsong_payload):
+        assert nsong_payload['scope']['type'] == 'polity'
 
     def test_marginal_exposure_present(self, nsong_payload):
-        me = nsong_payload['neighborhood'].get('marginal_exposure')
+        me = nsong_payload['scope'].get('marginal_exposure')
         assert me is not None, 'marginal_exposure missing'
         assert 'lt_50pct' in me and 'lt_20pct' in me
 
@@ -772,8 +772,8 @@ class TestBasinRingSignature:
     def test_center_shortfall_zero(self, ring_payload):
         assert ring_payload['center']['shortfall'] == 0.0
 
-    def test_center_neighborhood_type(self, ring_payload):
-        assert ring_payload['center']['neighborhood']['type'] == 'basin'
+    def test_center_scope_type(self, ring_payload):
+        assert ring_payload['center']['scope']['type'] == 'single_basin'
 
     def test_ring_count(self, ring_payload):
         """Geographic: Timbuktu L06 ring has 5 members."""

@@ -1,7 +1,7 @@
 """
 test_areas.py
 -------------
-Tests for GET /api/areas — type-dispatched areal signature (v2 sandbox).
+Tests for GET /api/areas — scope-dispatched areal signature (v2 sandbox).
 
 Validation tests run without a DB.  DB-dependent tests are skipped if unavailable.
 
@@ -44,7 +44,7 @@ def buf_client(db_available):
 def timbuktu_buffer(buf_client):
     """Lean Timbuktu buffer — accept-gate coordinates, bands A–E, detail=true."""
     r = buf_client.get(
-        "/api/areas?type=buffer&lat=16.8167&lon=-2.9833&radius_km=100&bands=ABCDE&detail=true"
+        "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=100&bands=ABCDE&detail=true"
     )
     assert r.status_code == 200, r.text
     return r.json()
@@ -55,87 +55,87 @@ def timbuktu_buffer(buf_client):
 # ---------------------------------------------------------------------------
 
 class TestValidation:
-    def test_missing_type(self, client):
+    def test_missing_scope(self, client):
         r = client.get("/api/areas?lat=16.8&lon=-2.9&radius_km=100")
         assert r.status_code == 422
 
-    def test_unsupported_type(self, client):
-        r = client.get("/api/areas?type=ring&lat=16.8&lon=-2.9&radius_km=100")
+    def test_unsupported_scope(self, client):
+        r = client.get("/api/areas?scope=ring&lat=16.8&lon=-2.9&radius_km=100")
         assert r.status_code == 422
-        assert "Unsupported type" in r.json()["detail"]
+        assert "Unsupported scope" in r.json()["detail"]
 
     def test_single_basin_missing_lat(self, client):
-        r = client.get("/api/areas?type=single_basin&lon=-2.9")
+        r = client.get("/api/areas?scope=single_basin&lon=-2.9")
         assert r.status_code == 422
         assert "lat" in r.json()["detail"]
 
     def test_single_basin_missing_lon(self, client):
-        r = client.get("/api/areas?type=single_basin&lat=16.8")
+        r = client.get("/api/areas?scope=single_basin&lat=16.8")
         assert r.status_code == 422
         assert "lon" in r.json()["detail"]
 
     def test_polity_missing_polity(self, client):
-        r = client.get("/api/areas?type=polity&year=1000")
+        r = client.get("/api/areas?scope=polity&year=1000")
         assert r.status_code == 422
         assert "polity" in r.json()["detail"]
 
     def test_polity_missing_year(self, client):
-        r = client.get("/api/areas?type=polity&polity=Northern+Song")
+        r = client.get("/api/areas?scope=polity&polity=Northern+Song")
         assert r.status_code == 422
         assert "year" in r.json()["detail"]
 
     def test_polity_not_found(self, client):
-        r = client.get("/api/areas?type=polity&polity=Atlantis&year=500")
+        r = client.get("/api/areas?scope=polity&polity=Atlantis&year=500")
         assert r.status_code == 404
 
     def test_polity_wrong_year(self, client):
-        r = client.get("/api/areas?type=polity&polity=Northern+Song&year=500")
+        r = client.get("/api/areas?scope=polity&polity=Northern+Song&year=500")
         assert r.status_code == 404
         body = r.json()["detail"]
         assert "available_periods" in body
 
     def test_buffer_missing_lat(self, client):
-        r = client.get("/api/areas?type=buffer&lon=-2.9&radius_km=100")
+        r = client.get("/api/areas?scope=buffer&lon=-2.9&radius_km=100")
         assert r.status_code == 422
         assert "lat" in r.json()["detail"]
 
     def test_buffer_missing_lon(self, client):
-        r = client.get("/api/areas?type=buffer&lat=16.8&radius_km=100")
+        r = client.get("/api/areas?scope=buffer&lat=16.8&radius_km=100")
         assert r.status_code == 422
         assert "lon" in r.json()["detail"]
 
     def test_buffer_missing_radius(self, client):
-        r = client.get("/api/areas?type=buffer&lat=16.8&lon=-2.9")
+        r = client.get("/api/areas?scope=buffer&lat=16.8&lon=-2.9")
         assert r.status_code == 422
         assert "radius_km" in r.json()["detail"]
 
     def test_band_t_missing_from_year(self, client):
         r = client.get(
-            "/api/areas?type=buffer&lat=16.8&lon=-2.9&radius_km=100&bands=ABCDET&to_year=1100"
+            "/api/areas?scope=buffer&lat=16.8&lon=-2.9&radius_km=100&bands=ABCDET&to_year=1100"
         )
         assert r.status_code == 422
         assert "Band T" in r.json()["detail"]
 
     def test_band_t_missing_to_year(self, client):
         r = client.get(
-            "/api/areas?type=buffer&lat=16.8&lon=-2.9&radius_km=100&bands=ABCDET&from_year=900"
+            "/api/areas?scope=buffer&lat=16.8&lon=-2.9&radius_km=100&bands=ABCDET&from_year=900"
         )
         assert r.status_code == 422
         assert "Band T" in r.json()["detail"]
 
     def test_invalid_level(self, client):
         r = client.get(
-            "/api/areas?type=buffer&lat=16.8&lon=-2.9&radius_km=100&level=4"
+            "/api/areas?scope=buffer&lat=16.8&lon=-2.9&radius_km=100&level=4"
         )
         assert r.status_code == 400
 
     def test_basin_ring_missing_lat(self, client):
-        r = client.get("/api/areas?type=basin_ring&lon=-2.9")
+        r = client.get("/api/areas?scope=basin_ring&lon=-2.9")
         assert r.status_code == 422
         assert "lat" in r.json()["detail"]
 
     def test_basin_ring_missing_lon(self, client):
-        r = client.get("/api/areas?type=basin_ring&lat=16.8")
+        r = client.get("/api/areas?scope=basin_ring&lat=16.8")
         assert r.status_code == 422
         assert "lon" in r.json()["detail"]
 
@@ -154,12 +154,12 @@ class TestValidation:
 
 class TestBufferPayload:
     def test_top_level_keys(self, timbuktu_buffer):
-        required = {"rows", "neighborhood", "shortfall", "bands", "caveats"}
+        required = {"rows", "scope", "shortfall", "bands", "caveats"}
         missing = required - timbuktu_buffer.keys()
         assert not missing, f"Missing top-level keys: {missing}"
 
-    def test_neighborhood_block(self, timbuktu_buffer):
-        nb = timbuktu_buffer["neighborhood"]
+    def test_scope_block(self, timbuktu_buffer):
+        nb = timbuktu_buffer["scope"]
         assert nb["type"] == "buffer"
         assert abs(nb["lat"] - 16.8167) < 0.001
         assert abs(nb["lon"] - (-2.9833)) < 0.001
@@ -240,9 +240,9 @@ class TestFixtureEquivalence:
                 mismatches.append(f"{var}: fixture={fix_score:.2f} live={live_score:.2f}")
         assert not mismatches, "Score divergence exceeds tolerance:\n" + "\n".join(mismatches)
 
-    def test_neighborhood_matches_fixture(self, timbuktu_buffer, fixture_data):
-        live_nb = timbuktu_buffer["neighborhood"]
-        fix_nb  = fixture_data["neighborhood"]
+    def test_scope_matches_fixture(self, timbuktu_buffer, fixture_data):
+        live_nb = timbuktu_buffer["scope"]
+        fix_nb  = fixture_data["scope"]
         assert live_nb["type"]      == fix_nb["type"]
         assert live_nb["n_units"]   == fix_nb["n_units"]
         assert live_nb["unit_type"] == fix_nb["unit_type"]
@@ -256,7 +256,7 @@ class TestFixtureEquivalence:
 def nsong_live(buf_client):
     """Live Northern Song polity response — accept-gate parameters."""
     r = buf_client.get(
-        "/api/areas?type=polity&polity=Northern+Song&year=1000"
+        "/api/areas?scope=polity&polity=Northern+Song&year=1000"
         "&level=6&bands=ABCDET&from_year=1000&to_year=1100&detail=true"
     )
     assert r.status_code == 200, r.text
@@ -265,7 +265,7 @@ def nsong_live(buf_client):
 
 class TestPolityPayload:
     def test_top_level_keys(self, nsong_live):
-        required = {"rows", "neighborhood", "shortfall", "bands", "resolver"}
+        required = {"rows", "scope", "shortfall", "bands", "resolver"}
         missing = required - nsong_live.keys()
         assert not missing, f"Missing top-level keys: {missing}"
 
@@ -282,9 +282,9 @@ class TestPolityPayload:
         t_rows = [r for r in nsong_live["rows"] if r.get("band") == "T"]
         assert len(t_rows) == 320
 
-    def test_neighborhood_block(self, nsong_live):
-        nb = nsong_live["neighborhood"]
-        assert nb["type"]      == "polygon"
+    def test_scope_block(self, nsong_live):
+        nb = nsong_live["scope"]
+        assert nb["type"]      == "polity"
         assert nb["n_units"]   == 376
         assert nb["unit_type"] == "basin"
         assert "marginal_exposure" in nb
@@ -305,7 +305,7 @@ def polity_fixture_data():
 
 
 class TestPolityFixtureEquivalence:
-    """Live /api/areas?type=polity must match structure of 03_polity_nsong_detail.json."""
+    """Live /api/areas?scope=polity must match structure of 03_polity_nsong_detail.json."""
 
     def test_same_row_count(self, nsong_live, polity_fixture_data):
         assert len(nsong_live["rows"]) == len(polity_fixture_data["rows"])
@@ -325,9 +325,9 @@ class TestPolityFixtureEquivalence:
         fixture = {r["variable"]: r["band"] for r in polity_fixture_data["rows"]}
         assert live == fixture
 
-    def test_neighborhood_matches_fixture(self, nsong_live, polity_fixture_data):
-        live_nb = nsong_live["neighborhood"]
-        fix_nb  = polity_fixture_data["neighborhood"]
+    def test_scope_matches_fixture(self, nsong_live, polity_fixture_data):
+        live_nb = nsong_live["scope"]
+        fix_nb  = polity_fixture_data["scope"]
         assert live_nb["type"]      == fix_nb["type"]
         assert live_nb["n_units"]   == fix_nb["n_units"]
         assert live_nb["unit_type"] == fix_nb["unit_type"]
@@ -341,7 +341,7 @@ class TestPolityFixtureEquivalence:
 def timbuktu_single(buf_client):
     """Live single-basin Timbuktu response — accept-gate coordinates, bands A–E, detail=true."""
     r = buf_client.get(
-        "/api/areas?type=single_basin&lat=16.8167&lon=-2.9833&bands=ABCDE&detail=true"
+        "/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833&bands=ABCDE&detail=true"
     )
     assert r.status_code == 200, r.text
     return r.json()
@@ -349,13 +349,13 @@ def timbuktu_single(buf_client):
 
 class TestSingleBasinPayload:
     def test_top_level_keys(self, timbuktu_single):
-        required = {"rows", "neighborhood", "shortfall", "bands", "caveats"}
+        required = {"rows", "scope", "shortfall", "bands", "caveats"}
         missing = required - timbuktu_single.keys()
         assert not missing, f"Missing top-level keys: {missing}"
 
-    def test_neighborhood_block(self, timbuktu_single):
-        nb = timbuktu_single["neighborhood"]
-        assert nb["type"]      == "basin"
+    def test_scope_block(self, timbuktu_single):
+        nb = timbuktu_single["scope"]
+        assert nb["type"]      == "single_basin"
         assert nb["n_units"]   == 1
         assert nb["unit_type"] == "basin"
         assert "hybas_id" in nb
@@ -386,7 +386,7 @@ def sb_fixture_data():
 
 
 class TestSingleBasinFixtureEquivalence:
-    """Live /api/areas?type=single_basin must match structure of 01_single_basin_detail.json."""
+    """Live /api/areas?scope=single_basin must match structure of 01_single_basin_detail.json."""
 
     def test_same_row_count(self, timbuktu_single, sb_fixture_data):
         assert len(timbuktu_single["rows"]) == len(sb_fixture_data["rows"])
@@ -421,9 +421,9 @@ class TestSingleBasinFixtureEquivalence:
                 mismatches.append(f"{var}: fixture={fix_score:.2f} live={live_score:.2f}")
         assert not mismatches, "Score divergence exceeds tolerance:\n" + "\n".join(mismatches)
 
-    def test_neighborhood_matches_fixture(self, timbuktu_single, sb_fixture_data):
-        live_nb = timbuktu_single["neighborhood"]
-        fix_nb  = sb_fixture_data["neighborhood"]
+    def test_scope_matches_fixture(self, timbuktu_single, sb_fixture_data):
+        live_nb = timbuktu_single["scope"]
+        fix_nb  = sb_fixture_data["scope"]
         assert live_nb["type"]      == fix_nb["type"]
         assert live_nb["n_units"]   == fix_nb["n_units"]
         assert live_nb["unit_type"] == fix_nb["unit_type"]
@@ -438,7 +438,7 @@ class TestSingleBasinFixtureEquivalence:
 def timbuktu_single_band_t(buf_client):
     """Single-basin Timbuktu with Band T 1000–1100 CE."""
     r = buf_client.get(
-        "/api/areas?type=single_basin&lat=16.8167&lon=-2.9833"
+        "/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833"
         "&bands=ABCDET&from_year=1000&to_year=1100&detail=true"
     )
     assert r.status_code == 200, r.text
@@ -486,13 +486,13 @@ class TestSingleBasinBandT:
 class TestSingleBasinMapHonestyCheck:
     """The basin drawn on the map must be the basin the signature describes."""
 
-    def test_hybas_id_in_neighborhood(self, timbuktu_single):
-        nb = timbuktu_single["neighborhood"]
-        assert "hybas_id" in nb, "neighborhood block missing hybas_id"
+    def test_hybas_id_in_scope(self, timbuktu_single):
+        nb = timbuktu_single["scope"]
+        assert "hybas_id" in nb, "scope block missing hybas_id"
         assert nb["hybas_id"] is not None
 
     def test_signature_id_matches_basin_preview(self, buf_client, timbuktu_single):
-        sig_id = timbuktu_single["neighborhood"]["hybas_id"]
+        sig_id = timbuktu_single["scope"]["hybas_id"]
         r = buf_client.get("/api/basin-preview?lat=16.8167&lon=-2.9833&level=6")
         assert r.status_code == 200, r.text
         data = r.json()
@@ -508,21 +508,21 @@ class TestSingleBasinMapHonestyCheck:
 # ---------------------------------------------------------------------------
 
 class TestBufferMemberIds:
-    """Buffer neighborhood must expose member_ids for map draw."""
+    """Buffer scope must expose member_ids for map draw."""
 
     def test_member_ids_present(self, timbuktu_buffer):
-        nb = timbuktu_buffer["neighborhood"]
-        assert "member_ids" in nb, "neighborhood missing member_ids"
+        nb = timbuktu_buffer["scope"]
+        assert "member_ids" in nb, "scope missing member_ids"
 
     def test_member_ids_is_list(self, timbuktu_buffer):
-        assert isinstance(timbuktu_buffer["neighborhood"]["member_ids"], list)
+        assert isinstance(timbuktu_buffer["scope"]["member_ids"], list)
 
     def test_member_ids_count_matches_n_units(self, timbuktu_buffer):
-        nb = timbuktu_buffer["neighborhood"]
+        nb = timbuktu_buffer["scope"]
         assert len(nb["member_ids"]) == nb["n_units"]
 
     def test_member_ids_are_integers(self, timbuktu_buffer):
-        for mid in timbuktu_buffer["neighborhood"]["member_ids"]:
+        for mid in timbuktu_buffer["scope"]["member_ids"]:
             assert isinstance(mid, int), f"member_id {mid!r} is not int"
 
 
@@ -530,26 +530,26 @@ class TestBasinGeomRoute:
     """GET /api/basin/geom returns correct GeoJSON for a hybas_id list."""
 
     def test_returns_feature_collection(self, buf_client, timbuktu_buffer):
-        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        ids = timbuktu_buffer["scope"]["member_ids"][:3]
         r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
         assert r.status_code == 200, r.text
         data = r.json()
         assert data["type"] == "FeatureCollection"
 
     def test_feature_count_matches_request(self, buf_client, timbuktu_buffer):
-        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        ids = timbuktu_buffer["scope"]["member_ids"][:3]
         r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
         assert len(r.json()["features"]) == 3
 
     def test_returned_ids_are_integers(self, buf_client, timbuktu_buffer):
-        ids = timbuktu_buffer["neighborhood"]["member_ids"][:3]
+        ids = timbuktu_buffer["scope"]["member_ids"][:3]
         r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in ids)}&level=6")
         for f in r.json()["features"]:
             assert isinstance(f["properties"]["hybas_id"], int)
 
     def test_full_member_set_honesty_check(self, buf_client, timbuktu_buffer):
         """Basin set returned by /api/basin/geom must equal the signature member_ids exactly."""
-        member_ids = timbuktu_buffer["neighborhood"]["member_ids"]
+        member_ids = timbuktu_buffer["scope"]["member_ids"]
         r = buf_client.get(f"/api/basin/geom?ids={','.join(str(i) for i in member_ids)}&level=6")
         assert r.status_code == 200, r.text
         returned = {f["properties"]["hybas_id"] for f in r.json()["features"]}

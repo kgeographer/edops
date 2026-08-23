@@ -232,7 +232,7 @@ def signature(
         "signature_version": "0.4",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "query": query,
-        "neighborhood": {
+        "scope": {
             "type": "containing_basin",
             "basin_level": level,
         },

@@ -4,7 +4,7 @@
 # API Guide
 
 EDOPS — the Environmental Dimensions of Place Service — generates structured
-environmental signatures for a coordinate, a buffer/basin-ring neighborhood, or a
+environmental signatures for a coordinate, a buffer/basin-ring scope, or a
 historical polity's territory. Signatures are derived from global datasets aggregated
 at the hydrological sub-basin level in [BasinATLAS](https://www.hydrosheds.org/products/hydroatlas),
 with optional historical enrichment from LMR v2.1 (paleoclimate), eVolv2k v4 (volcanic
@@ -92,16 +92,16 @@ Full variable inventory: see the Codebook (/docs/codebook/).
 
 ### `GET /api/areas`
 
-Areal signature dispatcher — resolves to a set of member basins by type, then aggregates their signature as a distribution (not an average). 'type' is confusingly named "area" alongside GET /api/area, but the four resolver types are not all areas in the geometric sense: single_basin and polity are bounded regions, buffer is an arbitrary radius, and basin_ring is a topological set of basins, not a shape.
+Areal signature dispatcher — resolves to a set of member basins by scope, then aggregates their signature as a distribution (not an average). 'scope' is confusingly named "area" alongside GET /api/area, but the four scope kinds are not all areas in the geometric sense: single_basin and polity are bounded regions, buffer is an arbitrary radius, and basin_ring is a topological set of basins, not a shape.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `type` | str | **yes** | — | Resolver type: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the 'resolver' block in the response. |
-| `lat` | float (-90 to 90) | no | — | WGS-84 latitude, decimal degrees. Required for type=buffer, single_basin, basin_ring. |
-| `lon` | float (-180 to 180) | no | — | WGS-84 longitude, decimal degrees. Required for type=buffer, single_basin, basin_ring. |
-| `radius_km` | float | no | — | Buffer radius in km. Required for type=buffer. |
-| `polity` | str | no | — | Cliopatria polity name, exact match (e.g. "Northern Song"). Required for type=polity. |
-| `year` | int | no | — | Resolver year CE — selects the polity boundary active at this year. Required for type=polity. |
+| `scope` | str | **yes** | — | Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the 'scope' block in the response. |
+| `lat` | float (-90 to 90) | no | — | WGS-84 latitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
+| `lon` | float (-180 to 180) | no | — | WGS-84 longitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
+| `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
+| `polity` | str | no | — | Cliopatria polity name, exact match (e.g. "Northern Song"). Required for scope=polity. |
+| `year` | int | no | — | Resolver year CE — selects the polity boundary active at this year. Required for scope=polity. |
 | `level` | int | no | `6` | Basin hierarchy level: 6 or 8. |
 | `bands` | str | no | `ABCDE` | Band letters to compute, e.g. "ABCDE" or "ABCDET". Add T to include Band T (requires from_year and to_year). |
 | `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
@@ -112,7 +112,7 @@ Areal signature dispatcher — resolves to a set of member basins by type, then 
 
 ```text
 Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-basins, not averages), plus a "resolver" block whose shape depends on `type`. detail=true adds
+basins, not averages), plus a "scope" block whose shape depends on `scope`. detail=true adds
 per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
 ```
 
@@ -153,9 +153,9 @@ curl "https://edops.computingplace.org/api/signature?lat=16.8167&lon=-2.9833&ban
 curl "https://edops.computingplace.org/api/area?polity=Northern%20Song&year=1080&bands=ABCDE"
 ```
 
-**Buffer neighborhood via the type dispatcher**
+**Buffer scope via the scope dispatcher**
 ```
-curl "https://edops.computingplace.org/api/areas?type=buffer&lat=16.8167&lon=-2.9833&radius_km=100&bands=ABCDE"
+curl "https://edops.computingplace.org/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=100&bands=ABCDE"
 ```
 
 ## Notes for application developers

@@ -24,7 +24,7 @@ how far back a present-day measurement can reasonably be carried. See
 ## The Sandbox page
 
 Ask about one place and see everything EDOPS knows about it. Enter a settlement or select a
-historical polity, choose how wide a neighborhood to describe, and retrieve its signature. Seven
+historical polity, choose how wide a scope to describe, and retrieve its signature. Seven
 tabs present the result from different angles: the basin on a map, the full list of values, an
 interpretive summary, the shape of the seasonal year, how typical the place is globally, and which
 other basins on Earth resemble it.

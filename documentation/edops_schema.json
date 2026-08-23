@@ -18,10 +18,10 @@
       "from_year": 1350,
       "to_year": 1600
     },
-    "neighborhood": {
+    "scope": {
       "type": "containing_basin",
       "basin_level": 8,
-      "_note": "The June 2026 version of this doc listed a '_type_options_planned' field here (buffer/upstream_catchment/three_tier/polity_mean) that was never part of the real response -- it was aspirational. Those areal variants now exist as separate endpoints (GET /api/area for polities, /api/areas for buffer/single_basin/polity/basin_ring) rather than as a neighborhood.type variant of /api/signature itself; this field stays fixed at 'containing_basin' for the single-point endpoint."
+      "_note": "Renamed from 'neighborhood' to 'scope' (2026-08-22) -- 'scope' is now the official term for a signature query's spatial extent everywhere in the codebase, request parameter and response alike; 'neighborhood' was retired because it never honestly described the polity case. The June 2026 version of this doc listed a '_type_options_planned' field here (buffer/upstream_catchment/three_tier/polity_mean) that was never part of the real response -- it was aspirational. Those areal variants now exist as separate endpoints (GET /api/area for polities, /api/areas for buffer/single_basin/polity/basin_ring) rather than as a scope.type variant of /api/signature itself; this field stays fixed at 'containing_basin' for the single-point endpoint."
     },
     "data_sources": {
       "basin": "HydroATLAS v1.0 / BasinATLAS Level 08",

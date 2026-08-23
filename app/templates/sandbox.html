@@ -111,11 +111,14 @@
 
               <!-- Scope (hidden at cold start; revealed after resolve) -->
               <div id="v3-scope-wrap" class="mb-2" style="display:none;">
-                <select id="v3-scope-select" class="form-select form-select-sm">
-                  <option value="single">Single basin</option>
-                  <option value="ring">Basin ring</option>
-                  <option value="buffer">Buffer</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <label class="text-muted small" style="white-space:nowrap;">Scope</label>
+                  <select id="v3-scope-select" class="form-select form-select-sm">
+                    <option value="single">Single basin</option>
+                    <option value="ring">Basin ring</option>
+                    <option value="buffer">Buffer</option>
+                  </select>
+                </div>
                 <!-- Buffer radius (shown when Buffer is chosen) -->
                 <div id="v3-buffer-extra" class="mt-1 align-items-center gap-2"
                      style="display:none;">
@@ -812,7 +815,7 @@
         const resolverYear = document.getElementById('v3-resolver-year').value;
         if (!polityName || !resolverYear) return;
         const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('');
-        const params = new URLSearchParams({ type: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true' });
+        const params = new URLSearchParams({ scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true' });
         if (bands.includes('T')) {
           const fy = document.getElementById('v3-polity-from-year').value;
           const ty = document.getElementById('v3-polity-to-year').value;
@@ -839,19 +842,19 @@
               fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=8`),
             ]);
             if (!sigR.ok) return;
-            const nb = (await sigR.json()).neighborhood || {};
+            const nb = (await sigR.json()).scope || {};
             const ringIds = ringR.ok ? ((await ringR.json()).ring || []).map(m => Number(m.hybas_id)) : [];
             _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
           } else {
             const r = await fetch(buildSingleBasinUrl());
             if (!r.ok) return;
-            const nb = (await r.json()).neighborhood || {};
+            const nb = (await r.json()).scope || {};
             _sigMemberIds = nb.hybas_id != null ? new Set([Number(nb.hybas_id)]) : null;
           }
         } else if (scope === 'buffer') {
           const r = await fetch(buildBufferUrl());
           if (!r.ok) return;
-          const nb = (await r.json()).neighborhood || {};
+          const nb = (await r.json()).scope || {};
           _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
         } else if (scope === 'ring') {
           const [sigR, ringR] = await Promise.all([
@@ -859,7 +862,7 @@
             fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=${lv}`),
           ]);
           if (!sigR.ok || !ringR.ok) return;
-          const nb = (await sigR.json()).neighborhood || {};
+          const nb = (await sigR.json()).scope || {};
           const rd = await ringR.json();
           const ringIds = (rd.ring || []).map(m => Number(m.hybas_id));
           _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
@@ -962,12 +965,12 @@
   document.getElementById('v3-scope-select').addEventListener('change', function () {
     applyScope(this.value);
     updateSigButton();
-    // Changing neighborhood invalidates whatever signature/Analysis/Seasonality/Context/
+    // Changing scope invalidates whatever signature/Analysis/Seasonality/Context/
     // Similarity content is showing -- it was computed for the OLD scope's basin(s), not the
     // new one. Reset back to "run Get signature to populate" rather than leaving stale content
     // (e.g. a ring member's signature) on screen until the user happens to click the button
     // again (2026-08-08). keepPlace: true -- the resolved place itself hasn't changed, only its
-    // neighborhood scope.
+    // scope.
     if (currentLat !== null) _resetRightColumn({ keepPlace: true });
     if (currentLat !== null) _drawScopePreview(this.value);
   });
@@ -2709,7 +2712,7 @@
     const lv    = _activeLevel();
     const bands = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
     const params = new URLSearchParams({
-      type: 'single_basin', lat: member.neighbor_lat, lon: member.neighbor_lon,
+      scope: 'single_basin', lat: member.neighbor_lat, lon: member.neighbor_lon,
       level: lv, bands, detail: 'true',
     });
     if (bands.includes('T')) {
@@ -2769,7 +2772,7 @@
   function buildSingleBasinUrl() {
     if (currentLat == null || currentLon == null) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true' });
+    const params = new URLSearchParams({ scope: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2783,7 +2786,7 @@
     const radius_km = parseFloat(document.getElementById('v3-radius').value);
     if (currentLat == null || currentLon == null || isNaN(radius_km)) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ type: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true' });
+    const params = new URLSearchParams({ scope: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2849,7 +2852,7 @@
           ]);
           if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
           payload = await r.json();
-          const nb = payload.neighborhood || {};
+          const nb = payload.scope || {};
           const ringIds = ringR.ok ? ((await ringR.json()).ring || []).map(m => Number(m.hybas_id)) : [];
           _sigMemberIds = new Set([Number(nb.hybas_id), ...ringIds].filter(Boolean));
           if (nb.hybas_id != null && currentLat != null) {
@@ -2859,7 +2862,7 @@
           const r = await fetch(url);
           if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
           payload = await r.json();
-          const nb = payload.neighborhood || {};
+          const nb = payload.scope || {};
           _sigMemberIds = nb.hybas_id != null ? new Set([Number(nb.hybas_id)]) : null;
           if (nb.hybas_id != null && currentLat != null) {
             pendingBbox = await drawSingleBasin(currentLat, currentLon, nb.hybas_id, lv);
@@ -2872,7 +2875,7 @@
         const r = await fetch(url);
         if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
         payload = await r.json();
-        const nb = payload.neighborhood || {};
+        const nb = payload.scope || {};
         _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
         if (nb.member_ids?.length && currentLat != null) {
           pendingBbox = await drawBufferGeometry(currentLat, currentLon, nb.radius_km, nb.member_ids, lv);
@@ -2889,7 +2892,7 @@
         payload        = await sigR.json();
         _ringData      = await ringR.json();
         _centerPayload = payload;
-        const centerNb = payload.neighborhood || {};
+        const centerNb = payload.scope || {};
         const ringIds  = (_ringData.ring || []).map(m => Number(m.hybas_id));
         _sigMemberIds  = new Set([Number(centerNb.hybas_id), ...ringIds].filter(Boolean));
         pendingBbox    = await drawRingGeometry(_ringData);
@@ -3151,7 +3154,7 @@
 
   function renderSignature(payload) {
     const pane = document.getElementById('v3-sig-content');
-    const nb   = payload.neighborhood || {};
+    const nb   = payload.scope || {};
     const lvlStr = nb.level ? ` · L${String(nb.level).padStart(2,'0')}` : '';
     const ringN  = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
     let headingHtml;
@@ -3171,7 +3174,7 @@
       headingHtml = escapeHtml(_currentPlaceName
         ? `Containing basin for ${_currentPlaceName}${lvlParen}`
         : `Basin ${nb.hybas_id}${lvlStr}`);
-    } else if (nb.type === 'polygon' && _polityName) {
+    } else if (nb.type === 'polity' && _polityName) {
       // Polity aggregate -- same reasoning as the basin/ring cases above, name it by what the
       // user searched for. Also names the active time slice (2026-08-08) -- basin membership
       // for a polity is slice-dependent, and without the years shown there was no way to tell
@@ -3623,7 +3626,7 @@
     const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')]
       .map(cb => cb.value).join('');
     const params = new URLSearchParams({
-      type: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true',
+      scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true',
     });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-polity-from-year').value;
@@ -3642,7 +3645,7 @@
       const r = await fetch(`/api/areas?${params}`);
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const payload = await r.json();
-      const nb = payload.neighborhood || {};
+      const nb = payload.scope || {};
       _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
       renderSignature(payload);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
@@ -3658,7 +3661,7 @@
   });
 
   // Polities never populates Analysis/Seasonality/Context/Similarity -- the Get-signature
-  // handler only fetches /api/areas?type=polity, never the parallel /api/signature call
+  // handler only fetches /api/areas?scope=polity, never the parallel /api/signature call
   // Settlements uses, and Context/Similarity are point-anchored instruments with no
   // representative point for a polity to begin with (see deferred_items_register.md). Hiding
   // rather than leaving them disabled: four permanently-greyed-out tabs read as broken, not as

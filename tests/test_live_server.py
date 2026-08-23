@@ -94,7 +94,7 @@ def test_signature_no_flat_mirror(sig):
 
 def test_signature_meta_fields(sig):
     meta = sig["meta"]
-    for key in ("signature_version", "generated", "query", "neighborhood", "data_sources"):
+    for key in ("signature_version", "generated", "query", "scope", "data_sources"):
         assert key in meta, f"meta missing '{key}'"
 
 
