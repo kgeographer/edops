@@ -292,11 +292,11 @@
 
       <!-- D-PLACE query results (shown below map) -->
       <div id="dplace-results" class="mt-3" style="display:none;">
-        <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex align-items-baseline">
           <h6 class="mb-1" id="dplace-results-heading"></h6>
-          <!-- Dynamic content per (trait, display mode) -- WO4_RESULTS_HELP registry, not the
-               shared edops-help tooltip/toggle harness (content varies per state, not static). -->
-          <i class="bi bi-question-circle edops-help ms-2" id="dplace-results-help"></i>
+          <!-- Content picked at click time (showResultsHelpModal()), not by the harness;
+               data-help-modal here is just for the matching arrow decorator. -->
+          <i class="bi bi-question-circle edops-help ms-2" id="dplace-results-help" data-help-modal="#dplaceResultsHelpModal"></i>
         </div>
         <div id="dplace-results-content"></div>
       </div>
@@ -342,7 +342,7 @@
      bulking out this already-large template. showResultsHelpModal() just looks one up by id and
      clones it into the modal body. -->
 <template id="wo4-help-subsistence-envscan" data-title="Climate envelope">
-  {% include "_help_subsistence_envscan.html" %}
+  {% include "_help_subsistence_climate.html" %}
 </template>
 
 <template id="wo4-help-subsistence-ecoregions" data-title="Ecoregions by realm">
