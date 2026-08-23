@@ -7,7 +7,7 @@ The codebase for EDOPS lives in a [Github repository](https://github.com/kgeogra
 ## What an EDOPS signature is
 
 A signature is the environmental description of a single place, assembled on request. Around 100
-variables are drawn from four global datasets:
+variables are drawn from four global datasets (see [Data sources](data-sources.md) for details):
 
 - **BasinATLAS v1.0** — physiography, hydrology, climate, land cover, and human-footprint
   attributes, aggregated to hydrological basins. The source of most of the signature.
@@ -17,7 +17,7 @@ variables are drawn from four global datasets:
 
 Values are reported for the hydrological basin containing the place you ask about, at either of two
 scales. Variables are grouped into six bands that indicate how quickly each changes — and therefore
-how far back a present-day measurement can reasonably be carried. See
+how far back a present-day measurement can reasonably be carried. See 
 [Premises and commitments](design/commitments.md) for why the framework is built this way, and the
 [Codebook](codebook.md) for the variables themselves.
 

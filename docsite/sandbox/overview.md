@@ -1,4 +1,4 @@
-# EDOPS Sandbox Guide
+# Sandbox Overview
 
 The Sandbox is the main signature lookup tool: choose a place or a historical polity on the left, then
 read its environmental signature across six of the seven tabs on the right.
@@ -10,11 +10,12 @@ cold start.
 
 **Settlements** resolves a place by name (optionally `"Name, Country"`) or `lat,lon` coordinates
 via the World Historical Gazetteer, or loads one of four worked examples (Timbuktu, Kaifeng,
-Tbilisi, Santa Fe, San Francisco, each with a preset date range). __Note:__ _you must zoom to the vicinity 
-of the place you are seeking, in order to constrain results_. Once a place is resolved you can accept or 
+Tbilisi, Santa Fe, San Francisco, each with a preset date range). 
+
+__Note:__ _you must zoom to the vicinity of the place you are seeking, in order to constrain results_. Once a place is resolved you can accept or 
 change defaults for:
 
-- **Neighborhood scope** — *Single basin* (default; containing basin only), *Buffer* (all basins
+- **Scope** — *Single basin* (default; containing basin only), *Buffer* (all basins
   within a radius you set, default 100 km, aggregated into one summary), or *Basin ring* (the
   containing basin's immediate neighbors — **not** aggregated; Get signature loads the center
   basin, and each ring member on the map is individually clickable to load its own signature for

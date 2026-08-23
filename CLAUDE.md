@@ -1,16 +1,18 @@
 # CLAUDE.md — EDOPS
 
 Read this at the start of every session. It describes current project state, not history.
-Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`.
+Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit notes may be useful.
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 docs** — active phase, no tracker yet; goto `logs/session_log_YYYYMMDD.md` for latest state
+- **v0.4 docs** — active phase, no _tracker.md file; see docs/TODO_DOCSv4.md for punchlist. Most recent `logs/session_log_YYYYMMDD.md` file has latest work
+
+** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
 - `docs/cdop/pilot/CDOP_PILOT_tracker.md` — frozen reference (CDOP Pilot closed 2026-07-27)
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
-- `logs/session_log_YYYYMMDD.md` — daily detail; `docs/cdop/citykin/wo{nn}_findings.md` — per-WO findings
+- `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -26,14 +28,14 @@ predate this convention are grandfathered; new WOs get summary + `findings:` lin
 
 **EDOPS** (Environmental Dimensions of Place Service) is a FastAPI service that delivers
 structured environmental "signatures" for any location on Earth. Signatures characterize a
-drainage basin — or a set of basins, for areal queries like a basin ring, buffer neighborhood,
+drainage basin — or a set of basins for areal queries like a basin ring, buffer neighborhood,
 or historical polity — using BasinATLAS variables covering hydrology, climate baselines,
-terrain, and ecoregion, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.4
+terrain, and ecoregions, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.4
 land-use history, and eVolv2k v4 volcanic forcing.
 
 EDOPS is the active component of **Computing Place** (CEDOP), a spatial humanities research
 platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
-earlier exploratory scripts are archived in the `cedop`.
+earlier exploratory scripts are archived in the `cedop`. Some preliminary CDOP work surfaces in the current workbench.html page
 
 Research framing: `documentation/EDOP_summary_v04.md`
 
@@ -41,28 +43,29 @@ Research framing: `documentation/EDOP_summary_v04.md`
 
 ## Research phases
 
-| Phase | Status | Key product |
-|---|---|---|
-| 1 — Signature development | complete | `/api/signature`, `sandbox.html`, variable catalog v0.3 |
-| 2 — Characterization / CHAR | complete | `explorer.html`, EDA/ESDA findings |
-| 3 — Areas | complete 2026-06-30 | `engine.py` — resolver → aggregator → payload; `AREAS_tracker.md` (frozen ref) |
-| Surface | complete 2026-07-10 | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
-| Demo | complete 2026-07-18 | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
-| CDOP1 — pilot | complete 2026-07-27 | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
-| CDOP2 — CITYKIN | complete 2026-07-30 | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
-| Reorg (housekeeping) | complete 2026-08-03 | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
-| **v0.4 docs** | **active** | Site documentation/legibility pass ahead of v0.4 replacing v0.3 in production; no tracker yet |
-| 4 — Correspondence testing | not started | D-PLACE / Seshat / Cliopatria |
+| Phase                       | Status                          | Key product |
+|-----------------------------|---------------------------------|---|
+| 1 — Signature development   | complete                        | `/api/signature`, `sandbox.html`, variable catalog v0.3 |
+| 2 — Characterization / CHAR | complete                        | `explorer.html`, EDA/ESDA findings |
+| 3 — Areas                   | complete 2026-06-30             | `engine.py` — resolver → aggregator → payload; `AREAS_tracker.md` (frozen ref) |
+| Surface                     | complete 2026-07-10             | `sandbox_v3.html` at `/sandbox/lookup3`; see `SURFACE_tracker.md` (frozen ref) |
+| Demo                        | complete 2026-07-18             | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
+| CDOP1 — pilot               | complete 2026-07-27             | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
+| CDOP2 — CITYKIN             | complete 2026-07-30             | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
+| Reorg (housekeeping)        | complete 2026-08-03             | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
+| **DOCS_v4**                 | **active**                      | Site documentation/legibility pass ahead of v0.4 replacing v0.3 in production; no tracker |
+| 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**v0.4 docs is the active track.** v0.4 (CDOP2/CITYKIN's product work plus the 2026-08-03 reorg) is
-feature-complete. What remains before it replaces v0.3 in production is a documentation/legibility
+**DOCS_v4 is the active phase.** What remains before v0.4 replaces v0.3 in production is a documentation/legibility
 pass — the site is about to get wider visibility as a public-facing WIP. No tracker exists yet for
-this phase; goto the latest `logs/session_log_YYYYMMDD.md` until one is set up. **Milestone: Braga
-(2026-09-20) — UNED Digital Humanities conference.**
+this phase; goto the latest `logs/session_log_YYYYMMDD.md` or ask questions. 
+**Milestones:** 
+- v0.4 release (~2026-09-07). Social media and mailing list announcements
+- Braga (2026-09-23) — Spatial Humanities conference.**
 
 **Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real coding
 work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now closed),
@@ -497,7 +500,6 @@ docs/ hold old drafts and works-in-progress (gitignored)
 
 ## Open / deferred items
 
-Demo-specific items → `DEMO_tracker.md` roadmap.
 Cross-phase deferred items → `docs/design/deferred_items_register.md`.
 
 Standing cross-phase notes:
