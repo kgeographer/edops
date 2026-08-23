@@ -3192,6 +3192,10 @@
     }
     const byBand = {};
     for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
+    // Band T is the default-open accordion when present (the temporal query the user just
+    // asked for); Band C otherwise -- there's no T to show, and C is the nearest thing to a
+    // "here's what's typical here" starting point.
+    const defaultOpenBand = byBand['T'] ? 'T' : 'C';
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
         <h5 class="mb-0">${headingHtml}</h5>
@@ -3205,13 +3209,13 @@
       html += `
         <div class="accordion-item">
           <h2 class="accordion-header">
-            <button class="accordion-button py-1 px-2 ${band !== 'T' ? 'collapsed' : ''}" type="button"
+            <button class="accordion-button py-1 px-2 ${band !== defaultOpenBand ? 'collapsed' : ''}" type="button"
                     data-bs-toggle="collapse" data-bs-target="#${paneId}">
               <span style="font-size:0.85rem;">Band ${band} — ${BAND_LABELS[band]}</span>
               <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${rows.length}</span>
             </button>
           </h2>
-          <div id="${paneId}" class="accordion-collapse collapse${band === 'T' ? ' show' : ''}">
+          <div id="${paneId}" class="accordion-collapse collapse${band === defaultOpenBand ? ' show' : ''}">
             <div class="accordion-body p-0">
               ${band === 'T'
                 ? renderTBand(rows)
@@ -4150,6 +4154,19 @@
       ]
     );
   });
+
+  // rivers.pmtiles' own tileset has no tiles below zoom 3 (its baked-in minzoom) -- the
+  // control offered a layer that could never actually render at the map's default zoom 1.
+  // Hide the whole Layers box below that threshold rather than just disabling the checkbox,
+  // since it's the only control in it right now.
+  const RIVERS_MIN_ZOOM = 3;
+  const _layerControlEl = document.getElementById('v3-layer-control');
+  function _syncLayerControlVisibility() {
+    _layerControlEl.style.display = map.getZoom() >= RIVERS_MIN_ZOOM ? '' : 'none';
+  }
+  map.on('zoom', _syncLayerControlVisibility);
+  map.on('load', _syncLayerControlVisibility);
+  _syncLayerControlVisibility();
 
   document.getElementById('v3-layer-rivers').addEventListener('change', function () {
     const vis = this.checked ? 'visible' : 'none';
