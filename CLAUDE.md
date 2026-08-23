@@ -290,12 +290,10 @@ EA045) — one tick per society at its own percentile position, not the earlier 
 bars. Composition donut (Glottolog-resolved family names), hover-linked to map, scatter, and the
 strip plots.
 
-**Experimental, unmerged (`isolates` branch off `docsv4` as of 2026-08-10, not yet reviewed):** a
-third EA034 result type, **Isolates** — named societies with no close ancestral/geographic/
-environmental neighbor sharing the same trait value, ranked three ways (plus an opt-in
-worst-of-three) rather than characterized in aggregate. See `logs/session_log_20260810.md` for
-the full design discussion and Karl's evaluation is still pending — do not describe this as live
-on `docsv4` until it's merged.
+**Isolates** — a third, live EA034 result type (`isolates` branch merged to `docsv4` 2026-08-11):
+named societies with no close ancestral/geographic/environmental neighbor sharing the same trait
+value, ranked three ways (plus an opt-in worst-of-three) rather than characterized in aggregate.
+See `logs/session_log_20260810.md` for the full design discussion.
 
 **Ecoregions** — OneEarth Bioregions drill-down (14 realms → 53 subrealms → 185 bioregions → 847
 ecoregions), Wikipedia summary + OneEarth link per ecoregion. Mostly a reference browser feeding
