@@ -861,7 +861,7 @@ def project_row(row, include_detail=False) -> dict:
     return out
 
 
-def assemble_payload(rows, neighborhood, shortfall, bands,
+def assemble_payload(rows, scope, shortfall, bands,
                      temporal=None, include_detail=False) -> dict:
     """
     Assemble the top-level Areas payload from a list of make_row dicts.
@@ -872,7 +872,7 @@ def assemble_payload(rows, neighborhood, shortfall, bands,
     Parameters
     ----------
     rows         : list of make_row dicts
-    neighborhood : dict — resolved-query echo (type, params, n_units, unit_type)
+    scope        : dict — resolved-query echo (type, params, n_units, unit_type)
     shortfall    : float — geographic absence fraction (open water / no basin)
     bands        : list of str — bands requested
     temporal     : dict or None — {from_year, to_year} if Band T was requested
@@ -884,7 +884,7 @@ def assemble_payload(rows, neighborhood, shortfall, bands,
     caveats = {k: CAVEAT_TEXTS[k] for k in sorted(used_keys) if k in CAVEAT_TEXTS}
 
     return {
-        'neighborhood': neighborhood,
+        'scope':        scope,
         'shortfall':    shortfall,
         'bands':        bands,
         'temporal':     temporal,
@@ -2079,7 +2079,7 @@ def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
 def _areal_signature_from_basin_set(
     basin_set, level, conn,
     *,
-    neighborhood,
+    scope,
     shortfall,
     geom_wkt=None,
     lat=None,
@@ -2095,8 +2095,8 @@ def _areal_signature_from_basin_set(
     """
     Shared aggregation pipeline for any resolver that produces a weighted basin set.
 
-    Callers handle their own resolver step and neighborhood dict, then delegate
-    here. The B1–B6 + Band T path is identical across all neighborhood types.
+    Callers handle their own resolver step and scope dict, then delegate
+    here. The B1–B6 + Band T path is identical across all scope types.
 
     For Band T: pass geom_wkt when the query area is a fixed polygon (basin or
     polity). Pass lat/lon/radius_km when it is a circular buffer.
@@ -2133,7 +2133,7 @@ def _areal_signature_from_basin_set(
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
     # Raw DB column name alongside the friendly api_key -- static catalog lookup, same for
-    # every neighborhood type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
+    # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
     for row in basin_rows:
         row['db_col'] = meta_df.loc[row['variable'], 'db_col'] \
             if row['variable'] in meta_df.index else None
@@ -2155,7 +2155,7 @@ def _areal_signature_from_basin_set(
     temporal     = {'from_year': from_year, 'to_year': to_year} if run_t else None
 
     return assemble_payload(
-        all_rows, neighborhood, shortfall,
+        all_rows, scope, shortfall,
         bands=active_bands,
         temporal=temporal,
         include_detail=include_detail,
@@ -2179,7 +2179,7 @@ def areal_signature(
     include_detail=False,
 ):
     """
-    Full areal signature for a buffer neighborhood.
+    Full areal signature for a buffer scope.
 
     Build-once catalog is loaded lazily per level on first call and cached.
 
@@ -2207,14 +2207,14 @@ def areal_signature(
     Returns
     -------
     dict — assemble_payload output:
-        {neighborhood, shortfall, bands, temporal, caveats, rows}
+        {scope, shortfall, bands, temporal, caveats, rows}
     """
     # ── 1. Resolve buffer ────────────────────────────────────────────────────
     level_str = f'{level:02d}'
     basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
-    neighborhood = {
+    scope = {
         'type':       'buffer',
         'lat':        lat,
         'lon':        lon,
@@ -2227,7 +2227,7 @@ def areal_signature(
 
     return _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         lat=lat, lon=lon, radius_km=radius_km,
         bands=bands,
@@ -2292,7 +2292,7 @@ def single_basin_signature(
 
     Returns
     -------
-    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
+    dict — {scope, shortfall, bands, temporal, caveats, rows}
     """
     table = _LEVEL_TABLE[level]
 
@@ -2305,8 +2305,8 @@ def single_basin_signature(
         f"SELECT ST_AsText(geom) FROM {table} WHERE hybas_id = {hybas_id}"
     ).fetchone()[0]
 
-    neighborhood = {
-        'type':      'basin',
+    scope = {
+        'type':      'single_basin',
         'lat':       lat,
         'lon':       lon,
         'level':     level,
@@ -2317,7 +2317,7 @@ def single_basin_signature(
 
     return _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         geom_wkt=basin_geom_wkt,
         bands=bands,
@@ -2524,7 +2524,7 @@ def areal_signature_polygon(
 
     The aggregation pipeline is identical to areal_signature (buffer); only the
     resolver differs. resolve_polygon returns basin_in_polity_fraction per basin;
-    the marginal-exposure diagnostic is computed here and added to the neighborhood
+    the marginal-exposure diagnostic is computed here and added to the scope
     block so downstream consumers can assess boundary leverage without a second
     query.
 
@@ -2543,8 +2543,8 @@ def areal_signature_polygon(
 
     Returns
     -------
-    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
-    neighborhood['marginal_exposure'] = {lt_50pct, lt_20pct}: sum of weights for
+    dict — {scope, shortfall, bands, temporal, caveats, rows}
+    scope['marginal_exposure'] = {lt_50pct, lt_20pct}: sum of weights for
     basins where basin_in_polity_fraction < 0.5 / < 0.2 (describe, don't decide).
     """
     level_str = f'{level:02d}'
@@ -2560,8 +2560,8 @@ def areal_signature_polygon(
     me_lt50 = float(basin_set.loc[bif < 0.5, 'weight'].sum())
     me_lt20 = float(basin_set.loc[bif < 0.2, 'weight'].sum())
 
-    neighborhood = {
-        'type':              'polygon',
+    scope = {
+        'type':              'polity',
         'level':             level,
         'n_units':           len(basin_set),
         'unit_type':         'basin',
@@ -2573,7 +2573,7 @@ def areal_signature_polygon(
 
     payload = _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         geom_wkt=geom_wkt,
         bands=bands,

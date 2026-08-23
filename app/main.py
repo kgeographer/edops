@@ -42,7 +42,7 @@ app = FastAPI(
         "EDOPS — the Environmental Dimensions of Place Service — provides programmatic "
         "access to structured environmental signatures for any location on Earth. A "
         "signature characterizes a drainage basin, or a set of basins for areal queries "
-        "like a buffer neighborhood or historical polity, using BasinATLAS hydrology, "
+        "like a buffer scope or historical polity, using BasinATLAS hydrology, "
         "climate, and terrain variables, with optional historical enrichment from LMR "
         "v2.1 paleoclimate, HYDE 3.4 land-use history, and eVolv2k v4 volcanic forcing. \n\n"
         "[API Guide](/docs/api/) · "

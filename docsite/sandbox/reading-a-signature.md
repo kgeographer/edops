@@ -16,7 +16,7 @@ If you add a buffer, or ask about a polity, the answer comes from a set of basin
 handful, sometimes hundreds. There is no single value any more. What EDOPS shows instead is a
 summary of the distribution across those basins, plus a chart of the distribution itself.
 
-This is a consequence of the neighborhood scope you choose, not of what kind of place you asked
+This is a consequence of the scope you choose, not of what kind of place you asked
 about. A settlement with a wide buffer produces the same kind of display as a small polity.
 
 ## Numeric variables
@@ -28,7 +28,7 @@ You get the measured value, its global percentile, and a marker showing that per
 > Precip Yr — `762 mm/yr · 63.6 percentile`
 
 The percentile is global. Each basin's raw value is ranked against every other basin worldwide at
-the resolution level you queried — not against the region, not against the neighborhood. A reading
+the resolution level you queried — not against the region, not against the scope. A reading
 of 63.6 means this basin is wetter than 63.6% of all basins on Earth.
 
 ### Many basins

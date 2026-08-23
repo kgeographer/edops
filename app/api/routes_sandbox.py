@@ -804,7 +804,7 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
 
     Returns center and ring as GeoJSON features — no signature computation.
     neighbor_lat/lon on each ring member is ST_PointOnSurface, safe to pass
-    directly to type=single_basin for per-member signature fetches.
+    directly to scope=single_basin for per-member signature fetches.
     """
     basin_table = "basin06" if level == 6 else "basin08"
     try:
@@ -1093,28 +1093,28 @@ def area(
 
 
 # -----------------------
-# /areas endpoint — type-dispatched areal signature
+# /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
 @router.get("/areas")
 def areas(
-    type: str = Query(..., description=(
-        "Resolver type: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines "
-        "which of lat/lon/radius_km/polity/year are required (see each param's own "
-        "description) and the shape of the 'resolver' block in the response."
+    scope: str = Query(..., description=(
+        "Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. "
+        "Determines which of lat/lon/radius_km/polity/year are required (see each param's "
+        "own description) and the shape of the 'scope' block in the response."
     )),
     lat: Optional[float] = Query(None, ge=-90, le=90, description=(
-        "WGS-84 latitude, decimal degrees. Required for type=buffer, single_basin, basin_ring."
+        "WGS-84 latitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring."
     )),
     lon: Optional[float] = Query(None, ge=-180, le=180, description=(
-        "WGS-84 longitude, decimal degrees. Required for type=buffer, single_basin, basin_ring."
+        "WGS-84 longitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring."
     )),
-    radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for type=buffer."),
+    radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
     polity: Optional[str] = Query(None, description=(
-        "Cliopatria polity name, exact match (e.g. \"Northern Song\"). Required for type=polity."
+        "Cliopatria polity name, exact match (e.g. \"Northern Song\"). Required for scope=polity."
     )),
     year: Optional[int] = Query(None, description=(
-        "Resolver year CE — selects the polity boundary active at this year. Required for type=polity."
+        "Resolver year CE — selects the polity boundary active at this year. Required for scope=polity."
     )),
     level: int = Query(6, description="Basin hierarchy level: 6 or 8."),
     bands: str = Query("ABCDE", description=(
@@ -1125,16 +1125,16 @@ def areas(
     to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
 ):
-    """Areal signature dispatcher — resolves to a set of member basins by type, then
-    aggregates their signature as a distribution (not an average). 'type' is confusingly
-    named "area" alongside GET /api/area, but the four resolver types are not all areas
+    """Areal signature dispatcher — resolves to a set of member basins by scope, then
+    aggregates their signature as a distribution (not an average). 'scope' is confusingly
+    named "area" alongside GET /api/area, but the four scope kinds are not all areas
     in the geometric sense: single_basin and polity are bounded regions, buffer is an
     arbitrary radius, and basin_ring is a topological set of basins, not a shape.
 
     Response
     --------
     Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-    basins, not averages), plus a "resolver" block whose shape depends on `type`. detail=true adds
+    basins, not averages), plus a "scope" block whose shape depends on `scope`. detail=true adds
     per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
@@ -1142,39 +1142,39 @@ def areas(
 
     requested = set(bands.upper().replace(",", "").replace(" ", ""))
 
-    # Pass 1 — type-params
-    if type == "buffer":
+    # Pass 1 — scope-params
+    if scope == "buffer":
         missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
         if missing:
             raise HTTPException(
                 status_code=422,
-                detail=f"type=buffer requires: {', '.join(missing)}",
+                detail=f"scope=buffer requires: {', '.join(missing)}",
             )
-    elif type == "single_basin":
+    elif scope == "single_basin":
         missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
         if missing:
             raise HTTPException(
                 status_code=422,
-                detail=f"type=single_basin requires: {', '.join(missing)}",
+                detail=f"scope=single_basin requires: {', '.join(missing)}",
             )
-    elif type == "polity":
+    elif scope == "polity":
         missing = [p for p, v in [("polity", polity), ("year", year)] if v is None]
         if missing:
             raise HTTPException(
                 status_code=422,
-                detail=f"type=polity requires: {', '.join(missing)}",
+                detail=f"scope=polity requires: {', '.join(missing)}",
             )
-    elif type == "basin_ring":
+    elif scope == "basin_ring":
         missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
         if missing:
             raise HTTPException(
                 status_code=422,
-                detail=f"type=basin_ring requires: {', '.join(missing)}",
+                detail=f"scope=basin_ring requires: {', '.join(missing)}",
             )
     else:
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported type '{type}'. Supported: buffer, single_basin, polity, basin_ring",
+            detail=f"Unsupported scope '{scope}'. Supported: buffer, single_basin, polity, basin_ring",
         )
 
     # Pass 2 — Band T span (cross-cutting)
@@ -1191,7 +1191,7 @@ def areas(
     try:
         conn = db_connect()
 
-        if type == "buffer":
+        if scope == "buffer":
             payload = areal_signature(
                 lat, lon, radius_km,
                 conn,
@@ -1202,7 +1202,7 @@ def areas(
                 include_detail=detail,
             )
 
-        elif type == "single_basin":
+        elif scope == "single_basin":
             payload = single_basin_signature(
                 lat, lon,
                 conn,
@@ -1213,7 +1213,7 @@ def areas(
                 include_detail=detail,
             )
 
-        elif type == "basin_ring":
+        elif scope == "basin_ring":
             payload = basin_ring_signature(
                 lat, lon,
                 conn,

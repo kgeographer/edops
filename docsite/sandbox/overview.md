@@ -45,8 +45,8 @@ For both forks, the **Get signature** button always fires the query for the curr
 
 ### Map
 
-Shows the basin boundaries for the current neighborhood scope. Selecting a variable from the
-dropdown list paints all basins globally while focused on the current neighborhood, providing useful context. 
+Shows the basin boundaries for the current scope. Selecting a variable from the
+dropdown list paints all basins globally while focused on the current scope, providing useful context. 
 
 ### Signature
 
