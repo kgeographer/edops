@@ -111,11 +111,19 @@ pages; what's left is Karl's close-read/wordsmithing pass over all of it plus th
 tooltip-text work — see `docs/design/DOCSv4_TODO.md`'s "Status as of 2026-08-21" for the current
 punch list, not reconciled here in full.
 
+**As of 2026-08-22:** another tangent off the docs-content pass, same pattern as the ones above —
+one of several by now. Writing the caveats/commitments prose surfaced that `/api/areas`' resolver
+parameter was named `type`, ambiguous and inconsistent with the UI's own "Scope" language; fixed
+by renaming it to `scope` everywhere — request parameter, response envelope key (was
+`neighborhood`, which never honestly described the polity case), code identifiers, and docs prose.
+Full detail in the commit itself (`scope-rename` branch, merged); brief record here since the
+commit message already carries it.
+
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
 - `areal_signature_polygon(geom_wkt, conn, ...)` — polygon/polity; served on `GET /api/area`
-- `single_basin_signature(lat, lon, conn, ...)` — HTTP-wired via `type=single_basin`
-- `basin_ring_signature(lat, lon, conn, ...)` — HTTP-wired via `type=basin_ring`
+- `single_basin_signature(lat, lon, conn, ...)` — HTTP-wired via `scope=single_basin`
+- `basin_ring_signature(lat, lon, conn, ...)` — HTTP-wired via `scope=basin_ring`
 
 Two independent temporal axes: `resolver_year` (polity boundary) and Band T span (`from_year`/`to_year`).
 
