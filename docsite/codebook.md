@@ -58,7 +58,7 @@ Resolved via lu_lit <a href="/static/basinatlas_pages/S06.pdf" target="_blank">B
 #### Terrain
 
 **Slope** (`slope_deg`) — implemented · degrees · local + upstream<br>
-u already in view as slope_upstream <a href="/static/basinatlas_pages/P02.pdf" target="_blank">BasinATLAS source page (P02) ↗</a>
+Stored ×10 in basin08; divide by 10 (view applies this as of 2026-08-21). u already in view as slope_upstream <a href="/static/basinatlas_pages/P02.pdf" target="_blank">BasinATLAS source page (P02) ↗</a>
 
 **Stream gradient** (`stream_gradient`) — implemented · m/km · local only<br>
 *No description yet in the catalog — needs a hand-written note.* <a href="/static/basinatlas_pages/P03.pdf" target="_blank">BasinATLAS source page (P03) ↗</a>
@@ -318,7 +318,7 @@ Not currently in signature <a href="/static/basinatlas_pages/A03.pdf" target="_b
 
 #### Water Management
 
-**Reservoir volume upstream** (`reservoir_vol`) — implemented<br>
+**Reservoir volume upstream** (`reservoir_vol`) — implemented · million m³<br>
 u-only field; in Band D in v01 payload <a href="/static/basinatlas_pages/H06.pdf" target="_blank">BasinATLAS source page (H06) ↗</a>
 
 #### (Uncategorized)

@@ -101,7 +101,7 @@ curl "https://edops.computingplace.org/api/areas?scope=buffer&lat=16.8167&lon=-2
 NOTES_SECTION = """## Notes for application developers
 
 - **`/area` vs `/areas`:** not a clean singular/plural pair. `/area` is polity-only.
-  `/areas` dispatches on `type`, and its four resolver types aren't all "areas" in the
+  `/areas` dispatches on `scope`, and its four resolver types aren't all "areas" in the
   geometric sense — `single_basin` and `polity` are bounded regions, `buffer` is an
   arbitrary radius, and `basin_ring` is a topological set of neighboring basins, not a
   shape at all. "Area" in EDOPS currently covers several distinct things; not yet
