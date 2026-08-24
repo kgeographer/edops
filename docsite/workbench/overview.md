@@ -5,7 +5,9 @@ cultural datasets (e.g. D-Place **Societies**), others expose potential data res
 
 The three tools currently in place in tabs on the left share a world map on the right. Their purpose and functionality are outlined below.
 
-## Societies ([D-PLACE](https://d-place.org/about))
+### Societies ([D-PLACE](https://d-place.org/about))
+
+![Societies tab: filtered map, Climate envelope scatter, and language-family donut](images/01.jpg)
 
 > "_D-PLACE contains cultural, linguistic, environmental and geographic information for over 1400 human ‘societies’. A ‘society’ in D-PLACE represents a group of people in a particular locality, who often share a language and cultural identity._"
 
@@ -25,7 +27,9 @@ Two sets of trait-value queries are currently available, both filter map markers
 The confirmatory/exploratory split with these examples is intentional: EA042's climate envelope tests a specific
 theoretical correspondence; EA034's scan explores an unusual proposition: a potential association of religion with environmental setting.
 
-## WH Cities
+### WH Cities
+
+![WH Cities tab: Terrain regime tolerance dials with ranked similarity results](images/02.jpg)
 
 254 of the 258 [OWHC](https://www.ovpm.org/about-the-owhc/) member World Heritage Cities, have been linked to Level 08 basins.
 These are listed in a dropdown list, grouped by UNESCO region. Selecting a city retrieves the environmental signature of its containing basin and offers two independent kinds of similarity search:
@@ -41,7 +45,9 @@ Comparing what the two searches surface for the same city — environmentally si
 discursively similar — is itself informative: agreement is a hint worth investigating further,
 disagreement is not a failure of either measure.
 
-## Ecoregions (OneEarth)
+### Ecoregions (OneEarth)
+
+![Ecoregions tab: mid-tree drill-down with a bioregion boundary and its Wikipedia summary](images/03.jpg)
 
 A simple drill-down browser through the [OneEarth Bioregions](https://www.oneearth.org/bioregions/)
 hierarchy — 14 realms, 53 subrealms, 185 bioregions, 847 ecoregions — via a breadcrumb trail
@@ -51,5 +57,5 @@ This tool is a reference browser rather than a correspondence test in its own ri
 what the Societies tab's "Ecoregions by realm" view is drawing its categories from.
 
 
-## References
+### References
 Murdock, G. P., R. Textor, H. Barry, I., D. R. White, J. P. Gray, & W. T. Divale. (2025). D-PLACE dataset derived from Murdock et al. 1999 'Ethnographic Atlas' (v3.2.1) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.17602181

@@ -57,6 +57,10 @@
   font-size: 0.8rem;
 }
 
+.md-typeset img {
+  border: 1px solid #ddd;
+}
+
 /* Old-school blue underlined links for in-content text, not nav/TOC links. */
 .md-typeset a {
   color: #0645ad;
