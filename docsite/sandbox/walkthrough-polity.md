@@ -7,7 +7,7 @@ The **Polities** tab panel offers
 - polity name lookup on a list of 1522 polity temporally scoped historical boundaries from the Cliopatria dataset
 - a list of 6 example polities, with pre-filed timespans
 
-The **Settlements** tab panel ([see separate walkthrough](walkthrough-settlement.md) offers place name lookup of settlements and sites , specifying a Lat, Lon pair, and choice of of 5 example settlements
+The **Settlements** tab panel ([see separate walkthrough](walkthrough-settlement.md)) offers place name lookup of settlements and sites, specifying a Lat, Lon pair, and choice of five example settlements.
 
 
 ---
@@ -23,7 +23,7 @@ The following steps walk through generating several signature shapes for the Nor
 
     ![First time slice (961 CE) loaded, slider and controls active](images/walkthrough-polity/02.jpg)
 
-3. Choose "Aridity Index" from the variables dropdown to paint the basins globally for those values. Note that Aridity Index is one of the modern BasinATLAS variables, so values do not correspond to 10c consitions.
+3. Choose "Aridity Index" from the variables dropdown to paint the basins globally for those values. Note that Aridity Index is one of the modern BasinATLAS variables, so values do not correspond to 10c conditions.
 
     ![Aridity Index rendered globally with the Northern Song boundary overlaid](images/walkthrough-polity/03.jpg)
 
@@ -39,7 +39,7 @@ The following steps walk through generating several signature shapes for the Nor
 
     ![Atlas tab — global precipitation/temperature modality classes](images/walkthrough-polity/06.png)
 
-7. Return to the Map panel and load the "Aridity Index" variable again. Then advance the time slices with the Forward button [>]. Note there was little change in extent at the first step but considerable growth southward over the next two Over a period of 27 years, Northern Song territory grew to include significantly wetter areas.
+7. Return to the Map panel and load the "Aridity Index" variable again. Then advance the time slices with the Forward button [>]. Note there was little change in extent at the first step but considerable growth southward. Over a period of 27 years Northern Song territory grew to include significantly wetter areas.
 
     ![Northern Song boundary growth across three time slices, same map extent throughout](images/walkthrough-polity/07.jpg)
 

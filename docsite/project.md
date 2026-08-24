@@ -1,6 +1,6 @@
 # About the project
 
-EDOPS is under continuing development toward a v1.0 release planned for February 2027. This page
+EDOPS is under continuing development toward a v1.0 release planned for Spring, 2027. This page
 covers where v0.4 (September 2026) stands, what's changed since v0.3, and what's still ahead. For
 the full research framing — citations, worked examples, the complete argument — see the
 [project summary](https://github.com/kgeographer/edops/blob/main/documentation/EDOP_summary_v04.md)
@@ -38,13 +38,13 @@ Three phases of work lie ahead:
 
 - This documentation site was added. 
 - The interactive API docs moved to <a href="/api/schema" target="_blank" rel="noopener">/api/schema</a>.
-- The signature service now supports areal queries in addition to a single containing basin for a place — basin ring and buffer scope choices for settlements, or an arbitrary polygon (so far, only historical polities from the Cliopatria dataset) — 
-  Areal results are returned as distributions across their member basins, not averaged down to single values.
+- The signature service now supports areal queries in addition to a single containing basin for a place — basin ring and buffer scope choices for settlements, or an arbitrary polygon (so far, only historical polities from the Cliopatria dataset) 
+- Areal results are returned as distributions across their member basins, not averaged down to single values.
 - The former **Lookup** page was replaced by a two-part **Sandbox**: a Settlements interface and a
   Polities interface, both built on the areal query architecture above.
 - A new **Workbench** page was added, with correspondence-testing experiments that compare selected D-PLACE
   societies and World Heritage cities against their environmental signatures.
-- **Data Explorer** (formerly "Explorer") is unchanged — it remains the data Characterization phasee's visual exhibit of the
+- **Data Explorer** (formerly "Explorer") is unchanged — it remains the data Characterization phase's visual exhibit of the
   project dataset resources.
 - Sandbox gained a new **Similarity panel** — a threshold test across precipitation, temperature,
   and terrain lenses, with adjustable tolerances per variable. Results are a set of basins worldwide (possibly empty) that match a place's environment on a given lens.

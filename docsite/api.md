@@ -102,11 +102,11 @@ Full variable inventory: see the Codebook (/docs/codebook/).
 
 ### `GET /api/areas`
 
-Areal signature dispatcher — resolves to a set of member basins by scope, then aggregates their signature as a distribution (not an average). 'scope' is confusingly named "area" alongside GET /api/area, but the four scope kinds are not all areas in the geometric sense: single_basin and polity are bounded regions, buffer is an arbitrary radius, and basin_ring is a topological set of basins, not a shape.
+Areal signature dispatcher — resolves to a set of member basins by scope, then aggregates their signature as a distribution (not an average). `scope` is confusingly named "area" alongside GET /api/area, but the four scope kinds are not all areas in the geometric sense: single_basin and polity are bounded regions, buffer is an arbitrary radius, and basin_ring is a topological set of basins, not a shape.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | str | **yes** | — | Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the 'scope' block in the response. |
+| `scope` | str | **yes** | — | Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the `scope` block in the response. |
 | `lat` | float (-90 to 90) | no | — | WGS-84 latitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
 | `lon` | float (-180 to 180) | no | — | WGS-84 longitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
 | `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
@@ -122,7 +122,7 @@ Areal signature dispatcher — resolves to a set of member basins by scope, then
 
 ```text
 Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-basins, not averages), plus a "scope" block whose shape depends on `scope`. detail=true adds
+basins, not averages), plus a `scope` block whose shape depends on `scope`. detail=true adds
 per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
 ```
 

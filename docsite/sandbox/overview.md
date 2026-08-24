@@ -30,7 +30,7 @@ change defaults for:
 
 **Polities:** Either search the Seshat project's 
 [Cliopatria polities](https://github.com/Seshat-Global-History-Databank/cliopatria) by name, 
-or load of one of six worked examples (Northern
+or load one of six worked examples (Northern
 Song, Abbasid Caliphate, Tibetan Empire, Tang Dynasty, Pagan Kingdom, Qin — the last flagged "no
 LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals two independent
 temporal controls: a time-slice slider with VCR-style transport controls

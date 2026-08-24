@@ -1101,7 +1101,7 @@ def areas(
     scope: str = Query(..., description=(
         "Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. "
         "Determines which of lat/lon/radius_km/polity/year are required (see each param's "
-        "own description) and the shape of the 'scope' block in the response."
+        "own description) and the shape of the `scope` block in the response."
     )),
     lat: Optional[float] = Query(None, ge=-90, le=90, description=(
         "WGS-84 latitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring."
@@ -1126,7 +1126,7 @@ def areas(
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by scope, then
-    aggregates their signature as a distribution (not an average). 'scope' is confusingly
+    aggregates their signature as a distribution (not an average). `scope` is confusingly
     named "area" alongside GET /api/area, but the four scope kinds are not all areas
     in the geometric sense: single_basin and polity are bounded regions, buffer is an
     arbitrary radius, and basin_ring is a topological set of basins, not a shape.
@@ -1134,7 +1134,7 @@ def areas(
     Response
     --------
     Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-    basins, not averages), plus a "scope" block whose shape depends on `scope`. detail=true adds
+    basins, not averages), plus a `scope` block whose shape depends on `scope`. detail=true adds
     per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):

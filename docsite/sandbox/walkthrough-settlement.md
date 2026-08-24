@@ -8,7 +8,7 @@ The **Settlements** tab panel offers
 - specifying a Lat, Lon pair
 - choosing from a list of 5 example settlements
 
-The **Polities** tab panel ([see separate walkthrough](walkthrough-polity.md) offers
+The **Polities** tab panel ([see separate walkthrough](walkthrough-polity.md)) offers
 
 - polity name lookup on a list of 1522 polity temporally scoped historical boundaries from the Cliopatria dataset
 - a list of 6 example polities, with pre-filed timespans
@@ -59,11 +59,11 @@ The following steps walk through generating several signature shapes for Tbilisi
 
         ![Atlas tab — global precipitation/temperature modality classes](images/walkthrough-settlement/06e.jpg)
 
-7. Go back to the map tab, and switch Scope from Single basin to Basin ring. The map now renders boundaries for the basins immediately surrounding the Tbilisi basin. The other tab panels still hold data for the core basin, but you can now pull signatures for any of the ring basins, by selecting one on the bap or the little compass rose glyph on the left
+7. Go back to the map tab, and switch Scope from Single basin to Basin ring. The map now renders boundaries for the basins immediately surrounding the Tbilisi basin. The other tab panels still hold data for the core basin, but you can now pull signatures for any of the ring basins, by selecting one on the map or the small compass rose glyph on the left
 
     ![Basin ring view with Ring 3 member selected and Get signature popup](images/walkthrough-settlement/07.jpg)
 
-8. Click the center basin again, then change the Level from 06 to 08. The map now render those much smaller basins. If you now click [Get signature] again, the data in the panels to the right will reflect that new Level 08 signature.
+8. Click the center basin again, then change the Level from 06 to 08. The map now renders those much smaller basins. If you now click [Get signature] again, the data in the panels to the right will reflect that new Level 08 signature.
 
     ![Level 08 signature panel for the same 1400–1450 CE window](images/walkthrough-settlement/08.jpg)
 

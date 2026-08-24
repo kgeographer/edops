@@ -1,6 +1,6 @@
 # Workbench overview
 
-The Workbench is where various experimental tools are prototyped. Some link EDOP's environmental signatures with
+The Workbench is where various experimental tools are prototyped. Some link the EDOPS environmental signatures with
 cultural datasets (e.g. D-Place **Societies**), others expose potential data resources under consideration — cultural and/or environmental (e.g. **WH Cities** and OneEarth **Ecoregions**).
 
 The three tools currently in place in tabs on the left share a world map on the right. Their purpose and functionality are outlined below.
@@ -11,7 +11,7 @@ The three tools currently in place in tabs on the left share a world map on the 
 
 > "_D-PLACE contains cultural, linguistic, environmental and geographic information for over 1400 human ‘societies’. A ‘society’ in D-PLACE represents a group of people in a particular locality, who often share a language and cultural identity._"
 
-The D-PLACE data used in the Societies panel are from The Ethnographic Atlas (Murdock et al 2025), describing cultural practices for 1,291 societies, coded across 94 anthropological variables (subsistence, settlement, kinship, social organization), mostly at their "ethnographic present" (focal years 1850–1940). 87% have been spatially joined to an EDOP basin signature; the remaining 13% (mostly islands and coastal locations) lack one.
+The D-PLACE data used in the Societies panel are from The Ethnographic Atlas (Murdock et al 2025), describing cultural practices for 1,291 societies, coded across 94 anthropological variables (subsistence, settlement, kinship, social organization), mostly at their "ethnographic present" (focal years 1850–1940). 87% have been spatially joined to an EDOPS basin signature; the remaining 13% (mostly islands and coastal locations) lack one.
 
 Two sets of trait-value queries are currently available, both filter map markers and by default list the ecoregions represented, grouped by global region. Each trait offers a second pair of visualizations:
 
@@ -31,7 +31,7 @@ theoretical correspondence; EA034's scan explores an unusual proposition: a pote
 
 ![WH Cities tab: Terrain regime tolerance dials with ranked similarity results](images/02.jpg)
 
-254 of the 258 [OWHC](https://www.ovpm.org/about-the-owhc/) member World Heritage Cities, have been linked to Level 08 basins.
+254 of the 258 [OWHC](https://www.ovpm.org/about-the-owhc/) member World Heritage Cities have been linked to Level 08 basins.
 These are listed in a dropdown list, grouped by UNESCO region. Selecting a city retrieves the environmental signature of its containing basin and offers two independent kinds of similarity search:
 
 - **Similar (env)** — a regime-lens conjunction search, same non-compensatory logic as the Sandbox

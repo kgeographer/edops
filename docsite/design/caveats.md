@@ -2,7 +2,7 @@
 
 EDOPS is a research prototype and work in progress, now at v0.4. Some signature variables and platform features planned for a Spring, 2027 v1.0 release are in development. Some limitations of the current release and overall project are listed below.
 
-The design choices behind the framework, e.g. why basins, why two scales, why bands, are discussed in [Premises and commitments](commitments.md). Limitations of the source datasets rather than to EDOPS are described alongside each source in
+The design choices behind the framework, e.g. why basins, why two scales, why bands, are discussed in [Premises and commitments](commitments.md). Limitations of the source datasets are described alongside each listing in
 [Data sources](../data-sources.md), worth reading particularly before relying on the current historical layers.
 
 
@@ -16,14 +16,14 @@ the delineation threshold do not appear, so places on them do not resolve.
 delineation did there. We have not yet analyzed how good this is. Treat coastal basin extents as approximate.
 
 **Maritime environments are absent entirely.** Nothing in EDOPS describes what is offshore. For a
-coastal settlement, important environmental attributes are missing, Bathymetry and shelf characterisation are planned, but absent so far. Derived measures of fishery potential or port suitability will need to be defined.
+coastal settlement, important environmental attributes are missing. Bathymetry and shelf characterisation are planned, but absent so far. Derived measures of fishery potential or port suitability will need to be defined.
 
 **Terrain is described, accessibility is not.** Elevation and relief are useful descriptors of a
-landscape, but measures of the the cost of crossing it are lacking and would be a useful addition.
+landscape, but measures of the cost of crossing it are lacking and would be a useful addition.
 
 ## Temporal coverage
 
-**Most variables are contemporary.** The bulk of the EDOPS catalogue comes from BasinATLAS data and describes a recent baseline. Grouping of variables in "persistence bands" (see [Premises](commitments.md)) imparts some rubric for how far back in time each can reasonably be carried, but ony Band T holds the variables that are genuinely time-indexed.
+**Most variables are contemporary.** The bulk of the EDOPS catalogue comes from BasinATLAS data and describes a recent baseline. Grouping of variables in "persistence bands" (see [Premises](commitments.md)) imparts some rubric for how far back in time each can reasonably be carried, but only Band T holds the variables that are genuinely time-indexed.
 
 **Band T sources cover different spans** at different resolutions, so a single query date or timespan will return values from some temporal datasets and not others. Coverage per source is in [Data sources](../data-sources.md).
 
@@ -36,7 +36,7 @@ datasets we have missed are welcome.
 
 ## Known data anomalies and defects
 
-**Endorheic basins and `dist_sink`.** In closed basins the terminal sink is not the ocean, so distance-to-sink does not mean what it means for the exorheic case - it measures distance to that system's own terminal sink (e.g. a lake, playa, salt flat)
+**Endorheic basins and `dist_sink`.** In closed basins the terminal sink is not the ocean, so distance-to-sink does not mean what it means for the exorheic case - it measures distance to that system's own terminal sink (e.g. a lake, playa, salt flat).
 
 
 ## Interpretive limits
@@ -49,7 +49,7 @@ These are properties of the instrument.
 
 Which to choose follows from the reach of the process you are asking about, not from the size of the place. A settlement's immediate terrain and agricultural land are Level 8 questions. Its water supply may originate far upstream, which is a Level 6 question even for a single point — the water-provenance classification can return "Undetermined" at Level 8 when the upstream catchment is too small to resolve distant sources. The two levels disagreeing sharply is itself informative: it says the place sits in a landscape that is heterogeneous at that scale. Fuller guidance on choosing a level is planned.
 
-**A modelled value is not an observation.** Sources in band T - Temporal are reconstructions — estimates produced
+**A modelled value is not an observation.** Sources in Band T - Temporal are reconstructions — estimates produced
 by a model under stated assumptions — but they render exactly like measured attributes. What a given
 value is, and how it was produced, is recorded in the [Codebook](../codebook.md) and in
 [Data sources](../data-sources.md).

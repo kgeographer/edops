@@ -44,11 +44,3 @@ Elevation×Precipitation orographic, Temperature×Snow cold-arid), or choose any
 from the dropdowns directly. Below the scatter, a regional Spearman correlation strip shows the
 X–Y relationship's strength broken out by region alongside the global figure — a pair can
 correlate globally while behaving quite differently region to region.
-
----
-
-*Draft — grounded directly in `explorer.html`, cross-checked against
-`docs/design/sitemap_aug2026.txt`. One correction from the sitemap: Compare isn't only "4 variable
-pairs" — those are presets on top of free X/Y selection, and the "regional filter buttons" are
-actually a Spearman-correlation-by-region readout, not a filter. Voice is neutral/technical
-throughout; wordsmith freely.*
