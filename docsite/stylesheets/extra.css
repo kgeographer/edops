@@ -34,12 +34,14 @@
 
 .md-typeset h3 {
   display: block;
-  background: aliceblue;
+  background: #f1eaea;
 }
 
 .md-typeset h4 {
   margin-bottom: -0.3rem;
-
+  font-size: 1rem;
+  font-weight: 400;
+  color: #993333;
 }
 
 .md-nav__item {

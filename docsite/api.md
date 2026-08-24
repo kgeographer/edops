@@ -23,13 +23,23 @@ public API surface (hidden from the interactive schema accordingly).
 
 ## Local vs. upstream
 
-Most Band A–C fields appear as pairs — a local value (conditions within the sub-basin
-only) and an upstream value (area-weighted accumulation across all upstream
-contributing basins). Upstream keys carry an `_upstream` suffix, e.g. `aridity` /
-`aridity_upstream`. The divergence between the two is itself environmentally
-meaningful: a site where local aridity diverges sharply from upstream aridity (e.g. a
-desert city fed by a distant mountain river) occupies a qualitatively different
-position than one where they converge.
+Many Band A–D fields appear as pairs: a local value (the sub-basin only) and an
+upstream value (its entire contributing watershed, to the headwaters). Upstream keys
+carry an `_upstream` suffix, e.g. `aridity` / `aridity_upstream`.
+
+Aggregation depends on the variable: intensive quantities — aridity, precipitation,
+temperature, soils, slope — are area-weighted averages over the catchment; extensive
+quantities like river area and reservoir volume are sums. See each variable's
+[Codebook](codebook.md) entry for its rule. A few variables, like discharge, have no
+upstream counterpart at all — their local value is already the integrated result of
+everything above.
+
+The divergence between local and upstream is usually the meaningful reading, not the
+upstream value alone: a desert city fed by a distant mountain river occupies a
+qualitatively different position than one where the two converge. Because the upstream
+figure spans the whole catchment, it can blend very different terrain into one number
+— read it against its local counterpart. The API returns both raw values; it does not
+compute or return the divergence itself.
 
 Full variable-by-variable reference: see the [Codebook](codebook.md).
 

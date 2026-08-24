@@ -35,7 +35,13 @@ There are many conceptions of the term place. For this endeavor, a place is a na
 
 The resulting signature is not a classification, but a structured, self-describing document, serialized as JSON, suitable for downstream analysis, comparison, and natural language interpretation.
 
-EDOPS is positioned in contrast to existing geographic enrichment services that augment point locations with attribute values from overlapping layers but do not consider conditions at a distance— the directional, process-mediated flows that connect a location to its surroundings, or change over time. EDOP's goal for the signature and service is process-aware environmental characterization—what a place experiences, not merely what surrounds it. This framing, developed in conversation with geographer Michael Goodchild (2026), constitutes a methodological novelty relative to current commercial and open-source tools.
+Most geographic enrichment services describe a location by stacking attribute values from whatever layers overlap it. This represents a place as a point beneath a set of surfaces, and not "conditions at a distance"—the directional, process-mediated flows connecting a location to places it does not touch. A settlement sustained by a river drawing on distant headwaters is, under such a description, characterized by rainfall that never falls on it.
+
+One organizing premise of EDOP, developed in conversation with geographer Michael Goodchild (2026), is that a place is better described by what it experiences than by what merely surrounds it. Its principal operationalization in v0.4 is the local/upstream duality set out in §3.1.2. BasinATLAS supplies, for 37 of the selected variables, both a local value and a value aggregated over the entire contributing catchment—summed for extensive quantities, area-weighted for intensive ones—following the drainage network's actual topology rather than a symmetric buffer. EDOPS treats the contrast between the two as a first-class, queryable property of a place: where local and upstream values diverge, a place occupies a materially different environmental position than where they converge.
+
+The Tigris-Euphrates basin illustrates this clearly: Ur's local environment is hyper-arid (~94 mm/yr precipitation), but its upstream catchment receives substantially more, sustaining the riverine flow that made the site viable. That divergence is a central environmental fact about alluvial civilizations.
+
+The catchment aggregates are BasinATLAS's own, and zonal statistics over watersheds are long established in hydrology. What is uncommon is their use as an interpretable dimension  of *place description*, exposed through a service addressed to researchers who will not compute such statistics themselves. The operationalization is also partial: the drainage graph describes both what reaches a place from above and what a place can reach below, and only the first is implemented in v0.4 (§3.1.3). Change over time is a separate capability resting on separate sources, addressed in §3.1.4.
 
 The EDOPS signature is not a predictive model in the tradition of Archaeological Predictive Modeling (APM); it is not designed to classify locations as settled vs. unsettled, or to output a probability of settlement. It is better understood as a research instrument: a richly parameterized environmental characterization service that researchers bring their own questions to. As one example, a historian studying medieval Northern Song Dynasty expansion and asking which environmental dimensions are salient for that process, can configure the instrument accordingly and interpret the results in light of what they already know (Figure 1). The instrument can give them new environmental perspectives on phenomena they may already be studying by other means.
 
@@ -79,9 +85,7 @@ The goal is a compact, interpretable signature that preserves meaningful environ
 
 #### 3.1.2 *Local and Upstream Duality*
 
-Of the selected BasinATLAS variables across Bands A–D, covering hydrology, climate, terrain, soils, and human presence, 37 carry both a local (s) and upstream catchment (u) value. This local/upstream duality is a first-class architectural feature of EDOPS signatures, as the contrast between s and u for a given variable is environmentally meaningful: a settlement where local aridity (s) diverges sharply from upstream catchment aridity (u) occupies a qualitatively different environmental position than one where the two converge.
-
-The Tigris-Euphrates basin illustrates this clearly: Ur's local environment is hyper-arid (~94 mm/yr precipitation), but its upstream catchment receives substantially more, sustaining the riverine flow that made the site viable. That divergence is a central environmental fact about alluvial civilizations.
+Of the selected BasinATLAS variables across Bands A–D, covering hydrology, climate, terrain, soils, and human presence, 37 carry both a local (s) and upstream catchment (u) value. This local/upstream duality is a first-class architectural feature of EDOPS signatures, as the contrast between s and u for a given variable is environmentally meaningful: a settlement where local aridity (s) diverges sharply from upstream catchment aridity (u) occupies a qualitatively different environmental position than one where the two converge. The Tigris-Euphrates basin example for Ur described in §2 illustrates this clearly.
 
 Beyond the pre-computed u values, the BasinATLAS network encodes explicit upstream-downstream topology via hybas\_id and next\_down fields, forming a crawlable directed acyclic graph. This will enable computation of distance-stratified upstream profiles—near-upstream aggregates weighted to reflect proximity rather than contributing area, a designated research extension.
 
@@ -89,7 +93,7 @@ Beyond the pre-computed u values, the BasinATLAS network encodes explicit upstre
 
 The upstream dimension captures what flows to a place. A complementary dimension captures its connectivity to the sea via the downstream drainage network. This element of what we term “coastality” is not fully implemented but is essential: for many historically significant locations, marine access is a primary environmental affordance.
 
-Together, the upstream dimension and coastality reflect the current principal operationalization of the process-driven framing introduced in §2—environment as what acts on and flows to a place, not only local values stacked at a point.
+Together, the upstream dimension and coastality in its hydrologic-connectivity mode reflect the current principal operationalization of the process-driven framing introduced in §2—environment including what acts on and flows to a place, not only local values stacked at a point.
 
 Coastality also entails what may be called terrestrial-marine decoupling: in coastal environments, terrestrial and marine affordances are independent dimensions that can point in opposite directions, and settlement viability and history are a function of their combination, not either alone.
 
@@ -103,7 +107,7 @@ In sum, coastality operates through three distinct modes:
 
 - Human accessibility: not yet included in signatures, this might include practical interaction with the sea, e.g. harbor morphology, navigable channel availability, coastal shelter.
 
-Together, the upstream and downstream dimensions frame a complete positional description within the hydrological graph: what a place receives from above, and what it can reach below.
+Together, the upstream and downstream dimensions would frame a complete positional description within the hydrological graph: what a place receives from above, and what it can reach below. In v0.4 only the receiving half is implemented. Coastality is presently represented by hydrologic connectivity alone; the ecological-influence and human-accessibility modes remain design intent, and the Yaghan case above should be read as a specification for them rather than a demonstration of them.
 
 #### 3.1.4 *Temporal Scope and Historical Depth*
 

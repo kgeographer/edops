@@ -52,9 +52,26 @@ being re-described here — each links to its specific attribute page; the full 
 (<a href="/documentation/BasinATLAS_Catalog_v10.pdf" target="_blank">BasinATLAS_Catalog_v10.pdf ↗</a>)
 is also linkable directly, for browsing rather than looking up one variable.
 
-## Local, upstream, and delta
+## Local and upstream pairs
 
-*TODO — extend the existing API Guide paragraph (`docsite/api.md`, "Local vs. upstream" section).*
+Where a row below is tagged **local + upstream**, EDOPS reports the variable twice for the same
+basin: once for the sub-basin itself (its own drainage area only), and once for its entire
+upstream watershed, aggregated to the headwaters. Upstream fields carry an `_upstream` suffix
+throughout this reference.
+
+Aggregation depends on the variable, stated in each entry: intensive quantities — aridity,
+precipitation, temperature, soils, slope, human footprint — are area-weighted averages across the
+catchment; extensive quantities like river area and reservoir volume are sums. Discharge and a few
+others have no upstream counterpart at all — their local value is already the integrated result of
+everything above.
+
+The difference between local and upstream is usually the more informative reading than either
+number alone: a basin whose values track each other sits in a uniform catchment, while one that
+diverges sharply — a desert city fed by snowmelt from a distant range — has a different water
+story.
+
+See the [API Guide](api.md#local-vs-upstream) for how this pairing appears in the API response
+itself — the API returns both raw values, not their difference.
 
 ## The bands
 
