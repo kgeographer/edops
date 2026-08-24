@@ -77,50 +77,37 @@ branch; WO-scale work is cut as child branches off `docsv4` and merged straight 
 (`basinring` — the basin-ring rebuild below — was the first, merged 2026-08-06). `docsv4` itself stays
 un-merged into `main` until the whole docs pass is ready to replace v0.3 in production.
 
-**State as of 2026-08-19 (branch `docsv4`; the `varnaming_routes` phase branch merged back and
-pushed 2026-08-17, nothing deployed):** MkDocs is live in-repo (`docsite/` source, `mkdocs.yml`,
-`site/` build output gitignored) with a generated Codebook
+**Current state (branch `docsv4`, not yet deployed):** MkDocs is live in-repo (`docsite/` source,
+`mkdocs.yml`, `site/` build output gitignored) with a generated Codebook
 (`scripts/edop/docsite/generate_codebook.py`) and a generated API Guide
 (`scripts/edop/docsite/generate_api_guide.py` → `docsite/api.md`) — both sourced from live code
 (the variable catalog TSV; the public route set + docstrings) rather than hand-maintained.
 Swagger (`/api/schema`) is a custom-styled route reading that same route metadata (minimal EDOPS
 branding, a real intro paragraph, `/signature` open by default via deep-linking). Public API
 surface is exactly `/health`, `/signature`, `/area`, `/areas` — everything else marked
-`include_in_schema=False`; lat/lon are range-validated; the `level` default split between
-`/signature` (8) and `/area`/`/areas` (6) was investigated and deliberately left as-is (see
-`logs/session_log_20260817.md`). Codebook rows for BasinATLAS-sourced variables link to their own
-page in the provider's PDF catalog (`scripts/edop/docsite/split_basinatlas_catalog.py`), which
-also surfaced and fixed 14 scrambled `atlas_id` values in the variable catalog TSV. A full "About
-EDOPS" specificity ladder exists (in-app modal → `docsite/project.md` → `docsite/data-sources.md`
-→ `documentation/EDOP_summary_v04.md`, each linking out rather than duplicating). **`app/api/
+`include_in_schema=False`; lat/lon are range-validated. The `/api/areas` resolver parameter is
+`scope` (not the old `type`) — request parameter, response envelope key, code identifiers, and
+docs prose are consistent on this term throughout; "neighborhood" has been fully retired. Codebook
+rows for BasinATLAS-sourced variables link to their own page in the provider's PDF catalog
+(`scripts/edop/docsite/split_basinatlas_catalog.py`). A full "About EDOPS" specificity ladder
+exists (in-app modal → `docsite/project.md` → `docsite/data-sources.md` →
+`documentation/EDOP_summary_v04.md`, each linking out rather than duplicating). **`app/api/
 routes.py` (formerly ~4000 lines) no longer exists** — split into `routes_common.py`,
-`routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, `routes_sandbox.py`; route
-count 77 after removing seven confirmed-dead routes. Two working-reference docs in `docs/edop/`
-worth consulting rather than re-deriving: `pageload_explorer.txt` (on-load + variable-selection
-pseudocode) and `routes_audit.txt` (re-run after any future route change). `main` has its first
-tag/release, `v0.3`, matching what's currently deployed — v0.4 itself is not deployed yet.
-`app/static/basinatlas_pages/` (gitignored, ~13MB split-PDF output) still needs adding to the
-rsync deploy step — see `MAINTAIN_DEPLOY.md` (repo root, gitignored, Karl's personal maintain/
-deploy reference) for the current full asset list and the signature-update-to-docs propagation
-steps. `docs/design/DOCSv4_TODO.md` (gitignored, renamed from the awkward `DOCSv4 — TODO.md`
-2026-08-17) is the fuller documentation-content punch list, reconciled against actual state as
-of that date. Full history: `logs/session_log_20260804.md` through `logs/session_log_20260819.md`.
+`routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, `routes_sandbox.py`. Two
+working-reference docs in `docs/edop/` worth consulting rather than re-deriving:
+`pageload_explorer.txt` (on-load + variable-selection pseudocode) and `routes_audit.txt` (re-run
+after any future route change). `main` has its first tag/release, `v0.3`, matching what's
+currently deployed — v0.4 itself is not deployed yet. `app/static/basinatlas_pages/` (gitignored,
+~13MB split-PDF output) still needs adding to the rsync deploy step — see `MAINTAIN_DEPLOY.md`
+(repo root, gitignored, Karl's personal maintain/deploy reference) for the current full asset list
+and the signature-update-to-docs propagation steps.
 
-**As of 2026-08-21:** still on `docsv4`. The docs-content pass keeps surfacing real bugs, not just
-prose gaps — several found and fixed this week while drafting pages against actual behavior
-(slope units, HYDE aggregation, signature display edge cases), each landing as its own commit/WO
-rather than deferred. Content-wise, every page now has a draft except the two Sandbox walkthrough
-pages; what's left is Karl's close-read/wordsmithing pass over all of it plus the `?`-icon and
-tooltip-text work — see `docs/design/DOCSv4_TODO.md`'s "Status as of 2026-08-21" for the current
-punch list, not reconciled here in full.
-
-**As of 2026-08-22:** another tangent off the docs-content pass, same pattern as the ones above —
-one of several by now. Writing the caveats/commitments prose surfaced that `/api/areas`' resolver
-parameter was named `type`, ambiguous and inconsistent with the UI's own "Scope" language; fixed
-by renaming it to `scope` everywhere — request parameter, response envelope key (was
-`neighborhood`, which never honestly described the polity case), code identifiers, and docs prose.
-Full detail in the commit itself (`scope-rename` branch, merged); brief record here since the
-commit message already carries it.
+Help icons across all three pages are normalized onto a single three-mode harness (tooltip /
+toggle-panel / modal, each with its own decorator icon, auto-wiring via MutationObserver) — see
+`app/static/js/edops_help.js`. Content-wise, every docsite page has a draft; the Sandbox
+settlement walkthrough (`docsite/sandbox/walkthrough-settlement.md`) is complete with all 12
+screenshots, the polity walkthrough is still a WIP draft. Current punch list:
+`docs/TODO_DOCSv4.md` (gitignored). Session-by-session detail: `logs/session_log_YYYYMMDD.md`.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
@@ -159,12 +146,13 @@ app/
 └── static/
     ├── css/site.css      # cross-page shared rules (nav pills, tiles, help-tooltip harness)
     ├── css/{explorer,sandbox,workbench}.css  # page-scoped (2026-08-07 CSS reorg; ex-inline <style> blocks)
-    ├── js/edops_help.js  # shared help-tooltip harness (2026-08-07) — see State as of, above
+    ├── js/edops_help.js  # shared help-icon harness — tooltip/toggle/modal modes, see Current state, above
     ├── explorer/        # PMTiles, GeoJSON, HYDE tiles (gitignored — rsync only)
     └── ...
 
 mkdocs_hooks.py           # MkDocs post-build hook (2026-08-07) — overrides Material's hardcoded
-                          #   sidebar-dock breakpoint via regex on the compiled CSS; see State as of
+                          #   sidebar-dock breakpoint via regex on the compiled CSS; re-verify on
+                          #   mkdocs-material version bumps and nav: structure changes
 mkdocs.yml               # MkDocs config — docs_dir: docsite/, site_dir: site/ (v0.4 docs, 2026-08-05)
 docsite/                 # MkDocs source (tracked) — one page per DOCSv4 TODO §5 section, nav in
                           #   per-surface subtrees (Sandbox/Data Explorer/Workbench); similarity.md
