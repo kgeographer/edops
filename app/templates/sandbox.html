@@ -826,12 +826,10 @@
           document.getElementById('v3-basin-status').innerHTML =
             '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading basins…</span>';
         const r = await fetch(`/api/areas?${params}`);
-        console.log('[silentResig] polity fetch', r.status, `/api/areas?${params}`);
         if (!r.ok) return;
         const data = await r.json();
         const memberIds = data.member_ids || [];
         _sigMemberIds = memberIds.length ? new Set(memberIds.map(Number)) : null;
-        console.log('[silentResig] member_ids:', memberIds.length, '  _sigMemberIds size:', _sigMemberIds?.size ?? 0);
       } else {
         const scope = document.getElementById('v3-scope-select').value;
         if (!scope || currentLat == null) return;
@@ -920,7 +918,7 @@
     document.getElementById('v3-ring-info').style.display    = (scope === 'ring')   ? ''     : 'none';
   }
   async function _drawScopePreview(scope) {
-    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
+    ['single-basin','buffer-basins','buffer-circle','ring-basins']
       .forEach(n => shell.remove(n));
     if (currentLat === null) return;
     const lv = _activeLevel();
@@ -1115,7 +1113,7 @@
         altHtml = `<span class="text-muted d-block" style="font-size:0.85rem;">${shown}`;
         if (rest.length) {
           altHtml += ` <a href="#" class="whg-more-link text-muted"
-            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.85rem;">+${rest.length} more</a>`;
+            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.85rem;">+${rest.length} more names</a>`;
         }
         altHtml += '</span>';
       }
@@ -1376,9 +1374,8 @@
     const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
 
     // ── Assemble ──────────────────────────────────────────────────────────
-    const _ringSuffix = _activeBasinLabel();
     const nameHtml = _currentPlaceName
-      ? `<h5 class="mb-0">${_currentPlaceName}${_ringSuffix ? ` · ${_ringSuffix}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     document.getElementById('v3-seas-placeholder').style.display = 'none';
     const content = document.getElementById('v3-seas-content');
@@ -1541,7 +1538,7 @@
 
     const cjRingLabel = _activeBasinLabel();
     document.getElementById('v3-cj-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${cjRingLabel ? ` · ${escapeHtml(cjRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     if (_cjMarker) _cjMarker.remove();
     _cjMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -1878,9 +1875,8 @@
       _ctxMap.resize();
     }
 
-    const ctxRingLabel = _activeBasinLabel();
     document.getElementById('v3-ctx-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${ctxRingLabel ? ` · ${escapeHtml(ctxRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     if (_ctxMarker) _ctxMarker.remove();
     _ctxMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -2198,9 +2194,8 @@
     // Analysis had no title at all before -- Signature/Seasonality/Context/Similarity all show
     // one, so its absence here just meant no ring-member confusion could show up either. Adding
     // it now for consistency, same _currentPlaceName + ring-label pattern as the others.
-    const analysisRingLabel = _activeBasinLabel();
     const analysisNameHtml = _currentPlaceName
-      ? `<h5 class="mb-2">${escapeHtml(_currentPlaceName)}${analysisRingLabel ? ` · ${escapeHtml(analysisRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-2">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     el.innerHTML = `
       <div class="px-1" style="font-size:0.85rem;">
@@ -2454,6 +2449,15 @@
     const n = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
     return n != null ? `Ring ${n}` : null;
   }
+  // "Containing basin for {place}" / "Ring basin #N for {place}" -- same disambiguating
+  // prefix Signature uses (renderSignature()), shared here so Analysis/Seasonality/Context/
+  // Similarity titles stay in lockstep with it rather than re-deriving their own wording.
+  function _basinTitleHtml(placeName) {
+    if (!placeName) return '';
+    const n = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
+    const prefix = n != null ? `Ring basin #${n} for ` : `Containing basin for `;
+    return `${prefix}${escapeHtml(placeName)}`;
+  }
   // The ring list lives in the left panel, visible/clickable from any tab -- so committing a
   // ring member while already sitting on Context (not just Map) needs to force a refresh; the
   // normal shown.bs.tab / radius-change triggers won't fire on their own in that case.
@@ -2531,77 +2535,68 @@
     } catch (_) { return null; }
   }
 
+  // Center and ring members share ONE combined layer (2026-08-25, kgreview #13) rather than two
+  // separately z-stacked ones. Every ring member borders the center by definition, so whichever
+  // layer was added second (previously ring-members, always last) painted its own default color
+  // directly over the center's shared boundary -- no matter what paint property ring-center's own
+  // (now-hidden) line carried, that segment always rendered as ring-members' unselected crimson.
+  // One layer + one case expression keyed on hybas_id (falling back to the center's own hybas_id
+  // when nothing is previewed/committed, so it's highlighted by default) removes the z-order
+  // race entirely instead of just relocating it to the opposite basin.
   async function drawRingGeometry(ringData) {
     if (!ringData?.center || !Array.isArray(ringData.ring)) return null;
     _previewRingMemberId = null;
     _committedRingMemberId = null;  // fresh ring query -- clear any selection from a prior place
-    shell.add('ring-center',
-      { type: 'geojson', data: ringData.center },
-      [
-        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0 } },
-        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 5.5 } },
-        { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 2.5 } },
-      ]
-    );
-    shell.add('ring-members',
-      { type: 'geojson', data: { type: 'FeatureCollection', features: ringData.ring.map(m => m.feature) } },
+    const allFeatures = [ringData.center, ...ringData.ring.map(m => m.feature)];
+    shell.add('ring-basins',
+      { type: 'geojson', data: { type: 'FeatureCollection', features: allFeatures } },
       [
         { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
         { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 3.5 } },
         { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 1.5 } },
       ]
     );
-    const memberFillId = _layers['ring-members'].layerIds[0];
-    const centerFillId = _layers['ring-center'].layerIds[0];
+    const basinsFillId = _layers['ring-basins'].layerIds[0];
+    const centerId = ringData.center.properties?.hybas_id;
 
-    map.on('mousemove', memberFillId, e => {
+    map.on('mousemove', basinsFillId, e => {
       map.getCanvas().style.cursor = 'pointer';
-      const n = _ringOrdinal(e.features[0].properties.hybas_id);
-      _ringPopup.setLngLat(e.lngLat).setHTML(`<span style="font-size:0.78rem;">Preview Ring ${n}</span>`).addTo(map);
+      const hid   = e.features[0].properties.hybas_id;
+      const label = hid === centerId ? 'Return to center' : `Preview Ring ${_ringOrdinal(hid)}`;
+      _ringPopup.setLngLat(e.lngLat).setHTML(`<span style="font-size:0.78rem;">${label}</span>`).addTo(map);
     });
-    map.on('mouseleave', memberFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
-    map.on('click',      memberFillId, e => {
-      const hid    = e.features[0].properties.hybas_id;
+    map.on('mouseleave', basinsFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
+    map.on('click',      basinsFillId, e => {
+      const hid = e.features[0].properties.hybas_id;
+      if (hid === centerId) { previewCenter(); return; }
       const member = ringData.ring.find(m => m.hybas_id === hid);
       if (member) previewRingMember(member);
     });
-    map.on('mousemove', centerFillId, e => {
-      map.getCanvas().style.cursor = 'pointer';
-      _ringPopup.setLngLat(e.lngLat).setHTML('<span style="font-size:0.78rem;">Return to center</span>').addTo(map);
-    });
-    map.on('mouseleave', centerFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
-    map.on('click',      centerFillId, () => previewCenter());
 
     _applyRingSelectionStyle();
     _renderRingGlyph();
 
-    return geojsonBbox({ type: 'FeatureCollection',
-      features: [ringData.center, ...ringData.ring.map(m => m.feature)] });
+    return geojsonBbox({ type: 'FeatureCollection', features: allFeatures });
   }
 
-  // Data-driven paint expressions keyed on the hybas_id property already present on every
-  // ring-member feature -- no MapLibre feature-state / promoteId plumbing needed, just
+  // Data-driven paint expression keyed on the hybas_id property present on every ring-basins
+  // feature, center included -- no MapLibre feature-state / promoteId plumbing needed, just
   // setPaintProperty on selection change.
   function _applyRingSelectionStyle() {
-    const memberLine  = _layers['ring-members']?.layerIds?.[2];
-    const centerLine  = _layers['ring-center']?.layerIds?.[2];
-    if (!memberLine) return;
-    // Map highlight follows preview-if-present, else committed -- gives immediate feedback on
-    // click even before "Get signature" is hit, without touching titles/Context (those only
-    // read the committed variable).
+    const basinsLine = _layers['ring-basins']?.layerIds?.[2];
+    if (!basinsLine) return;
+    // Map highlight follows preview-if-present, else committed, else the center itself -- gives
+    // immediate feedback on click even before "Get signature" is hit, without touching titles/
+    // Context (those only read the committed variable).
     // Outline only, deliberately -- a fill here sits on the same layers the #v3-basin-var
     // choropleth paints via feature-state, so a solid highlight fill visually stomped whatever
     // variable coloring was underneath. The outline treatment doesn't compete with it.
-    const selId = _previewRingMemberId ?? _committedRingMemberId ?? -1;
-    map.setPaintProperty(memberLine, 'line-color',
+    const centerId = _ringData?.center?.properties?.hybas_id ?? -1;
+    const selId = _previewRingMemberId ?? _committedRingMemberId ?? centerId;
+    map.setPaintProperty(basinsLine, 'line-color',
       ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#c2185b']);
-    map.setPaintProperty(memberLine, 'line-width',
-      ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
-    const centerActive = (_previewRingMemberId ?? _committedRingMemberId) == null;
-    if (centerLine) {
-      map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#c2185b');
-      map.setPaintProperty(centerLine, 'line-width', centerActive ? 3.5 : 2.5);
-    }
+    map.setPaintProperty(basinsLine, 'line-width',
+      ['case', ['==', ['get', 'hybas_id'], selId], 3.5, 1.5]);
   }
 
   // Small compass-rose glyph, flush right in the same blurb row rather than its own section.
@@ -2818,7 +2813,7 @@
     // Scope-switch cleanup (2026-08-08) -- leaving ring scope previously left both a stale
     // hybas_id sitting in _committedRingMemberId (renderSignature's heading would then mislabel
     // a fresh single/buffer payload as a ring member forever, until a ring query happened to
-    // reset it) and stale ring-center/ring-members map layers (shell.add only replaces layers
+    // reset it) and stale ring-basins map layers (shell.add only replaces layers
     // under its own name, so switching scopes never removed the other scopes' geometry). Doing
     // this unconditionally on every click, for whichever scopes are NOT the one being fetched,
     // keeps state and map geometry in sync with whatever's about to be rendered regardless of
@@ -2826,8 +2821,7 @@
     if (scope !== 'ring') {
       _previewRingMemberId = null;
       _committedRingMemberId = null;
-      shell.remove('ring-center');
-      shell.remove('ring-members');
+      shell.remove('ring-basins');
     }
     if (scope !== 'single') shell.remove('single-basin');
     if (scope !== 'buffer') { shell.remove('buffer-basins'); shell.remove('buffer-circle'); }
@@ -3334,6 +3328,7 @@
   let _politySlices     = [];
   let _polityCurrentIdx = -1;
   let _polityPlayTimer  = null;
+  let _polityGeomAbort  = null;
   let _searchTimer      = null;
 
   function updatePolityButton() {
@@ -3487,11 +3482,22 @@
     _showMapTab();
   }
 
-  async function drawPolityBoundary(id) {
+  async function drawPolityBoundary(id, forIdx) {
+    // Play advances every 1500ms without waiting for the previous geom fetch to land -- on a
+    // many-slice polity (Tang, 32 slices) that let unthrottled requests pile up behind the
+    // browser's per-origin connection limit, with some taking 10s of seconds to resolve. Late
+    // responses kept painting stale boundaries (slice 1, 2, 3...) long after Play had stopped
+    // (kgreview #11, confirmed 2026-08-25 with per-request timing/idx logging). Aborting the
+    // superseded request on every new slice, plus the forIdx staleness check below as a
+    // backstop, fixes both the wasted network/backend load and the late-paint symptom.
+    _polityGeomAbort?.abort();
+    const controller = new AbortController();
+    _polityGeomAbort = controller;
     try {
-      const r = await fetch(`/api/polity/geom?id=${id}`);
-      if (!r.ok) return;
+      const r = await fetch(`/api/polity/geom?id=${id}`, { signal: controller.signal });
+      if (!r.ok || forIdx !== _polityCurrentIdx) return;
       const feature = await r.json();
+      if (forIdx !== _polityCurrentIdx) return;
       shell.remove('polity-boundary');
       shell.add('polity-boundary',
         { type: 'geojson', data: feature },
@@ -3501,10 +3507,20 @@
         ]
       );
       _fitMap(geojsonBbox(feature));
-    } catch (_) { /* boundary is optional */ }
+    } catch (_) { /* boundary is optional -- includes abort of a superseded request */ }
   }
 
-  function applySlice(idx, resolverYear = null) {
+  // async so Play can await the boundary paint per step instead of firing on a blind clock --
+  // fire-and-forget callers (manual VCR buttons, slider, selectPolity) are unaffected, they just
+  // don't await the returned promise.
+  //
+  // skipResig: /api/areas?scope=polity&detail=true (what _silentResig() calls) measured at ~9s
+  // standalone for a single Tang slice (kgreview #11, confirmed 2026-08-25 via curl) -- firing it
+  // on every automatic Play tick was blocking the dev server enough to starve the concurrently-
+  // fetched, otherwise-~70ms /api/polity/geom request behind it. Play passes true here and lets
+  // stopPolityPlay() run one resync once the view actually settles; every other caller (manual
+  // VCR buttons, slider, selectPolity) leaves it false and stays exactly as before.
+  async function applySlice(idx, resolverYear = null, skipResig = false) {
     const s = _politySlices[idx];
     if (!s) return;
     _polityCurrentIdx = idx;
@@ -3512,10 +3528,10 @@
     document.getElementById('v3-polity-from-year').value = s.fromyear;
     document.getElementById('v3-polity-to-year').value   = s.toyear;
     updateSliceLabel(idx);
-    drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
-    _silentResig();
+    if (!skipResig) _silentResig();
+    await drawPolityBoundary(s.id, idx);
   }
 
   // ── Slice slider + VCR ───────────────────────────────────────────────────
@@ -3567,23 +3583,44 @@
     applySlice(next);
   }
 
-  function startPolityPlay() {
+  const POLITY_PLAY_STEP_MS = 1500;
+
+  // Self-pacing loop, not setInterval -- some Tang-scale polities have individual slice geom
+  // fetches that take well over a second on their own (kgreview #11), so a fixed-clock interval
+  // either aborts every step before it can finish (starved) or piles up a request backlog that
+  // keeps painting stale boundaries long after Play stopped (both observed 2026-08-25). Waiting
+  // for each step's paint to actually land, then padding up to the floor, guarantees every slice
+  // renders exactly once and Play only runs faster than the floor when a step was already fast.
+  async function startPolityPlay() {
     if (_polityPlayTimer) return;
+    const token = {};
+    _polityPlayTimer = token;
     document.getElementById('v3-btn-play').innerHTML = '<i class="bi bi-pause-fill"></i>';
     document.getElementById('v3-btn-play').title = 'Pause';
-    _polityPlayTimer = setInterval(() => {
-      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(); return; }
+    while (_polityPlayTimer === token) {
+      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(/* resync */ true); return; }
       const next = _polityCurrentIdx + 1;
+      const stepStart = performance.now();
       document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
-      applySlice(next);
-    }, 1500);
+      await applySlice(next, null, /* skipResig */ true);
+      if (_polityPlayTimer !== token) return;  // paused/stopped while awaiting this step
+      const remaining = POLITY_PLAY_STEP_MS - (performance.now() - stepStart);
+      if (remaining > 0) await new Promise(res => setTimeout(res, remaining));
+    }
   }
 
-  function stopPolityPlay() {
-    if (_polityPlayTimer) { clearInterval(_polityPlayTimer); _polityPlayTimer = null; }
+  // resync: the Play loop's own steps run with skipResig=true (see applySlice), so the two
+  // stop paths with no follow-up applySlice call -- reaching the last slice, and the Pause
+  // button -- need one _silentResig() to catch the settled slice up. Every other stop path
+  // (Next/Prev/First/slider) already calls applySlice() itself right after, which resyncs on
+  // its own default path -- passing resync there too would just fire it twice.
+  function stopPolityPlay(resync = false) {
+    const wasPlaying = !!_polityPlayTimer;
+    if (_polityPlayTimer) { _polityPlayTimer = null; }
     const btn = document.getElementById('v3-btn-play');
     btn.innerHTML = '<i class="bi bi-play-fill"></i>';
     btn.title = 'Play through slices';
+    if (resync && wasPlaying) _silentResig();
   }
 
   document.getElementById('v3-slice-slider').addEventListener('input', () => {
@@ -3605,7 +3642,7 @@
   });
   document.getElementById('v3-btn-prev').addEventListener('click', () => stepPolitySlice(-1));
   document.getElementById('v3-btn-play').addEventListener('click', () => {
-    if (_polityPlayTimer) stopPolityPlay(); else startPolityPlay();
+    if (_polityPlayTimer) stopPolityPlay(/* resync */ true); else startPolityPlay();
   });
   document.getElementById('v3-btn-next').addEventListener('click', () => stepPolitySlice(1));
 
