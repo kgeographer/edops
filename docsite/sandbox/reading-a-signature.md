@@ -27,6 +27,8 @@ You get the measured value, its global percentile, and a marker showing that per
 
 > Precip Yr — `762 mm/yr · 63.6 percentile`
 
+![Single-basin value, percentile, and marker on a line](images/reading/01.jpg)
+
 The percentile is global. Each basin's raw value is ranked against every other basin worldwide at
 the resolution level you queried — not against the region, not against the scope. A reading
 of 63.6 means this basin is wetter than 63.6% of all basins on Earth.
@@ -36,7 +38,13 @@ of 63.6 means this basin is wetter than 63.6% of all basins on Earth.
 You get an area-weighted percentile, a **concentrated** or **spread** badge, and a histogram of how
 the constituent basins are distributed:
 
-> Aridity — `48.8 percentile` · *spread*
+> Aridity — `59.1 percentile` · *spread*
+
+![Multi-basin percentile, spread badge, and histogram](images/reading/02a.jpg)
+
+> Temp Yr Upstream — `33.8 percentile` · *concentrated*
+
+![The same display with a concentrated badge, for contrast](images/reading/02b.jpg)
 
 The headline percentile is the area-weighted mean of each contributing basin's own percentile —
 larger basins pull it further. The two numbers flanking the histogram are the 10th and 90th
@@ -66,7 +74,9 @@ where the extremes fall; the badge tells you whether the bulk of the area agrees
 Categorical variables — biome, lithology, land cover, wetland class — have no percentile. They show
 the most common class across the query area and the share of the area holding that class:
 
-> Biome — `Temperate Broadleaf & Mixed Forests` · 89%
+> Biome — `Temperate Broadleaf & Mixed Forests` · 71%
+
+![Categorical variable: leading class and its share of the query area](images/reading/03.jpg)
 
 For a single basin this is always 100%: one basin has one majority class. For a set, the percentage
 is what matters. A share of 97% means the area is essentially uniform. A share of 44% means the
@@ -90,6 +100,10 @@ measurement and displays as `0`.
 For a single-basin query this usually means the variable isn't coded for that basin — as with karst,
 permafrost, or the wetland groups in areas where those datasets have no coverage.
 
+> Karst (no value)
+
+![Single-basin missing value: a bare em-dash](images/reading/05.jpg)
+
 In a multi-basin query, an empty headline can mean three different things, and the label tells you
 which:
 
@@ -99,10 +113,15 @@ which:
   split into two genuinely different clusters rather than one continuous distribution. A single
   percentile would average across that split and misrepresent both halves, so none is reported — read
   the histogram directly instead.
+
+    ![Multi-basin, "score suppressed — bimodal," histogram shown](images/reading/07.jpg)
+
 - **"outside active range,"** with the histogram still shown, means the variable is present but
   essentially absent everywhere in the query area — for example, permafrost extent for a region with
   almost no permafrost. This is not missing data; the underlying values are genuinely at or near zero
   across nearly the whole area, and a percentile isn't a meaningful way to represent that.
+
+    ![Multi-basin, "outside active range," histogram shown](images/reading/08.jpg)
 
 ## The date stamp
 
@@ -112,6 +131,8 @@ is contemporary — the stamp tells you the period the query was about, not the 
 comes from. How far a contemporary measurement can be carried back is what the bands encode; see
 [Premises and commitments](../design/commitments.md).
 
+![The "as of NNNN CE" date stamp](images/reading/09.jpg)
+
 ## Band T is different
 
 Band T does not use any of the above. Its variables come from datasets that are genuinely indexed to
@@ -120,8 +141,16 @@ time, and each source has its own display:
 - **LMR** — annual series charts for temperature, precipitation, and drought index, with a year
   slider and a small distribution summary. The header reports how many LMR grid cells intersect the
   query area and the year range covered.
+
+    ![LMR annual series charts with year slider](images/reading/10.jpg)
+
 - **HYDE** — a table of land-use extents at the selected year.
+
+    ![HYDE land-use table](images/reading/11.jpg)
+
 - **eVolv2k** — a list of volcanic events in the period with their sulfur injection values.
+
+    ![eVolv2k volcanic-event list](images/reading/12.jpg)
 
 None of these carry percentiles, badges, or global rankings. They are values in time, not positions
 in a global distribution, and they are read accordingly.
