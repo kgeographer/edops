@@ -251,6 +251,7 @@
                   <option value="polity|Tibetan Empire">Tibetan Empire (623–849 CE)</option>
                   <option value="polity|Tang Dynasty">Tang Dynasty (618–907 CE)</option>
                   <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
+                  <option value="polity|Inca Empire">Inca Empire (1440–1571 CE)</option>
                   <option value="polity|Qin">Qin (750–222 BCE) — no LMR</option>
                 </select>
               </div>
@@ -4101,11 +4102,14 @@
 
   // ── HYDE choropleth ───────────────────────────────────────────────────────
   const HYDE_DB_VAR = { hyde_cropland:'cropland', hyde_grazing:'grazing', hyde_pasture:'pasture', hyde_rangeland:'rangeland' };
+  // lo is always pure white (kgreview #23) -- t = v / domMax below, so t=0 always means v=0
+  // exactly; grazing/pasture/rangeland previously started from a pale tint (#fff7ec/#deebf7/
+  // #ffffd4) instead of white, so a 0-value basin rendered as that tint rather than no color.
   const HYDE_RAMPS  = {
     hyde_cropland:  { lo: '#ffffff', hi: '#006d2c' },
-    hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
-    hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
-    hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
+    hyde_grazing:   { lo: '#ffffff', hi: '#7f2704' },
+    hyde_pasture:   { lo: '#ffffff', hi: '#2171b5' },
+    hyde_rangeland: { lo: '#ffffff', hi: '#993404' },
   };
 
   async function applyHydeChoropleth(varKey, year) {
