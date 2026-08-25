@@ -189,3 +189,21 @@ pre {
   cursor: pointer;
 }
 
+/* Soft light-blue button, black text -- bare .btn has no hover state of its own (Bootstrap's
+   hover rules live on the .btn-* variant classes), so this needs an explicit :hover rather than
+   relying on Bootstrap. Used by the API Guide modal's Swagger link (_edops_modals.html).
+   Compound selector (.btn.btn-swagger-link, not just .btn-swagger-link) deliberately -- site.css
+   loads before the Bootstrap <link> in every page's <head>, so a same-specificity single-class
+   rule here would lose the cascade to Bootstrap's own .btn regardless of which order the classes
+   are listed in the markup; two classes outweighs Bootstrap's one regardless of load order. */
+.btn.btn-swagger-link {
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+  color: #000;
+}
+.btn.btn-swagger-link:hover {
+  background-color: #bfdbfe;
+  border-color: #93c5fd;
+  color: #000;
+}
+
