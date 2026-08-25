@@ -579,6 +579,7 @@ def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
         if not pt or len(pt) < 2:
             continue
         ccs = r.get("ccodes") or []
+        place_types = r.get("place_types") or []
         results.append({
             "id": r.get("id"),
             "name": r.get("name"),
@@ -587,6 +588,8 @@ def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
             "ccodes": ccs,
             "alt_names": (r.get("alt_names") or [])[:10],
             "cname": _CCODES.get(ccs[0], "") if ccs else "",
+            "score": r.get("score"),
+            "place_type": place_types[0].get("label") if place_types else None,
         })
 
     return {"results": results}

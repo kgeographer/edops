@@ -36,6 +36,23 @@
   </div>
 </div>
 
+<!-- Similarity doc modal (kgreview #35) -- same reasoning as reading-signature-modal above:
+     hardcoded to docsite/similarity.md rather than #documentation-modal's per-active_page
+     include, since this link means one specific page regardless of active_page. -->
+<div class="modal fade" id="similarity-doc-modal" tabindex="-1" aria-labelledby="similarity-doc-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="similarity-doc-modal-label">Similarity in EDOPS</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe src="/docs/similarity/" style="width:100%; height:75vh; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid px-3">
   <div class="row g-3">
 
@@ -397,10 +414,63 @@
           </div>
         </div>
 
-        <!-- Context blurb -- Context-tab-only, mirrors #v3-choropleth's Map-tab-only visibility -->
+        <!-- Tab-intro blurbs (kgreview #35 / #26) -- one div per tab, shown only while that
+             tab is active, visibility driven by _TAB_BLURB_PANELS/_syncLeftColumnPanel() so
+             adding another tab's blurb is one map entry + one div, no new plumbing. Context's
+             is query-derived (filled by _buildContextBlurb()); the rest are static intro text
+             written once here. Signature/Similarity link out to a docsite page devoted to the
+             topic (Signature reuses the existing #reading-signature-modal, already wired to
+             the Signature tab's own "How to read this" link; Similarity gets a new dedicated
+             modal, same pattern); Analysis/Seasonality don't have a page of their own, just
+             the blurb. Draft copy -- Karl's wordsmithing to follow. -->
+        <div id="v3-sig-blurb-panel" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About the signature</label>
+          <p class="mb-0" style="font-size:0.85rem;">A signature is every environmental variable
+            for this query, grouped by band. A single basin gets one value per variable plus its
+            global percentile; a set of basins (buffer, ring, polity) gets a distribution instead
+            -- an area-weighted percentile, a concentrated/spread badge, and a histogram.
+            <a href="#" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">Full explanation <i class="bi bi-box-arrow-up-right" style="font-size:0.7rem;"></i></a>
+          </p>
+        </div>
+
+        <div id="v3-analysis-blurb-panel" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About this analysis</label>
+          <p class="mb-0" style="font-size:0.85rem;">This tab compares each variable's <strong>local</strong>
+            value (this basin alone) against its <strong>upstream</strong> value (the whole
+            catchment draining into it), and classifies water provenance from the contrast --
+            endorheic, coastal terminal, exogenous supply, or local-dominant. Values are read
+            directly off the signature, not separately calculated. At L08 most basins' upstream
+            catchments are small enough that local and upstream nearly coincide; the contrast is
+            most informative at L06.</p>
+        </div>
+
+        <div id="v3-seas-blurb-panel" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About seasonality</label>
+          <p class="mb-0" style="font-size:0.85rem;">This tab shows the basin's monthly climatology
+            as two diagrams -- Walter-Lieth (precipitation and temperature by month) and Polar
+            (the same curves traced around a year-clock) -- plus scalar indices summarising them:
+            precipitation and temperature concentration, peak months, the phase offset between
+            the two curves, and temperature's seasonal amplitude.</p>
+        </div>
+
         <div id="v3-ctx-blurb-panel" class="mt-2" style="display:none;">
           <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">Regional context</label>
           <p class="mb-0" style="font-size:0.85rem;" id="v3-ctx-blurb-text"></p>
+        </div>
+
+        <div id="v3-sim-blurb-panel" class="mt-2" style="display:none;">
+          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About similarity</label>
+          <p style="font-size:0.85rem;">Two places are never simply "similar" -- they may share a
+            precipitation regime and differ in almost everything else. This panel asks the
+            question one variable-group ("lens") at a time -- Precipitation, Temperature,
+            Terrain, or Climate -- rather than collapsing everything into one composite distance.</p>
+          <p class="mb-0" style="font-size:0.85rem;">It's a membership test, not a ranking: a basin
+            either clears every threshold in the chosen lens or it doesn't, with no partial
+            credit. The result is the actual set of basins meeting those conditions together --
+            an empty set is as real an answer as a crowded one, meaning nothing else on Earth
+            matches this place on these terms.
+            <a href="#" data-bs-toggle="modal" data-bs-target="#similarity-doc-modal">Full explanation <i class="bi bi-box-arrow-up-right" style="font-size:0.7rem;"></i></a>
+          </p>
         </div>
 
       </div><!-- /v3-intro -->
@@ -997,12 +1067,23 @@
   // ── Lower panel reveal (on first scope render) ────────────────────────────
   // The left column's lower area shows different content depending on which
   // right-column tab is active: #v3-choropleth (variable selector + legend)
-  // configures the world choropleth, meaningless off the Map tab;
-  // #v3-ctx-blurb-panel (Part D) summarizes Context's table, meaningless off
-  // the Context tab. _choroplethRevealed tracks the existing "has a scope
-  // ever been rendered" gate; _syncLeftColumnPanel additionally requires the
-  // matching tab to be the one currently shown, and the two panels are
-  // mutually exclusive (only one tab is active at a time).
+  // configures the world choropleth, meaningless off the Map tab; each entry in
+  // _TAB_BLURB_PANELS is an intro/summary div for one other tab, meaningless off that tab.
+  // _choroplethRevealed tracks the existing "has a scope ever been rendered" gate;
+  // _syncLeftColumnPanel additionally requires the matching tab to be the one currently
+  // shown, and all these panels are mutually exclusive (only one tab is active at a time).
+  //
+  // Add a new tab's blurb by adding one entry here + its markup (see #v3-ctx-blurb-panel /
+  // #v3-sim-blurb-panel for the shape) -- no new plumbing needed. `ready` is optional, for
+  // panels (like Context's) whose content is computed from query results rather than static;
+  // omit it for a panel that's always fine to show once its tab is active.
+  const _TAB_BLURB_PANELS = [
+    { tabBtn: 'v3-tab-sig-btn',         panel: 'v3-sig-blurb-panel' },
+    { tabBtn: 'v3-tab-analysis-btn',    panel: 'v3-analysis-blurb-panel' },
+    { tabBtn: 'v3-tab-seasonality-btn', panel: 'v3-seas-blurb-panel' },
+    { tabBtn: 'v3-tab-context-btn',     panel: 'v3-ctx-blurb-panel', ready: () => _ctxRows.length > 0 },
+    { tabBtn: 'v3-tab-similarity-btn',  panel: 'v3-sim-blurb-panel' },
+  ];
   let _choroplethRevealed = false;
   function _revealLowerPanel() {
     document.getElementById('v3-intro-text').style.display = 'none';
@@ -1011,9 +1092,12 @@
   }
   function _syncLeftColumnPanel() {
     const onMap = document.getElementById('v3-tab-map-btn').classList.contains('active');
-    const onCtx = document.getElementById('v3-tab-context-btn').classList.contains('active');
     document.getElementById('v3-choropleth').style.display = (_choroplethRevealed && onMap) ? '' : 'none';
-    document.getElementById('v3-ctx-blurb-panel').style.display = (_ctxRows.length && onCtx) ? '' : 'none';
+    _TAB_BLURB_PANELS.forEach(({ tabBtn, panel, ready }) => {
+      const active  = document.getElementById(tabBtn).classList.contains('active');
+      const isReady = ready ? ready() : true;
+      document.getElementById(panel).style.display = (active && isReady) ? '' : 'none';
+    });
   }
 
   // ── WHG settlement lookup ─────────────────────────────────────────────────
@@ -1055,7 +1139,7 @@
       return;
     }
 
-    if (!map || map.getZoom() < 4) {
+    if (!map || map.getZoom() < 3) {
       _whgSetStatus('Zoom map to your study region first, then search.');
       return;
     }
@@ -1105,6 +1189,13 @@
       const cname = r.cname
         ? `<span class="text-muted ms-1" style="font-size:0.8rem;">${escapeHtml(r.cname)}</span>`
         : '';
+      const placeType = r.place_type
+        ? `<span class="text-muted ms-1" style="font-size:0.8rem;">· ${escapeHtml(r.place_type)}</span>`
+        : '';
+      const score = r.score != null
+        ? `<span class="badge bg-light text-dark border ms-auto" style="font-size:0.7rem;font-weight:500;"
+                 title="WHG match confidence">${r.score}</span>`
+        : '';
       const alts = r.alt_names || [];
       let altHtml = '';
       if (alts.length) {
@@ -1122,7 +1213,9 @@
                      width:18px;height:18px;border-radius:50%;background:${color};
                      color:#fff;font-size:10px;font-weight:bold;flex-shrink:0;margin-top:2px;">${i + 1}</span>
         <span class="flex-grow-1 min-w-0">
-          <span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${altHtml}
+          <span class="d-flex align-items-baseline">
+            <span><span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${placeType}</span>${score}
+          </span>${altHtml}
         </span>
       </a>`;
     }).join('');
