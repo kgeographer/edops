@@ -1,0 +1,42 @@
+site_name: EDOPS Documentation
+site_description: Documentation for the Environmental Dimensions of Place Service (EDOPS)
+docs_dir: docsite
+site_dir: site
+
+theme:
+  name: material
+
+markdown_extensions:
+  - toc:
+      title: "Sections"
+      toc_depth: 4
+#      title: "Section contents"
+  - abbr
+
+hooks:
+  - mkdocs_hooks.py
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/embed.js
+  - javascripts/external-links.js
+
+nav:
+  - Introduction: index.md
+  - Design notes:
+      - Premises and commitments: design/commitments.md
+      - Caveats and limits: design/caveats.md
+  - Sandbox:
+      - Overview: sandbox/overview.md
+      - Reading a signature: sandbox/reading-a-signature.md
+      - "Walkthrough: Settlement": sandbox/walkthrough-settlement.md
+      - "Walkthrough: Polity": sandbox/walkthrough-polity.md
+  - Data Explorer: explorer/overview.md
+  - Workbench: workbench/overview.md
+  - Similarity in EDOPS: similarity.md
+  - Codebook: codebook.md
+  - Data sources: data-sources.md
+  - API: api.md
+  - About the project: project.md

@@ -1,0 +1,8 @@
+<!-- Sandbox Guide content -- iframes the built MkDocs guide page, same pattern as
+     _guide_explorer.html / _guide_workbench.html. Single source of truth is
+     docsite/sandbox/overview.md; Reading a signature and the two Walkthrough pages sit under it
+     in the same nav subtree, reachable via the mkdocs left sidebar (visible in the modal at its
+     current width) -- the pill/radio switcher that used to fake that navigation by hand was
+     dropped 2026-08-08 now that the sidebar does the job natively. Requires `mkdocs build` to
+     have run; /docs 404s otherwise. -->
+<iframe src="/docs/sandbox/overview/" style="width:100%; height:70vh; border:none;"></iframe>

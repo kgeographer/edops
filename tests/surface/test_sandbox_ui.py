@@ -1,7 +1,7 @@
 """
-tests/surface/test_sandbox_v3_ui.py
--------------------------------------
-Playwright browser tests for sandbox_v3.html JS state machine.
+tests/surface/test_sandbox_ui.py
+----------------------------------
+Playwright browser tests for sandbox.html JS state machine.
 
 Covers the WO21 accept gate:
   - Cold-start control visibility (Settlements + Polities tabs)

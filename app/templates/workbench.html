@@ -1,6 +1,38 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EDOPS Workbench</title>
 
-{% block content %}
+  <link rel="stylesheet" href="/static/css/site.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-5K56B8BCD9');
+  </script>
+  <link rel="stylesheet" href="/static/css/workbench.css">
+</head>
+<body>
+
+{% set active_page = "workbench" %}
+{% set page_title = "EDOP <> CDOP workbench" %}
+{% include "_edops_header.html" %}
+
+{% include "_edops_modals.html" %}
+
+<main>
 <div class="container-fluid">
   <div class="row g-3">
 
@@ -8,186 +40,23 @@
     <div class="col-12 col-lg-6">
       <ul class="nav nav-tabs" id="edopTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-main" data-bs-toggle="tab" data-bs-target="#panel-main" type="button" role="tab" aria-controls="panel-main" aria-selected="true">Main</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-basins" data-bs-toggle="tab" data-bs-target="#panel-basins" type="button" role="tab" aria-controls="panel-basins" aria-selected="false">Basins</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="false">Societies</button>
+          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
         </li>
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-wh" data-bs-toggle="tab" data-bs-target="#panel-wh" type="button" role="tab" aria-controls="panel-wh" aria-selected="false">WH Sites</button>
+          <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
         </li>
       </ul>
 
       <div class="tab-content pt-3" id="edopTabContent">
 
-        <!-- MAIN TAB -->
-        <div class="tab-pane fade show active" id="panel-main" role="tabpanel" aria-labelledby="tab-main">
-          <h5 class="mb-2 d-flex justify-content-between align-items-center">
-            Resolve place
-            <span id="whg-zoom-alert" class="small text-warning fw-normal" style="display:none;">&#9651; Zoom in first (zoom &ge; 4)</span>
-          </h5>
-
-          <!-- Input method pills -->
-          <ul class="nav nav-pills nav-pills-sm nav-fill mb-3" id="main-input-pills" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link show active" id="pill-whg" data-bs-toggle="pill" data-bs-target="#input-whg" type="button" role="tab" aria-controls="input-whg" aria-selected="false">WHG API</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="pill-edop" data-bs-toggle="pill" data-bs-target="#input-edop" type="button" role="tab" aria-controls="input-edop" aria-selected="false">EDOP Gazetteer</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="pill-coords" data-bs-toggle="pill" data-bs-target="#input-coords" type="button" role="tab" aria-controls="input-coords" aria-selected="true">Coordinates</button>
-            </li>
-          </ul>
-
-          <!-- Input forms (swappable based on pill selection) -->
-          <div class="tab-content" id="main-input-content">
-
-            <!-- WHG API -->
-            <div class="tab-pane fade show active" id="input-whg" role="tabpanel" aria-labelledby="pill-whg">
-              <div class="mb-3">
-
-                <div class="d-flex align-items-center gap-2">
-                  <div class="flex-grow-1 position-relative">
-                    <input
-                      class="form-control"
-                      id="whg-search"
-                      type="text"
-                      placeholder="search World Historical Gazetteer..."
-                      autocomplete="off"
-                    />
-                    <div id="whg-searching" class="text-muted small mt-1" style="display:none;">
-                      <span class="spinner-border spinner-border-sm me-1" role="status"></span>Searching WHG...
-                    </div>
-                    <div
-                      id="whg-dropdown"
-                      class="dropdown-menu w-100"
-                      style="display:none; max-height:300px; overflow-y:auto;">
-                    </div>
-                  </div>
-
-                </div>
-
-                <div class="mt-3" id="whg-similar-cities-wrap" style="display:none;">
-                  <button class="btn btn-outline-primary" id="whg-similar-cities-btn" type="button">Similar World Heritage Cities</button>
-                </div>
-
-
-              </div>
-            </div>
-            <!-- Local EDOP gazetteer  -->
-            <div class="tab-pane fade" id="input-edop" role="tabpanel" aria-labelledby="pill-gaz">
-              <div class="mb-3">
-                <div class="mb-2">
-                  <div class="position-relative">
-                    <input class="form-control" id="gaz-search" type="text" placeholder="Type to search..." autocomplete="off" />
-                    <div id="gaz-dropdown" class="dropdown-menu w-100" style="display:none; max-height:300px; overflow-y:auto;"></div>
-                  </div>
-                  <div class="form-text text-muted">~97k places from multiple sources. Type 3+ chars to search. <a href="#" id="gaz-clear-link">Clear</a></div>
-                </div>
-                <div class="mt-3 d-flex gap-2">
-                  <button class="btn btn-outline-primary" id="gaz-similar-env" type="button" disabled>Similar (env)</button>
-                </div>
-
-                <div id="explainer-edop" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-                </div>
-              </div>
-            </div>
-            <!-- Coordinates input -->
-            <div class="tab-pane fade" id="input-coords" role="tabpanel" aria-labelledby="pill-coords">
-              <form id="coords-form" class="mb-3">
-                <div class="row g-2 mb-2">
-                  <div class="col">
-                    <label class="form-label" for="main-lon">Longitude</label>
-                    <input class="form-control" id="main-lon" name="lon" type="number" step="any" placeholder="e.g. -2.99944" />
-                  </div>
-                  <div class="col">
-                    <label class="form-label" for="main-lat">Latitude</label>
-                    <input class="form-control" id="main-lat" name="lat" type="number" step="any" placeholder="e.g. 16.77333" />
-                  </div>
-                </div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-primary" type="submit">Get Signature</button>
-                  <button class="btn btn-outline-secondary" id="test-btn" type="button">Use Timbuktu</button>
-                </div>
-              </form>
-
-              <div id="explainer-coords" class="mt-3 text-muted" style="font-size: 0.9rem; display:none;">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-              </div>
-            </div>
-            <!-- deprecated; inactive -->
-            <div class="tab-pane fade" id="input-foo" role="tabpanel" aria-labelledby="pill-foo">
-              <form id="whg-form" class="mb-3">
-                <div class="mb-2">
-                  <label class="form-label" for="main-name">Place name</label>
-                  <input class="form-control" id="main-name" name="name" type="text" placeholder="e.g. Timbux1x`ktu" />
-                  <div class="form-text">Name resolution via WHG API (top-ranked hit only)</div>
-                </div>
-                <button class="btn btn-primary" type="submit">Resolve</button>
-              </form>
-            </div>
-          </div>
-
-          <!-- Explainer (hidden when results appear) -->
-          <div id="main-explainer" class="mt-3 text-muted" style="font-size: 0.9rem;">
-            <p><b>EDOP (Environmental Dimensions of Place)</b> is an experimental exploration of how physical environments can be described, compared, and related across the world. At its core, the system assigns an environmental signature to any geographic location, based on the characteristics of the hydrological sub-basin in which it lies. These sub-basins—drawn from the <a href="https://www.hydrosheds.org/products/hydrobasins" target="_blank">HydroBasins and HydroAtlas datasets</a> at level 8—partition the Earth's land surface into roughly 190,000 regions, providing a consistent, global unit for environmental comparison.</p>
-            <a>Using this framework, EDOP lets you look up places by name or coordinates and examine how their environmental profiles relate to one another. In some cases, those comparisons are purely environmental; in others, they are paired with text-based similarity measures derived from descriptive sources such as Wikipedia, currently demonstrated for selected <a href="https://www.ovpm.org/" target="_blank">World Heritage cities</a> and <a href="https://whc.unesco.org/en/list/" target="_blank">sites</a>. The system has begun incoporating <a href="" https://www.oneearth.org/ecoregion-list/target="_blank">OneEarth ecoregions</a> as navigable environmental hierarchies. This early release is best understood as a foundation: a way to expose environmental data as reusable, comparable signatures, and a first step toward more integrated views of place, environment, and cultural description.</p>
-          </div>
-
-          <!-- Main tab status message -->
-          <div class="alert alert-light" id="main-status" style="display:none;"></div>
-        </div>
-
-        <!-- BASINS TAB (cluster explorer) -->
-        <div class="tab-pane fade" id="panel-basins" role="tabpanel" aria-labelledby="tab-basins">
-          <h4 class="mb-1">Basin Environmental Types</h4>
-          <p class="text-muted small">20 clusters of 190k sub-basins based on environmental bands A-D. Select to see WH cities in basins of that type.</p>
-
-          <div id="basin-cluster-list" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
-            <span class="text-muted p-2">Loading clusters...</span>
-          </div>
-
-          <div class="mt-3">
-            <div class="alert alert-light" id="basin-status" style="display:none;"></div>
-          </div>
-        </div>
-
-        <!-- WORLD HERITAGE TAB (pilot 20 sites) -->
-        <div class="tab-pane fade" id="panel-wh" role="tabpanel" aria-labelledby="tab-wh">
-          <h4 class="mb-3">20 World Heritage sites</h4>
-
-          <div class="mb-2">
-            <select class="form-select" id="wh-select" disabled>
-              <option value="">Loading…</option>
-            </select>
-          </div>
-
-          <div class="mt-3 d-flex gap-2">
-            <button class="btn btn-outline-secondary" id="wh-show-desc" type="button" disabled>Show description</button>
-            <button class="btn btn-outline-primary" id="wh-similar-env" type="button" disabled>Similar (env)</button>
-            <button class="btn btn-outline-info" id="wh-similar-text" type="button" disabled>Similar (semantic)</button>
-          </div>
-
-          <div class="mt-3">
-            <div class="alert alert-light" id="wh-desc" style="display:none;"></div>
-          </div>
-        </div>
 
         <!-- WH CITIES TAB (258 cities) -->
         <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">258 World Heritage Cities</h4>
-          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a></p>
+          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a> — 254 of 258 have a basin assignment</p>
 
           <div class="mb-2">
             <select class="form-select" id="whc-select" disabled>
@@ -197,26 +66,26 @@
           </div>
 
           <div class="mt-3 d-flex gap-2 flex-wrap">
-            <!-- Environmental similarity dropdown -->
+            <!-- Environmental similarity dropdown — Climate lenses via LENS_REGISTRY (L08, topN=5) -->
             <div class="dropdown">
               <button class="btn btn-outline-primary dropdown-toggle" type="button" id="whc-similar-env-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (env)
               </button>
+              <i class="bi bi-question-circle edops-help" data-help-modal="#whcEnvSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
-                <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="A">A – Physiographic bedrock</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="B">B – Hydro-climatic baselines</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="C">C – Bioclimatic proxies</a></li>
-                <li><a class="dropdown-item disabled text-muted" href="#" data-band="D">D – Anthropocene markers</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="terrain">Terrain regime</a></li>
               </ul>
             </div>
 
             <!-- Semantic similarity dropdown -->
-            <div class="dropdown">
+            <div class="dropdown" style="margin-left: 1.5rem;">
               <button class="btn btn-outline-info dropdown-toggle" type="button" id="whc-similar-text-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (semantic)
               </button>
+               <i class="bi bi-question-circle edops-help" data-help-modal="#whcSemanticSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-text-btn">
                 <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
                 <li><hr class="dropdown-divider"></li>
@@ -225,6 +94,39 @@
                 <li><a class="dropdown-item" href="#" data-band="culture">Culture</a></li>
                 <li><a class="dropdown-item" href="#" data-band="modern">Modern</a></li>
               </ul>
+            </div>
+          </div>
+
+          <!-- Terrain regime knobs (CITYKIN WO1a) — query-relative tolerance bands, shown only when
+               the Terrain regime lens is active. Three-level tight/default/broad steps, same pattern
+               as the sandbox Similarity panel's conjunction bands (#v3-cj-corr etc.) — each level is a
+               round fraction of the facet's own corpus std (elev std ~696m, relief std ~404m, position
+               std ~0.115): tight ~0.5std, default ~0.7-0.9std (WO1a-locked, fixture-validated), broad
+               ~1.0std. Auto-applies on change, no separate button, matching the sandbox convention. -->
+          <div class="mt-2 gap-2 align-items-end flex-wrap" id="terrain-knobs" style="display:none;">
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-elev">Elevation (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-elev" style="width:auto; font-size:0.8rem;">
+                <option value="350">350 · tight</option>
+                <option value="500" selected>500</option>
+                <option value="700">700 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-relief">Relief (±m)</label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-relief" style="width:auto; font-size:0.8rem;">
+                <option value="200">200 · tight</option>
+                <option value="300" selected>300</option>
+                <option value="400">400 · broad</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-muted d-block mb-0 small" for="terrain-tol-pos">Landform position (±) <i class="bi bi-question-circle edops-help" data-help-text="0 = floor (surrounded by higher ground); 1 = ridge/peak (surrounded by lower ground). Ratio of (mean − min) to (max − min) elevation across the sampled window." data-help-placement="top"></i></label>
+              <select class="form-select form-select-sm py-0" id="terrain-tol-pos" style="width:auto; font-size:0.8rem;">
+                <option value="0.05">0.05 · tight</option>
+                <option value="0.10" selected>0.10</option>
+                <option value="0.15">0.15 · broad</option>
+              </select>
             </div>
           </div>
 
@@ -237,6 +139,9 @@
         <div class="tab-pane fade" id="panel-eco" role="tabpanel" aria-labelledby="tab-eco">
           <h4 class="mb-1">Ecoregions Hierarchy</h4>
           <p class="subhead5">Data from <a href="https://www.oneearth.org/bioregions/" target="_blank">OneEarth Bioregions</a> (847 ecoregions in 185 bioregions, 53 subrealms, 14 realms)</p>
+
+          <!-- Realms-only caveat; shown above the breadcrumb, only at the top (realms) level -->
+          <div id="eco-realm-note" class="text-bg-light text-danger mb-2" style="display:none;"></div>
 
           <!-- Breadcrumb navigation -->
           <nav aria-label="breadcrumb" class="mb-1">
@@ -256,10 +161,11 @@
         </div>
 
         <!-- SOCIETIES TAB (D-PLACE) -->
-        <div class="tab-pane fade" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
+        <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
-          <p class="text-muted" id="soc_blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb">Dominant Subsistence (EA042) and High Gods (EA034) below are two exemplar traits from the Ethnographic Atlas dataset, chosen for their differing <i>potential</i> association with environmental settings.</p>
           <!-- Loading spinner -->
           <div id="soc-loading" class="text-center py-3" style="display:none;">
             <div class="spinner-border spinner-border-sm text-secondary" role="status">
@@ -268,11 +174,11 @@
             <span class="ms-2 text-muted">Loading societies data...</span>
           </div>
           <div id="soc-queries" class="list-group list-group-flush mb-3">
-            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="soc-query-subsistence">
-              <span>Dominant subsistence (EA042) <i class="bi bi-question-circle text-muted small" id="soc-info-subsistence" style="cursor:help;"></i></span>
-              <i class="bi bi-chevron-down small"></i>
+            <a href="#" class="list-group-item list-group-item-action soc-accordion-toggle soc-open d-flex justify-content-between align-items-center" id="soc-query-subsistence">
+              <span>Dominant subsistence (EA042) <i class="bi bi-question-circle edops-help small" id="soc-info-subsistence"></i></span>
+              <i class="bi bi-chevron-up small"></i>
             </a>
-            <div id="soc-subsistence-panel" class="p-2 border-start border-end border-bottom" style="display:none;">
+            <div id="soc-subsistence-panel" class="p-2 border-start border-end border-bottom" style="display:block;">
               <div id="soc-subsistence-radios" class="d-flex flex-wrap gap-2">
                 <!-- Radio buttons populated by JS -->
               </div>
@@ -280,17 +186,19 @@
               <div class="d-flex align-items-center small">
                 <span class="text-muted me-2">Show:</span>
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions" checked>
-                  <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-envscan" value="envscan" checked>
+                  <label class="form-check-label" for="soc-mode-envscan">Climate envelope</label>
                 </div>
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-mode-basin">Basin clusters</label>
+                  <input class="form-check-input" type="radio" name="soc-display-mode" id="soc-mode-eco" value="ecoregions">
+                  <label class="form-check-label" for="soc-mode-eco">Ecoregions by realm</label>
                 </div>
               </div>
+              <!-- Composition donut target for this panel specifically. -->
+              <div id="soc-subsistence-content"></div>
             </div>
-            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="soc-query-religion">
-              <span>High gods (EA034) <i class="bi bi-question-circle text-muted small" id="soc-info-religion" style="cursor:help;"></i></span>
+            <a href="#" class="list-group-item list-group-item-action soc-accordion-toggle d-flex justify-content-between align-items-center" id="soc-query-religion">
+              <span>High gods (EA034) <i class="bi bi-question-circle edops-help small" id="soc-info-religion"></i></span>
               <i class="bi bi-chevron-down small"></i>
             </a>
             <div id="soc-religion-panel" class="p-2 border-start border-end border-bottom" style="display:none;">
@@ -300,13 +208,22 @@
               <hr class="my-2">
               <div class="d-flex align-items-center small">
                 <span class="text-muted me-2">Show:</span>
+                <!-- CITYKIN WO4 (2026-07-30): EA034 has no theoretical hook (WO8d could not test a
+                     predicted axis) -- shows the exploratory four-lens scan instead of a scatter. -->
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions" checked>
-                  <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-envscan" value="envscan" checked>
+                  <label class="form-check-label" for="soc-rel-mode-envscan">Environment scan</label>
                 </div>
                 <div class="form-check form-check-inline mb-0">
-                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-basin" value="basins">
-                  <label class="form-check-label" for="soc-rel-mode-basin">Basin clusters</label>
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-eco" value="ecoregions">
+                  <label class="form-check-label" for="soc-rel-mode-eco">Ecoregions by realm</label>
+                </div>
+                <!-- WO5 (2026-08-10, experimental 'isolates' branch): societies sharing this
+                     trait value with no close ancestral/geographic/environmental neighbor also
+                     sharing it -- named-society ranked lists, not an aggregate view. -->
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input" type="radio" name="soc-religion-display-mode" id="soc-rel-mode-isolates" value="isolates">
+                  <label class="form-check-label" for="soc-rel-mode-isolates">Isolates</label>
                 </div>
               </div>
             </div>
@@ -343,15 +260,8 @@
 
     <!-- RIGHT: map (always visible) -->
     <div class="col-12 col-lg-6">
-      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>
-      <div id="map" style="height: 420px; border: 1px solid #ddd;"></div>
-      <style>
-        /* Hillshade blend: keeps relief legible when reference tiles (streets/labels) are toggled on.
-           Note: mix-blend-mode behavior can vary slightly across browsers. */
-        .edop-hillshade {
-          mix-blend-mode: multiply;
-        }
-      </style>
+<!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
+      <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
       <!-- Similar sites results (shown below map) -->
@@ -382,7 +292,12 @@
 
       <!-- D-PLACE query results (shown below map) -->
       <div id="dplace-results" class="mt-3" style="display:none;">
-        <h6 class="mb-1" id="dplace-results-heading"></h6>
+        <div class="d-flex align-items-baseline">
+          <h6 class="mb-1" id="dplace-results-heading"></h6>
+          <!-- Content picked at click time (showResultsHelpModal()), not by the harness;
+               data-help-modal here is just for the matching arrow decorator. -->
+          <i class="bi bi-question-circle edops-help ms-2" id="dplace-results-help" data-help-modal="#dplaceResultsHelpModal"></i>
+        </div>
         <div id="dplace-results-content"></div>
       </div>
     </div>
@@ -392,7 +307,7 @@
 
 <!-- City Summaries Modal -->
 <div class="modal fade" id="summariesModal" tabindex="-1" aria-labelledby="summariesModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="summariesModalLabel">City Summaries</h5>
@@ -400,6 +315,78 @@
       </div>
       <div class="modal-body" id="summariesModalBody">
         <div class="text-center text-muted">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- D-PLACE results help modal -- content swapped per (trait, display mode) by
+     showResultsHelpModal(), reading from the <template> blocks below it. -->
+<div class="modal fade" id="dplaceResultsHelpModal" tabindex="-1" aria-labelledby="dplaceResultsHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dplaceResultsHelpModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="dplaceResultsHelpModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Results help content, one <template> per (trait, display mode) -- id is
+     "wo4-help-{socActiveQuery}-{socDisplayMode}", data-title is the modal header. Body is a Jinja
+     include, one small file per slot (app/templates/_help_{trait}_{mode}.html) -- same pattern
+     _edops_modals.html already uses for the Documentation modal's per-page Guide body, so the
+     prose lives in its own short file (wordsmith-friendly, no JS string escaping) instead of
+     bulking out this already-large template. showResultsHelpModal() just looks one up by id and
+     clones it into the modal body. -->
+<template id="wo4-help-subsistence-envscan" data-title="Climate envelope">
+  {% include "_help_subsistence_climate.html" %}
+</template>
+
+<template id="wo4-help-subsistence-ecoregions" data-title="Ecoregions by realm">
+  {% include "_help_subsistence_ecoregions.html" %}
+</template>
+
+<template id="wo4-help-religion-envscan" data-title="Environment scan">
+  {% include "_help_religion_envscan.html" %}
+</template>
+
+<template id="wo4-help-religion-ecoregions" data-title="Ecoregions by realm">
+  {% include "_help_religion_ecoregions.html" %}
+</template>
+
+<template id="wo4-help-religion-isolates" data-title="Isolates">
+  {% include "_help_religion_isolates.html" %}
+</template>
+
+<!-- WH Cities help modals -- static content, one icon per modal (unlike the D-PLACE modal
+     above, nothing here varies with page state), wired via the edops-help harness's
+     data-help-modal mode. -->
+<div class="modal fade" id="whcEnvSimHelpModal" tabindex="-1" aria-labelledby="whcEnvSimHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whcEnvSimHelpModalLabel">Environmental similarity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% include "_help_whc_env_similarity.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="whcSemanticSimHelpModal" tabindex="-1" aria-labelledby="whcSemanticSimHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whcSemanticSimHelpModalLabel">Semantic similarity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% include "_help_whc_semantic_similarity.html" %}
       </div>
     </div>
   </div>
@@ -431,64 +418,6 @@
     marker.unbindPopup();
     if (popupHtml) {
       marker.bindPopup(popupHtml);
-    }
-  }
-
-  function whSetStatus(msg) {
-    // Lightweight status: show in description alert area if present, else console.
-    const el = document.getElementById('wh-desc');
-    if (!el) {
-      console.log(msg);
-      return;
-    }
-    if (!msg) {
-      el.style.display = 'none';
-      el.textContent = '';
-      return;
-    }
-    el.style.display = '';
-    el.textContent = msg;
-  }
-
-  async function whLoadSites() {
-    const sel = document.getElementById('wh-select');
-    const btnDesc = document.getElementById('wh-show-desc');
-    const descBox = document.getElementById('wh-desc');
-
-    if (!sel) return;
-
-    sel.disabled = true;
-    if (btnDesc) btnDesc.disabled = true;
-    if (descBox) {
-      descBox.style.display = 'none';
-      descBox.textContent = '';
-    }
-
-    sel.innerHTML = '<option value="">Loading…</option>';
-
-    try {
-      const resp = await fetch('/api/wh-sites');
-      if (!resp.ok) {
-        const txt = await resp.text();
-        throw new Error(`WH sites request failed (${resp.status}): ${txt}`);
-      }
-      const data = await resp.json();
-      whSites = (data && data.sites) ? data.sites : [];
-
-      // Populate dropdown
-      sel.innerHTML = '<option value="">Select a site…</option>';
-      whSites.forEach((s) => {
-        const opt = document.createElement('option');
-        opt.value = String(s.id_no);
-        opt.textContent = s.name_en;
-        sel.appendChild(opt);
-      });
-
-      sel.disabled = false;
-    } catch (e) {
-      sel.innerHTML = '<option value="">(Seed list unavailable)</option>';
-      sel.disabled = true;
-      whSetStatus(String(e));
     }
   }
 
@@ -524,234 +453,8 @@
     clearSimilarMarkers();
   }
 
-  async function fetchSimilarSites(idNo, limit = 5) {
-    const url = `/api/similar?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Similar sites request failed (${resp.status}): ${txt}`);
-    }
-    return await resp.json();
-  }
-
-  async function fetchSimilarTextSites(idNo, limit = 5) {
-    const url = `/api/similar-text?id_no=${encodeURIComponent(idNo)}&limit=${limit}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Similar text sites request failed (${resp.status}): ${txt}`);
-    }
-    return await resp.json();
-  }
-
   // Color palette for similar sites (distinct, colorblind-friendly)
   const SIMILAR_COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'];
-
-  function renderSimilarSites(data, sourceSite, similarityType = 'env') {
-    const container = document.getElementById('similar-results');
-    const list = document.getElementById('similar-list');
-    const heading = document.getElementById('similar-heading');
-    const description = document.getElementById('similar-description');
-    if (!container || !list) return;
-
-    // Set heading and description based on similarity type
-    if (heading && description) {
-      if (similarityType === 'text') {
-        heading.textContent = 'Similar Sites (Semantic)';
-        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
-      } else {
-        heading.textContent = 'Similar Sites (Environmental)';
-        description.textContent = 'computed from the multivariate environmental profile using dimensionality reduction and clustering';
-      }
-    }
-
-    const similar = data.similar || [];
-    if (!similar.length) {
-      list.innerHTML = '<div class="text-muted">No similar sites found.</div>';
-      container.style.display = '';
-      return;
-    }
-
-    // Build list HTML with color swatches
-    const isText = similarityType === 'text';
-    const rows = similar.map((site, idx) => {
-      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-      const sameCluster = site.cluster_label === sourceSite.cluster_label;
-      const clusterNote = sameCluster
-        ? `<span class="text-success small">same cluster</span>`
-        : `<span class="text-muted small">${site.cluster_label || ''}</span>`;
-      // Text similarity returns 'similarity', env returns 'distance'
-      const metricLabel = isText ? 'sim' : 'dist';
-      const metricValue = isText ? site.similarity : site.distance;
-      return `
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <div>
-            <strong>${idx + 1}.</strong> ${escapeHtml(site.name_en)}
-            <div class="small">${clusterNote}</div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted small">${metricLabel}: ${metricValue}</span>
-            <span style="display:inline-block; width:16px; height:16px; background:${color}; border-radius:3px;"></span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    list.innerHTML = rows;
-    container.style.display = '';
-
-    // Add markers for similar sites
-    clearSimilarMarkers();
-    ensureMap();
-
-    const bounds = [];
-
-    // Include source site in bounds
-    if (sourceSite.location && sourceSite.location.coordinates) {
-      bounds.push([sourceSite.location.coordinates[1], sourceSite.location.coordinates[0]]);
-    }
-
-    similar.forEach((site, idx) => {
-      const lat = site.lat;
-      const lon = site.lon;
-      const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-      bounds.push([lat, lon]);
-
-      // Colored marker matching list swatch
-      const simMarker = L.circleMarker([lat, lon], {
-        radius: 10,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9
-      }).addTo(map);
-
-      simMarker.bindPopup(`
-        <div style="max-width: 200px;">
-          <strong>${idx + 1}. ${site.name_en}</strong><br/>
-          <span class="text-muted">Distance: ${site.distance}</span><br/>
-          <span class="small">${site.cluster_label || ''}</span>
-        </div>
-      `);
-
-      similarMarkers.push(simMarker);
-    });
-
-    // Zoom to fit all markers
-    if (bounds.length > 1 && map) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }
-
-  async function whShowSimilarEnv() {
-    if (!whSelected) return;
-
-    const btnSimilar = document.getElementById('wh-similar-env');
-    if (btnSimilar) btnSimilar.disabled = true;
-
-    clearSimilarResults();
-
-    try {
-      whSetStatus('Finding environmentally similar sites…');
-      const data = await fetchSimilarSites(whSelected.id_no, 5);
-      renderSimilarSites(data, whSelected, 'env');
-      whSetStatus('');
-    } catch (e) {
-      whSetStatus(String(e));
-    } finally {
-      if (btnSimilar) btnSimilar.disabled = false;
-    }
-  }
-
-  async function whShowSimilarText() {
-    if (!whSelected) return;
-
-    const btnSimilar = document.getElementById('wh-similar-text');
-    if (btnSimilar) btnSimilar.disabled = true;
-
-    clearSimilarResults();
-
-    try {
-      whSetStatus('Finding semantically similar sites…');
-      const data = await fetchSimilarTextSites(whSelected.id_no, 5);
-      renderSimilarSites(data, whSelected, 'text');
-      whSetStatus('');
-    } catch (e) {
-      whSetStatus(String(e));
-    } finally {
-      if (btnSimilar) btnSimilar.disabled = false;
-    }
-  }
-
-  async function whSelectById(idNo) {
-    const btnDesc = document.getElementById('wh-show-desc');
-    const btnSimilarEnv = document.getElementById('wh-similar-env');
-    const btnSimilarText = document.getElementById('wh-similar-text');
-    const descBox = document.getElementById('wh-desc');
-
-    whSelected = whSites.find((s) => String(s.id_no) === String(idNo)) || null;
-
-    // Clear previous results
-    if (descBox) {
-      descBox.style.display = 'none';
-      descBox.textContent = '';
-    }
-    if (btnDesc) btnDesc.textContent = 'Show description';
-    clearSimilarResults();
-
-    if (!whSelected) {
-      if (btnDesc) btnDesc.disabled = true;
-      if (btnSimilarEnv) btnSimilarEnv.disabled = true;
-      if (btnSimilarText) btnSimilarText.disabled = true;
-      showClusterLabel(null);
-      return;
-    }
-
-    // Show cluster label if available
-    showClusterLabel(whSelected.cluster_label);
-
-    // Enable Similar buttons
-    if (btnSimilarEnv) btnSimilarEnv.disabled = false;
-    if (btnSimilarText) btnSimilarText.disabled = false;
-
-    // This path is not WHG resolution; clear Resolved place
-    renderResolvedPlace(null);
-    showWhgPlaceLink(null);
-
-    const loc = whSelected.location;
-    if (!loc || loc.type !== 'Point' || !loc.coordinates || loc.coordinates.length < 2) {
-      whSetStatus('Selected site has no usable Point geometry.');
-      if (btnDesc) btnDesc.disabled = true;
-      return;
-    }
-
-    const lon = Number(loc.coordinates[0]);
-    const lat = Number(loc.coordinates[1]);
-
-    const popupHtml = `
-      <div style="max-width: 260px;">
-        <strong>${whSelected.name_en}</strong><br/>
-        <span class="text-muted">${whSelected.states_name_en || ''}</span>
-      </div>
-    `;
-    setMarkerWithPopup(lon, lat, popupHtml);
-
-    // Enable description button if text exists
-    if (btnDesc) btnDesc.disabled = !(whSelected.short_description_en && whSelected.short_description_en.length);
-
-    try {
-      whSetStatus('Computing environmental profile…');
-      const sig = await fetchSignature(lon, lat);
-      renderSignature(sig);
-      setBasinFromSignature(sig);
-      whSetStatus('');
-      if (marker && marker.getPopup()) marker.openPopup();
-    } catch (e) {
-      whSetStatus(String(e));
-      renderSignature({ error: String(e) });
-    }
-  }
 
   // -----------------------
   // WH Cities (258) functions
@@ -827,6 +530,8 @@
     // Clear previous state
     clearSimilarResults();
     whcSetStatus('');
+    const terrainKnobs = document.getElementById('terrain-knobs');
+    if (terrainKnobs) terrainKnobs.style.display = 'none';
 
     if (!whcSelected) {
       if (btnSimilarEnv) btnSimilarEnv.disabled = true;
@@ -876,12 +581,34 @@
     }
   }
 
-  async function fetchWhcSimilarEnv(cityId, limit = 5) {
-    const url = `/api/whc-similar?city_id=${encodeURIComponent(cityId)}&limit=${limit}`;
+  async function fetchWhcSimilarEnv(cityId, lensId = 'climate.precip', limit = 5) {
+    const url = `/api/whc-similar-env-lens?city_id=${encodeURIComponent(cityId)}&lens_id=${encodeURIComponent(lensId)}&limit=${limit}`;
     const resp = await fetch(url);
     if (!resp.ok) {
       const txt = await resp.text();
       throw new Error(`WH similar request failed (${resp.status}): ${txt}`);
+    }
+    return await resp.json();
+  }
+
+  function getTerrainTolerances() {
+    const elev = parseFloat(document.getElementById('terrain-tol-elev')?.value);
+    const relief = parseFloat(document.getElementById('terrain-tol-relief')?.value);
+    const pos = parseFloat(document.getElementById('terrain-tol-pos')?.value);
+    return {
+      elev_tol: Number.isFinite(elev) ? elev : 500,
+      relief_tol: Number.isFinite(relief) ? relief : 300,
+      pos_tol: Number.isFinite(pos) ? pos : 0.10,
+    };
+  }
+
+  async function fetchWhcSimilarTerrain(cityId, tol, limit = 8) {
+    const url = `/api/whc-similar-terrain?city_id=${encodeURIComponent(cityId)}`
+      + `&elev_tol=${tol.elev_tol}&relief_tol=${tol.relief_tol}&pos_tol=${tol.pos_tol}&limit=${limit}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`WH terrain request failed (${resp.status}): ${txt}`);
     }
     return await resp.json();
   }
@@ -903,15 +630,26 @@
     const description = document.getElementById('similar-description');
     if (!container || !list) return;
 
-    // Set heading and description based on similarity type and band
+    // Set heading and description based on similarity type and band/lens
+    const ENV_LENS_LABELS = {
+      'climate.precip': 'Precipitation regime',
+      'climate.temp':   'Temperature regime',
+      'terrain':        'Terrain regime',
+    };
+    const isTerrain = band === 'terrain';
     if (heading && description) {
       if (similarityType === 'text') {
         const bandLabel = SEMANTIC_BAND_LABELS[band] || band;
-        heading.textContent = `Similar Cities (${bandLabel})`;
-        description.textContent = 'computed from Wikipedia text embeddings using cosine similarity';
+        heading.textContent = `5 most similar cities in this collection (${bandLabel})`;
+        description.textContent = 'corpus-relative ranking by Wikipedia text embeddings (cosine similarity)';
+      } else if (isTerrain) {
+        const n = data.eligible_count ?? (data.similar || []).length;
+        heading.textContent = `${n} cities within tolerance (Terrain regime), showing top ${(data.similar || []).length}`;
+        description.textContent = 'query-relative tolerance bands on point-window elevation/relief/landform-position (CITYKIN WO1a)';
       } else {
-        heading.textContent = 'Similar Cities (Environmental: Composite)';
-        description.textContent = 'computed from basin environmental signatures using PCA distance';
+        const lensLabel = ENV_LENS_LABELS[band] || band;
+        heading.textContent = `5 most similar cities in this collection (${lensLabel})`;
+        description.textContent = 'corpus-relative ranking by climate-lens distance (L08 basin index)';
       }
     }
 
@@ -928,7 +666,10 @@
       const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
       const sameCluster = site.env_cluster === sourceSite.env_cluster;
       let clusterNote = '';
-      if (!isText) {
+      if (isTerrain) {
+        clusterNote = `<span class="text-muted small">elev ${Math.round(site.grid_elev_mean)}m · `
+          + `relief ${Math.round(site.relief_range_m)}m · pos ${site.landform_position.toFixed(2)}</span>`;
+      } else if (!isText) {
         // For env similarity, show cluster label
         clusterNote = sameCluster
           ? `<span class="text-success small">same cluster</span>`
@@ -1003,7 +744,7 @@
     }
   }
 
-  async function whcShowSimilarEnv(band = 'composite') {
+  async function whcShowSimilarEnv(lensId = 'climate.precip') {
     if (!whcSelected) return;
 
     const btn = document.getElementById('whc-similar-env-btn');
@@ -1013,8 +754,29 @@
 
     try {
       whcSetStatus('Finding environmentally similar cities…');
-      const data = await fetchWhcSimilarEnv(whcSelected.id, 5);
-      renderWhcSimilarSites(data, whcSelected, 'env');
+      const data = await fetchWhcSimilarEnv(whcSelected.id, lensId, 5);
+      renderWhcSimilarSites(data, whcSelected, 'env', lensId);
+      whcSetStatus('');
+    } catch (e) {
+      whcSetStatus(String(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function whcShowSimilarTerrain() {
+    if (!whcSelected) return;
+
+    const btn = document.getElementById('whc-similar-env-btn');
+    if (btn) btn.disabled = true;
+
+    clearSimilarResults();
+
+    try {
+      whcSetStatus('Finding terrain-similar cities…');
+      const tol = getTerrainTolerances();
+      const data = await fetchWhcSimilarTerrain(whcSelected.id, tol, 8);
+      renderWhcSimilarSites(data, whcSelected, 'env', 'terrain');
       whcSetStatus('');
     } catch (e) {
       whcSetStatus(String(e));
@@ -1094,183 +856,6 @@
       bodyEl.innerHTML = html;
     } catch (e) {
       bodyEl.innerHTML = `<div class="text-danger">Error: ${escapeHtml(String(e))}</div>`;
-    }
-  }
-
-  // -----------------------
-  // Basin Cluster functions
-  // -----------------------
-
-  let basinClusters = [];
-  let selectedClusterId = null;
-
-  // Fallback cluster labels (Jan 2026 k=20 run, from basin08_cluster_labels_manual.json).
-  // Preferred source is the label returned by /api/basin-clusters from the DB table.
-  const CLUSTER_LABELS = {
-    0: 'Warm Desert',
-    1: 'Boreal Continental',
-    2: 'Tropical Dry',
-    3: 'Arctic Tundra',
-    4: 'Tropical Moist Lowland',
-    5: 'Hot Hyper-arid Desert',
-    6: 'Tropical Moist Highland',
-    7: 'Mediterranean / Warm Temperate',
-    8: 'Subtropical Desert',
-    9: 'Tropical Coastal',
-    10: 'Temperate Steppe / Grassland',
-    11: 'Temperate / Mediterranean',
-    12: 'High-altitude Permafrost',
-    13: 'Tropical Savanna',
-    14: 'Hot Desert (Middle East / N. Africa)',
-    15: 'Saharan / Arabian Hyper-arid',
-    16: 'Tropical Semi-arid (Sahel / Andes)',
-    17: 'Boreal / Cool Temperate',
-    18: 'Extreme Desert (Empty Quarter)',
-    19: 'Northern Boreal / Subarctic'
-  };
-
-  function basinSetStatus(msg) {
-    const el = document.getElementById('basin-status');
-    if (!el) return;
-    if (msg) {
-      el.textContent = msg;
-      el.style.display = '';
-    } else {
-      el.textContent = '';
-      el.style.display = 'none';
-    }
-  }
-
-  async function loadBasinClusters() {
-    try {
-      const resp = await fetch('/api/basin-clusters');
-      if (!resp.ok) throw new Error(`Failed to load clusters (${resp.status})`);
-      const data = await resp.json();
-      basinClusters = data.clusters || [];
-      renderBasinClusterList();
-    } catch (e) {
-      const container = document.getElementById('basin-cluster-list');
-      if (container) container.innerHTML = `<span class="text-danger p-2">${escapeHtml(String(e))}</span>`;
-    }
-  }
-
-  function renderBasinClusterList() {
-    const container = document.getElementById('basin-cluster-list');
-    if (!container) return;
-
-    if (!basinClusters.length) {
-      container.innerHTML = '<span class="text-muted p-2">No clusters found.</span>';
-      return;
-    }
-
-    // Sort by city count descending
-    const sorted = [...basinClusters].sort((a, b) => b.city_count - a.city_count);
-
-    // Render as list items
-    const html = sorted.map(c => {
-      const label = c.label || CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
-      const cityBadge = c.city_count > 0
-        ? `<span class="badge bg-primary">${c.city_count}</span>`
-        : `<span class="badge bg-secondary">0</span>`;
-      return `
-        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center basin-cluster-item"
-           data-cluster-id="${c.cluster_id}">
-          <span>${escapeHtml(label)}</span>
-          ${cityBadge}
-        </a>
-      `;
-    }).join('');
-
-    container.innerHTML = html;
-
-    // Add click handlers
-    container.querySelectorAll('.basin-cluster-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const clusterId = parseInt(item.getAttribute('data-cluster-id'), 10);
-        selectBasinCluster(clusterId);
-      });
-    });
-  }
-
-  async function selectBasinCluster(clusterId) {
-    selectedClusterId = clusterId;
-
-    // Update list item states
-    document.querySelectorAll('.basin-cluster-item').forEach(item => {
-      const id = parseInt(item.getAttribute('data-cluster-id'), 10);
-      if (id === clusterId) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-    });
-
-    const clusterData = basinClusters.find(c => c.cluster_id === clusterId);
-    const label = (clusterData && clusterData.label) || CLUSTER_LABELS[clusterId] || `Cluster ${clusterId}`;
-    basinSetStatus('Loading cities...');
-
-    try {
-      const resp = await fetch(`/api/basin-clusters/${clusterId}/cities`);
-      if (!resp.ok) throw new Error(`Failed to load cities (${resp.status})`);
-      const data = await resp.json();
-
-      basinSetStatus('');
-
-      const cities = data.cities || [];
-
-      // Show results in similar-results div below the map
-      const container = document.getElementById('similar-results');
-      const heading = document.getElementById('similar-heading');
-      const description = document.getElementById('similar-description');
-      const list = document.getElementById('similar-list');
-
-      if (heading) heading.textContent = `${label}`;
-      if (description) description.textContent = `${cities.length} World Heritage cities in basins of this environmental type`;
-
-      if (cities.length === 0) {
-        list.innerHTML = '<div class="text-muted">No WH cities in basins of this type.</div>';
-      } else {
-        list.innerHTML = cities.map((c, idx) => {
-          const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-          return `
-            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-              <span>${escapeHtml(c.city)}, ${escapeHtml(c.country)}</span>
-              <span style="display:inline-block; width:12px; height:12px; background:${color}; border-radius:2px;"></span>
-            </div>
-          `;
-        }).join('');
-      }
-
-      container.style.display = '';
-
-      // Show cities on map
-      clearSimilarMarkers();
-      clearMarker();
-      ensureMap();
-
-      const bounds = [];
-      cities.forEach((city, idx) => {
-        if (!city.lon || !city.lat) return;
-        const color = SIMILAR_COLORS[idx % SIMILAR_COLORS.length];
-        const marker = L.circleMarker([city.lat, city.lon], {
-          radius: 7,
-          fillColor: color,
-          color: '#333',
-          weight: 1,
-          fillOpacity: 0.8
-        }).addTo(map);
-        marker.bindTooltip(`${city.city}, ${city.country}`);
-        similarMarkers.push(marker);
-        bounds.push([city.lat, city.lon]);
-      });
-
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-
-    } catch (e) {
-      basinSetStatus(String(e));
     }
   }
 
@@ -1656,6 +1241,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Title is now static via the shared _edops_header.html partial (2026-08-03 reorg) --
+    // no more #site-title element to override here.
+
     function setMapTitle(text) {
       const el = document.getElementById('map-title');
       if (el) el.textContent = text;
@@ -1687,153 +1275,22 @@
       whgPlaceLinkEl.addEventListener('click', (e) => e.preventDefault());
     }
 
-    // Site title click -> return to Main tab
-    const siteTitle = document.getElementById('site-title');
-    if (siteTitle) {
-      siteTitle.addEventListener('click', (e) => {
-        e.preventDefault();
-        const mainTab = document.querySelector('[data-bs-target="#panel-main"]');
-        if (mainTab) {
-          bootstrap.Tab.getOrCreateInstance(mainTab).show();
-        }
-      });
-    }
-
-    // Wire Timbuktu test button (existing behavior)
-    const testBtn = document.getElementById('test-btn');
-    testBtn.addEventListener('click', async () => {
-      // Timbuktu WH site (approx): lon=-2.999444444, lat=16.77333333
-      const lon = -2.999444444;
-      const lat = 16.77333333;
-      document.getElementById('main-lon').value = lon;
-      document.getElementById('main-lat').value = lat;
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-      try {
-        await resolveByLonLat(lon, lat);
-      } catch (e) {
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // Coordinates form submit
-    const coordsForm = document.getElementById('coords-form');
-    coordsForm.addEventListener('submit', async (evt) => {
-      evt.preventDefault();
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-
-      const lon = document.getElementById('main-lon').value.trim();
-      const lat = document.getElementById('main-lat').value.trim();
-
-      if (lon === '' || lat === '') {
-        mainSetStatus('Please enter both longitude and latitude.');
-        return;
-      }
-
-      try {
-        await resolveByLonLat(lon, lat);
-      } catch (e) {
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // WHG Lookup form submit
-    const whgForm = document.getElementById('whg-form');
-    whgForm.addEventListener('submit', async (evt) => {
-      evt.preventDefault();
-      renderResolvedPlace(null);
-      renderSignature(null);
-      clearBasinLayer();
-      mainSetStatus('');
-
-      const name = document.getElementById('main-name').value.trim();
-
-      if (name === '') {
-        mainSetStatus('Please enter a place name.');
-        return;
-      }
-
-      try {
-        mainSetStatus('Resolving via WHG...');
-        await resolveByName(name);
-        mainSetStatus('');
-      } catch (e) {
-        mainSetStatus('');
-        renderSignature({ error: String(e) });
-      }
-    });
-
-    // Clear state when switching input method pills within Main tab
-    document.querySelectorAll('#main-input-pills button[data-bs-toggle="pill"]').forEach((pill) => {
-      pill.addEventListener('shown.bs.tab', () => {
-        renderResolvedPlace(null);
-        renderSignature(null);
-        clearBasinLayer();
-        clearMarker();
-        clearSimilarResults();
-        mainSetStatus('');
-        clearGazState();
-        setMapTitle('Zoom to study area');
-        if (map) map.setView([0, 0], 2);
-      });
-    });
-
     // Initialize map if Leaflet is present
     ensureMap();
-
-    // World Heritage: load seed list now (simple pilot behavior)
-    whLoadSites();
-
-    // World Heritage: selection handler
-    const whSel = document.getElementById('wh-select');
-    if (whSel) {
-      whSel.addEventListener('change', async () => {
-        const v = whSel.value;
-        if (!v) return;
-        await whSelectById(v);
-      });
-    }
-
-    // World Heritage: toggle description
-    const whBtn = document.getElementById('wh-show-desc');
-    if (whBtn) {
-      whBtn.addEventListener('click', () => {
-        const descBox = document.getElementById('wh-desc');
-        if (!whSelected || !whSelected.short_description_en || !descBox) return;
-
-        // Toggle visibility (use 'block' not '' to avoid falsy empty string issue)
-        if (descBox.style.display === 'none') {
-          descBox.textContent = whSelected.short_description_en;
-          descBox.style.display = 'block';
-          whBtn.textContent = 'Hide description';
-        } else {
-          descBox.style.display = 'none';
-          descBox.textContent = '';
-          whBtn.textContent = 'Show description';
-        }
-      });
-    }
-
-    // World Heritage: similar buttons
-    const btnSimilarEnv = document.getElementById('wh-similar-env');
-    if (btnSimilarEnv) {
-      btnSimilarEnv.addEventListener('click', whShowSimilarEnv);
-    }
-    const btnSimilarText = document.getElementById('wh-similar-text');
-    if (btnSimilarText) {
-      btnSimilarText.addEventListener('click', whShowSimilarText);
-    }
 
     // WH Cities: load cities now
     whcLoadCities();
 
-    // Basin clusters: load clusters now
-    loadBasinClusters();
+    // Societies: now the default tab on load -- shown.bs.tab (below) only fires on a real tab
+    // switch, never for the tab that's already active in markup, so load it here too (same
+    // unconditional-prefetch pattern as whcLoadCities above). loadSocieties() is idempotent --
+    // safe to call again from the tab-shown handler if the user navigates away and back.
+    // Deferred via setTimeout: this whole script is one function body nested inside this same
+    // DOMContentLoaded callback, and `let socData` (plus the other Societies state vars) aren't
+    // declared until much later in that body -- calling loadSocieties() synchronously here hits
+    // their temporal dead zone. Deferring to the next tick runs it only after this callback's
+    // full synchronous body -- every `let` in it -- has already executed.
+    setTimeout(loadSocieties, 0);
 
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
@@ -1845,21 +1302,41 @@
       });
     }
 
-    // WH Cities: environmental similarity dropdown
-    document.querySelectorAll('#whc-similar-env-btn + .dropdown-menu .dropdown-item').forEach(item => {
+    // WH Cities: environmental similarity dropdown (lens-based)
+    document.querySelectorAll('[aria-labelledby="whc-similar-env-btn"] .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
-        const band = item.getAttribute('data-band');
-        whcShowSimilarEnv(band);
+        // Close explicitly -- Bootstrap's own auto-close doesn't fire reliably here, because the
+        // handlers below synchronously disable this same toggle button while the menu is still open.
+        const envToggle = document.getElementById('whc-similar-env-btn');
+        if (envToggle) bootstrap.Dropdown.getOrCreateInstance(envToggle).hide();
+        const lensId = item.getAttribute('data-lens');
+        const knobs = document.getElementById('terrain-knobs');
+        if (lensId === 'terrain') {
+          if (knobs) knobs.style.display = 'flex';
+          whcShowSimilarTerrain();
+        } else {
+          if (knobs) knobs.style.display = 'none';
+          whcShowSimilarEnv(lensId);
+        }
       });
     });
 
+    // WH Cities: terrain knobs — auto-apply on change, same convention as the sandbox's
+    // conjunction bands (#v3-cj-corr etc.), no separate Apply button.
+    ['terrain-tol-elev', 'terrain-tol-relief', 'terrain-tol-pos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => whcShowSimilarTerrain());
+    });
+
     // WH Cities: semantic similarity dropdown
-    document.querySelectorAll('#whc-similar-text-btn + .dropdown-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('[aria-labelledby="whc-similar-text-btn"] .dropdown-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.classList.contains('disabled')) return;
+        const textToggle = document.getElementById('whc-similar-text-btn');
+        if (textToggle) bootstrap.Dropdown.getOrCreateInstance(textToggle).hide();
         const band = item.getAttribute('data-band');
         whcShowSimilarText(band);
       });
@@ -1877,7 +1354,6 @@
         renderSignature(null);
         showClusterLabel(null);
         clearSimilarResults();
-        clearGazState();
         // Hide eco selected info and dplace results
         const ecoInfo = document.getElementById('eco-selected-info');
         if (ecoInfo) ecoInfo.style.display = 'none';
@@ -1898,29 +1374,9 @@
           ? evt.target.getAttribute('data-bs-target')
           : null;
 
-        // WH-specific UI reset when entering WH tab
-        if (targetSel === '#panel-wh') {
-          whSetStatus('');
-          const descBox = document.getElementById('wh-desc');
-          if (descBox) {
-            descBox.style.display = 'none';
-            descBox.textContent = '';
-          }
-        }
-
         // WHC-specific UI reset when entering WHC tab
         if (targetSel === '#panel-whc') {
           whcSetStatus('');
-        }
-
-        // Basins-specific UI reset when entering Basins tab
-        if (targetSel === '#panel-basins') {
-          basinSetStatus('');
-        }
-
-        // Main-specific UI reset when entering Main tab
-        if (targetSel === '#panel-main') {
-          mainSetStatus('');
         }
 
         // Eco-specific: load realms on first view
@@ -2351,8 +1807,9 @@
     }
 
     // -----------------------
-    // Gazetteer Autocomplete
+    // Ecoregions Hierarchy (placeholder — replaces removed Gazetteer section)
     // -----------------------
+    // Note: gaz-search, gaz-dropdown, coords-form belong to the removed Main tab.
 
     const gazSearch = document.getElementById('gaz-search');
     const gazDropdown = document.getElementById('gaz-dropdown');
@@ -2659,6 +2116,14 @@
     let ecoLayer = null;  // Current polygon layer on map
     let socLayer = null;  // D-PLACE societies markers layer group
     let socData = null;   // Cached societies data
+    let socMarkerIndex = {};   // soc_id -> Leaflet marker, for CITYKIN WO4's donut hover-to-map linking
+    let socScatterIndex = {};  // soc_id -> SVG circle in the confirmatory scatter, same hover linking
+    let socStripIndex = {};    // soc_id -> array of SVG ticks in the env-scan strip plot (WO4 EA045
+                                // redesign) -- a society can appear once per variable row, so this
+                                // index is array-valued, unlike the other two (one element per id)
+    let socIsolatesIndex = {}; // soc_id -> row element in the WO5 isolates list -- rebuilt on every
+                                // renderList() call (measure-tab switch), not just once, since that
+                                // function replaces the list's DOM each time
 
     function ecoSetStatus(msg) {
       if (!ecoStatus) return;
@@ -2683,6 +2148,7 @@
         map.removeLayer(socLayer);
         socLayer = null;
       }
+      socMarkerIndex = {};
     }
 
     // 7-color palette for subsistence categories
@@ -2709,7 +2175,7 @@
     let socSubsistenceFilter = 'all';  // Current filter: 'all' or a subsistence name
     let socReligionFilter = 'all';     // Current filter: 'all' or a religion category
     let socActiveQuery = 'subsistence'; // Which query is active: 'subsistence' or 'religion'
-    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'basins'
+    let socDisplayMode = 'ecoregions';  // 'ecoregions' or 'envscan' (CITYKIN WO4)
 
     async function loadSocieties() {
       const loadingEl = document.getElementById('soc-loading');
@@ -2746,40 +2212,74 @@
     function initVariableTooltips(data) {
       const varInfo = data.variable_info || {};
 
-      // Subsistence (EA042)
+      // Setting data-help-text is enough -- the edops-help harness's MutationObserver wires the
+      // tooltip (and the accordion-click stopPropagation) itself once the attribute appears.
       const subIcon = document.getElementById('soc-info-subsistence');
-      if (subIcon && varInfo['EA042']) {
-        new bootstrap.Tooltip(subIcon, {
-          title: varInfo['EA042'].description,
-          placement: 'right',
-          trigger: 'hover'
-        });
-        // Prevent click from toggling accordion
-        subIcon.addEventListener('click', (e) => e.stopPropagation());
-      }
+      if (subIcon && varInfo['EA042']) subIcon.dataset.helpText = varInfo['EA042'].description;
 
-      // Religion (EA034)
       const relIcon = document.getElementById('soc-info-religion');
-      if (relIcon && varInfo['EA034']) {
-        new bootstrap.Tooltip(relIcon, {
-          title: varInfo['EA034'].description,
-          placement: 'right',
-          trigger: 'hover'
-        });
-        relIcon.addEventListener('click', (e) => e.stopPropagation());
+      if (relIcon && varInfo['EA034']) relIcon.dataset.helpText = varInfo['EA034'].description;
+    }
+
+    // Subsistence and religion are mutually exclusive queries -- only one trait colors the
+    // map at a time (socActiveQuery). Opening one accordion closes the other and resets its
+    // selection back to "All", so the map can't be left showing a stale combined state.
+    function _closeSocAccordion(panelId, toggleId) {
+      const panel = document.getElementById(panelId);
+      const toggle = document.getElementById(toggleId);
+      const chevron = toggle?.querySelector('.bi-chevron-down, .bi-chevron-up');
+      if (panel) panel.style.display = 'none';
+      if (toggle) toggle.classList.remove('soc-open');
+      if (chevron) { chevron.classList.add('bi-chevron-down'); chevron.classList.remove('bi-chevron-up'); }
+    }
+
+    // resetDisplayMode defaults true (full reset -- used when actually leaving this accordion's
+    // context, i.e. the other one is being opened). Callers clearing this accordion's filter as
+    // a side effect of a VALUE pick in the OTHER accordion must pass false: socDisplayMode is
+    // shared across both accordions' own "Show:" radio groups, so resetting it here would
+    // clobber a display choice the user just made in the accordion they're actually looking at
+    // (bug Karl caught 2026-08-07: pick "Climate envelope" in Subsistence, then a trait value --
+    // the value-radio handler's cross-accordion reset was wiping socDisplayMode back to
+    // 'ecoregions' right before rendering, even though Subsistence's own radio still showed
+    // "Climate envelope" checked).
+    function resetSubsistenceSelection(resetDisplayMode = true) {
+      socSubsistenceFilter = 'all';
+      document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => { r.checked = (r.value === 'all'); });
+      if (resetDisplayMode) {
+        document.querySelectorAll('input[name="soc-display-mode"]').forEach(r => { r.checked = (r.value === 'envscan'); });
+        socDisplayMode = 'envscan';
+      }
+    }
+
+    function resetReligionSelection(resetDisplayMode = true) {
+      socReligionFilter = 'all';
+      document.querySelectorAll('input[name="soc-religion"]').forEach(r => { r.checked = (r.value === 'all'); });
+      if (resetDisplayMode) {
+        document.querySelectorAll('input[name="soc-religion-display-mode"]').forEach(r => { r.checked = (r.value === 'envscan'); });
+        socDisplayMode = 'envscan';
       }
     }
 
     function wireSubsistenceAccordion() {
       const toggle = document.getElementById('soc-query-subsistence');
       const panel = document.getElementById('soc-subsistence-panel');
-      const chevron = toggle?.querySelector('i');
+      // Not toggle.querySelector('i') -- that matches the help-circle icon nested in the
+      // <span> before this one, not the chevron.
+      const chevron = toggle?.querySelector('.bi-chevron-down, .bi-chevron-up');
       if (!toggle || !panel) return;
 
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
+        if (!isOpen) {
+          _closeSocAccordion('soc-religion-panel', 'soc-query-religion');
+          if (socReligionFilter !== 'all') {
+            resetReligionSelection();
+            if (socData) displaySocieties(socData);
+          }
+        }
         panel.style.display = isOpen ? 'none' : 'block';
+        toggle.classList.toggle('soc-open', !isOpen);
         if (chevron) {
           chevron.classList.toggle('bi-chevron-down', isOpen);
           chevron.classList.toggle('bi-chevron-up', !isOpen);
@@ -2829,11 +2329,13 @@
         radio.addEventListener('change', (e) => {
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
-          // Reset religion filter when switching to subsistence
-          socReligionFilter = 'all';
-          document.querySelectorAll('input[name="soc-religion"]').forEach(r => {
-            r.checked = (r.value === 'all');
-          });
+          resetReligionSelection(false);
+          // socDisplayMode is shared with the religion accordion's own "Show:" radios and only
+          // gets synced on an accordion-switch reset -- read it fresh off this accordion's own
+          // checked radio so a value pick made before ever touching "Show:" doesn't render
+          // against a stale value from a previous accordion or the initial page-load default.
+          const checkedMode = document.querySelector('input[name="soc-display-mode"]:checked');
+          if (checkedMode) socDisplayMode = checkedMode.value;
           displaySocieties(socData);
         });
       });
@@ -2842,13 +2344,21 @@
     function wireReligionAccordion() {
       const toggle = document.getElementById('soc-query-religion');
       const panel = document.getElementById('soc-religion-panel');
-      const chevron = toggle?.querySelector('i');
+      const chevron = toggle?.querySelector('.bi-chevron-down, .bi-chevron-up');
       if (!toggle || !panel) return;
 
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
+        if (!isOpen) {
+          _closeSocAccordion('soc-subsistence-panel', 'soc-query-subsistence');
+          if (socSubsistenceFilter !== 'all') {
+            resetSubsistenceSelection();
+            if (socData) displaySocieties(socData);
+          }
+        }
         panel.style.display = isOpen ? 'none' : 'block';
+        toggle.classList.toggle('soc-open', !isOpen);
         if (chevron) {
           chevron.classList.toggle('bi-chevron-down', isOpen);
           chevron.classList.toggle('bi-chevron-up', !isOpen);
@@ -2898,11 +2408,14 @@
         radio.addEventListener('change', (e) => {
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
-          // Reset subsistence filter when switching to religion
-          socSubsistenceFilter = 'all';
-          document.querySelectorAll('input[name="soc-subsistence"]').forEach(r => {
-            r.checked = (r.value === 'all');
-          });
+          resetSubsistenceSelection(false);
+          // socDisplayMode is shared with the subsistence accordion's own "Show:" radios and
+          // only gets synced on an accordion-switch reset -- read it fresh off this accordion's
+          // own checked radio so a value pick made before ever touching "Show:" (the common
+          // path now that Environment scan is the religion default) doesn't render against a
+          // stale value from a previous accordion or the initial page-load default.
+          const checkedMode = document.querySelector('input[name="soc-religion-display-mode"]:checked');
+          if (checkedMode) socDisplayMode = checkedMode.value;
           displaySocieties(socData);
         });
       });
@@ -2942,17 +2455,21 @@
           }
         }
 
-        const marker = L.circleMarker([soc.lat, soc.lon], {
+        const baseStyle = {
           radius: 4,
           fillColor: color,
           color: '#333',
           weight: 1,
           opacity: isMatch ? 0.8 : 0.3,
           fillOpacity: isMatch ? 0.8 : 0.1
-        });
+        };
+        const marker = L.circleMarker([soc.lat, soc.lon], baseStyle);
+        marker._wo4Base = baseStyle;   // snapshot for wo4RestoreMarkers() -- see donut hover wiring
+        marker._wo4Type = 'leaflet';
 
         marker.bindTooltip(`<strong>${escapeHtml(soc.name)}</strong> (${escapeHtml(soc.id)})`);
         socLayer.addLayer(marker);
+        socMarkerIndex[soc.id] = marker;
       });
 
       socLayer.addTo(map);
@@ -2968,8 +2485,18 @@
     }
 
     function renderDplaceResults(data) {
-      if (socDisplayMode === 'basins') {
-        renderBasinClusters(data);
+      // Clears both possible donut targets so a stale one can't survive a mode switch.
+      ['soc-content', 'soc-subsistence-content'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      });
+
+      // 'envscan' and 'isolates' both need the /api/societies/env-scan payload -- renderEnvScan()
+      // fetches it once and branches internally (scatter / strips / isolates) so switching
+      // between those two doesn't re-fetch. 'ecoregions' uses the already-loaded full dataset
+      // instead and never hits that endpoint.
+      if (socDisplayMode === 'envscan' || socDisplayMode === 'isolates') {
+        renderEnvScan(data);
       } else {
         renderTopEcoregions(data);
       }
@@ -3023,72 +2550,809 @@
       })).sort((a, b) => b.total - a.total);
 
       // Render heading
-      heading.textContent = `Top ecoregions for ${activeFilter}`;
+      wo4SetResultsHeading(heading, 'Top ecoregions for ', activeFilter);
 
-      // Render 2-column layout with realm subheadings
-      const html = '<div class="row small">' +
-        realmTotals.map(r => {
-          const items = r.ecos.map(e => `<li>${escapeHtml(e.name)} (${e.count})</li>`).join('');
-          return `<div class="col-6 mb-2"><strong>${escapeHtml(r.realm)}</strong><ol class="mb-0 ps-3">${items}</ol></div>`;
-        }).join('') +
+      // Two independently-flowing columns instead of a Bootstrap row/col-6 pairing, which locked
+      // left/right realm blocks into fixed-height rows (row height = the taller of the pair) and
+      // left uneven gaps wherever the two sides' list lengths didn't match. CSS multi-column
+      // (column-count + column-fill:auto) was tried first for genuine newspaper flow, but its
+      // scroll-instead-of-adding-columns behavior didn't hold in testing -- it added columns
+      // sideways instead of scrolling vertically. Greedy weight-balance (weight = 1 header line +
+      // ecoregion count) approximates the same visual balance without CSS columns at all, so
+      // overflow-y:auto on the wrapper is unambiguous plain block scrolling (Karl's browser
+      // review, 2026-08-10).
+      const renderRealmBlock = (r) => {
+        const items = r.ecos.map(e => `<li>${escapeHtml(e.name)} (${e.count})</li>`).join('');
+        return `<div class="wo4-ecoregion-block"><strong>${escapeHtml(r.realm)}</strong><ol class="mb-0 ps-3">${items}</ol></div>`;
+      };
+      const colWeights = [0, 0];
+      const cols = [[], []];
+      realmTotals.forEach(r => {
+        const target = colWeights[0] <= colWeights[1] ? 0 : 1;
+        cols[target].push(r);
+        colWeights[target] += 1 + r.ecos.length;
+      });
+
+      const html = '<div class="d-flex gap-4 small wo4-ecoregions-scroll">' +
+        cols.map(col => `<div class="flex-fill">${col.map(renderRealmBlock).join('')}</div>`).join('') +
         '</div>';
 
       content.innerHTML = html;
       container.style.display = 'block';
     }
 
-    function renderBasinClusters(data) {
+    // ---------------------------------------------------------------------
+    // CITYKIN WO4 (2026-07-30, meter-bar redesign) — replaces the retired PCA "Basin clusters"
+    // option. Two displays: EA042 (subsistence) has a named theoretical hook (WO8a Part B) and
+    // gets the confirmatory Climate envelope scatter; EA034 (religion) has none and gets the
+    // exploratory five-variable environment scan (aridity/temperature/seasonality/ruggedness/
+    // landform). WO4 EA045 (2026-08-10) replaced that scan's mean-position bars with per-society
+    // strip plots — a single position couldn't distinguish a clustered group from a bimodal or
+    // smeared one. Composition (both displays) is a donut, not a bullet list, with hover-to-map
+    // (and, for the strip plot, hover-to-tick) linking.
+    // See docs/cdop/citykin/wo4_whc-grouping.md, docs/edop/docsv4/wo4_EA045 -viz-change.md.
+    // ---------------------------------------------------------------------
+
+    let envScanRequestId = 0;
+    const WO4_VARIABLE_ORDER = ['aridity', 'temperature', 'seasonality', 'ruggedness', 'landform'];
+    const WO4_VARIABLE_LABELS = {
+      aridity: 'Aridity', temperature: 'Temperature', seasonality: 'Seasonality',
+      ruggedness: 'Ruggedness', landform: 'Landform',
+    };
+    const WO4_VARIABLE_HELP = {
+      aridity: "Composite of precipitation and potential evapotranspiration.",
+      temperature: "Mean annual temperature across twelve months.",
+      seasonality: 'Temperature swing: warmest month minus coldest month.',
+      ruggedness: "Elevation range (max−min) in a small grid around the society's coordinates.",
+      landform: 'Where a society\'s point sits within local relief range — near the valley floor or near a ridge/peak.',
+    };
+
+    // D-PLACE results help modal (2026-08-11) -- one shared modal, content looked up per
+    // (socActiveQuery, socDisplayMode) at click time from a <template id="wo4-help-{trait}-
+    // {mode}"> in the markup (see near #dplaceResultsHelpModal), not a JS string literal --
+    // Karl's call: dynamically-inserted text should still live in markup he can wordsmith
+    // directly, not inside JS string concatenation (which he lost real time to once already,
+    // 2026-08-11). Deliberately NOT the shared edops-help harness
+    // (app/static/js/edops_help.js): that harness's modes are all static declarative
+    // content picked by which data attribute is present on the icon; this icon's content varies
+    // with page state and needs a real modal for the prose length, a shape the harness
+    // doesn't cover. Five templates -- Ecoregions by realm appears under both traits but gets an
+    // independent template, not a shared one, since Karl's count of "5 choices" was deliberate.
+    function showResultsHelpModal() {
+      const tpl = document.getElementById(`wo4-help-${socActiveQuery}-${socDisplayMode}`);
+      if (!tpl) return;
+      document.getElementById('dplaceResultsHelpModalLabel').textContent = tpl.dataset.title || '';
+      const bodyEl = document.getElementById('dplaceResultsHelpModalBody');
+      bodyEl.innerHTML = '';
+      bodyEl.appendChild(document.importNode(tpl.content, true));
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('dplaceResultsHelpModal')).show();
+    }
+
+    const dplaceResultsHelpIcon = document.getElementById('dplace-results-help');
+    if (dplaceResultsHelpIcon) {
+      dplaceResultsHelpIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showResultsHelpModal();
+      });
+    }
+
+    // #dplace-results-heading builder: plain prefix text, the dynamic trait VALUE colored
+    // (Karl's browser review, 2026-08-11 -- the value was hard to pick out in a plain-text
+    // heading), and an optional smaller muted "(n = X)" on the same line (WO4 EA045 nit,
+    // 2026-08-10: keeps the count out of its own vertical line). `n` omitted where not known yet
+    // (e.g. the pre-fetch loading-state heading).
+    function wo4SetResultsHeading(heading, prefix, value, n) {
+      heading.textContent = '';
+      heading.appendChild(document.createTextNode(prefix));
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'wo4-heading-value';
+      valueSpan.textContent = value;
+      heading.appendChild(valueSpan);
+      if (n !== undefined && n !== null) {
+        const nSpan = document.createElement('span');
+        nSpan.className = 'wo4-heading-n text-muted';
+        nSpan.textContent = ` (n = ${n})`;
+        heading.appendChild(nSpan);
+      }
+    }
+
+    function wo4SvgEl(tag, attrs) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      if (attrs) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    }
+
+    function wo4Tooltip() {
+      let tip = document.getElementById('wo4-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'wo4-tooltip';
+        tip.className = 'wo4-tooltip';
+        document.body.appendChild(tip);
+      }
+      return tip;
+    }
+
+    function wo4ShowTooltip(evt, lines) {
+      const tip = wo4Tooltip();
+      tip.innerHTML = '';
+      lines.forEach(line => {
+        const div = document.createElement('div');
+        div.textContent = line;   // untrusted-as-a-rule: always textContent, never string-built HTML
+        tip.appendChild(div);
+      });
+      tip.style.left = (evt.pageX + 12) + 'px';
+      tip.style.top = (evt.pageY + 12) + 'px';
+      tip.style.opacity = '1';
+    }
+
+    function wo4HideTooltip() {
+      const tip = document.getElementById('wo4-tooltip');
+      if (tip) tip.style.opacity = '0';
+    }
+
+    function wo4Legend(items) {
+      const legend = document.createElement('div');
+      legend.className = 'wo4-legend';
+      items.forEach(item => {
+        const key = document.createElement('span');
+        key.className = 'wo4-legend-key';
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = item.color;
+        key.appendChild(swatch);
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        key.appendChild(label);
+        legend.appendChild(key);
+      });
+      return legend;
+    }
+
+    async function renderEnvScan(data) {
       const container = document.getElementById('dplace-results');
       const heading = document.getElementById('dplace-results-heading');
       const content = document.getElementById('dplace-results-content');
       if (!container || !heading || !content) return;
 
-      // Determine active filter
       const activeFilter = socActiveQuery === 'religion' ? socReligionFilter : socSubsistenceFilter;
-      const filterField = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
+      const trait = socActiveQuery === 'religion' ? 'religion' : 'subsistence';
 
       if (activeFilter === 'all') {
         container.style.display = 'none';
         return;
       }
 
-      // Count societies per cluster for selected filter
-      const clusterCounts = {};  // cluster_id → count
-      data.societies.forEach(soc => {
-        if (soc[filterField] === activeFilter && soc.cluster_id != null) {
-          const cid = soc.cluster_id;
-          clusterCounts[cid] = (clusterCounts[cid] || 0) + 1;
-        }
-      });
+      const myRequestId = ++envScanRequestId;
+      socScatterIndex = {};   // stale circles from the previous scatter render are about to be discarded
+      socStripIndex = {};     // stale ticks from the previous strip-plot render are about to be discarded
+      socIsolatesIndex = {};  // stale rows from the previous isolates render are about to be discarded
+      container.style.display = 'block';
+      wo4SetResultsHeading(heading, 'Environment for ', activeFilter);
+      content.innerHTML = '';
+      const loading = document.createElement('div');
+      loading.className = 'wo4-viz text-muted small py-3';
+      loading.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading environmental scan…';
+      content.appendChild(loading);
 
-      if (Object.keys(clusterCounts).length === 0) {
-        container.style.display = 'none';
+      let scan;
+      try {
+        const resp = await fetch(`/api/societies/env-scan?trait=${encodeURIComponent(trait)}&value=${encodeURIComponent(activeFilter)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        scan = await resp.json();
+      } catch (err) {
+        if (myRequestId !== envScanRequestId) return;   // a newer request superseded this one
+        content.innerHTML = '<div class="text-muted small">Environmental scan unavailable.</div>';
+        console.error('env-scan fetch failed:', err);
+        return;
+      }
+      if (myRequestId !== envScanRequestId) return;
+
+      content.innerHTML = '';
+      const root = document.createElement('div');
+      root.className = 'wo4-viz';
+      content.appendChild(root);
+
+      if (scan.n_focus === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-muted small';
+        empty.textContent = 'No basin-joined societies match this value.';
+        root.appendChild(empty);
         return;
       }
 
-      // Sort by count descending
-      const sorted = Object.entries(clusterCounts)
-        .map(([cid, count]) => ({ cluster_id: parseInt(cid), count }))
-        .sort((a, b) => b.count - a.count);
+      if (scan.hook && scan.hook.has_hook) {
+        wo4SetResultsHeading(heading, 'Climate envelope for ', activeFilter);
+        root.appendChild(wo4ClimateEnvelopeScatter(scan));
+      } else if (socDisplayMode === 'isolates') {
+        wo4SetResultsHeading(heading, 'Isolates for ', activeFilter, scan.n_focus);
+        root.appendChild(wo4IsolatesView(scan));
+      } else {
+        wo4SetResultsHeading(heading, 'Environment scan for ', activeFilter, scan.n_focus);
+        root.appendChild(wo4EnvScanStrips(scan));
+      }
+      // Subsistence gets its own in-panel target; religion uses the shared one below both panels.
+      const donutTargetId = socActiveQuery === 'religion' ? 'soc-content' : 'soc-subsistence-content';
+      const socContent = document.getElementById(donutTargetId);
+      if (socContent) {
+        const donutWrap = document.createElement('div');
+        donutWrap.className = 'wo4-viz';
+        donutWrap.appendChild(wo4CompositionDonut(scan.composition));
+        socContent.appendChild(donutWrap);
+      }
+      // Strip-plot variable labels carry their own help icons, added after page load -- the
+      // shared harness only auto-scans on DOMContentLoaded, so a fetched render needs this.
+      if (window.initEdopsHelpTooltips) window.initEdopsHelpTooltips();
+    }
 
-      // Render heading
-      heading.textContent = `Basin clusters for ${activeFilter}`;
+    function wo4ClimateEnvelopeScatter(scan) {
+      const wrap = document.createElement('div');
+      const sc = scan.scatter;
 
-      // Render as list with badges (similar to Basins tab)
-      const html = '<div class="list-group list-group-flush small">' +
-        sorted.map(c => {
-          const label = CLUSTER_LABELS[c.cluster_id] || `Cluster ${c.cluster_id}`;
-          return `
-            <div class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
-              <span>${escapeHtml(label)}</span>
-              <span class="badge bg-primary">${c.count}</span>
-            </div>
-          `;
-        }).join('') +
-        '</div>';
+      wrap.appendChild(wo4Legend([
+        { color: 'var(--wo4-backdrop)', label: `All subsistence-coded societies (n=${sc.backdrop.length})` },
+        { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
+      ]));
 
-      content.innerHTML = html;
-      container.style.display = 'block';
+      const width = 480, height = 300;
+      const margin = { top: 10, right: 16, bottom: 25, left:36 };
+      // const margin = { top: 10, right: 16, bottom: 40, left: 56 };
+      const plotW = width - margin.left - margin.right;
+      const plotH = height - margin.top - margin.bottom;
+
+      const allPoints = sc.backdrop.concat(sc.focus);
+      const xs = allPoints.map(p => p.x), ys = allPoints.map(p => p.y);
+      const xMin = Math.min(...xs), xMax = Math.max(...xs);
+      const yMin = Math.min(...ys), yMax = Math.max(...ys);
+      const xPad = (xMax - xMin) * 0.05 || 1, yPad = (yMax - yMin) * 0.05 || 1;
+      const xScale = x => margin.left + ((x - (xMin - xPad)) / ((xMax + xPad) - (xMin - xPad))) * plotW;
+      const yScale = y => margin.top + plotH - ((y - (yMin - yPad)) / ((yMax + yPad) - (yMin - yPad))) * plotH;
+
+      const svg = wo4SvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Climate envelope scatter for ${scan.value}` });
+
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top + plotH, x2: margin.left + plotW, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+      svg.appendChild(wo4SvgEl('line', { x1: margin.left, y1: margin.top, x2: margin.left, y2: margin.top + plotH, stroke: 'var(--wo4-baseline)', 'stroke-width': 1 }));
+
+      const xLabel = wo4SvgEl('text', { x: margin.left + plotW / 2, y: height - 6, 'text-anchor': 'middle', class: 'wo4-axis-label' });
+      xLabel.textContent = sc.x_label;
+      svg.appendChild(xLabel);
+
+      const yLabel = wo4SvgEl('text', { x: 12, y: margin.top + plotH / 2, 'text-anchor': 'middle', class: 'wo4-axis-label', transform: `rotate(-90, 12, ${margin.top + plotH / 2})` });
+      yLabel.textContent = sc.y_label;
+      svg.appendChild(yLabel);
+
+      // Pole labels, same source as the meter bars' (variable_percentiles()'s pole_low/pole_high) --
+      // not hardcoded here. Aridity in particular is famously counter-intuitive (the BasinATLAS
+      // index INCREASES with humidity; Karl, 2026-07-30) and the scatter had no tick values or
+      // direction cue at all before this -- a reader had no way to know which side was arid without
+      // already knowing that convention. xScale/yScale are both standard, non-inverted linear
+      // scales (low value -> left/bottom, high value -> right/top); the pole labels just say so.
+      if (sc.summary) {
+        const xPoleLow = wo4SvgEl('text', { x: margin.left, y: height - 6, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        xPoleLow.textContent = sc.summary.aridity.pole_low;
+        svg.appendChild(xPoleLow);
+        const xPoleHigh = wo4SvgEl('text', { x: margin.left + plotW, y: height - 6, 'text-anchor': 'end', class: 'wo4-axis-pole' });
+        xPoleHigh.textContent = sc.summary.aridity.pole_high;
+        svg.appendChild(xPoleHigh);
+
+        const yPoleHigh = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + 10, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleHigh.textContent = sc.summary.temperature.pole_high;   // top of plot = higher value
+        svg.appendChild(yPoleHigh);
+        const yPoleLow = wo4SvgEl('text', { x: margin.left + 6, y: margin.top + plotH - 4, 'text-anchor': 'start', class: 'wo4-axis-pole' });
+        yPoleLow.textContent = sc.summary.temperature.pole_low;   // bottom of plot = lower value
+        svg.appendChild(yPoleLow);
+      }
+
+      // Backdrop dots: emphasis form's de-emphasized context, deliberately not interactive --
+      // ~1,000 dots of "here's everyone else" don't need per-point tooltips, and the story is the
+      // highlighted group, not the cloud.
+      const backdropG = wo4SvgEl('g');
+      sc.backdrop.forEach(p => {
+        backdropG.appendChild(wo4SvgEl('circle', { cx: xScale(p.x), cy: yScale(p.y), r: 2.5, fill: 'var(--wo4-backdrop)', 'fill-opacity': 0.45 }));
+      });
+      svg.appendChild(backdropG);
+
+      // Focus dots: the one series the emphasis form is about -- interactive.
+      const focusG = wo4SvgEl('g');
+      sc.focus.forEach(p => {
+        const c = wo4SvgEl('circle', {
+          cx: xScale(p.x), cy: yScale(p.y), r: 4, fill: 'var(--wo4-focus)', 'fill-opacity': 0.85,
+          stroke: 'var(--wo4-surface)', 'stroke-width': 2
+        });
+        c.style.cursor = 'pointer';
+        c._wo4Type = 'svg';
+        c._wo4Base = { r: 4, 'fill-opacity': 0.85, 'stroke-width': 2 };   // for wo4RestoreMarkers()
+        const tipLines = [p.name || p.soc_id, `${sc.x_label}: ${p.x.toFixed(2)}`, `${sc.y_label}: ${p.y.toFixed(1)}`];
+        c.addEventListener('pointerenter', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointermove', (e) => wo4ShowTooltip(e, tipLines));
+        c.addEventListener('pointerleave', wo4HideTooltip);
+        focusG.appendChild(c);
+        socScatterIndex[p.soc_id] = c;
+      });
+      svg.appendChild(focusG);
+
+      wrap.appendChild(svg);
+
+      return wrap;
+    }
+
+    // WO4 EA045 strip-plot redesign (2026-08-10): one tick per society, not a mean-position bar --
+    // a single position can't distinguish a genuinely clustered group from a bimodal or a smeared
+    // one, and the verbal qualifier ("somewhat rugged") asserted the first regardless. Ticks are
+    // computed once per trait-value selection (the fetch in renderEnvScan()) and never
+    // recomputed on hover; family hover only changes which ticks are emphasized via
+    // wo4HighlightMarkers()/socStripIndex, same linkage the map markers and scatter dots use.
+    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 15, WO4_STRIP_MARGIN = 4;
+    const WO4_THIN_FAMILY_FLOOR = 20;   // matches the notebooks' own n-floor convention
+
+    function wo4StripX(pct) {
+      const plotW = WO4_STRIP_WIDTH - 2 * WO4_STRIP_MARGIN;
+      return WO4_STRIP_MARGIN + (pct / 100) * plotW;
+    }
+
+    function wo4EnvScanStrips(scan) {
+      const wrap = document.createElement('div');
+      const strips = document.createElement('div');
+      strips.className = 'wo4-strips';
+
+      WO4_VARIABLE_ORDER.forEach(key => {
+        const res = scan.variables[key];
+        const row = document.createElement('div');
+        row.className = 'wo4-strip-row';
+
+        const label = document.createElement('span');
+        label.className = 'wo4-strip-label';
+        const labelText = WO4_VARIABLE_LABELS[key] || key;
+        const help = document.createElement('i');
+        help.className = 'bi bi-question-circle edops-help';
+        help.dataset.helpText = WO4_VARIABLE_HELP[key] || labelText;
+        label.append(labelText + ' ', help);
+        row.appendChild(label);
+
+        if (!res || !res.ticks || !res.ticks.length) {
+          const none = document.createElement('span');
+          none.className = 'wo4-strip-none';
+          none.textContent = 'no data';
+          row.appendChild(none);
+          strips.appendChild(row);
+          return;
+        }
+
+        const trackWrap = document.createElement('div');
+        trackWrap.className = 'wo4-strip-track-wrap';
+
+        const svg = wo4SvgEl('svg', {
+          viewBox: `0 0 ${WO4_STRIP_WIDTH} ${WO4_STRIP_HEIGHT}`, class: 'wo4-strip-svg',
+          role: 'img', 'aria-label': `${WO4_VARIABLE_LABELS[key] || key} positions for ${scan.value}`,
+        });
+        res.ticks.forEach(t => {
+          const x = wo4StripX(t.percentile);
+          const tick = wo4SvgEl('line', {
+            x1: x, y1: 1, x2: x, y2: WO4_STRIP_HEIGHT - 1,
+            stroke: 'var(--wo4-focus)', 'stroke-width': 1, 'stroke-opacity': 0.5,
+          });
+          tick._wo4Type = 'svg';
+          tick._wo4Base = { stroke: 'var(--wo4-focus)', 'stroke-opacity': 0.5 };
+          svg.appendChild(tick);
+          if (!socStripIndex[t.soc_id]) socStripIndex[t.soc_id] = [];
+          socStripIndex[t.soc_id].push(tick);
+        });
+        trackWrap.appendChild(svg);
+
+        const poles = document.createElement('div');
+        poles.className = 'wo4-strip-poles';
+        const poleLow = document.createElement('span');
+        poleLow.textContent = res.pole_low;
+        const poleHigh = document.createElement('span');
+        poleHigh.textContent = res.pole_high;
+        poles.append(poleLow, poleHigh);
+        trackWrap.appendChild(poles);
+
+        row.appendChild(trackWrap);
+
+        strips.appendChild(row);
+      });
+
+      wrap.appendChild(strips);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = `Each tick is one society, positioned by its own value on that variable's global range, against all basin-joined D-PLACE societies. Hover a language family to highlight its societies within the same picture.`;
+      wrap.appendChild(caption);
+
+      return wrap;
+    }
+
+    // WO5 (2026-08-10, experimental 'isolates' branch): nearest-neighbor rankings over the EA034
+    // focus group -- ancestral (family), geographic, environmental, plus WO5a's optional 4th
+    // (worst-of-three, Karl opted in). Named societies, not an aggregate; deliberately no
+    // threshold/cutoff/weighted score anywhere (WO5 Sec 4 -- the ranking IS the output, a reader
+    // reads down as far as interesting; "worst-of-three" is a max, not a weighted combination).
+    // n <= ~280, so O(n^2) is trivial here.
+    const WO5_ISOLATION_MEASURES = [
+      { key: 'ancestral', label: 'Ancestral', rankKey: 'anc_rank', excludedKey: 'n_no_family' },
+      { key: 'geographic', label: 'Geographic', rankKey: 'geo_rank', excludedKey: 'n_no_geo' },
+      { key: 'environmental', label: 'Environmental', rankKey: 'env_rank', excludedKey: 'n_incomplete_env' },
+      { key: 'overall', label: 'Overall', rankKey: 'overall_rank', excludedKey: 'n_incomplete_overall' },
+    ];
+
+    function wo4Haversine(lat1, lon1, lat2, lon2) {
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * 6371 * Math.asin(Math.sqrt(a));   // km -- units don't matter for a ranking
+    }
+
+    function wo4EnvEuclidean(envA, envB, keys) {
+      let sum = 0;
+      keys.forEach(k => { const d = envA[k] - envB[k]; sum += d * d; });
+      return Math.sqrt(sum);
+    }
+
+    // Assigns anc_size/anc_nn/geo_nn/env_nn onto (copies of) the input records and returns the
+    // three sorted rankings plus how many societies each ranking had to drop (missing family /
+    // incomplete env data -- WO5's own "coverage note" requirement, Sec 5).
+    function wo4ComputeIsolation(societies) {
+      const ENV_KEYS = WO4_VARIABLE_ORDER;
+
+      const validFamily = societies.filter(s => s.family_id != null);
+      const familyCountsInTrait = {};
+      validFamily.forEach(s => {
+        familyCountsInTrait[s.family_id] = (familyCountsInTrait[s.family_id] || 0) + 1;
+      });
+      const validEnv = societies.filter(s => ENV_KEYS.every(k => s.env[k] != null));
+
+      // 1. Ancestral isolation -- family singletons (within THIS trait's coded set -- WO5's
+      // own anc_size definition, unchanged; family_global_n ships separately in the payload
+      // so a reader can tell a genuine trait-specific singleton from a corpus-sampling one,
+      // WO5 Sec 4's spec fix) float to the top, ties broken by distance to nearest UNRELATED
+      // instance.
+      validFamily.forEach(s => {
+        s.anc_size = familyCountsInTrait[s.family_id];
+        let best = Infinity;
+        validFamily.forEach(t => {
+          if (t.family_id !== s.family_id) {
+            const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+            if (d < best) best = d;
+          }
+        });
+        s.anc_nn = isFinite(best) ? best : null;
+      });
+
+      // 2. Geographic isolation -- unrelated-instance-only variant (WO5 Sec 3: "the more
+      // useful one" if only one is built). A society with unresolved family has no family to
+      // match against, so every other society counts as a valid neighbor for it.
+      societies.forEach(s => {
+        let best = Infinity;
+        societies.forEach(t => {
+          if (t === s) return;
+          if (s.family_id != null && t.family_id != null && t.family_id === s.family_id) return;
+          const d = wo4Haversine(s.lat, s.lon, t.lat, t.lon);
+          if (d < best) best = d;
+        });
+        s.geo_nn = isFinite(best) ? best : null;
+      });
+
+      // 3. Environmental isolation -- nearest OTHER member of the SAME trait group in 5-D
+      // percentile space (within-group atypicality, not distance from the global backdrop --
+      // WO5 Sec 4's spec correction; the global-distribution version is a named next increment,
+      // not this one).
+      validEnv.forEach(s => {
+        let best = Infinity;
+        validEnv.forEach(t => {
+          if (t === s) return;
+          const d = wo4EnvEuclidean(s.env, t.env, ENV_KEYS);
+          if (d < best) best = d;
+        });
+        s.env_nn = isFinite(best) ? best : null;
+      });
+
+      const ancestral = [...validFamily].sort((a, b) => a.anc_size - b.anc_size || b.anc_nn - a.anc_nn);
+      const geographic = [...societies].filter(s => s.geo_nn != null).sort((a, b) => b.geo_nn - a.geo_nn);
+      const environmental = [...validEnv].sort((a, b) => b.env_nn - a.env_nn);
+
+      ancestral.forEach((s, i) => { s.anc_rank = i + 1; });
+      geographic.forEach((s, i) => { s.geo_rank = i + 1; });
+      environmental.forEach((s, i) => { s.env_rank = i + 1; });
+
+      // WO5a Sec 4 (optional 4th sort, Karl opted in): worst-of-three -- max is not a weighted
+      // combination and introduces no parameters, unlike an average or a score. Ascending by
+      // each society's WORST rank surfaces the "isolated on all three simultaneously" case the
+      // view exists to find, without violating WO5's own no-combined-score rule. Only societies
+      // with all three ranks are eligible; the rest are excluded and counted, same pattern as
+      // the other three measures.
+      const complete = societies.filter(s => s.anc_rank != null && s.geo_rank != null && s.env_rank != null);
+      complete.forEach(s => { s.worst_rank = Math.max(s.anc_rank, s.geo_rank, s.env_rank); });
+      const overall = [...complete].sort((a, b) => a.worst_rank - b.worst_rank);
+      overall.forEach((s, i) => { s.overall_rank = i + 1; });
+
+      return {
+        ancestral, geographic, environmental, overall,
+        n_no_family: societies.length - validFamily.length,
+        n_no_geo: societies.length - geographic.length,
+        n_incomplete_env: societies.length - validEnv.length,
+        n_incomplete_overall: societies.length - complete.length,
+      };
+    }
+
+    // WO5a Sec 1: ranks alone hide the gaps (two family singletons can be identical; two geo
+    // ranks a step apart can differ by 2000km or by 50). Each segment is "{rank} ({magnitude})",
+    // "--" when a society is excluded from that measure. Compact by design, per the WO's own
+    // call ("compactness matters more than completeness in the row").
+    function wo4IsolatesFormatRow(s) {
+      const anc = s.anc_rank != null ? `anc ${s.anc_rank} (${s.anc_size}/${s.family_global_n})` : 'anc —';
+      const geo = s.geo_rank != null ? `geo ${s.geo_rank} (${Math.round(s.geo_nn)}km)` : 'geo —';
+      const env = s.env_rank != null ? `env ${s.env_rank} (${s.env_nn.toFixed(1)})` : 'env —';
+      const ovr = s.overall_rank != null ? `ovr ${s.overall_rank} (max ${s.worst_rank})` : 'ovr —';
+      return [anc, geo, env, ovr].join('   ');
+    }
+
+    function wo4IsolatesView(scan) {
+      const wrap = document.createElement('div');
+      // Shallow-copy each record -- wo4ComputeIsolation() writes rank fields onto them, and
+      // scan.societies must stay clean if this view re-renders (measure-switch) without a
+      // fresh fetch.
+      const societies = scan.societies.map(s => ({ ...s, env: { ...s.env } }));
+      const result = wo4ComputeIsolation(societies);
+
+      let activeMeasure = 'ancestral';
+
+      const measureRow = document.createElement('div');
+      measureRow.className = 'wo4-isolates-measures';
+      const measureBtns = {};
+      WO5_ISOLATION_MEASURES.forEach(m => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'wo4-isolates-measure-btn' + (m.key === activeMeasure ? ' is-active' : '');
+        // WO5a Sec 3: excluded count shown right on the pill, not just buried in the caption --
+        // only appended when non-zero, so measures that never exclude anyone (geographic, almost
+        // always) don't carry a pointless "(0 excluded)".
+        const excluded = result[m.excludedKey];
+        btn.textContent = excluded > 0 ? `${m.label} (${excluded} excluded)` : m.label;
+        btn.addEventListener('click', () => {
+          activeMeasure = m.key;
+          Object.entries(measureBtns).forEach(([k, b]) => b.classList.toggle('is-active', k === m.key));
+          renderList();
+        });
+        measureRow.appendChild(btn);
+        measureBtns[m.key] = btn;
+      });
+      wrap.appendChild(measureRow);
+
+      const list = document.createElement('div');
+      list.className = 'wo4-isolates-list';
+      wrap.appendChild(list);
+
+      function renderList() {
+        list.innerHTML = '';
+        socIsolatesIndex = {};   // this render's rows replace the previous one's entirely
+        const rankKey = WO5_ISOLATION_MEASURES.find(m => m.key === activeMeasure).rankKey;
+        const sorted = [...societies].sort((a, b) => {
+          const ra = a[rankKey], rb = b[rankKey];
+          if (ra == null && rb == null) return 0;
+          if (ra == null) return 1;
+          if (rb == null) return -1;
+          return ra - rb;
+        });
+        sorted.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'wo4-isolates-row';
+          row._wo4Type = 'dom';
+          row._wo4Base = { background: 'transparent' };   // for wo4RestoreMarkers()
+          const name = document.createElement('span');
+          name.className = 'wo4-isolates-name';
+          name.textContent = s.name || s.soc_id;
+          const ranks = document.createElement('span');
+          ranks.className = 'wo4-isolates-ranks';
+          ranks.textContent = wo4IsolatesFormatRow(s);
+          row.append(name, ranks);
+          row.addEventListener('mouseenter', () => wo4HighlightMarkers([s.soc_id]));
+          row.addEventListener('mouseleave', wo4RestoreMarkers);
+          list.appendChild(row);
+          socIsolatesIndex[s.soc_id] = row;   // WO5a Sec 2: donut family-hover highlights these too
+        });
+      }
+      renderList();
+
+      const coverage = document.createElement('div');
+      coverage.className = 'wo4-caption';
+      coverage.textContent = `${result.n_no_family} of ${societies.length} have no resolved language ` +
+        `family (excluded from the ancestral ranking); ${result.n_incomplete_env} lack complete ` +
+        `environmental data (excluded from the environmental and overall rankings). The lists ` +
+        `cover different sets of societies -- see each pill's own excluded count.`;
+      wrap.appendChild(coverage);
+
+      return wrap;
+    }
+
+    // Highlight the given society IDs across every linked view (map markers, the confirmatory
+    // scatter's dots when that display is showing, and the strip plot's ticks when that display
+    // is showing), dim everyone else; wo4RestoreMarkers() undoes it. Two element types, one
+    // shared index-and-snapshot pattern: Leaflet markers restyle via .setStyle(), SVG elements
+    // (scatter circles, strip ticks) via .setAttribute() -- _wo4Type picks the branch, _wo4Base
+    // is never hand-computed (it varies per element) so restore always returns to what was
+    // actually there, not a guessed default.
+    function wo4ApplyStyle(el, style) {
+      if (el._wo4Type === 'svg') {
+        Object.entries(style).forEach(([k, v]) => el.setAttribute(k, v));
+      } else if (el._wo4Type === 'dom') {
+        Object.assign(el.style, style);
+      } else {
+        el.setStyle(style);
+      }
+    }
+
+    // socStripIndex is array-valued (a society can appear once per variable row); the other three
+    // are one element per id. Normalizing both shapes here keeps the highlight styles themselves
+    // the only thing that varies per index.
+    function wo4StyleForIndex(index, matched) {
+      if (index === socMarkerIndex) {
+        return matched
+          ? { radius: 7, weight: 2, opacity: 1, fillOpacity: 1 }
+          : { opacity: 0.08, fillOpacity: 0.04 };
+      }
+      if (index === socScatterIndex) {
+        return matched
+          ? { r: 7, 'fill-opacity': 1, 'stroke-width': 3 }
+          : { 'fill-opacity': 0.08 };
+      }
+      if (index === socIsolatesIndex) {
+        // WO5a Sec 2: hovering a family highlights its rows in the isolates list too, same
+        // treatment the row already gets on its own :hover (no separate "louder" color needed --
+        // the point is visibility, not emphasis-over-emphasis).
+        return matched ? { background: 'var(--wo4-gridline)' } : { background: 'transparent' };
+      }
+      // socStripIndex: ticks stay visible when dimmed, just greyed -- the WO wants the rest of
+      // the trait group's shape still legible, not near-invisible like the map/scatter's 0.08.
+      return matched
+        ? { stroke: 'var(--wo4-focus)', 'stroke-opacity': 1 }
+        : { stroke: 'var(--wo4-backdrop)', 'stroke-opacity': 0.4 };
+    }
+
+    function wo4HighlightMarkers(socIds) {
+      const idSet = new Set(socIds);
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
+        Object.entries(index).forEach(([id, elOrEls]) => {
+          const matched = idSet.has(id);
+          const style = wo4StyleForIndex(index, matched);
+          const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
+          els.forEach(el => {
+            wo4ApplyStyle(el, style);
+            // Raising z-order only means something for SVG (no z-index, later-in-DOM draws on
+            // top) and Leaflet markers (bringToFront()). For plain list rows (_wo4Type 'dom'),
+            // DOM order IS the visual sort order -- appendChild() would move the hovered row to
+            // the end of the list instead of raising it, which put a DIFFERENT row under the
+            // cursor, firing its own hover, which moved it too: a self-sustaining reorder loop
+            // (Karl's browser review, 2026-08-10 -- "furiously reordering").
+            if (matched && el._wo4Type !== 'dom') {
+              if (el.bringToFront) el.bringToFront();
+              else if (el.parentNode) el.parentNode.appendChild(el);   // SVG: raise via DOM order
+            }
+          });
+        });
+      });
+    }
+
+    function wo4RestoreMarkers() {
+      [socMarkerIndex, socScatterIndex, socStripIndex, socIsolatesIndex].forEach(index => {
+        Object.values(index).forEach(elOrEls => {
+          const els = Array.isArray(elOrEls) ? elOrEls : [elOrEls];
+          els.forEach(el => { if (el._wo4Base) wo4ApplyStyle(el, el._wo4Base); });
+        });
+      });
+    }
+
+    function wo4CompositionDonut(comp) {
+      const wrap = document.createElement('div');
+      if (!comp || !comp.n_total) return wrap;
+
+      // Order is deliberate, not by count: named families ranked by size, THEN the two residual
+      // buckets (Other, Unresolved) always last regardless of where their raw count would
+      // otherwise sort them (Karl, 2026-07-30) -- zero-count buckets are dropped, not shown empty.
+      const namedColors = ['var(--wo4-cat-1)', 'var(--wo4-cat-2)', 'var(--wo4-cat-3)'];
+      const buckets = [
+        ...comp.top_families.map((f, i) => ({
+          label: f.family_name || f.family_id, n: f.n, share: f.share,
+          soc_ids: f.soc_ids || [], color: namedColors[i] || 'var(--wo4-neutral-fill)',
+        })),
+        { label: 'Other families', n: comp.other.n, share: comp.other.share,
+          soc_ids: comp.other.soc_ids || [], color: 'var(--wo4-neutral-fill)', neutral: true },
+        { label: 'Unresolved', n: comp.n_unresolved, share: comp.n_unresolved / comp.n_total,
+          soc_ids: comp.unresolved.soc_ids || [], color: 'var(--wo4-text-muted)', neutral: true },
+      ].filter(b => b.n > 0);
+
+      const row = document.createElement('div');
+      row.className = 'wo4-donut-row';
+
+      const figure = document.createElement('div');
+      figure.className = 'wo4-donut-figure';
+      const svg = wo4SvgEl('svg', { width: 168, height: 168, viewBox: '0 0 168 168', role: 'img', 'aria-label': 'Language-family composition' });
+      const cx = 84, cy = 84, rOuter = 74, rInner = 44;
+      let angle = -Math.PI / 2;
+      const wedgeEls = {};
+
+      buckets.forEach((b, i) => {
+        const frac = b.n / comp.n_total;
+        const a0 = angle, a1 = angle + frac * 2 * Math.PI;
+        angle = a1;
+        const large = (a1 - a0) > Math.PI ? 1 : 0;
+        const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+        const [x0, y0] = pt(rOuter, a0), [x1, y1] = pt(rOuter, a1);
+        const [x2, y2] = pt(rInner, a1), [x3, y3] = pt(rInner, a0);
+        const d = `M${x0},${y0} A${rOuter},${rOuter} 0 ${large},1 ${x1},${y1} L${x2},${y2} A${rInner},${rInner} 0 ${large},0 ${x3},${y3} Z`;
+        const path = wo4SvgEl('path', { d, fill: b.color, stroke: 'var(--wo4-surface)', 'stroke-width': 2 });
+        path.style.cursor = 'pointer';
+        path.style.transition = 'opacity 0.15s ease';
+        svg.appendChild(path);
+        wedgeEls[i] = path;
+      });
+
+      const centerN = wo4SvgEl('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', class: 'wo4-donut-total', fill: 'var(--wo4-text-primary)', 'font-size': 22, 'font-weight': 600 });
+      centerN.textContent = comp.n_total;
+      svg.appendChild(centerN);
+      const centerLbl = wo4SvgEl('text', { x: cx, y: cy + 14, 'text-anchor': 'middle', fill: 'var(--wo4-text-muted)', 'font-size': 10 });
+      centerLbl.textContent = 'societies';
+      svg.appendChild(centerLbl);
+
+      figure.appendChild(svg);
+      row.appendChild(figure);
+
+      const legendWrap = document.createElement('div');
+      legendWrap.className = 'wo4-comp-legend-wrap';
+      const legendTitle = document.createElement('div');
+      legendTitle.className = 'wo4-comp-legend-title';
+      legendTitle.textContent = 'Language family';
+      legendWrap.appendChild(legendTitle);
+
+      const legend = document.createElement('ul');
+      legend.className = 'wo4-comp-legend';
+      const legendRows = {};
+      buckets.forEach((b, i) => {
+        const li = document.createElement('li');
+        li.className = 'wo4-comp-row' + (b.neutral ? ' is-neutral' : '');
+        const swatch = document.createElement('span');
+        swatch.className = 'wo4-legend-swatch';
+        swatch.style.background = b.color;
+        const name = document.createElement('span');
+        name.className = 'wo4-comp-name';
+        name.textContent = b.label;
+        const count = document.createElement('span');
+        count.className = 'wo4-comp-count';
+        const isThin = b.n < WO4_THIN_FAMILY_FLOOR;
+        if (isThin) count.classList.add('is-thin');
+        count.textContent = `${b.n} (${Math.round(b.share * 100)}%)` + (isThin ? ' · small n' : '');
+        li.append(swatch, name, count);
+        legend.appendChild(li);
+        legendRows[i] = li;
+
+        const enter = () => {
+          wo4HighlightMarkers(b.soc_ids);
+          li.classList.add('is-active');
+          wedgeEls[i].style.opacity = '1';
+          Object.entries(wedgeEls).forEach(([j, el]) => { if (j != i) el.style.opacity = '0.35'; });
+        };
+        const leave = () => {
+          wo4RestoreMarkers();
+          li.classList.remove('is-active');
+          Object.values(wedgeEls).forEach(el => { el.style.opacity = '1'; });
+        };
+        li.addEventListener('mouseenter', enter);
+        li.addEventListener('mouseleave', leave);
+        wedgeEls[i].addEventListener('mouseenter', enter);
+        wedgeEls[i].addEventListener('mouseleave', leave);
+      });
+      legendWrap.appendChild(legend);
+      row.appendChild(legendWrap);
+
+      wrap.appendChild(row);
+
+      const caption = document.createElement('div');
+      caption.className = 'wo4-caption';
+      caption.textContent = 'Hover a family to highlight its societies on the map.';
+      wrap.appendChild(caption);
+
+      return wrap;
     }
 
     // Breadcrumb state
@@ -3119,6 +3383,8 @@
     async function loadEcoLevel(state) {
       if (!ecoList) return;
       ecoList.innerHTML = '<div class="text-muted">Loading...</div>';
+      const ecoRealmNote = document.getElementById('eco-realm-note');
+      if (ecoRealmNote) ecoRealmNote.style.display = 'none';
       // Don't clear ecoLayer here - let showEcoGeom handle it
       // Only hide selected info when going back to realms
       if (state.level === 'realms') {
@@ -3145,8 +3411,11 @@
             if (bIdx !== -1) return 1;
             return a.name.localeCompare(b.name);
           });
-          const realmNote = '<div class="small text-muted mb-2">(first 3 have most complete bioregion data)</div>';
-          ecoList.innerHTML = realmNote + items.map(r => `
+          if (ecoRealmNote) {
+            ecoRealmNote.textContent = 'NOTE: The first 3 realms have the most complete bioregion data.';
+            ecoRealmNote.style.display = '';
+          }
+          ecoList.innerHTML = items.map(r => `
             <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-eco-level="realm" data-eco-id="${escapeHtml(r.id)}">
               ${escapeHtml(r.name)}
               <span class="badge bg-secondary rounded-pill">${r.subrealm_count} subrealms</span>
@@ -3371,4 +3640,13 @@
 
   });
 </script>
-{% endblock %}
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

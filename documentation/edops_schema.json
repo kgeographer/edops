@@ -1,5 +1,5 @@
 {
-  "_doc": "EDOPS Signature Schema v0.3 — updated June 2026. Documents the actual /api/signature response for both default and flat modes. Example values are real API output for Timbuktu (16.766°N, −3.008°E), BasinATLAS Level 08, bands ABCDE, no temporal period. Fields marked _status:planned are not yet returned but are documented here for coordination.",
+  "_doc": "EDOPS Signature Schema v0.4 — regenerated 2026-08-16 against live /api/signature output for both default and flat modes. Example values are real API output for Timbuktu (16.8167°N, −2.9833°E), BasinATLAS Level 08, bands ABCDET, Band T span 1350–1600 CE. This is a curated, annotated reference (grouped and labeled for readability) — not a raw response dump. Superseded the June 2026 (v0.3) version, which predated the seasonality-index fields and the current Band T shape.",
 
   "_modes": {
     "default": "Response includes meta, profile_summary, and profile_groups (nested band structure). Raw flat field values are not returned at the top level.",
@@ -8,27 +8,27 @@
 
   "meta": {
     "_note": "Always present. Injected by the route; not part of the DB query.",
-    "signature_version": "0.3",
-    "generated": "2026-06-10T12:00:00Z",
+    "signature_version": "0.4",
+    "generated": "2026-08-16T20:05:03Z",
     "query": {
-      "lat": 16.76618535,
-      "lon": -3.00777252,
-      "bands": "ABCDE",
+      "lat": 16.8167,
+      "lon": -2.9833,
+      "bands": "ABCDET",
       "level": 8,
-      "from_year": null,
-      "to_year": null
+      "from_year": 1350,
+      "to_year": 1600
     },
-    "neighborhood": {
+    "scope": {
       "type": "containing_basin",
       "basin_level": 8,
-      "_type_options_planned": ["buffer", "upstream_catchment", "three_tier", "polity_mean"]
+      "_note": "Renamed from 'neighborhood' to 'scope' (2026-08-22) -- 'scope' is now the official term for a signature query's spatial extent everywhere in the codebase, request parameter and response alike; 'neighborhood' was retired because it never honestly described the polity case. The June 2026 version of this doc listed a '_type_options_planned' field here (buffer/upstream_catchment/three_tier/polity_mean) that was never part of the real response -- it was aspirational. Those areal variants now exist as separate endpoints (GET /api/area for polities, /api/areas for buffer/single_basin/polity/basin_ring) rather than as a scope.type variant of /api/signature itself; this field stays fixed at 'containing_basin' for the single-point endpoint."
     },
     "data_sources": {
       "basin": "HydroATLAS v1.0 / BasinATLAS Level 08",
       "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
       "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2×2° grid, annual",
-      "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-      "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km"
+      "volcanic": "eVolv2k v4 (Sigl & Toohey 2024); -491–1890 CE",
+      "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
     }
   },
 
@@ -45,6 +45,15 @@
     "elev_error": "_omitted when elevation lookup succeeds; present with message when both providers fail_",
     "relief_range_m": 14.0,
     "relief_position": 0.5,
+    "_seasonality_note": "The eight fields below (pre_mm_monthly through tmp_seas_amp) are new since the June 2026 version of this doc -- derived from the persist views' monthly precip/temp arrays at request time (app/db/signature.py:_seasonality_indices), not stored columns.",
+    "pre_mm_monthly": [0.0, 0.0, 0.0, 1.0, 4.0, 16.0, 49.0, 70.0, 29.0, 3.0, 0.0, 0.0],
+    "tmp_dc_monthly": [20.7, 23.5, 26.8, 30.5, 33.9, 33.3, 30.3, 28.4, 28.7, 28.6, 25.1, 21.5],
+    "pre_concentration": "0–1 index of how concentrated annual precip is in its peak month(s)",
+    "pre_peak_month": "1–12, month of maximum precip",
+    "tmp_concentration": "0–1 index of how concentrated the annual temp cycle is",
+    "tmp_peak_month": "1–12, month of maximum temp",
+    "seas_phase_offset": "months between precip peak and temp peak",
+    "tmp_seas_amp": "annual temperature range (max − min monthly), °C",
     "profile_summary": [
       {"key": "ecoregion",      "label": "Ecoregion",              "value": "Sahelian Acacia savanna"},
       {"key": "zone_name",      "label": "Bioclimate zone",        "value": "Extremely hot and xeric"},
@@ -61,7 +70,7 @@
   },
 
   "default_response": {
-    "_note": "The profile_groups key is present only in the default (non-flat) response.",
+    "_note": "The profile_groups key is present only in the default (non-flat) response. Bands A–E are unchanged in shape since June 2026 (verified against live output).",
     "profile_groups": {
       "A": {
         "label": "Physiographic bedrock",
@@ -83,8 +92,8 @@
           {"key": "discharge_yr",            "value": 0.711},
           {"key": "discharge_min",           "value": 0.05},
           {"key": "discharge_max",           "value": 2.906},
-          {"key": "river_area",              "value": 23.14},
-          {"key": "river_area_upstream",     "value": 23.14},
+          {"key": "river_area",              "value": 23.143},
+          {"key": "river_area_upstream",     "value": 23.143},
           {"key": "gw_table_depth",          "value": 16},
           {"key": "pnv_majority",            "value": "Open shrubland"},
           {"key": "pnv_shares",              "value": {"Open shrubland": 100}},
@@ -124,13 +133,13 @@
         "label": "Anthropocene markers",
         "_note_bce": "When from_year < 0, a _note array is appended disclosing that Band D reflects contemporary datasets (EarthStat ~2000 CE, footprint 2009, GDP contemporary).",
         "items": [
-          {"key": "pop_density",                "value": 86.87},
+          {"key": "pop_density",                "value": 86.872},
           {"key": "human_footprint_09",         "value": 33},
           {"key": "human_footprint_09_upstream","value": 33},
           {"key": "cropland_extent",            "value": 0},
           {"key": "cropland_extent_upstream",   "value": 0},
-          {"key": "pasture_extent",             "value": 0},
-          {"key": "pasture_extent_upstream",    "value": 0},
+          {"key": "pasture_extent",             "value": 3},
+          {"key": "pasture_extent_upstream",    "value": 3},
           {"key": "reservoir_vol",              "value": 0},
           {"key": "gdp_avg",                    "value": 2285},
           {"key": "human_dev_idx",              "value": 0.442}
@@ -145,81 +154,90 @@
         ]
       },
       "T": {
-        "_note": "Present only when bands includes T and from_year/to_year are provided.",
-        "_not_requested": {
+        "_note": "Present only when bands includes T. Shape has changed substantially since June 2026 -- most notably, '_status' is no longer a three-way ok/out_of_range/not_requested flag. It is 'ok' whenever from_year/to_year were supplied at all (meaning the mechanism ran without error); per-source data availability is now signaled separately via 'lmr_status' and the *_note fields below, since LMR, eVolv2k, and HYDE each have their own independent coverage window and a single query can mix available and unavailable sources.",
+
+        "_not_requested_example": {
           "_status": "not_requested",
           "_note": "Include from_year and to_year (CE integers) to retrieve Band T temporal data."
         },
-        "_out_of_range": {
-          "_status": "out_of_range",
-          "_note": "LMR v2.1 coverage is 0–1998 CE. Requested period is outside this range.",
-          "coverage_ce": [0, 1998],
-          "requested_ce": [-2100, -1800]
-        },
+
         "_ok_example": {
-          "_status": "ok",
-          "grid_cell": {"lat": 16.0, "lon": -4.0},
+          "_doc": "from_year=1350, to_year=1600 -- fully within LMR (0-1998) and eVolv2k (-491-1890) coverage.",
+          "lmr_status": "available",
+          "grid_cell": {"lat": 16.0, "lon": -2.0},
           "year_start": 1350,
           "year_end": 1600,
-          "pdsi_mean": -0.132,
-          "pdsi_min": -0.511,
-          "pdsi_max": 0.196,
-          "pdsi_series": "[251 annual {year, pdsi} objects]",
-          "air_mean_anom_k": -0.08,
-          "air_series": "[251 annual {year, air_anom_k} objects]",
-          "prate_mean_anom_mm_day": -0.01,
-          "prate_series": "[251 annual {year, prate_anom_mm_day} objects]",
+          "pdsi_series": "[251 annual {year, pdsi} objects, e.g. {\"year\": 1350, \"pdsi\": -0.2003}]",
+          "pdsi_mean": -0.1461,
+          "pdsi_min": -0.5504,
+          "pdsi_max": 0.1377,
+          "air_series": "[251 annual {year, air_anom_k} objects, e.g. {\"year\": 1350, \"air_anom_k\": -0.254}]",
+          "air_mean_anom_k": -0.146,
+          "prate_series": "[251 annual {year, prate_anom_mm_day} objects, e.g. {\"year\": 1350, \"prate_anom_mm_day\": -0.0494}]",
+          "prate_mean_anom_mm_day": -0.0196,
           "volcanic_events": [
-            {"year_ad": 1458, "vssi_tg": 32.98, "asymmetry": 0.5, "location": "Kuwae (Vanuatu)", "tephra": false}
+            {"year_ad": 1453, "month": 1, "vssi_tg": 9.97,  "vssi_1sig": 3.07, "asymmetry": 0.829, "location": null,                          "tephra": false},
+            {"year_ad": 1458, "month": 1, "vssi_tg": 32.98, "vssi_1sig": 4.80, "asymmetry": 0.357, "location": "Kuwae (Vanuatu)",              "tephra": false},
+            {"year_ad": 1477, "month": 2, "vssi_tg": 5.12,  "vssi_1sig": 1.61, "asymmetry": 1.000, "location": "Veiðivötn (Iceland)",          "tephra": true},
+            {"year_ad": 1585, "month": 1, "vssi_tg": 8.51,  "vssi_1sig": 2.34, "asymmetry": 0.914, "location": "Colima (Mexico)",              "tephra": false},
+            {"year_ad": 1595, "month": 3, "vssi_tg": 8.87,  "vssi_1sig": 1.51, "asymmetry": 0.444, "location": "Nevado del Ruiz (Colombia)",   "tephra": false},
+            {"year_ad": 1600, "month": 2, "vssi_tg": 18.95, "vssi_1sig": 4.03, "asymmetry": 0.671, "location": "Huaynaputina (Peru)",          "tephra": false}
           ],
-          "volcanic_event_count": 4,
-          "volcanic_vssi_sum_tg": 67.3,
-          "years_since_last_major": 142,
-          "hyde_land_use": [
-            {
-              "year_ce": 1400,
-              "cropland_km2": 0.0,
-              "cropland_pct": 0.0,
-              "grazing_km2": 12.4,
-              "grazing_pct": 0.3,
-              "pasture_km2": 0.0,
-              "pasture_pct": 0.0,
-              "rangeland_km2": 12.4,
-              "rangeland_pct": 0.3,
-              "basin_area_km2": 4230.0,
-              "n_cells": 42
-            }
-          ]
+          "volcanic_event_count": 6,
+          "volcanic_vssi_sum_tg": 84.4,
+          "years_since_last_major": 0,
+          "volcanic_events_note": null,
+          "lmr_out_of_range_note": null,
+          "lmr_fidelity_note": null,
+          "lmr_proxy_bias_note": "LMR reconstruction quality is strongest for Europe and North America, where proxy records are densest; results for East Asia, South Asia, and the Southern Hemisphere carry greater uncertainty.",
+          "_status": "ok",
+          "hyde_land_use": {
+            "_doc": "Structure changed from a flat per-year list (June 2026) to this epoch/n_epochs/_note shape. Epoch resolution varies by era (see _note). Each epoch now also carries a std and p10/p90 spread across the basin's constituent HYDE cells, not just a mean/pct value.",
+            "epochs": [
+              {
+                "year_ce": 1400,
+                "cropland_km2": 0.109, "cropland_pct": 0.02, "cropland_std": 0.038, "cropland_p10": 0.0, "cropland_p90": 0.044,
+                "grazing_km2": 5.727,  "grazing_pct": 1.0,   "grazing_std": 1.542,  "grazing_p10": 0.189, "grazing_p90": 1.951,
+                "pasture_km2": 0.0,    "pasture_pct": 0.0,   "pasture_std": 0.0,
+                "rangeland_km2": 5.727,"rangeland_pct": 1.0, "rangeland_std": 1.542,
+                "basin_area_km2": 573.4,
+                "n_cells": 7
+              }
+            ],
+            "n_epochs": 3,
+            "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+          }
+        },
+
+        "_out_of_range_example": {
+          "_doc": "from_year=-2100, to_year=-1800 -- outside LMR (0-1998 CE) and eVolv2k (-491-1890 CE) coverage, but within HYDE's range (10000 BCE-2023 CE). Demonstrates that '_status' stays 'ok' even when individual sources have nothing to return -- unavailability is per-source, not all-or-nothing.",
+          "lmr_status": "out_of_range",
+          "grid_cell": null,
+          "year_start": -2100,
+          "year_end": -1800,
+          "pdsi_series": [], "pdsi_mean": null, "pdsi_min": null, "pdsi_max": null,
+          "air_series": [], "air_mean_anom_k": null,
+          "prate_series": [], "prate_mean_anom_mm_day": null,
+          "volcanic_events": [],
+          "volcanic_event_count": 0,
+          "volcanic_vssi_sum_tg": 0,
+          "years_since_last_major": null,
+          "volcanic_events_note": "eVolv2k v4 catalog covers -491–1890 CE; this period falls outside that range — no volcanic record is available.",
+          "lmr_out_of_range_note": "LMR v2.1 covers 0–1998 CE; climate reconstruction is not available for this period.",
+          "lmr_fidelity_note": null,
+          "lmr_proxy_bias_note": null,
+          "_status": "ok",
+          "hyde_land_use": {
+            "epochs": [{"year_ce": -2000, "cropland_km2": 0.0, "grazing_km2": 1.324, "...": "as above -- HYDE still has coverage here"}],
+            "n_epochs": 1,
+            "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+          }
         }
       }
     }
   },
 
   "flat_response": {
-    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups.",
-    "_example_top_level_keys": [
-      "meta", "id", "eco_id", "up_area", "geom_geojson",
-      "elev_point", "elev_source", "elev_dataset", "elev_resolution_m",
-      "relief_range_m", "relief_position", "profile_summary",
-      "elev_min", "elev_max", "slope_avg", "slope_upstream", "stream_gradient",
-      "lith_class", "karst", "karst_upstream",
-      "runoff", "discharge_yr", "discharge_min", "discharge_max",
-      "river_area", "river_area_upstream", "gw_table_depth",
-      "pnv_majority", "pnv_shares",
-      "pct_clay", "pct_silt", "pct_sand",
-      "pct_clay_upstream", "pct_silt_upstream", "pct_sand_upstream",
-      "wet_pct_grp1", "wet_pct_grp2", "wet_pct_grp1_upstream", "wet_pct_grp2_upstream",
-      "wetland_class",
-      "temp_yr", "temp_min", "temp_max", "temp_yr_upstream",
-      "precip_yr", "precip_yr_upstream", "aridity", "aridity_upstream",
-      "permafrost_extent", "biome", "ecoregion",
-      "freshwater_ecoregion_class", "freshwater_ecoregion_name",
-      "pop_density", "human_footprint_09", "human_footprint_09_upstream",
-      "cropland_extent", "cropland_extent_upstream",
-      "pasture_extent", "pasture_extent_upstream",
-      "reservoir_vol", "gdp_avg", "human_dev_idx",
-      "dist_sink", "endorheic", "coast_flag",
-      "temporal"
-    ]
+    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups."
   }
 }

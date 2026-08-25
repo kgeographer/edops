@@ -49,7 +49,7 @@ def nsong_detail(client):
 # ---------------------------------------------------------------------------
 
 def test_lean_top_level_keys(nsong_lean):
-    required = {"rows", "neighborhood", "shortfall", "bands", "resolver"}
+    required = {"rows", "scope", "shortfall", "bands", "resolver"}
     missing = required - nsong_lean.keys()
     assert not missing, f"Missing top-level keys: {missing}"
 
@@ -62,16 +62,16 @@ def test_lean_resolver_block(nsong_lean):
     assert res["fromyear"] <= 1000 <= res["toyear"]
 
 
-def test_lean_neighborhood_type(nsong_lean):
-    nb = nsong_lean["neighborhood"]
-    assert nb["type"]      == "polygon"
+def test_lean_scope_type(nsong_lean):
+    nb = nsong_lean["scope"]
+    assert nb["type"]      == "polity"
     assert nb["level"]     == 6
     assert nb["unit_type"] == "basin"
 
 
 def test_lean_basin_count(nsong_lean):
     # WO20 established N Song = 376 basins at L06
-    assert nsong_lean["neighborhood"]["n_units"] == 376
+    assert nsong_lean["scope"]["n_units"] == 376
 
 
 def test_lean_shortfall_low(nsong_lean):

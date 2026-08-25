@@ -18,7 +18,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.shared.db_utils import db_connect
 from app.db.context import load_context_index, get_context
-from app.api.routes import _resolve_basin  # same basin-containment lookup the route will use
+from app.api.routes_sandbox import _resolve_basin  # same basin-containment lookup the route will use
 
 PROBES = {
     "Tbilisi":     (41.6938,   44.8015),

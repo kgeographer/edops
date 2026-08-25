@@ -1180,6 +1180,12 @@ async function applyBasinVar(key) {
   }
 }
 
+function clearBasinVar() {
+  map.removeFeatureState({ source: 'basin06', sourceLayer: 'basin06' });
+  document.getElementById('cp-basin-legend').style.display = 'none';
+  document.getElementById('cp-basin-status').textContent = '';
+}
+
 function renderBasinLegend(meta, lo, hi) {
   const barEl = document.getElementById('cp-basin-legend-bar');
   const loEl  = document.getElementById('cp-basin-leg-lo');
@@ -1203,7 +1209,13 @@ function setProvenance(text) {
 
 document.getElementById('cp-basin-var').addEventListener('change', e => {
   const key = e.target.value;
-  if (!key) { setProvenance(''); return; }
+  if (!key) {
+    hideLMRLayer();
+    hideHYDELayer();
+    clearBasinVar();
+    setProvenance('');
+    return;
+  }
   if (key.startsWith('lmr_')) {
     hideHYDELayer();
     applyLMRChoropleth(key);

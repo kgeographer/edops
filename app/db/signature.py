@@ -21,31 +21,35 @@ load_dotenv()  # reads .env from project root
 
 # -----------------------
 # Field lookup: built once at import from edops_codebook.tsv.
-# Keyed by api_key_s and api_key_u; value is {schema_key, friendly_name, source, units}.
+# Keyed by api_key_s and api_key_u; value is {schema_key, friendly_name, source, db_col, units}.
+# `source` is the dataset (e.g. "BasinATLAS v1.0"); `db_col` is the raw basin08 column
+# (e.g. "ari_ix_sav") — these were previously conflated under one "source" key.
 # Used in profile_groups to generate human-readable labels.
 # -----------------------
 
 def _load_field_lookup() -> Dict[str, Dict[str, str]]:
     lookup: Dict[str, Dict[str, str]] = {}
-    codebook = Path(__file__).parent.parent.parent / "documentation" / "EDOPS_variable_catalog_v0.3.tsv"
+    codebook = Path(__file__).parent.parent.parent / "documentation" / "EDOPS_variable_catalog_v0.4.tsv"
     if not codebook.exists():
         return lookup
     with codebook.open(newline="") as f:
         for row in csv.DictReader(f, delimiter="\t"):
-            source_s = row.get("basin08_col_s", "")
-            source_u = row.get("basin08_col_u", "")
+            db_col_s = row.get("basin08_col_s", "")
+            db_col_u = row.get("basin08_col_u", "")
+            dataset_source = row.get("source", "") or "Derived"
             meta = {
                 "schema_key":    row.get("schema_key", ""),
                 "friendly_name": row.get("friendly_name", ""),
+                "source":        dataset_source,
                 "units":         row.get("units", ""),
                 "notes":         row.get("notes", ""),
             }
             api_s = (row.get("api_key_s") or "").strip()
             api_u = (row.get("api_key_u") or "").strip()
             if api_s:
-                lookup[api_s] = {**meta, "source": source_s or source_u or "derived"}
+                lookup[api_s] = {**meta, "db_col": db_col_s or db_col_u or ""}
             if api_u:
-                lookup[api_u] = {**meta, "source": source_u or "derived",
+                lookup[api_u] = {**meta, "db_col": db_col_u or "",
                                  "schema_key": meta["schema_key"] + "_u",
                                  "friendly_name": meta["friendly_name"] + " (upstream)"}
     return lookup
@@ -570,8 +574,8 @@ def get_signature(
                     if k in sig:
                         meta = FIELD_LOOKUP.get(k, {})
                         sk = meta.get("schema_key") or k
-                        src = meta.get("source", "")
-                        label = f"{sk} ({src})" if src else sk
+                        db_col = meta.get("db_col", "")
+                        label = f"{sk} ({db_col})" if db_col else sk
                         items.append({
                             "key": k,
                             "label": label,

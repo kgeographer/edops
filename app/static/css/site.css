@@ -12,6 +12,15 @@ header, main {
 
 header {
   /*padding-block: 1rem;*/
+  position: relative;
+}
+
+/* Fixed page-title-length-independent position for the 3-page nav pills. */
+.edops-page-pills-wrap {
+  position: absolute;
+  left: 500px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 pre {
@@ -55,12 +64,22 @@ pre {
   padding: 2px;
 }
 
-#soc_blurb {
+.soc-blurb {
   font-size: smaller;
 }
 
 .red-subhead {
   color: #993333;
+}
+
+.bold-ital {
+  font-weight: bold;
+  font-style: italic;
+}
+
+.modal-body-project p {
+  font-size: 1.2rem;
+  padding: 0 2rem;
 }
 
 /* Computing Place splash tiles */
@@ -69,6 +88,12 @@ pre {
   gap: 1.5rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.cp-tile-col {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
 }
 
 .cp-tile {
@@ -84,11 +109,26 @@ pre {
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
+.cp-tile-blurb {
+  margin-top: 0.6rem;
+  color: #000;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  padding: 0 8px;
+  /*text-align: center;*/
+}
+
 .cp-tile img {
   width: 100%;
   height: 180px;
   object-fit: cover;
   display: block;
+}
+
+/* Scoped to .cp-tile-col (only edops.html wraps tiles this way) so this doesn't affect
+   index.html's EDOP/CDOP tiles, which share the base .cp-tile classes. */
+.cp-tile-col .cp-tile img {
+  object-position: center bottom;
 }
 
 .cp-tile-info {
@@ -130,3 +170,22 @@ pre {
   background-color: #4a7c59;
   color: #fff;
 }
+
+/* Shared help-icon harness -- see app/static/js/edops_help.js for the full mode contract
+   (tooltip / toggle-panel / modal) and the decorator icons each non-tooltip mode gets. */
+.edops-help {
+  cursor: help;
+  color: #993333;
+  font-size: 0.9em;
+}
+.edops-help[data-help-toggle],
+.edops-help[data-help-modal] {
+  cursor: pointer;
+}
+.edops-help-decorator {
+  font-size: 0.75em;
+  color: #6c757d;
+  margin-left: 2px;
+  cursor: pointer;
+}
+

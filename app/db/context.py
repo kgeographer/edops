@@ -20,7 +20,7 @@ elevation; composite-metric bundling → temperature split into level + range).
                   into load_catalog / basin08_scores) — computed independently
                   here; see docs/design/deferred_items_register.md "Catalog
                   housekeeping" for the catalog-side gap.
-  slp_dg_sav    — mean slope (degrees) — relief/roughness proxy
+  slp_dg_sav    — mean slope (degrees; stored ×10, divide by 10) — relief/roughness proxy
   ari_ix_sav    — aridity index (P/PET ×100); log1p-transformed before ranking
                   per the catalog's position_method for this variable
   run_mm_syr    — annual runoff (mm/yr)
@@ -66,7 +66,7 @@ _SCALAR_COLS: Dict[str, float] = {
     "pre_mm_syr": 1.0,
     "tmp_dc_syr": 0.1,
     "ele_mt_sav": 1.0,
-    "slp_dg_sav": 1.0,
+    "slp_dg_sav": 0.1,
     "ari_ix_sav": 1.0,
     "run_mm_syr": 1.0,
 }

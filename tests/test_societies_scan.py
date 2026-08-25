@@ -88,6 +88,54 @@ def test_religion_scan_has_no_hook_metadata(client):
     assert "qualifier" in temp and "direction" in temp
 
 
+def test_religion_scan_includes_per_society_records(client):
+    # WO5 (isolates view, experimental): per-society records for client-side ancestral/
+    # geographic/environmental nearest-neighbor ranking. EA034 (no-hook) only, matching the
+    # strip-plot ticks this reuses the same percentile machinery for.
+    r = client.get("/api/societies/env-scan",
+                    params={"trait": "religion", "value": "Active, but not supporting morality"})
+    body = r.json()
+    socs = body["societies"]
+    assert len(socs) == body["n_focus"] == 40
+
+    s = socs[0]
+    assert {"soc_id", "name", "lat", "lon", "family_id", "family_name",
+            "family_global_n", "env"} <= s.keys()
+    assert set(s["env"].keys()) == {"aridity", "temperature", "seasonality", "ruggedness", "landform"}
+
+    # WO5 #2's own fix: family_global_n is the family's count across the basin-joined AND
+    # EA034-coded corpus (not just this trait VALUE's coded set) -- so it must be >= that
+    # society's family's count within this trait-VALUE-filtered 40, for every resolved-family
+    # society in the response.
+    trait_family_counts = {}
+    for rec in socs:
+        if rec["family_id"] is not None:
+            trait_family_counts[rec["family_id"]] = trait_family_counts.get(rec["family_id"], 0) + 1
+    for rec in socs:
+        if rec["family_id"] is not None:
+            assert rec["family_global_n"] >= trait_family_counts[rec["family_id"]]
+
+
+def test_family_global_n_denominator_is_trait_coded_not_all_basin_joined(client):
+    # Second denominator bug, caught in review (Opus, 2026-08-11) after WO5 first shipped:
+    # family_global_n was counting ALL basin-joined members of a family, including ones EA034
+    # never coded at all. EA034 codes only 680 of 1,133 basin-joined societies, and the gap is
+    # very unevenly distributed across families -- Uto-Aztecan is 65 all-basin-joined members but
+    # only 18 actually EA034-coded. Pinned to that real family via Otiose (EA034 value with
+    # several Uto-Aztecan-family societies): family_global_n must read 18, not 65.
+    r = client.get("/api/societies/env-scan", params={"trait": "religion", "value": "Otiose"})
+    body = r.json()
+    uto_aztecan = [s for s in body["societies"] if s["family_id"] == "utoa1244"]
+    assert len(uto_aztecan) > 0
+    assert all(s["family_global_n"] == 18 for s in uto_aztecan)
+
+
+def test_subsistence_scan_has_no_per_society_records(client):
+    # EA042 keeps the confirmatory scatter -- the isolates view is EA034-only (WO5 scope).
+    r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Pastoralism"})
+    assert "societies" not in r.json()
+
+
 def test_composition_note_no_dominance_threshold(client):
     r = client.get("/api/societies/env-scan", params={"trait": "subsistence", "value": "Pastoralism"})
     body = r.json()

@@ -147,8 +147,103 @@ def run_societies_env_scan(trait: str, value: str) -> Dict[str, object]:
         )["variables"]
     else:
         payload["variables"] = variable_percentiles(sub, trait_col=trait_col, value=value)["variables"]
+        # WO4 strip-plot redesign (2026-08-10): one tick per focus society, not just its group
+        # mean -- see _per_society_ticks() below for why this is a separate pass rather than an
+        # addition inside variable_percentiles() itself.
+        ticks_by_var = _per_society_ticks(sub, is_focus)
+        for key, ticks in ticks_by_var.items():
+            if key in payload["variables"]:
+                payload["variables"][key]["ticks"] = ticks
+        # WO5 (2026-08-10, experimental 'isolates' branch, EA034 only): per-society records for
+        # client-side ancestral/geographic/environmental nearest-neighbor ranking.
+        payload["societies"] = _per_society_records(sub, is_focus, trait_col)
 
     return payload
+
+
+def _per_society_ticks(sub: pd.DataFrame, is_focus: pd.Series,
+                        variables: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, list]:
+    """Per-society percentile position for the strip plot -- one tick per focus-group society
+    per variable, each against the FULL basin-joined backdrop (`sub`, not the focus subset),
+    matching the WO's own caption rule ("positions are always against all basin-joined
+    societies"). Separate from `variable_percentiles()` rather than folded into it: that
+    function reports one percentile per (trait, value) -- the group MEAN's position -- and nine
+    lines of module docstring already explain why that single-number, no-resampling design is
+    deliberate; this is a different shape of output (an array per variable) for a different
+    consumer (the strip plot's ticks), not a variant of the same computation.
+
+    `rank(pct=True)` (default `na_option='keep'`) excludes NaNs from both the ranking and the
+    denominator, so a focus row's tick position is its percentile among backdrop rows that have
+    a non-null value for that column -- same complete-case convention `variable_percentiles()`
+    uses via `.dropna()`.
+    """
+    variables = variables or VARIABLES
+    out: Dict[str, list] = {}
+    for key, cfg in variables.items():
+        col = cfg["column"]
+        pct = sub[col].rank(pct=True) * 100
+        rows = pd.DataFrame({
+            "soc_id": sub["soc_id"], "family_id": sub["family_id"], "percentile": pct,
+        })[is_focus].dropna(subset=["percentile"])
+        out[key] = [
+            {
+                "soc_id": str(r.soc_id),
+                "family_id": str(r.family_id) if pd.notna(r.family_id) else None,
+                "percentile": float(r.percentile),
+            }
+            for r in rows.itertuples(index=False)
+        ]
+    return out
+
+
+def _per_society_records(sub: pd.DataFrame, is_focus: pd.Series, trait_col: str,
+                          variables: Optional[Dict[str, Dict[str, str]]] = None) -> list:
+    """WO5 'Isolates' view: one record per focus-group society -- soc_id/name/lat/lon/family,
+    the family's GLOBAL count, and its percentile position on all five VARIABLES as one vector.
+    The global family count is WO5's own spec fix (originally `anc_size` was tallied only within
+    the trait-filtered set, so a family with one D-PLACE society *total* would trivially top the
+    ancestral-isolation ranking for whatever trait that one society happened to hold -- a
+    corpus-sampling artifact, not an independent-origin signal. Shipping both counts lets the
+    client (or a reader) tell "rare within this trait" from "rare in the corpus, period" apart,
+    rather than conflating them silently.
+
+    "GLOBAL" means basin-joined AND coded for `trait_col` -- not every basin-joined society,
+    which is a second denominator bug caught in review (Opus, 2026-08-11) after the first ship:
+    EA034 codes only 680 of 1,133 basin-joined societies, and that gap is very unevenly
+    distributed across families (confirmed empirically: 36 of 73 families with any EA034-coded
+    member have a >=1.5x gap between "all basin-joined" and "basin-joined and EA034-coded" counts,
+    up to 5x; Uto-Aztecan is 65 vs. 18). Counting uncoded members inflates the denominator and
+    understates how rare a family-within-trait actually is -- the exact overstatement the
+    family_global_n fix exists to prevent, just one level up.
+
+    Ancestral/geographic/environmental nearest-neighbor ranking itself happens entirely
+    client-side (n <= ~280, trivial); this only assembles the per-society inputs each ranking
+    needs. Percentiles reuse `_per_society_ticks()`'s convention (rank against the full
+    basin-joined backdrop, complete-case per variable) but pivoted from per-variable arrays to
+    one 5-D vector per society, since nearest-neighbor distance needs all five values together.
+    """
+    variables = variables or VARIABLES
+    family_global_counts = sub.loc[sub[trait_col].notna(), "family_id"].value_counts()
+
+    pct_cols = {key: sub[cfg["column"]].rank(pct=True) * 100 for key, cfg in variables.items()}
+
+    records = []
+    for idx, row in sub[is_focus].iterrows():
+        fam = row.get("family_id")
+        has_fam = pd.notna(fam)
+        env = {key: (float(pct_cols[key].loc[idx]) if pd.notna(pct_cols[key].loc[idx]) else None)
+               for key in variables}
+        records.append({
+            "soc_id": str(row["soc_id"]),
+            "name": str(row["name"]) if pd.notna(row.get("name")) else None,
+            "lat": float(row["lat"]) if pd.notna(row.get("lat")) else None,
+            "lon": float(row["lon"]) if pd.notna(row.get("lon")) else None,
+            "family_id": str(fam) if has_fam else None,
+            "family_name": family_name(fam) if has_fam else None,
+            "family_global_n": int(family_global_counts.get(fam, 0)) if has_fam else None,
+            "env": env,
+        })
+    return records
 
 
 def _build_scatter(sub: pd.DataFrame, trait_col: str, value: str, cfg: Dict[str, object]) -> Dict[str, object]:

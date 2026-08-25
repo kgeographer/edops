@@ -1,43 +1,34 @@
-<!-- Shared About/API modals (2026-08-03 reorg). Content copied verbatim from base.html --
-     Karl: "current content ok for now." Used by sandbox_v3.html, explorer.html, and
-     cdop_pilot.html (via base.html's modals-block override). base.html keeps its own
-     inline copy for workbench.html, untouched, to avoid duplicate-ID collisions if a page
-     both extends base.html's default modals AND includes this partial. -->
-
-<!-- About Modal -->
-<div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="about-modal-label" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 75%;">
+<!-- Shared Documentation/API modals. Used by sandbox.html, explorer.html, and workbench.html
+     (formerly cdop_pilot.html, renamed 2026-08-05; converted from a base.html block-extending
+     template to a standalone document like the other two, 2026-08-07). The old workbench.html
+     -- which relied on base.html's own inline default About/API modals, not this partial -- is
+     archived to xarchive/ (gitignored). base.html itself (and its stale default modal content)
+     was deleted 2026-08-07, once converting workbench.html left nothing using it.
+     Documentation modal replaced the retired About modal 2026-08-04 (DOCSv4 plumbing), then the
+     separate Guide/Docs links were merged into this single one 2026-08-08 -- the old Guide
+     modal iframed built MkDocs pages with the sidebar hidden (via docsite/javascripts/embed.js
+     stripping Material's header) and a plain "Docs" link separately opened /docs full-page;
+     once the mkdocs sidebar breakpoint hook (see mkdocs_hooks.py) made the sidebar show up
+     inside a wide-enough modal anyway, keeping both links stopped making sense -- Karl's call
+     was that a visible sidebar in the modal isn't a bad thing, so this modal now IS the docs
+     site for the current page, sidebar included. Shell is shared, body is per-page: includes
+     "_guide_{{ active_page }}.html" (each caller sets active_page before including this
+     partial; filenames kept as _guide_*.html, just the modal chrome around them changed). -->
+<div class="modal fade" id="documentation-modal" tabindex="-1" aria-labelledby="documentation-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="about-modal-label">About EDOP</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h4 class="modal-title" id="documentation-modal-label">Environmental Dimensions of Place Service (EDOPS)</h4>
+        <div class="ms-auto me-2">
+          <a href="/docs/" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <img src="/static/images/open-book.png" alt="" style="height:16px; width:16px; vertical-align:-3px;">
+            Full page ↗
+          </a>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-left:0;"></button>
       </div>
       <div class="modal-body">
-        <h5 style="color:#993333;">About EDOP</h5>
-        <p>EDOP (Environmental Dimensions of Place) is an experimental platform for exploring the environmental context of historical and contemporary places. Building on geographer Carl Sauer's concept of cultural landscape—the mutually shaping relationship between physical environment and human activity—EDOP generates environmental "signatures" for locations worldwide using multi-scale datasets from global geographic realms to ecoregions down to 40km² subbasins. These signatures draw from over 190,000 hydrological units characterized across four temporal "persistence bands": physiographic bedrock (long-term geology and topography), hydro-climatic baselines (drainage, runoff, aridity), bioclimatic proxies (vegetation and productivity indicators), and Anthropocene markers (modern land use and human modification). This allows researchers to selectively query environmental conditions relevant to different historical periods and research questions.</p>
-        <p>Beyond environmental profiling, EDOP links these signatures with cultural and semantic data—including anthropological variables from the D-PLACE project covering subsistence, settlement, and social organization for over 1,200 documented societies, and for heritage cities, Wikipedia-derived discourse patterns across environment, history, culture, and modern themes. The platform supports queries like "Which ancient cities shared similar environmental constraints?" or "How does environmental context correlate with cultural patterns?" All functionality is exposed via API endpoints, enabling integration with existing gazetteer infrastructure such as the World Historical Gazetteer and Pleiades. EDOP is under active development and welcomes scholarly partnerships and institutional support.</p>
-        <h5 style="color:#993333;">Technical</h5>
-        <p>EDOP assigns environmental signatures to geographic coordinates by identifying the HydroATLAS sub-basin (level 08, ~190k globally) containing each point. Each signature comprises 47 attributes spanning climate, terrain, hydrology, land cover, and soil characteristics—organized into persistence tiers from geological (stable over millennia) to anthropogenic (changing within decades).</p>
-
-        <p><strong>Data Sources</strong></p>
-        <ul>
-          <li><a href="https://www.hydrosheds.org/products/hydrobasins" target="_blank">
-            <strong>BasinATLAS Framework</strong></a>: 190,000 sub-basins with 300 environmental attributes; we use level 08 (~190k basins, median 200 km²) and a subset of 47 attributes.</li>
-          <li><a href="https://www.oneearth.org/bioregions-2023/" target="_blank"><strong>OneEarth Bioregions</strong></a>: 847 ecoregions in a 4-level hierarchy (Realms → Subrealms → Bioregions → Ecoregions)</li>
-          <li><strong>Wikipedia</strong>: LLM-summarized descriptions for 821 ecoregions (96.9% coverage) and selected World Heritage sites and cities</li>
-          <li><strong>World Historical Gazetteer</strong>: Place name resolution and coordinate matching</li>
-        </ul>
-
-        <p><strong>Stack</strong></p>
-        <ul>
-          <li>FastAPI + PostgreSQL/PostGIS + pgvector</li>
-          <li>50-dimensional PCA vectors enable continuous similarity ranking via cosine distance</li>
-          <li>Frontend: Vanilla JavaScript + Leaflet + Bootstrap</li>
-        </ul>
-
-        <p><strong>API</strong><br>
-        RESTful endpoints return signatures, similarity rankings, and ecoregion metadata. Full interactive schema at <a href="/docs" target="_blank">/docs</a>. Code at <a href="https://github.com/kgeographer/cedop" target="_blank">github.com/kgeographer/cedop</a>.</p>
-
+        {% include "_guide_" ~ active_page ~ ".html" %}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -53,12 +44,12 @@
       <div class="modal-header">
         <h4 class="modal-title" id="api-guide-modal-label">EDOPS API Guide</h4>
         <div class="ms-auto me-3">
-          <a href="/docs" target="_blank" class="btn btn-sm btn-outline-secondary">Interactive schema (Swagger) ↗</a>
+          <a href="/api/schema" target="_blank" class="btn btn-sm btn-outline-secondary">Interactive schema (Swagger) ↗</a>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
-        <iframe src="/static/api_guide.html" style="width:100%; height:80vh; border:none;"></iframe>
+        <iframe src="/docs/api/" style="width:100%; height:80vh; border:none;"></iframe>
       </div>
     </div>
   </div>

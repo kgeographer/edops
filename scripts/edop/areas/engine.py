@@ -403,7 +403,7 @@ _TYPE_TO_KIND = {
 
 _CATALOG_PATH = (
     _Path(__file__).resolve().parents[3]
-    / 'documentation' / 'EDOPS_variable_catalog_v0.3.tsv'
+    / 'documentation' / 'EDOPS_variable_catalog_v0.4.tsv'
 )
 
 
@@ -424,13 +424,13 @@ def load_catalog(level=6, codebook_path=None):
     Parameters
     ----------
     level         : int  — 6 or 8; selects zero_fraction_*_L{level}
-    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.3.tsv
+    codebook_path : Path or None — defaults to EDOPS_variable_catalog_v0.4.tsv
 
     Returns
     -------
     DataFrame indexed by api_key; columns:
         schema_key, su, db_col, kind, band, position_method,
-        typology_cluster, zero_fraction, derived (bool)
+        typology_cluster, zero_fraction, derived (bool), units
 
     Integrity note
     --------------
@@ -466,6 +466,7 @@ def load_catalog(level=6, codebook_path=None):
             pm         = (rec.get('position_method')   or '').strip() or None
             col_s      = (rec.get('basin08_col_s')     or '').strip() or None
             col_u      = (rec.get('basin08_col_u')     or '').strip() or None
+            units      = (rec.get('units')             or '').strip() or None
 
             def _emit(ak, su, col, zf_raw):
                 if not ak or ak in _SKIP_API_KEYS:
@@ -498,6 +499,7 @@ def load_catalog(level=6, codebook_path=None):
                     'typology_cluster': tc,
                     'zero_fraction':    _parse_zf(zf_raw),
                     'derived':          is_derived,
+                    'units':            units,
                 })
 
             _emit(
@@ -859,7 +861,7 @@ def project_row(row, include_detail=False) -> dict:
     return out
 
 
-def assemble_payload(rows, neighborhood, shortfall, bands,
+def assemble_payload(rows, scope, shortfall, bands,
                      temporal=None, include_detail=False) -> dict:
     """
     Assemble the top-level Areas payload from a list of make_row dicts.
@@ -870,7 +872,7 @@ def assemble_payload(rows, neighborhood, shortfall, bands,
     Parameters
     ----------
     rows         : list of make_row dicts
-    neighborhood : dict — resolved-query echo (type, params, n_units, unit_type)
+    scope        : dict — resolved-query echo (type, params, n_units, unit_type)
     shortfall    : float — geographic absence fraction (open water / no basin)
     bands        : list of str — bands requested
     temporal     : dict or None — {from_year, to_year} if Band T was requested
@@ -882,7 +884,7 @@ def assemble_payload(rows, neighborhood, shortfall, bands,
     caveats = {k: CAVEAT_TEXTS[k] for k in sorted(used_keys) if k in CAVEAT_TEXTS}
 
     return {
-        'neighborhood': neighborhood,
+        'scope':        scope,
         'shortfall':    shortfall,
         'bands':        bands,
         'temporal':     temporal,
@@ -899,11 +901,28 @@ _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
 def _agg_hyde_b7(df, var_col, buf_area_m2):
-    """Fractional-overlap-weighted mean + distribution for one HYDE variable.
+    """Fractional-overlap-weighted sum + per-cell distribution for one HYDE variable.
+
+    HYDE's four land-use variables (cropland/grazing/pasture/rangeland) are stored
+    as absolute km² within each cell -- an extensive quantity, not a rate or index.
+    representative_raw is therefore the overlap-weighted SUM across contributing
+    cells (each cell's value scaled by the fraction of that cell inside the query
+    area), the physically correct operator for an extensive quantity. Averaging
+    instead (dividing by cell count, as this function did before WO6) understated
+    totals by orders of magnitude for any query spanning more than a handful of
+    cells -- confirmed against Northern Song ca. 1000 CE, where cropland read
+    3.3 km2 pre-fix and ~124,000 km2 after, in line with independent historical
+    estimates of Song cultivated area.
+
+    p10/p90/sd/histogram describe the distribution of raw values across the
+    contributing cells themselves (weighted by fractional overlap, normalized to
+    sum to 1 for quantile purposes) -- a different, complementary quantity from
+    the total: "what's typical for one HYDE cell here," not "how much in total."
+    Left as a per-cell distribution by this fix; not the same axis as the headline.
 
     Weight = overlap_m2 / cell_area_m2 (fraction of each cell inside query area).
     Cells that are 10% inside contribute weight 0.1 regardless of their absolute size,
-    so unequal cell areas (which vary with latitude) don't bias the mean.
+    so unequal cell areas (which vary with latitude) don't bias the per-cell stats.
     Coverage is reported as sum(overlap_m2) / buf_area_m2 (physical coverage).
     w_eff = sum of fractional coverages; honest effective-cell-count for detail block.
     """
@@ -915,9 +934,10 @@ def _agg_hyde_b7(df, var_col, buf_area_m2):
     frac   = (valid['overlap_m2'] / (valid['area_km2'] * 1e6)).values
     w      = frac / frac.sum()
     v      = valid[var_col].values.astype(float)
+    total_ = float(np.dot(v, frac))
     mean_  = float(np.dot(v, w))
     return {
-        'representative_raw': mean_,
+        'representative_raw': total_,
         'p10':      weighted_quantile(v, w, 0.1),
         'p90':      weighted_quantile(v, w, 0.9),
         'sd':       float(np.sqrt(np.dot(w, (v - mean_) ** 2))),
@@ -1686,6 +1706,7 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
             representative_score=carrier_score,
             representative_raw=carrier_raw,
             coverage=round(cov, 4), status='ok', coherence=None,
+            units=(meta_df.loc[var, 'units'] if var in meta_df.index else None),
             detail={'dominant_hybas_id': carrier_id},
         ))
 
@@ -1997,12 +2018,68 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
     return rows
 
 
+# ── Single-basin raw-value backfill (Karl's browser review, 2026-08-12) ────────
+
+def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
+    """
+    n_units==1 post-pass, called only when basin_set has exactly one row (the only caller
+    is single_basin_signature() -- reached directly for a basin lookup, a basin-ring core,
+    or a basin-ring member click, all via /api/areas?type=single_basin).
+
+    B1 (area_weighted) and B5's distribution_only branch never compute
+    representative_raw -- deliberately deferred for the multi-basin case (a native-unit
+    weighted mean is a harder problem there). But there is no aggregation to defer for a
+    single basin: the raw value is just that basin's own column, already sitting in raw_df
+    from attach_values(). This backfills it directly -- a lookup, not a computation.
+
+    Also clears 'coherence' ('concentrated'/'spread') on these same rows: at n=1, p10/p90
+    always collapse to the single score (spread is always exactly 0 by construction), so
+    'concentrated' was firing unconditionally and never carried real signal.
+
+    Deliberately NOT touched: status, representative_score, the zero-fraction
+    outside_active_domain guard (B1's own domain-validity check, real regardless of n), and
+    B6 modality (skipped entirely for n=1 by the caller, not run_modality=False here) --
+    those are meaningful independent of basin count and stay exactly as B1/B5 computed them.
+    B2 (dominant_basin) and B5's extreme branch are untouched too: both already populate
+    representative_raw (their whole method is "pick one carrier basin"), and neither ever
+    sets coherence.
+
+    Parameters
+    ----------
+    rows     : list of make_row dicts (B1 + B5 rows; mutated in place)
+    hybas_id : int -- the single basin's ID
+    raw_df   : DataFrame -- hybas_id as index; native-unit raw value columns, keyed by
+               api_key (the persist view already aliases db_col -> api_key), not db_col
+    meta_df  : DataFrame -- api_key as index; used only as a validity check (var in index)
+
+    Returns
+    -------
+    The same list, mutated in place (returned for call-site convenience).
+    """
+    for row in rows:
+        if row['method'] not in ('area_weighted', 'distribution_only'):
+            continue
+        var = row['variable']
+        if row['representative_raw'] is None and row['status'] == 'ok':
+            # raw_df's columns are already the friendly api_key names, not db_col -- the
+            # persist view aliases them (confirmed directly: db_col='ele_mt_smx' but
+            # raw_df's column is 'elev_max').
+            if var in raw_df.columns and hybas_id in raw_df.index:
+                v = raw_df.loc[hybas_id, var]
+                if pd.notna(v):
+                    row['representative_raw'] = round(float(v), 3)
+                    if row['units'] is None and var in meta_df.index:
+                        row['units'] = meta_df.loc[var, 'units']
+        row['coherence'] = None
+    return rows
+
+
 # ── WO11b: assembly ───────────────────────────────────────────────────────────
 
 def _areal_signature_from_basin_set(
     basin_set, level, conn,
     *,
-    neighborhood,
+    scope,
     shortfall,
     geom_wkt=None,
     lat=None,
@@ -2018,8 +2095,8 @@ def _areal_signature_from_basin_set(
     """
     Shared aggregation pipeline for any resolver that produces a weighted basin set.
 
-    Callers handle their own resolver step and neighborhood dict, then delegate
-    here. The B1–B6 + Band T path is identical across all neighborhood types.
+    Callers handle their own resolver step and scope dict, then delegate
+    here. The B1–B6 + Band T path is identical across all scope types.
 
     For Band T: pass geom_wkt when the query area is a fixed polygon (basin or
     polity). Pass lat/lon/radius_km when it is a circular buffer.
@@ -2046,7 +2123,20 @@ def _areal_signature_from_basin_set(
     if run_modality:
         apply_modality(b1_rows + b5_rows, basin_set, matrix_df)
 
+    # Single-basin sets (n_units==1): backfill representative_raw and clear the meaningless
+    # coherence badge on B1/B5 rows -- see _backfill_single_basin_raw()'s own docstring.
+    if len(basin_set) == 1:
+        bs_indexed = basin_set.set_index('hybas_id') if 'hybas_id' in basin_set.columns else basin_set
+        hybas_id = int(bs_indexed.index[0])
+        _backfill_single_basin_raw(b1_rows + b5_rows, hybas_id, raw_df, meta_df)
+
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
+
+    # Raw DB column name alongside the friendly api_key -- static catalog lookup, same for
+    # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
+    for row in basin_rows:
+        row['db_col'] = meta_df.loc[row['variable'], 'db_col'] \
+            if row['variable'] in meta_df.index else None
 
     # ── 5. Band T path (gated on span presence) ───────────────────────────────
     want_t    = (bands is None or 'T' in bands)
@@ -2065,7 +2155,7 @@ def _areal_signature_from_basin_set(
     temporal     = {'from_year': from_year, 'to_year': to_year} if run_t else None
 
     return assemble_payload(
-        all_rows, neighborhood, shortfall,
+        all_rows, scope, shortfall,
         bands=active_bands,
         temporal=temporal,
         include_detail=include_detail,
@@ -2089,7 +2179,7 @@ def areal_signature(
     include_detail=False,
 ):
     """
-    Full areal signature for a buffer neighborhood.
+    Full areal signature for a buffer scope.
 
     Build-once catalog is loaded lazily per level on first call and cached.
 
@@ -2117,14 +2207,14 @@ def areal_signature(
     Returns
     -------
     dict — assemble_payload output:
-        {neighborhood, shortfall, bands, temporal, caveats, rows}
+        {scope, shortfall, bands, temporal, caveats, rows}
     """
     # ── 1. Resolve buffer ────────────────────────────────────────────────────
     level_str = f'{level:02d}'
     basin_set = resolve_buffer(lat, lon, radius_km, level_str, conn)
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
-    neighborhood = {
+    scope = {
         'type':       'buffer',
         'lat':        lat,
         'lon':        lon,
@@ -2137,7 +2227,7 @@ def areal_signature(
 
     return _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         lat=lat, lon=lon, radius_km=radius_km,
         bands=bands,
@@ -2202,7 +2292,7 @@ def single_basin_signature(
 
     Returns
     -------
-    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
+    dict — {scope, shortfall, bands, temporal, caveats, rows}
     """
     table = _LEVEL_TABLE[level]
 
@@ -2215,8 +2305,8 @@ def single_basin_signature(
         f"SELECT ST_AsText(geom) FROM {table} WHERE hybas_id = {hybas_id}"
     ).fetchone()[0]
 
-    neighborhood = {
-        'type':      'basin',
+    scope = {
+        'type':      'single_basin',
         'lat':       lat,
         'lon':       lon,
         'level':     level,
@@ -2227,7 +2317,7 @@ def single_basin_signature(
 
     return _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         geom_wkt=basin_geom_wkt,
         bands=bands,
@@ -2434,7 +2524,7 @@ def areal_signature_polygon(
 
     The aggregation pipeline is identical to areal_signature (buffer); only the
     resolver differs. resolve_polygon returns basin_in_polity_fraction per basin;
-    the marginal-exposure diagnostic is computed here and added to the neighborhood
+    the marginal-exposure diagnostic is computed here and added to the scope
     block so downstream consumers can assess boundary leverage without a second
     query.
 
@@ -2453,8 +2543,8 @@ def areal_signature_polygon(
 
     Returns
     -------
-    dict — {neighborhood, shortfall, bands, temporal, caveats, rows}
-    neighborhood['marginal_exposure'] = {lt_50pct, lt_20pct}: sum of weights for
+    dict — {scope, shortfall, bands, temporal, caveats, rows}
+    scope['marginal_exposure'] = {lt_50pct, lt_20pct}: sum of weights for
     basins where basin_in_polity_fraction < 0.5 / < 0.2 (describe, don't decide).
     """
     level_str = f'{level:02d}'
@@ -2470,8 +2560,8 @@ def areal_signature_polygon(
     me_lt50 = float(basin_set.loc[bif < 0.5, 'weight'].sum())
     me_lt20 = float(basin_set.loc[bif < 0.2, 'weight'].sum())
 
-    neighborhood = {
-        'type':              'polygon',
+    scope = {
+        'type':              'polity',
         'level':             level,
         'n_units':           len(basin_set),
         'unit_type':         'basin',
@@ -2483,7 +2573,7 @@ def areal_signature_polygon(
 
     payload = _areal_signature_from_basin_set(
         basin_set, level, conn,
-        neighborhood=neighborhood,
+        scope=scope,
         shortfall=shortfall,
         geom_wkt=geom_wkt,
         bands=bands,
