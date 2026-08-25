@@ -364,13 +364,13 @@
           <label class="text-muted small d-block mb-1" for="v3-basin-var">Render variable</label>
           <select id="v3-basin-var" class="form-select form-select-sm">
             <option value="">— none —</option>
-            <optgroup label="Physiographic (modern normal)">
+            <optgroup label="BasinATLAS (various, modern)">
               <option value="aridity_index">Aridity index</option>
               <option value="precipitation_annual">Annual precipitation</option>
               <option value="temperature_annual">Mean annual temperature</option>
-            </optgroup>
-            <optgroup label="Land use — BasinATLAS">
               <option value="cropland_pct">Cropland extent % (modern)</option>
+              <option value="elevation_max">Elevation (max)</option>
+              <option value="slope_deg">Slope</option>
             </optgroup>
             <optgroup label="Paleoclimate — LMR v2.1">
               <option value="lmr_temp_anomaly">Temperature anomaly</option>
@@ -3755,6 +3755,8 @@
     { key: 'temperature_annual',  su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
     { key: 'cropland_pct',        su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
       palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
+    { key: 'elevation_max',       su: 's', reverse: false, loLabel: 'low',  hiLabel: 'high' },
+    { key: 'slope_deg',           su: 's', reverse: false, loLabel: 'flat', hiLabel: 'steep' },
   ];
 
   let _basinLayerLoaded = false;
