@@ -574,13 +574,17 @@ map.on('load', () => {
     }
   });
 
-  // Basins tab is the default — initialise layer immediately on map ready
+  // Basins tab is the default — initialise layer immediately on map ready. No variable
+  // auto-loaded (kgreview UX pass, 2026-08-25) -- starts on the placeholder, painted only
+  // once the user picks one.
   loadBasinLayer();
   showBasinLayer();
-  document.getElementById('cp-basin-var').value = 'aridity_index';
-  setProvenance('static · modern normal (BasinATLAS)');
-  applyBasinVar('aridity_index');
-  _basinVarLoaded = true;
+
+  // Period mode is the default (kgreview UX pass, 2026-08-25) -- switchMode() (defined below,
+  // safe to call here since callbacks run after the whole script has parsed) drives the full
+  // mode-switch UI state (chip, search bar, year controls) and calls loadPeriod(_periodYear),
+  // same as clicking the Period chip by hand.
+  switchMode('period');
 });
 
 // ── History hover tooltip ─────────────────────────────────────────────────────
@@ -606,7 +610,7 @@ map.on('mousemove', 'period-fill', (e) => {
   if (!e.features.length) return;
   map.getCanvas().style.cursor = 'pointer';
   const p = e.features[0].properties;
-  _tooltip.textContent = `${p.name}  ${formatYear(p.fromyear)}–${formatYear(p.toyear)}`;
+  _tooltip.textContent = `${p.name}  ${formatYear(p.fromyear)}–${formatYear(p.toyear)} (${p.n_slices} slices)`;
   _tooltip.style.display = 'block';
   _tooltip.style.left = (e.point.x + 14) + 'px';
   _tooltip.style.top  = (e.point.y - 6)  + 'px';
@@ -1522,12 +1526,6 @@ document.querySelectorAll('#cp-tab-nav .nav-link').forEach(btn => {
     if (btn.dataset.tab === 'basins') {
       loadBasinLayer();
       showBasinLayer();
-      // Auto-load aridity on first open
-      if (!_basinVarLoaded) {
-        document.getElementById('cp-basin-var').value = 'aridity_index';
-        setProvenance('static · modern normal (BasinATLAS)');
-        applyBasinVar('aridity_index');
-      }
     } else if (leaving === 'basins') {
       hideBasinLayer();
     }
