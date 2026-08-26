@@ -54,7 +54,7 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | CDOP2 — CITYKIN             | complete 2026-07-30             | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
 | Reorg (housekeeping)        | complete 2026-08-03             | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
 | DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots; merged to `main` locally (not deployed, not pushed) |
-| **kgreview**                | **active**                      | `docs/TODO_kgreview.md` — Karl's ~35-item sandbox UI nits backlog, triaged and being worked off `main` |
+| **kgreview**                | **active — nearly done**        | `docs/TODO_kgreview.md` — Karl's ~35-item sandbox UI nits backlog; all but the CSS/styling group (#29–34, Karl's own pass) closed as of 2026-08-25 |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 
 ---
@@ -116,12 +116,27 @@ toggle-panel / modal, each with its own decorator icon, auto-wiring via Mutation
 Sandbox polity, Reading a signature) are complete with screenshots. Session-by-session detail:
 `logs/session_log_YYYYMMDD.md`.
 
-**kgreview state:** `docs/TODO_kgreview.md` (gitignored) triages Karl's `TODO_v04_kg.md` backlog —
-34 numbered items, verbatim wording, sorted into DONE?/real-bugs/needs-live-repro/needs-
-clarification/CSS-styling groups. One item closed so far (Render-variable dropdown gained
-Elevation + Slope; surfaced and fixed a real pre-existing bug along the way — `/api/explorer/
-values` never applied BasinATLAS's known ×10 storage-scaling correction to slope/stream-gradient,
-only temperature, so Explorer's own Slope view had been rendering up to 306°).
+**kgreview state, 2026-08-25:** `docs/TODO_kgreview.md` (gitignored) triages Karl's `TODO_v04_kg.md`
+backlog — 35 numbered items (34 original + #35, a general per-tab-blurb mechanism added mid-triage),
+verbatim wording. All but Group E (CSS/styling, #29–34, Karl's own pass) are now closed. Substantive
+fixes along the way: polity time-slice Play looping/stalling on many-slice polities (root cause was
+an unawaited ~9s `/api/areas` call firing on every automatic tick, not the geometry fetch itself);
+basin-ring center-basin highlight lost to a z-order collision between two map layers (merged into
+one); HYDE choropleth 0-values rendering as a pale tint instead of white; a general
+`_TAB_BLURB_PANELS` mechanism (table-driven `{tabButton: panelDiv}` map) so each Sandbox tab can
+carry its own left-column intro blurb without per-tab plumbing; the standalone `/docs/` full-page
+view (opened via the Documentation modal's "Full page ↗" — confirmed via `embed.js` this is the
+*only* place the MkDocs header ever renders unstripped, everywhere else it's iframed inside an app
+modal with the header hidden) got a real header restyle. Session detail: `logs/session_log_20260825.md`.
+
+**Deploy readiness, checked 2026-08-25 (not deploying yet):** direct SSH inventory against
+`kgeographer-1` found gaps beyond what `MAINTAIN_DEPLOY.md` already documented — `basin08.pmtiles`,
+`sandbox/rivers.pmtiles`, and `basinatlas_pages/*.pdf` are missing from the server entirely (not
+stale, never deployed), `hyde_tiles/` has drifted. More importantly: `v_basin06_persist_rev2`/
+`v_basin08_persist_rev2` **don't exist on production at all** (only `_rev1` versions) — not the
+documented "drop and recreate for the slope-scaling fix," a hard blocker, since `signature.py`/
+`seasonality.py`/`context.py` reference `_rev2` by name directly. Full inventory: `MAINTAIN_DEPLOY.md`
+§D (gitignored, not tracked here).
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer

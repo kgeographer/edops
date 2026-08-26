@@ -1,6 +1,41 @@
 /* Tighter spacing than Material's defaults — tuned for dense reference content
    (Codebook, API) rather than prose-heavy pages. Adjust freely. */
 
+/* Standalone-docs header makeover (kgreview #27) -- embed.js hides this header entirely when
+   the page loads inside an app modal (iframe), so this only shows on the one real full-page
+   path: the Documentation modal's "Full page ↗" button opening /docs/ in a new tab. */
+.md-header {
+  background-color: white;
+  #background-color: #CFE6DC;
+}
+.md-header__title {
+  color: #993333;
+  font-size: 1.2rem;
+}
+.md-header__button.md-logo img {
+  height: 48px;
+  width: 48px;
+}
+/* Material's search pill relies on a translucent-white overlay meant for a colored header --
+   against a white header that reads as flat grey by default and disappears entirely on hover
+   (translucent white on white = white). Solid, header-independent colors instead. */
+.md-search__form {
+  background-color: #e9e9e9;
+}
+.md-search__form:hover {
+  background-color: #dcdcdc;
+}
+.md-search__input {
+  color: #333;
+}
+.md-search__input::placeholder {
+  color: #666;
+  opacity: 1;
+}
+.md-search__icon svg {
+  fill: #333;
+}
+
 #edops-codebook {
   margin-top: 0;
 }
