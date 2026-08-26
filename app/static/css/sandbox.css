@@ -49,3 +49,27 @@ body { font-size: 1rem; }
   gap: 2px 1.25rem;
 }
 .v3-band-legend-list li { flex: 1 1 260px; }
+
+/* Left-column tab-intro blurb panels (Signature/Analysis/Seasonality/Context/Similarity). */
+.sandbox-blurb-panel {
+  display: none;
+  margin-top: 0.5rem;
+}
+.sandbox-blurb-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #495057;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+.sandbox-blurb-body {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.sandbox-blurb-body:last-child {
+  margin-bottom: 0;
+}
+.sandbox-blurb-link-icon {
+  font-size: 0.7rem;
+}

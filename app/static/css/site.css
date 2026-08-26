@@ -30,6 +30,9 @@ pre {
   overflow: auto;
 }
 
+.badge {
+  font-size: 0.85rem !important;
+}
 .subhead5 {
   margin_bottom: 0.5rem;
   font-style: italic;
@@ -206,4 +209,3 @@ pre {
   border-color: #93c5fd;
   color: #000;
 }
-

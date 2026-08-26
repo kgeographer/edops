@@ -425,19 +425,19 @@
              the Signature tab's own "How to read this" link; Similarity gets a new dedicated
              modal, same pattern); Analysis/Seasonality don't have a page of their own, just
              the blurb. Draft copy -- Karl's wordsmithing to follow. -->
-        <div id="v3-sig-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About the signature</label>
-          <p class="mb-0" style="font-size:0.85rem;">A signature is every environmental variable
+        <div id="v3-sig-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About the signature</label>
+          <p class="sandbox-blurb-body">A signature is every environmental variable
             for this query, grouped by band. A single basin gets one value per variable plus its
             global percentile; a set of basins (buffer, ring, polity) gets a distribution instead
             -- an area-weighted percentile, a concentrated/spread badge, and a histogram.
-            <a href="#" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">Full explanation <i class="bi bi-box-arrow-up-right" style="font-size:0.7rem;"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
 
-        <div id="v3-analysis-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About this analysis</label>
-          <p class="mb-0" style="font-size:0.85rem;">This tab compares each variable's <strong>local</strong>
+        <div id="v3-analysis-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About this analysis</label>
+          <p class="sandbox-blurb-body">This tab compares each variable's <strong>local</strong>
             value (this basin alone) against its <strong>upstream</strong> value (the whole
             catchment draining into it), and classifies water provenance from the contrast --
             endorheic, coastal terminal, exogenous supply, or local-dominant. Values are read
@@ -446,32 +446,32 @@
             most informative at L06.</p>
         </div>
 
-        <div id="v3-seas-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About seasonality</label>
-          <p class="mb-0" style="font-size:0.85rem;">This tab shows the basin's monthly climatology
+        <div id="v3-seas-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About seasonality</label>
+          <p class="sandbox-blurb-body">This tab shows the basin's monthly climatology
             as two diagrams -- Walter-Lieth (precipitation and temperature by month) and Polar
             (the same curves traced around a year-clock) -- plus scalar indices summarising them:
             precipitation and temperature concentration, peak months, the phase offset between
             the two curves, and temperature's seasonal amplitude.</p>
         </div>
 
-        <div id="v3-ctx-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">Regional context</label>
-          <p class="mb-0" style="font-size:0.85rem;" id="v3-ctx-blurb-text"></p>
+        <div id="v3-ctx-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">Regional context</label>
+          <p class="sandbox-blurb-body" id="v3-ctx-blurb-text"></p>
         </div>
 
-        <div id="v3-sim-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">About similarity</label>
-          <p style="font-size:0.85rem;">Two places are never simply "similar" -- they may share a
+        <div id="v3-sim-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About similarity</label>
+          <p class="sandbox-blurb-body">Two places are never simply "similar" -- they may share a
             precipitation regime and differ in almost everything else. This panel asks the
             question one variable-group ("lens") at a time -- Precipitation, Temperature,
             Terrain, or Climate -- rather than collapsing everything into one composite distance.</p>
-          <p class="mb-0" style="font-size:0.85rem;">It's a membership test, not a ranking: a basin
+          <p class="sandbox-blurb-body">It's a membership test, not a ranking: a basin
             either clears every threshold in the chosen lens or it doesn't, with no partial
             credit. The result is the actual set of basins meeting those conditions together --
             an empty set is as real an answer as a crowded one, meaning nothing else on Earth
             matches this place on these terms.
-            <a href="#" data-bs-toggle="modal" data-bs-target="#similarity-doc-modal">Full explanation <i class="bi bi-box-arrow-up-right" style="font-size:0.7rem;"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#similarity-doc-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
 
@@ -1098,7 +1098,7 @@
     _TAB_BLURB_PANELS.forEach(({ tabBtn, panel, ready }) => {
       const active  = document.getElementById(tabBtn).classList.contains('active');
       const isReady = ready ? ready() : true;
-      document.getElementById(panel).style.display = (active && isReady) ? '' : 'none';
+      document.getElementById(panel).style.display = (active && isReady) ? 'block' : 'none';
     });
   }
 
