@@ -1,0 +1,31 @@
+<header class="mb-2">
+  <div class="d-flex align-items-center justify-content-between py-2 border-bottom flex-wrap gap-2">
+    <div class="d-flex align-items-center">
+      <a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height:60px;" class="me-2"></a>
+      <h4 class="mb-0">Cliopatria Polity Viewer</h4>
+    </div>
+    <div class="edops-page-pills-wrap">
+      <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
+        <li class="nav-item"><a class="nav-link" href="/sandbox">Sandbox</a></li>
+        <li class="nav-item"><a class="nav-link" href="/workbench">Workbench</a></li>
+        <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/polities">Polities</a></li>
+      </ul>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div id="cp-search-wrap">
+        <i class="bi bi-search text-secondary me-1" style="font-size:0.85rem;"></i>
+        <input id="cp-search-input" type="text" class="form-control form-control-sm"
+               placeholder="Search polities…" autocomplete="off">
+        <div id="cp-search-dropdown"></div>
+      </div>
+      <div id="cp-mode-chips">
+        <button class="cp-mode-chip active" data-mode="search">Search</button>
+        <button class="cp-mode-chip" data-mode="period">Period</button>
+      </div>
+      <button id="cp-reset-btn" class="btn btn-sm btn-outline-secondary" title="Reset view">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+    </div>
+  </div>
+</header>
