@@ -209,3 +209,11 @@ pre {
   border-color: #93c5fd;
   color: #000;
 }
+
+/* Experiment: kill Bootstrap's .text-muted grey everywhere, site-wide, without touching the
+   ~166 class="text-muted" instances across the templates. body .text-muted (element + class)
+   outweighs Bootstrap's own single-class .text-muted rule regardless of <link> load order --
+   site.css loads before Bootstrap's own stylesheet on every page. Revert: delete this rule. */
+body .text-muted {
+  color: inherit !important;
+}
