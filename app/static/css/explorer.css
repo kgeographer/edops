@@ -20,7 +20,7 @@ body { font-size: 1rem; }
 }
 
 /* ── Tabs ── */
-#ex-tabs .nav-link { font-size: 0.85rem; padding: 0.3rem 0.75rem; }
+#ex-tabs .nav-link { font-size: 1rem; padding: 0.3rem 0.9rem; }
 #ex-tabs .nav-link.disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 /* Active pane fills the flex container; inactive panes get display:none from Bootstrap */
 .tab-pane.show.active { flex: 1; display: flex !important; flex-direction: column; }

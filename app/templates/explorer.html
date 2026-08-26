@@ -81,7 +81,7 @@
         <div class="text-muted small p-2">Loading variables…</div>
       </div>
 
-      <div id="ex-panel-intro" class="small p-2 mt-2">
+      <div id="ex-panel-intro" class="p-2 mt-2">
         This panel visualizes the results of Exploratory Data Analysis (EDA) and Exploratory
         Spatial Data Analysis (ESDA) steps in the Data Characterization phase of EDOPS
         development. For the full explanation of what this page does and is for, see the
@@ -225,9 +225,9 @@
           <div id="ex-map"></div>
 
           <!-- Histogram strip (hidden for eVolv2k variables) -->
-          <div id="ex-histogram" class="ex-placeholder">
-            histogram + legend — coming soon
-          </div>
+<!--          <div id="ex-histogram" class="ex-placeholder">-->
+<!--            histogram + legend — coming soon-->
+<!--          </div>-->
 
           <!-- eVolv2k panel: time×lat chart + event table (hidden unless evolv2k variable selected) -->
           <div id="ex-evolv-panel" class="d-none">
@@ -1587,7 +1587,7 @@
             <button class="accordion-button collapsed" type="button"
                     data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false">
               <strong class="me-1">${band}</strong>
-              <span class="text-muted me-auto" style="font-size:0.75rem;">— ${BAND_NAMES[band]}</span>
+              <span class="text-muted me-auto" style="font-size:0.85rem;">— ${BAND_NAMES[band]}</span>
               <span class="badge bg-secondary-subtle text-dark ms-2" style="font-size:0.7rem;">${totalCount}</span>
             </button>
           </h2>
