@@ -390,6 +390,24 @@
   </div>
 </div>
 
+<!-- WH Cities Ecoregion row -- Wikipedia summary + OneEarth link for the OneEarth ecoregion the
+     selected city's own point falls in. Body populated per-click (showEcoWikiModal()), not a
+     static edops-help harness modal, since the content is city-specific. -->
+<div class="modal fade" id="ecoWikiModal" tabindex="-1" aria-labelledby="ecoWikiModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ecoWikiModalLabel">Ecoregion</h5>
+        <a href="#" id="ecoWikiOneEarthLink" class="btn btn-sm btn-outline-secondary ms-auto me-2" target="_blank" style="display:none;">
+          OneEarth <i class="bi bi-box-arrow-up-right small"></i>
+        </a>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="ecoWikiModalBody"></div>
+    </div>
+  </div>
+</div>
+
 <script>
   // ResolvedPlace shape (client-side):
   // {
@@ -1114,7 +1132,14 @@
           .filter(it => it && it.value !== undefined)
           .map(it => {
             const label = escapeHtml(it.label || humanizeKey(it.key || ''));
-            const value = escapeHtml(formatValue(it.value));
+            // WH Cities only -- wh_cities has no ecoregion field of its own, this looks the
+            // city's OWN point up in OneEarth's Ecoregions2017 (a different taxonomy than the
+            // BasinATLAS-derived value shown here, resolved spatially not by name).
+            const isEco = it.key === 'ecoregion' && whcSelected;
+            const rawValue = escapeHtml(formatValue(it.value));
+            const value = isEco
+              ? `<a href="#" onclick="showEcoWikiModal(${whcSelected.id}); return false;">${rawValue}</a>`
+              : rawValue;
             return `<div class="d-flex justify-content-between gap-2 py-1 border-bottom"><div class="text-muted">${label}</div><div class="text-end">${value}</div></div>`;
           })
           .join('');
@@ -1173,6 +1198,37 @@
           ${panels}
         </div>
       `;
+    }
+  }
+
+  async function showEcoWikiModal(cityId) {
+    const titleEl = document.getElementById('ecoWikiModalLabel');
+    const bodyEl = document.getElementById('ecoWikiModalBody');
+    const linkEl = document.getElementById('ecoWikiOneEarthLink');
+    titleEl.textContent = 'Ecoregion';
+    bodyEl.textContent = 'Loading…';
+    linkEl.style.display = 'none';
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ecoWikiModal'));
+    modal.show();
+
+    try {
+      const resp = await fetch(`/api/whc-ecoregion-wiki?city_id=${encodeURIComponent(cityId)}`);
+      const data = await resp.json();
+      if (!data.found) {
+        bodyEl.textContent = 'This city sits outside any OneEarth ecoregion boundary — no record available.';
+        return;
+      }
+      titleEl.textContent = data.eco_name || 'Ecoregion';
+      bodyEl.innerHTML = data.summary
+        ? data.summary.split(/\n\s*\n+/).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('')
+        : '<span class="text-muted">No Wikipedia summary available.</span>';
+      if (data.oneearth_slug) {
+        linkEl.href = `https://www.oneearth.org/ecoregions/${data.oneearth_slug}/`;
+        linkEl.style.display = '';
+      }
+    } catch (e) {
+      bodyEl.textContent = 'Error loading ecoregion info.';
+      console.error('showEcoWikiModal:', e);
     }
   }
 
