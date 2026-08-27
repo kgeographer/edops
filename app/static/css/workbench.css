@@ -2,6 +2,13 @@
    app/templates/workbench.html (2026-08-07 CSS reorg; verbatim move, no rule changes).
    Page-scoped, not shared with Sandbox/Explorer — see site.css for cross-page rules. */
 
+#profile-heading {
+  font-size: 1rem;
+  display: block;
+  flex: 1;
+  background: aliceblue;
+  font-variant-caps: small-caps;
+}
 /* Default (closed) vs. open state for the two trait accordion headers -- overrides
    Bootstrap's list-group-item-action default (white, pale-grey hover/focus), which
    read as too low-contrast to tell open from closed at a glance. */

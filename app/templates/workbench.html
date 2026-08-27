@@ -50,19 +50,23 @@
         </li>
       </ul>
 
-      <div class="tab-content pt-3" id="edopTabContent">
-
-
+      <div class="tab-content pt-2" id="edopTabContent">
         <!-- WH CITIES TAB (258 cities) -->
         <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
-          <h4 class="mb-1">258 World Heritage Cities</h4>
-          <p class="subhead5">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a> — 254 of 258 have a basin assignment</p>
+          <h4 class="mb-1">Similarity Among 254 World Heritage Cities</h4>
+          <p class="subhead5 mb-1">members of <a href="https://www.ovpm.org/" target="_blank">Organization of World Heritage Cities (OWHC)</a></p>
+
+          <p class="mb-1">Select a city to locate it in its containing hydrological basin and see that basin's environmental profile — climate, terrain, and ecoregion context in profile panel below. Then explore which of the other 253 cities are most similar to it according to two measures:</p>
+          <ul class="mb-1">
+            <li><strong>Similar (env)</strong> ranks cities by distance on measured environmental variables — precipitation, temperature, or terrain <i class="bi bi-question-circle edops-help" data-help-modal="#whcEnvSimHelpModal"></i></li>
+            <li><strong>Similar (semantic)</strong> ranks by how similarly places are described in Wikipedia articles, using text embeddings. <i class="bi bi-question-circle edops-help" data-help-modal="#whcSemanticSimHelpModal"></i></li>
+          </ul>
 
           <div class="mb-2">
             <select class="form-select" id="whc-select" disabled>
               <option value="">Loading…</option>
             </select>
-            <div class="form-text">Grouped by UNESCO region. Select to view environmental profile and similarity.</div>
+<!--            <div class="form-text">Grouped by UNESCO region. Select to view environmental profile and similarity.</div>-->
           </div>
 
           <div class="mt-3 d-flex gap-2 flex-wrap">
@@ -71,10 +75,9 @@
               <button class="btn btn-outline-primary dropdown-toggle" type="button" id="whc-similar-env-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (env)
               </button>
-              <i class="bi bi-question-circle edops-help" data-help-modal="#whcEnvSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
                 <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
-                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Tem perature regime</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" data-lens="terrain">Terrain regime</a></li>
               </ul>
@@ -85,7 +88,6 @@
               <button class="btn btn-outline-info dropdown-toggle" type="button" id="whc-similar-text-btn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 Similar (semantic)
               </button>
-               <i class="bi bi-question-circle edops-help" data-help-modal="#whcSemanticSimHelpModal"></i>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-text-btn">
                 <li><a class="dropdown-item" href="#" data-band="composite">Composite</a></li>
                 <li><hr class="dropdown-divider"></li>
@@ -97,39 +99,6 @@
             </div>
           </div>
 
-          <!-- Terrain regime knobs (CITYKIN WO1a) — query-relative tolerance bands, shown only when
-               the Terrain regime lens is active. Three-level tight/default/broad steps, same pattern
-               as the sandbox Similarity panel's conjunction bands (#v3-cj-corr etc.) — each level is a
-               round fraction of the facet's own corpus std (elev std ~696m, relief std ~404m, position
-               std ~0.115): tight ~0.5std, default ~0.7-0.9std (WO1a-locked, fixture-validated), broad
-               ~1.0std. Auto-applies on change, no separate button, matching the sandbox convention. -->
-          <div class="mt-2 gap-2 align-items-end flex-wrap" id="terrain-knobs" style="display:none;">
-            <div>
-              <label class="text-muted d-block mb-0 small" for="terrain-tol-elev">Elevation (±m)</label>
-              <select class="form-select form-select-sm py-0" id="terrain-tol-elev" style="width:auto; font-size:0.8rem;">
-                <option value="350">350 · tight</option>
-                <option value="500" selected>500</option>
-                <option value="700">700 · broad</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-muted d-block mb-0 small" for="terrain-tol-relief">Relief (±m)</label>
-              <select class="form-select form-select-sm py-0" id="terrain-tol-relief" style="width:auto; font-size:0.8rem;">
-                <option value="200">200 · tight</option>
-                <option value="300" selected>300</option>
-                <option value="400">400 · broad</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-muted d-block mb-0 small" for="terrain-tol-pos">Landform position (±) <i class="bi bi-question-circle edops-help" data-help-text="0 = floor (surrounded by higher ground); 1 = ridge/peak (surrounded by lower ground). Ratio of (mean − min) to (max − min) elevation across the sampled window." data-help-placement="top"></i></label>
-              <select class="form-select form-select-sm py-0" id="terrain-tol-pos" style="width:auto; font-size:0.8rem;">
-                <option value="0.05">0.05 · tight</option>
-                <option value="0.10" selected>0.10</option>
-                <option value="0.15">0.15 · broad</option>
-              </select>
-            </div>
-          </div>
-
           <div class="mt-3">
             <div class="alert alert-light" id="whc-status" style="display:none;"></div>
           </div>
@@ -138,7 +107,7 @@
         <!-- ECOREGIONS TAB (OneEarth hierarchy) -->
         <div class="tab-pane fade" id="panel-eco" role="tabpanel" aria-labelledby="tab-eco">
           <h4 class="mb-1">Ecoregions Hierarchy</h4>
-          <p class="subhead5">Data from <a href="https://www.oneearth.org/bioregions/" target="_blank">OneEarth Bioregions</a> (847 ecoregions in 185 bioregions, 53 subrealms, 14 realms)</p>
+          <p class="subhead5 mb-1">Data from <a href="https://www.oneearth.org/bioregions/" target="_blank">OneEarth Bioregions</a> (847 ecoregions in 185 bioregions, 53 subrealms, 14 realms)</p>
 
           <!-- Realms-only caveat; shown above the breadcrumb, only at the top (realms) level -->
           <div id="eco-realm-note" class="text-bg-light text-danger mb-2" style="display:none;"></div>
@@ -163,7 +132,7 @@
         <!-- SOCIETIES TAB (D-PLACE) -->
         <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
-          <p class="subhead5">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
+          <p class="subhead5 mb-1">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
           <p class="soc-blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
           <p class="soc-blurb">Dominant Subsistence (EA042) and High Gods (EA034) below are two exemplar traits from the Ethnographic Atlas dataset, chosen for their differing <i>potential</i> association with environmental settings.</p>
           <!-- Loading spinner -->
@@ -236,8 +205,8 @@
       <!-- Outputs (shared across tabs) -->
       <div class="mt-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 id="profile-heading" class="mb-0" style="display:none;">Environmental profile</h5>
-          <a href="#" id="whg-place-link" class="small" style="display:none;" data-bs-toggle="popover" data-bs-trigger="click" data-bs-html="true" data-bs-title="WHG place record">WHG place record</a>
+          <p id="profile-heading" class="mb-0" style="display:none;">Environmental profile</p>
+<!--          <a href="#" id="whg-place-link" class="small" style="display:none;" data-bs-toggle="popover" data-bs-trigger="click" data-bs-html="true" data-bs-title="WHG place record">WHG place record</a>-->
         </div>
         <!-- Cluster label (shown for WH sites) -->
         <div id="cluster-label" class="mb-2" style="display:none;">
@@ -246,7 +215,7 @@
 
         <!-- Summary + grouped accordions (preferred) -->
         <div id="profile-summary" class="small"></div>
-        <div id="profile-accordions" class="mt-2"></div>
+        <div id="profile-accordions" class="mt-2" style="display:none;"></div>
 
         <!-- Fallback (raw JSON) -->
         <pre id="output" class="bg-light p-2" style="min-height: 12rem; display:none;"></pre>
@@ -267,7 +236,36 @@
       <!-- Similar sites results (shown below map) -->
       <div id="similar-results" class="mt-3" style="display:none;">
         <h5 class="mb-0" id="similar-heading">Most Similar Sites</h5>
-        <p class="fst-italic small" id="similar-description"></p>
+        <p class="fst-italic small mb-1" id="similar-description"></p>
+        <!-- Terrain regime knobs -- query-relative tolerance bands, shown only when the Terrain
+             regime lens is active. Auto-applies on change, no separate button, matching the
+             sandbox Similarity panel's own conjunction-band convention. -->
+        <div class="mt-2 gap-2 align-items-end flex-wrap" id="terrain-knobs" style="display:none;">
+          <div>
+            <label class="text-muted d-block mb-0 small" for="terrain-tol-elev">Elevation (±m)</label>
+            <select class="form-select form-select-sm py-0" id="terrain-tol-elev" style="width:auto; font-size:0.8rem;">
+              <option value="350">350 · tight</option>
+              <option value="500" selected>500</option>
+              <option value="700">700 · broad</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-muted d-block mb-0 small" for="terrain-tol-relief">Relief (±m)</label>
+            <select class="form-select form-select-sm py-0" id="terrain-tol-relief" style="width:auto; font-size:0.8rem;">
+              <option value="200">200 · tight</option>
+              <option value="300" selected>300</option>
+              <option value="400">400 · broad</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-muted d-block mb-0 small" for="terrain-tol-pos">Landform position (±) <i class="bi bi-question-circle edops-help" data-help-text="0 = floor (surrounded by higher ground); 1 = ridge/peak (surrounded by lower ground). Ratio of (mean − min) to (max − min) elevation across the sampled window." data-help-placement="top"></i></label>
+            <select class="form-select form-select-sm py-0" id="terrain-tol-pos" style="width:auto; font-size:0.8rem;">
+              <option value="0.05">0.05 · tight</option>
+              <option value="0.10" selected>0.10</option>
+              <option value="0.15">0.15 · broad</option>
+            </select>
+          </div>
+        </div>
         <div id="similar-list"></div>
       </div>
 
@@ -500,7 +498,7 @@
       });
 
       // Build grouped dropdown
-      sel.innerHTML = '<option value="">Select a city…</option>';
+      sel.innerHTML = '<option value="">Select a city...</option>';
       Object.keys(byRegion).sort().forEach((region) => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region;
@@ -632,9 +630,9 @@
 
     // Set heading and description based on similarity type and band/lens
     const ENV_LENS_LABELS = {
-      'climate.precip': 'Precipitation regime',
-      'climate.temp':   'Temperature regime',
-      'terrain':        'Terrain regime',
+      'climate.precip': 'precipitation regime',
+      'climate.temp':   'temperature regime',
+      'terrain':        'terrain regime',
     };
     const isTerrain = band === 'terrain';
     if (heading && description) {
@@ -645,7 +643,7 @@
       } else if (isTerrain) {
         const n = data.eligible_count ?? (data.similar || []).length;
         heading.textContent = `${n} cities within tolerance (Terrain regime), showing top ${(data.similar || []).length}`;
-        description.textContent = 'query-relative tolerance bands on point-window elevation/relief/landform-position (CITYKIN WO1a)';
+        description.textContent = 'elevation, relief, and landform position, measured from immediate city neighborhood';
       } else {
         const lensLabel = ENV_LENS_LABELS[band] || band;
         heading.textContent = `5 most similar cities in this collection (${lensLabel})`;
