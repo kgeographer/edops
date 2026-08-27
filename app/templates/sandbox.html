@@ -17,37 +17,21 @@
 {% include "_edops_header.html" %}
 {% include "_edops_modals.html" %}
 
-<!-- Reading a signature modal (2026-08-08) -- triggered from the Signature panel's own
-     heading row (renderSignature()), not the header nav. Hardcoded to the Sandbox-specific
-     Reading a signature doc page rather than reusing #documentation-modal's per-active_page
-     include, since this link means one specific page regardless of which Guide tab a user
-     might otherwise be on. -->
-<div class="modal fade" id="reading-signature-modal" tabindex="-1" aria-labelledby="reading-signature-modal-label" aria-hidden="true">
+<!-- Shared doc modal -- one modal, content driven by whichever trigger opened it
+     (data-doc-title / data-doc-src), rather than a separate hardcoded modal block per
+     docsite page. Triggers set data-bs-target="#doc-modal" plus those two data-* attrs;
+     see the show.bs.modal listener near the top of the main <script> block. Reused for
+     Reading a signature, Similarity, and Codebook links -- one specific page regardless
+     of which Guide tab a user might otherwise be on. -->
+<div class="modal fade" id="doc-modal" tabindex="-1" aria-labelledby="doc-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="reading-signature-modal-label">Reading a signature</h4>
+        <h4 class="modal-title" id="doc-modal-label"></h4>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
-        <iframe src="/docs/sandbox/reading-a-signature/" style="width:100%; height:75vh; border:none;"></iframe>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Similarity doc modal (kgreview #35) -- same reasoning as reading-signature-modal above:
-     hardcoded to docsite/similarity.md rather than #documentation-modal's per-active_page
-     include, since this link means one specific page regardless of active_page. -->
-<div class="modal fade" id="similarity-doc-modal" tabindex="-1" aria-labelledby="similarity-doc-modal-label" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="similarity-doc-modal-label">Similarity in EDOPS</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-0">
-        <iframe src="/docs/similarity/" style="width:100%; height:75vh; border:none;"></iframe>
+        <iframe id="doc-modal-iframe" src="" style="width:100%; height:75vh; border:none;"></iframe>
       </div>
     </div>
   </div>
@@ -380,7 +364,8 @@
 
         <!-- Basin choropleth controls — revealed on first scope render (hidden at cold start) -->
         <div id="v3-choropleth" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" for="v3-basin-var">Render variable</label>
+          <label class="text-muted small d-block mb-1" for="v3-basin-var">Render variable
+            (<a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Codebook" data-doc-src="/docs/codebook/">see Codebook</a>)</label>
           <select id="v3-basin-var" class="form-select form-select-sm">
             <option value="">— none —</option>
             <optgroup label="BasinATLAS (various, modern)">
@@ -421,17 +406,16 @@
              adding another tab's blurb is one map entry + one div, no new plumbing. Context's
              is query-derived (filled by _buildContextBlurb()); the rest are static intro text
              written once here. Signature/Similarity link out to a docsite page devoted to the
-             topic (Signature reuses the existing #reading-signature-modal, already wired to
-             the Signature tab's own "How to read this" link; Similarity gets a new dedicated
-             modal, same pattern); Analysis/Seasonality don't have a page of their own, just
-             the blurb. Draft copy -- Karl's wordsmithing to follow. -->
+             topic, both via the shared #doc-modal (see its definition near the top of this
+             file); Analysis/Seasonality don't have a page of their own, just the blurb.
+             Draft copy -- Karl's wordsmithing to follow. -->
         <div id="v3-sig-blurb-panel" class="sandbox-blurb-panel">
           <label class="sandbox-blurb-label">About the signature</label>
           <p class="sandbox-blurb-body">A signature is every environmental variable
             for this query, grouped by band. A single basin gets one value per variable plus its
             global percentile; a set of basins (buffer, ring, polity) gets a distribution instead
             -- an area-weighted percentile, a concentrated/spread badge, and a histogram. <br/>
-            <a href="#" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
 
@@ -471,7 +455,7 @@
             credit. The result is the actual set of basins meeting those conditions together --
             an empty set is as real an answer as a crowded one, meaning nothing else on Earth
             matches this place on these terms. <br/>
-            <a href="#" data-bs-toggle="modal" data-bs-target="#similarity-doc-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Similarity in EDOPS" data-doc-src="/docs/similarity/">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
 
@@ -753,6 +737,13 @@
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
 <script>
 (() => {
+  // ── Shared doc modal ──────────────────────────────────────────────────────
+  // Populates #doc-modal's title/iframe from whichever trigger opened it.
+  document.getElementById('doc-modal').addEventListener('show.bs.modal', (e) => {
+    document.getElementById('doc-modal-label').textContent = e.relatedTarget.dataset.docTitle;
+    document.getElementById('doc-modal-iframe').src = e.relatedTarget.dataset.docSrc;
+  });
+
   // ── WO21 — Settlements state machine (Step 2) ────────────────────────────
   // Covers: WHG resolve → candidates → setResolvedPoint → scope → Get Signature.
   // Also: example path (locks resolve field), clearResolvedPoint, scope gate,
@@ -3288,7 +3279,7 @@
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
         <h5 class="mb-0">${headingHtml}</h5>
-        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle edops-help" data-help-modal="#reading-signature-modal"></i></a>
+        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/">How to read this <i class="bi bi-question-circle edops-help" data-help-modal="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/"></i></a>
       </div>
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
     for (const band of BAND_ORDER) {
