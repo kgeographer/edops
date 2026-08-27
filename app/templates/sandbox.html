@@ -373,7 +373,6 @@
               <option value="precipitation_annual">Annual precipitation</option>
               <option value="temperature_annual">Mean annual temperature</option>
               <option value="cropland_pct">Cropland extent % (modern)</option>
-              <option value="elevation_max">Elevation (max)</option>
               <option value="slope_deg">Slope</option>
             </optgroup>
             <optgroup label="Paleoclimate — LMR v2.1">
@@ -3836,11 +3835,9 @@
     return `rgb(${Math.round(((a>>16)&0xff)*(1-f)+((b>>16)&0xff)*f)},${Math.round(((a>>8)&0xff)*(1-f)+((b>>8)&0xff)*f)},${Math.round((a&0xff)*(1-f)+(b&0xff)*f)})`;
   }
 
-  // Terrain (hypsometric) palette for elevation/slope -- these aren't a
-  // warmer/colder or wetter/drier axis, so the RdBu diverging scheme doesn't
-  // apply; green-to-tan-to-white reads as "terrain" the way RdBu reads as
-  // "climate" (Google Maps terrain layer convention).
-  const TERRAIN_PAL = ['#4d7c4d', '#8fae67', '#c9b579', '#a97d54', '#e8e4e0'];
+  // Terrain (hypsometric) palette for elevation/slope -- ColorBrewer YlOrBr-7,
+  // monotonic light-to-dark.
+  const TERRAIN_PAL = ['#ffffd4', '#fee391', '#fec44f', '#fe9929', '#ec7014', '#cc4c02', '#8c2d04'];
 
   // Seasonal amplitude isn't warm/cold (RdBu) or terrain -- it's a magnitude
   // of swing, so a plain sequential light-grey-to-purple scale (narrow range
@@ -3878,8 +3875,7 @@
     { key: 'temperature_annual',  su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
     { key: 'cropland_pct',        su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
       palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
-    { key: 'elevation_max',       su: 's', reverse: false, loLabel: 'low',  hiLabel: 'high' },
-    { key: 'slope_deg',           su: 's', reverse: false, loLabel: 'flat', hiLabel: 'steep' },
+    { key: 'slope_deg',           su: 's', reverse: false, loLabel: 'flat', hiLabel: 'steep', pal: TERRAIN_PAL },
   ];
 
   let _basinLayerLoaded = false;
@@ -3940,7 +3936,8 @@
         const numId = Number(id);
         if (level === 8 && _sigMemberIds && !_sigMemberIds.has(numId)) return;
         const t  = Math.max(0, Math.min(1, (v - lo) / range));
-        const fc = varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
+        const fc = varMeta.pal     ? interpPalette(varMeta.pal, Math.sqrt(t))
+                 : varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
                                    : interpRdbu(varMeta.reverse ? 1 - t : t);
         map.setFeatureState({ source: sid, sourceLayer: sl, id: numId }, { fc });
       });
@@ -3954,7 +3951,9 @@
   }
 
   function renderBasinLegend(meta, lo, hi) {
-    const stops = meta.palette
+    const stops = meta.pal
+      ? meta.pal.map((c, i) => `${c} ${(i/(meta.pal.length-1)*100).toFixed(1)}%`).join(', ')
+      : meta.palette
       ? `${meta.palette.lo} 0%, ${meta.palette.hi} 100%`
       : (meta.reverse
           ? [...RDBU_PAL].reverse().map((c, i) => `${c} ${(i/(RDBU_PAL.length-1)*100).toFixed(1)}%`).join(', ')
