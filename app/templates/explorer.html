@@ -225,9 +225,7 @@
           <div id="ex-map"></div>
 
           <!-- Histogram strip (hidden for eVolv2k variables) -->
-<!--          <div id="ex-histogram" class="ex-placeholder">-->
-<!--            histogram + legend — coming soon-->
-<!--          </div>-->
+          <div id="ex-histogram" class="ex-placeholder"></div>
 
           <!-- eVolv2k panel: time×lat chart + event table (hidden unless evolv2k variable selected) -->
           <div id="ex-evolv-panel" class="d-none">
@@ -1606,7 +1604,7 @@
           let tags = '';
           if (isSU)      tags += `<span class="ex-var-tag ms-1">(s, u)</span>`;
           if (isCat)     tags += `<span class="ex-var-tag ms-1">(c)</span>`;
-          if (isPreview) tags += `<span class="ex-var-tag preview-tag ms-1">(preview)</span>`;
+          if (isPreview) tags += `<span class="ex-var-tag preview-tag ms-1">(planned)</span>`;
           const cls = ['ex-var-item', isSelected ? 'selected' : '', isPreview ? 'preview' : '', isNoData ? 'no-data' : ''].filter(Boolean).join(' ');
           html += `<div class="${cls}" data-key="${v.schema_key}" title="${isNoData ? 'No data available' : ''}">
                      ${escHtml(v.friendly_name || v.schema_key)}${tags}

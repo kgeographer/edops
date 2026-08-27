@@ -430,7 +430,7 @@
           <p class="sandbox-blurb-body">A signature is every environmental variable
             for this query, grouped by band. A single basin gets one value per variable plus its
             global percentile; a set of basins (buffer, ring, polity) gets a distribution instead
-            -- an area-weighted percentile, a concentrated/spread badge, and a histogram.
+            -- an area-weighted percentile, a concentrated/spread badge, and a histogram. <br/>
             <a href="#" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
@@ -470,7 +470,7 @@
             either clears every threshold in the chosen lens or it doesn't, with no partial
             credit. The result is the actual set of basins meeting those conditions together --
             an empty set is as real an answer as a crowded one, meaning nothing else on Earth
-            matches this place on these terms.
+            matches this place on these terms. <br/>
             <a href="#" data-bs-toggle="modal" data-bs-target="#similarity-doc-modal">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
           </p>
         </div>
@@ -2398,7 +2398,7 @@
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
-    map.flyTo({ center: [10, 20], zoom: 1 });
+    map.flyTo({ center: [10, 25], zoom: 0.9 });
     // Reset bands to A–E checked, T unchecked
     ['A','B','C','D','E'].forEach(b => { document.getElementById(`v3-band-${b}`).checked = true; });
     document.getElementById('v3-band-T').checked = false;
@@ -3496,7 +3496,7 @@
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
-    map.flyTo({ center: [10, 20], zoom: 1 });
+    map.flyTo({ center: [10, 25], zoom: 0.9 });
   }
 
   // Polity search
@@ -4208,8 +4208,8 @@
 
   const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
-    center: [10, 20],
-    zoom: 1,
+    center: [10, 25],
+    zoom: 0.9,
     attributionControl: true,
     style: {
       version: 8,
