@@ -451,6 +451,37 @@ def basin_geom_post(body: BasinGeomRequest):
     return _fetch_basin_geom(body.ids, body.level)
 
 
+@router.get("/sandbox/cities", include_in_schema=False)
+def sandbox_cities():
+    """Modern reference cities (GeoNames, population >= 15,000) for the Polities map's
+    Cities layer -- flat array payload (mirrors /api/explorer/values), not GeoJSON, since
+    the client fetches this once and does its own point-in-polygon filtering per polity."""
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT gnid, name, ccode, population, lon, lat FROM gaz.geonames_cities")
+            return {"cities": cur.fetchall()}
+    finally:
+        conn.close()
+
+
+@router.get("/sandbox/countries", include_in_schema=False)
+def sandbox_countries():
+    """Country outlines (Natural Earth admin0) for the Polities map's Countries layer --
+    only 242 features, fine as a single GeoJSON FeatureCollection fetched once."""
+    conn = db_connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name, ST_AsGeoJSON(geom, 4) FROM gaz.admin0")
+            features = [
+                {"type": "Feature", "properties": {"name": name}, "geometry": json.loads(geom)}
+                for name, geom in cur.fetchall()
+            ]
+            return {"type": "FeatureCollection", "features": features}
+    finally:
+        conn.close()
+
+
 @router.get("/narrative", include_in_schema=False)
 def narrative(
     lat: float,

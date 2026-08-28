@@ -525,6 +525,12 @@
               <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
                 <input type="checkbox" id="v3-layer-rivers" checked> Rivers
               </label>
+              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-cities-wrap" style="cursor:pointer; display:none;">
+                <input type="checkbox" id="v3-layer-cities"> Cities
+              </label>
+              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-countries-wrap" style="cursor:pointer; display:none;">
+                <input type="checkbox" id="v3-layer-countries"> Countries
+              </label>
             </div>
           </div>
         </div>
@@ -755,6 +761,7 @@
   let _pointMarker   = null;
   let _ringData      = null;
   let _ringPopup     = null;
+  let _citiesPopup   = null;
   let _ringSelectPopup    = null;  // persistent click-to-preview popup, distinct from the hover popup
   // Split deliberately: preview is a lightweight, pre-commit map/tooltip affordance (click a
   // basin, see a highlight + "Get signature" link); committed is what's actually loaded into
@@ -3415,6 +3422,8 @@
   let _polityPlayTimer  = null;
   let _polityGeomAbort  = null;
   let _searchTimer      = null;
+  let _currentPolityFeature = null;  // GeoJSON feature currently drawn as the boundary -- read by _renderCitiesLayer()
+  let _citiesData       = null;      // flat [gnid, name, ccode, population, lon, lat][] cache, fetched once
 
   function updatePolityButton() {
     document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
@@ -3476,6 +3485,7 @@
     shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _basinLayerLevel  = null;
+    _countriesLoaded  = false;
     _sigMemberIds     = null;
     document.getElementById('v3-basin-var').value              = '';
     document.getElementById('v3-basin-legend').style.display   = 'none';
@@ -3487,6 +3497,9 @@
     document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
     map.flyTo({ center: [10, 25], zoom: 0.9 });
+    _currentPolityFeature = null;
+    document.getElementById('v3-layer-cities').checked    = false;
+    document.getElementById('v3-layer-countries').checked = false;
   }
 
   // Polity search
@@ -3592,7 +3605,85 @@
         ]
       );
       _fitMap(geojsonBbox(feature));
+      _currentPolityFeature = feature;
+      _renderCitiesLayer();
     } catch (_) { /* boundary is optional -- includes abort of a superseded request */ }
+  }
+
+  // ── Cities reference layer (Polities tab only) ───────────────────────────
+  // Ray-casting point-in-ring test; a polygon is "inside its outer ring and outside every hole".
+  function _pointInRing(lon, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      const crosses = (yi > lat) !== (yj > lat) &&
+        lon < (xj - xi) * (lat - yi) / (yj - yi) + xi;
+      if (crosses) inside = !inside;
+    }
+    return inside;
+  }
+  function _pointInPolygonRings(lon, lat, rings) {
+    if (!_pointInRing(lon, lat, rings[0])) return false;
+    for (let k = 1; k < rings.length; k++) if (_pointInRing(lon, lat, rings[k])) return false;
+    return true;
+  }
+  function pointInPolygon(lon, lat, geometry) {
+    if (geometry.type === 'Polygon') return _pointInPolygonRings(lon, lat, geometry.coordinates);
+    if (geometry.type === 'MultiPolygon')
+      return geometry.coordinates.some(poly => _pointInPolygonRings(lon, lat, poly));
+    return false;
+  }
+
+  async function _renderCitiesLayer() {
+    const checked = document.getElementById('v3-layer-cities')?.checked;
+    if (!checked || !_currentPolityFeature) { shell.remove('cities'); return; }
+    if (!_citiesData) {
+      const r = await fetch('/api/sandbox/cities');
+      const body = await r.json();
+      _citiesData = body.cities;
+    }
+    const geometry = _currentPolityFeature.geometry;
+    const CITIES_LABEL_TOP_N = 30;
+    const features = _citiesData
+      .filter(([, , , , lon, lat]) => pointInPolygon(lon, lat, geometry))
+      .map(([gnid, name, ccode, population, lon, lat]) => ({
+        type: 'Feature',
+        properties: { gnid, name, ccode, population },
+        geometry: { type: 'Point', coordinates: [lon, lat] },
+      }));
+    // Label only the N largest of whatever's currently in view -- adapts to polity size
+    // instead of a fixed population threshold that could label nothing for a small polity
+    // or too much for a large one.
+    [...features].sort((a, b) => b.properties.population - a.properties.population)
+      .slice(0, CITIES_LABEL_TOP_N)
+      .forEach(f => { f.properties._labelTop = true; });
+    shell.remove('cities');
+    shell.add('cities',
+      { type: 'geojson', data: { type: 'FeatureCollection', features } },
+      [
+        { type: 'circle', paint: {
+          'circle-radius': 4, 'circle-color': '#2c5f8a',
+          'circle-stroke-width': 1.2, 'circle-stroke-color': 'rgba(255,255,255,0.9)',
+        } },
+        { type: 'symbol', filter: ['==', ['get', '_labelTop'], true],
+          layout: {
+            'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'],
+            'text-size': 16, 'text-offset': [0, 0.3], 'text-anchor': 'top',
+          },
+          paint: {
+            'text-color': '#1a3a52', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.2,
+          } },
+      ]
+    );
+    const citiesLayerId = _layers['cities'].layerIds[0];
+    map.on('mousemove', citiesLayerId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      const p = e.features[0].properties;
+      _citiesPopup.setLngLat(e.lngLat)
+        .setHTML(`<span style="font-size:0.78rem;">${p.name}, ${p.ccode} — pop. ${Number(p.population).toLocaleString()}</span>`)
+        .addTo(map);
+    });
+    map.on('mouseleave', citiesLayerId, () => { map.getCanvas().style.cursor = ''; _citiesPopup.remove(); });
   }
 
   // async so Play can await the boundary paint per step instead of firing on a blind clock --
@@ -3795,6 +3886,10 @@
   function _setPolitiesTabVisibility(onPolities) {
     ['v3-tab-analysis-li', 'v3-tab-seasonality-li', 'v3-tab-context-li', 'v3-tab-similarity-li']
       .forEach(id => document.getElementById(id)?.classList.toggle('d-none', onPolities));
+    // Cities/Countries are Polities-only for now (no comparable boundary to filter cities
+    // against on Settlements' single basin/buffer/ring) -- shown here, not on Settlements.
+    document.getElementById('v3-layer-cities-wrap').style.display    = onPolities ? '' : 'none';
+    document.getElementById('v3-layer-countries-wrap').style.display = onPolities ? '' : 'none';
   }
 
   // ── Tab-switch hard reset ─────────────────────────────────────────────────
@@ -3879,6 +3974,7 @@
   ];
 
   let _basinLayerLoaded = false;
+  let _countriesLoaded  = false;
   function loadBasinLayer() {
     const level = _activeLevel();
     if (_basinLayerLoaded && _basinLayerLevel === level) return;
@@ -4265,6 +4361,7 @@
   });
 
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
+  _citiesPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 6 });
   window._v3map = map;
 
   map.on('load', () => {
@@ -4300,6 +4397,30 @@
     (_layers['rivers']?.layerIds ?? []).forEach(id => {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
     });
+  });
+
+  document.getElementById('v3-layer-cities').addEventListener('change', () => { _renderCitiesLayer(); });
+
+  document.getElementById('v3-layer-countries').addEventListener('change', async function () {
+    if (!this.checked) {
+      (_layers['countries']?.layerIds ?? []).forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+      });
+      return;
+    }
+    if (!_countriesLoaded) {
+      const r = await fetch('/api/sandbox/countries');
+      const geojson = await r.json();
+      shell.add('countries',
+        { type: 'geojson', data: geojson },
+        [{ type: 'line', paint: { 'line-color': 'rgba(90,90,90,0.55)', 'line-width': 0.8 } }]
+      );
+      _countriesLoaded = true;
+    } else {
+      (_layers['countries']?.layerIds ?? []).forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible');
+      });
+    }
   });
 
   // ?tab=settlements or ?tab=polities overrides the HTML default — lets the
