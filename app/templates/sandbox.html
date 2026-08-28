@@ -526,7 +526,7 @@
                 <input type="checkbox" id="v3-layer-rivers" checked> Rivers
               </label>
               <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-cities-wrap" style="cursor:pointer; display:none;">
-                <input type="checkbox" id="v3-layer-cities"> Cities
+                <input type="checkbox" id="v3-layer-cities"> Cities (modern)
               </label>
               <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-countries-wrap" style="cursor:pointer; display:none;">
                 <input type="checkbox" id="v3-layer-countries"> Countries
@@ -3643,20 +3643,29 @@
       _citiesData = body.cities;
     }
     const geometry = _currentPolityFeature.geometry;
-    const CITIES_LABEL_TOP_N = 30;
-    const features = _citiesData
-      .filter(([, , , , lon, lat]) => pointInPolygon(lon, lat, geometry))
+    const CITIES_DISPLAY_BASE = 30;  // <= this many matches: show every dot
+    const CITIES_LABEL_TOP_N  = 30;  // of whatever's actually shown, label the N largest
+    const matched = _citiesData.filter(([, , , , lon, lat]) => pointInPolygon(lon, lat, geometry));
+    // Sliding-scale display cap: below the base, show everything; above it, grow the
+    // shown count as sqrt(n) rather than a fixed fraction -- a flat percentage-per-band
+    // table regresses right at its own boundary (e.g. 31 cities @ 75% = 23 shown, fewer
+    // than 30 cities @ 100% = 30 shown); sqrt growth is strictly increasing in n, so more
+    // matches never means fewer dots on screen.
+    const shownCount = matched.length <= CITIES_DISPLAY_BASE
+      ? matched.length
+      : Math.round(CITIES_DISPLAY_BASE * Math.sqrt(matched.length / CITIES_DISPLAY_BASE));
+    const features = matched
+      .sort((a, b) => b[3] - a[3])  // population is index 3; biggest survive the cap
+      .slice(0, shownCount)
       .map(([gnid, name, ccode, population, lon, lat]) => ({
         type: 'Feature',
         properties: { gnid, name, ccode, population },
         geometry: { type: 'Point', coordinates: [lon, lat] },
       }));
-    // Label only the N largest of whatever's currently in view -- adapts to polity size
-    // instead of a fixed population threshold that could label nothing for a small polity
-    // or too much for a large one.
-    [...features].sort((a, b) => b.properties.population - a.properties.population)
-      .slice(0, CITIES_LABEL_TOP_N)
-      .forEach(f => { f.properties._labelTop = true; });
+    // features is already population-descending from the cap step above -- label the N
+    // largest of what's shown, adapting to polity size instead of a fixed threshold that
+    // could label nothing for a small polity or too much for a large one.
+    features.slice(0, CITIES_LABEL_TOP_N).forEach(f => { f.properties._labelTop = true; });
     shell.remove('cities');
     shell.add('cities',
       { type: 'geojson', data: { type: 'FeatureCollection', features } },

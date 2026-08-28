@@ -116,12 +116,19 @@ toggle-panel / modal, each with its own decorator icon, auto-wiring via Mutation
 Sandbox polity, Reading a signature) are complete with screenshots. Session-by-session detail:
 `logs/session_log_YYYYMMDD.md`.
 
-**kgreview state, 2026-08-26:** `docs/TODO_kgreview.md`'s original 35-item backlog is fully closed
+**kgreview state, 2026-08-27:** `docs/TODO_kgreview.md`'s original 35-item backlog is fully closed
 except #29/#33 (Karl's own CSS pass). Work on the branch has since broadened past that list into a
 general legibility/UX pass, still ongoing — Cliopatria (previously an unlinked, little-used page)
 brought up to parity with the other three pages' header/nav; a site-wide `.text-muted` removal;
 Workbench's WH Cities panel copy and layout; a new ecoregion→Wikipedia/OneEarth lookup for WH
-Cities. Session-by-session detail: `logs/session_log_20260825.md`, `logs/session_log_20260826.md`.
+Cities; explorer.html histogram-panel fix and terrain-ramp color/domain rework for Sandbox's
+choropleth. New: Sandbox Polities map has Cities (modern)/Countries reference layers (see `gaz`
+table entries above) — cities are population-ranked with a sliding display cap
+(`CITIES_DISPLAY_BASE`/`CITIES_LABEL_TOP_N`, `sandbox.html` ~3646) rather than a hard cutoff. A
+parallel research thread (Chandler-Modelski historical urban population,
+`notebooks/edop/kgreview/chandler_modelski_wrangle.ipynb`) was wrangled and evaluated for this
+same layer but ruled out — see that notebook and project memory for why. Session-by-session
+detail: `logs/session_log_20260825.md`, `logs/session_log_20260826.md`, `logs/session_log_20260827.md`.
 
 **Deploy readiness, checked 2026-08-25 (not deploying yet):** direct SSH inventory against
 `kgeographer-1` found gaps beyond what `MAINTAIN_DEPLOY.md` already documented — `basin08.pmtiles`,
@@ -384,6 +391,8 @@ edit those, not the .md directly; served at /docs/api/)
 - `public.v_basin06_persist_rev2`, `public.v_basin08_persist_rev2`: views used by the similarity index at startup; expose `hybas_id`, `pre_mm_monthly` (array), `tmp_dc_monthly` (array, already °C — not ×10). All derived similarity variables are computed from these arrays at index-load time.
 - `gaz.clio_polities`: Cliopatria polities — columns lowercase (`fromyear`, `toyear`, `name`, `geom`)
 - `gaz.rivers`: HydroRIVERS v1.0 global river network — 8.5M rows; `hyriv_id`, `geom` (MultiLineString), `ord_clas` (Strahler order class 1–9); tiled to `app/static/sandbox/rivers.pmtiles` (gitignored)
+- `gaz.geonames_cities`: 27,699 modern populated places (GeoNames, `fclass='P'`, population ≥ 15,000), `geometry(Point,4326)` + GiST index; loaded from `whg_staging.geonames.places_filter1` via `scripts/edop/kgreview/load_geonames_cities.py`; backs Sandbox Polities map's Cities layer (`/api/sandbox/cities`)
+- `gaz.admin0`: Natural Earth country polygons, 242 rows; backs Sandbox Polities map's Countries layer (`/api/sandbox/countries`)
 - `temporal.hyde_cells`: 2,215,829 HYDE 3.4 grid cells (~5 arc-min); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
 - `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
 - `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
