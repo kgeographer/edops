@@ -1574,17 +1574,14 @@
         style: {
           version: 8,
           sources: {
-            carto: {
+            awmc: {
               type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              ],
-              tileSize: 256,
-              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+              tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+              tileSize: 256, minzoom: 1, maxzoom: 11,
+              attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
             },
           },
-          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+          layers: [{ id: 'awmc-layer', type: 'raster', source: 'awmc' }],
         },
       });
       _cjPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });
@@ -1792,12 +1789,11 @@
     _atlasMap = new maplibregl.Map({
       container:'v3-atlas-map', center:[12, 25], zoom:1.1, attributionControl:true,
       style:{ version:8,
-        sources:{ carto:{ type:'raster',
-          tiles:['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                 'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
-          tileSize:256,
-          attribution:'&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } },
-        layers:[{ id:'carto-bg', type:'raster', source:'carto' }] },
+        sources:{ awmc:{ type:'raster',
+          tiles:['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+          tileSize:256, minzoom:1, maxzoom:11,
+          attribution:'&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>' } },
+        layers:[{ id:'awmc-layer', type:'raster', source:'awmc' }] },
     });
     await new Promise(res => _atlasMap.on('load', res));
   }
@@ -1921,17 +1917,14 @@
         style: {
           version: 8,
           sources: {
-            carto: {
+            awmc: {
               type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              ],
-              tileSize: 256,
-              attribution: '&copy; <a href="https://carto.com">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+              tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+              tileSize: 256, minzoom: 1, maxzoom: 11,
+              attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
             },
           },
-          layers: [{ id: 'carto-bg', type: 'raster', source: 'carto' }],
+          layers: [{ id: 'awmc-layer', type: 'raster', source: 'awmc' }],
         },
       });
       _ctxPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 4 });

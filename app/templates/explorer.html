@@ -314,14 +314,14 @@
     style: {
       version: 8,
       sources: {
-        osm: {
+        awmc: {
           type: 'raster',
-          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+          tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
+          tileSize: 256, minzoom: 1, maxzoom: 11,
+          attribution: '&copy; <a href="https://cawm.lib.uiowa.edu" target="_blank">AWMC</a>',
         }
       },
-      layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm' }]
+      layers: [{ id: 'awmc-layer', type: 'raster', source: 'awmc' }]
     },
     center: [10, 20],
     zoom: 1,
@@ -896,9 +896,9 @@
     const BASE = {
       version: 8,
       sources: {
-        osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
+        awmc: { type: 'raster', tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'], tileSize: 256, minzoom: 1, maxzoom: 11 }
       },
-      layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm' }]
+      layers: [{ id: 'awmc-layer', type: 'raster', source: 'awmc' }]
     };
 
     for (const reg of regions) {
