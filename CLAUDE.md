@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **kgreview** — active phase, no _tracker.md file; see `docs/TODO_kgreview.md` for punchlist. DOCS_v4 is done (merged to `main` locally, `docs/TODO_DOCSv4.md` fully checked off). Most recent `logs/session_log_YYYYMMDD.md` file has latest work
+- **v0.4 deploy** — active phase, no _tracker.md file. Blue-green dry run complete on `edops04.computingplace.org`; cutover to production scheduled 2026-08-31. Per-step record + resume point: `logs/session_log_20260830_deploy.md`; checklist: `MAINTAIN_DEPLOY.md`. kgreview and DOCS_v4 are both closed and sit in local `main`. Most recent `logs/session_log_*.md` has latest work
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -54,38 +54,46 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | CDOP2 — CITYKIN             | complete 2026-07-30             | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
 | Reorg (housekeeping)        | complete 2026-08-03             | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
 | DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots; merged to `main` locally (not deployed, not pushed) |
-| **kgreview**                | **active**                      | `docs/TODO_kgreview.md`'s original ~35-item backlog closed except #29/#33 (Karl's own CSS pass); branch work has broadened into a general legibility/UX pass beyond that list |
+| kgreview                    | complete 2026-08-30             | `docs/TODO_kgreview.md` backlog closed; broadened into a general legibility/UX pass — Cliopatria header/nav parity, `.text-muted` removal, Workbench WH Cities copy + ecoregion→Wiki lookup, explorer histogram fix, Sandbox terrain ramp, Sandbox Polities Cities/Countries layers. Merged to `main` `0fdb283` |
+| **v0.4 deploy**             | **active** — cutover 2026-08-31 | blue-green dry run on `edops04` validated end to end; `logs/session_log_20260830_deploy.md` + `MAINTAIN_DEPLOY.md` |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**kgreview is the active phase.** DOCS_v4 is done — content-complete, proofread, merged to `main`
-locally. What's left before v0.4 replaces v0.3 in production is entirely the **Release** checklist
-(accuracy sweep, deploy, smoke test, cold read — see `docs/TODO_DOCSv4.md`'s Release section,
-deliberately its own later phase, not tracked as checkboxes there) — not scoped as active work
-yet. In the meantime, `kgreview` works off `main` on Karl's own sandbox UI nits backlog.
-**Milestones:**
-- v0.4 release (~2026-09-07). Social media and mailing list announcements
-- Braga (2026-09-23) — Spatial Humanities conference.
+**v0.4 deploy — in progress (2026-08-30), cutover 2026-08-31.** kgreview and DOCS_v4 are both
+closed and sit in local `main` (never pushed, never deployed). A full blue-green dry run is live
+and validated on `edops04.computingplace.org`:
 
-**Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real coding
-work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now closed),
-with WO-child branches under each, merged back to the trunk on accept. Cross-cutting housekeeping that
-isn't component-specific coding — like the 2026-08-03 site/routing reorg, or the v0.4 docs pass — is
-instead cut directly off `main` and merged straight back to `main`, bypassing `cdop`/`edop` entirely.
-`docsv4` followed that shape (WO-scale work cut as its own child branches, e.g. `scope-rename`,
-merged straight back into it on accept) and was itself merged into `main` (`--no-ff`) on 2026-08-24
-once content-complete. **`kgreview`** — cut from `main` the same day, same shape — is the current
-active branch, working `docs/TODO_kgreview.md`'s triaged UI-nits list.
+- branch **`v04`** — cut from `main` = `main` + four deploy-surfaced fixes: `engine.py` /
+  `signature.py` persist-view lookup `_rev1`→`_rev2` (`f386ff1`); `_gaz_join` fail-soft +
+  `gunicorn` pin (`b4f8bc3`); self-hosted Protomaps basemap on sandbox's 3 panel maps (`117a5ee`).
+  Pushed to `origin/v04`; `origin/main` deliberately still v0.3.
+- service **`edops-v4`** on **:8004**, working dir `/var/www/edops-v4`, fresh venv
+  `/home/karlg/envs/cedop-v4` (the shared `cedop` venv had drifted to pandas 3.0 — untested).
+- shared **live `cedop` DB**, with every v0.4 object added additively (`v_basin0{6,8}_persist_rev2`,
+  `gaz.{geonames_cities,admin0,wh_cities_terrain,ccodes}`, `public.basin08_scores`,
+  `temporal.polity_basin08_crosswalk`, `gaz."Ecoregions2017".oneearth_slug` column).
+- nginx `edops04.computingplace.org` → :8004 (Let's Encrypt cert). **Live v0.3 on :8001
+  (`edops.service`, commit `e3f7424`) untouched throughout.**
 
-**Deploy status, as of 2026-08-24: local `main` is v0.4, `origin/main` is still v0.3 (tagged
-`v0.3`), 183 commits behind.** Confirmed no drift between them before merging (`main`/`origin/main`
-hadn't moved since `docsv4` was cut). **Deliberately not pushed** — Karl's call: pushing `main`
-before deploy prerequisites are met (gitignored asset rsync, a pending DB view change — see
-`MAINTAIN_DEPLOY.md`) risks a `git pull` on the production server landing broken v0.4 code. Push
-`main` only when actually ready to run the full deploy sequence, not before.
+**Cutover** = flip one nginx `proxy_pass` line `:8001`→`:8004` on the `edops.computingplace.org`
+server block + `nginx -t` + reload; rollback = flip it back (~5 s). `edops.service` stays up on
+:8001 as the fallback for days after. Per-step record and resume point (**step 13**):
+`logs/session_log_20260830_deploy.md`. Step-by-step checklist: `MAINTAIN_DEPLOY.md` (repo root,
+gitignored, Karl's personal deploy reference).
+
+**Milestones:** v0.4 announcements (social + mailing list) ~2026-09-07 — can slip. Braga
+(2026-09-23) — Spatial Humanities conference.
+
+**Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real
+coding work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now
+closed), with WO-child branches under each, merged back on accept. Cross-cutting housekeeping that
+isn't component-specific coding — the 2026-08-03 site/routing reorg, the v0.4 docs pass, kgreview —
+is cut straight off `main` and merged straight back. `docsv4` merged into `main` (`--no-ff`)
+2026-08-24; `kgreview` merged into `main` (`0fdb283`) 2026-08-30 as step 1 of this deploy; **`v04`**
+was then cut from `main` for the deploy itself.
 
 **What's in `main` now (all of DOCS_v4):** MkDocs live in-repo (`docsite/` source, `mkdocs.yml`,
 `site/` build output gitignored) with a generated Codebook
@@ -106,9 +114,9 @@ routes.py` (formerly ~4000 lines) no longer exists** — split into `routes_comm
 working-reference docs in `docs/edop/` worth consulting rather than re-deriving:
 `pageload_explorer.txt` (on-load + variable-selection pseudocode) and `routes_audit.txt` (re-run
 after any future route change). `app/static/basinatlas_pages/` (gitignored, ~13MB split-PDF
-output) still needs adding to the rsync deploy step — see `MAINTAIN_DEPLOY.md` (repo root,
-gitignored, Karl's personal maintain/deploy reference) for the current full asset list and the
-signature-update-to-docs propagation steps.
+output) is in `MAINTAIN_DEPLOY.md`'s rsync asset list and was deployed to `edops04` in the v0.4
+dry run — see that file (repo root, gitignored, Karl's personal maintain/deploy reference) for
+the full asset list and the signature-update-to-docs propagation steps.
 
 Help icons across all three pages are normalized onto a single three-mode harness (tooltip /
 toggle-panel / modal, each with its own decorator icon, auto-wiring via MutationObserver) — see
@@ -116,28 +124,26 @@ toggle-panel / modal, each with its own decorator icon, auto-wiring via Mutation
 Sandbox polity, Reading a signature) are complete with screenshots. Session-by-session detail:
 `logs/session_log_YYYYMMDD.md`.
 
-**kgreview state, 2026-08-27:** `docs/TODO_kgreview.md`'s original 35-item backlog is fully closed
-except #29/#33 (Karl's own CSS pass). Work on the branch has since broadened past that list into a
-general legibility/UX pass, still ongoing — Cliopatria (previously an unlinked, little-used page)
-brought up to parity with the other three pages' header/nav; a site-wide `.text-muted` removal;
-Workbench's WH Cities panel copy and layout; a new ecoregion→Wikipedia/OneEarth lookup for WH
-Cities; explorer.html histogram-panel fix and terrain-ramp color/domain rework for Sandbox's
-choropleth. New: Sandbox Polities map has Cities (modern)/Countries reference layers (see `gaz`
-table entries above) — cities are population-ranked with a sliding display cap
-(`CITIES_DISPLAY_BASE`/`CITIES_LABEL_TOP_N`, `sandbox.html` ~3646) rather than a hard cutoff. A
-parallel research thread (Chandler-Modelski historical urban population,
-`notebooks/edop/kgreview/chandler_modelski_wrangle.ipynb`) was wrangled and evaluated for this
-same layer but ruled out — see that notebook and project memory for why. Session-by-session
-detail: `logs/session_log_20260825.md`, `logs/session_log_20260826.md`, `logs/session_log_20260827.md`.
+**What kgreview delivered (closed 2026-08-30):** `docs/TODO_kgreview.md`'s original 35-item
+backlog closed except #29/#33 (Karl's own CSS pass). Broadened past that list into a general
+legibility/UX pass: Cliopatria (previously an unlinked, little-used page) brought up to parity
+with the other three pages' header/nav; site-wide `.text-muted` removal; Workbench WH Cities panel
+copy + layout; a new ecoregion→Wikipedia/OneEarth lookup for WH Cities; explorer.html
+histogram-panel fix; terrain-ramp color/domain rework for Sandbox's choropleth; Sandbox Polities
+map Cities (modern)/Countries reference layers (see `gaz` table entries below) — cities
+population-ranked with a sliding display cap (`CITIES_DISPLAY_BASE`/`CITIES_LABEL_TOP_N`,
+`sandbox.html`) rather than a hard cutoff. A parallel research thread (Chandler-Modelski historical
+urban population, `notebooks/edop/kgreview/chandler_modelski_wrangle.ipynb`) was wrangled and
+ruled out for that layer — see that notebook + project memory. Session detail:
+`logs/session_log_2026082{5,6,7}.md`.
 
-**Deploy readiness, checked 2026-08-25 (not deploying yet):** direct SSH inventory against
-`kgeographer-1` found gaps beyond what `MAINTAIN_DEPLOY.md` already documented — `basin08.pmtiles`,
-`sandbox/rivers.pmtiles`, and `basinatlas_pages/*.pdf` are missing from the server entirely (not
-stale, never deployed), `hyde_tiles/` has drifted. More importantly: `v_basin06_persist_rev2`/
-`v_basin08_persist_rev2` **don't exist on production at all** (only `_rev1` versions) — not the
-documented "drop and recreate for the slope-scaling fix," a hard blocker, since `signature.py`/
-`seasonality.py`/`context.py` reference `_rev2` by name directly. Full inventory: `MAINTAIN_DEPLOY.md`
-§D (gitignored, not tracked here).
+**Deploy execution (2026-08-30):** the dry run reconciled every gap the 2026-08-25 inventory
+(`MAINTAIN_DEPLOY.md` §D) had found — missing `_rev2` views, missing static assets, drifted
+`hyde_tiles/` — and several it missed: the full local↔prod DB schema had drifted (missing
+`gaz.{whg_gaz(→fail-soft),wh_cities_terrain,ccodes}`, `temporal.polity_basin08_crosswalk`,
+`public.basin08_scores`, an `Ecoregions2017.oneearth_slug` column, a stale `_rev1` schema the
+engine still referenced), and the server venv had drifted to pandas 3.0. All reconciled on the
+dry-run stack — see `logs/session_log_20260830_deploy.md` §8–13 and `MAINTAIN_DEPLOY.md`.
 
 **Engine** (`scripts/edop/areas/engine.py`) — stable; four public entry points:
 - `areal_signature(lat, lon, radius_km, conn, ...)` — buffer
@@ -223,7 +229,8 @@ metadata/                # gitignored
 
 ## The sandbox pages
 
-**Routing note (local `main`, not yet deployed/pushed — see Current work above):** as of the
+**Routing note (in `main`/`v04`, not yet cut over to production — see Current work above; the
+2026-08-31 cutover flips this):** as of the
 2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox.html` (old
 `/sandbox/lookup3` still works too); `/explorer` is the new canonical route for `explorer.html`
 (old `/sandbox/explorer` still works too); `/sandbox/lookup` now 301-redirects to `/sandbox`, and
@@ -231,10 +238,11 @@ the old Phase 1 Lookup page (renamed `sandbox_v03.html` on 2026-08-15, described
 retired — no route renders it on `main`. `/workbench` is the third canonical route
 (`workbench.html`, formerly `cdop_pilot.html` — renamed 2026-08-05, see Open/deferred items below);
 `/cdop` and `/cdop_tests`, which used to serve it, were dropped outright rather than redirected,
-since nothing's deployed yet. **In production today none of this has happened:** `/sandbox/lookup`
-still serves the old Lookup page live (under its old production filename, `sandbox.html` — the
-rename only exists on local `main`), and the old `cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is
-still what's actually deployed, until `main` is pushed and deployed.
+since nothing's deployed yet. **In production today (still v0.3, `e3f7424`) none of this has
+happened:** `/sandbox/lookup` still serves the old Lookup page live (under its old production
+filename, `sandbox.html` — the rename only exists on `main`/`v04`), and the old
+`cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is still what's actually deployed, until the
+2026-08-31 cutover.
 
 ### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
 `app/templates/sandbox.html` — Demo phase product; current focus. (Renamed from
