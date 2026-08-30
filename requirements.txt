@@ -35,6 +35,7 @@ fastapi==0.128.0
 fonttools==4.61.1
 geopandas==1.1.2
 ghp-import==2.1.0
+gunicorn==25.3.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1

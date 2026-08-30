@@ -137,19 +137,27 @@ def _resolve_basin(conn, lat: float, lon: float, level: int = 6) -> int:
 
 
 def _gaz_join(conn, hybas_ids: list) -> dict:
-    """Return {hybas_id: (place_id, place_name, ccodes, lat, lon)} for a list of ids."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT DISTINCT ON (hybas_id_l06)
-                hybas_id_l06, place_id, place_name, ccodes, lat, lon
-            FROM gaz.whg_gaz
-            WHERE hybas_id_l06 = ANY(%s)
-            ORDER BY hybas_id_l06, place_id
-            """,
-            (hybas_ids,),
-        )
-        return {int(r[0]): r for r in cur.fetchall()}
+    """Return {hybas_id: (place_id, place_name, ccodes, lat, lon)} for a list of ids.
+
+    Place-name labels are decorative — callers must tolerate an empty map. Returns {}
+    if gaz.whg_gaz is absent (not deployed everywhere) rather than failing the request.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT DISTINCT ON (hybas_id_l06)
+                    hybas_id_l06, place_id, place_name, ccodes, lat, lon
+                FROM gaz.whg_gaz
+                WHERE hybas_id_l06 = ANY(%s)
+                ORDER BY hybas_id_l06, place_id
+                """,
+                (hybas_ids,),
+            )
+            return {int(r[0]): r for r in cur.fetchall()}
+    except Exception:
+        conn.rollback()
+        return {}
 
 
 @router.get("/similarity/conjunction/lenses", include_in_schema=False)
