@@ -43,3 +43,7 @@ Polities are the other case. Their signatures are always sets, with values likew
 
 That leaves "similarity for an area" open in three places: basin-ring and buffer scopes, where what the user actually sees is a set of signatures even though the similarity tool quietly falls back to the one containing basin; and polities, where no similarity is attempted at all. In all three the underlying payload is a set of signatures, and the outstanding problem is comparing sets of sets of variables — even after they've been reduced to lenses.
 
+*[annual_total]: How much a basin's total annual rainfall may differ from the query basin's, as a multiplicative factor — 1.5 allows anywhere from two-thirds to one-and-a-half times as much.
+*[amplitude]: How closely a basin's month-to-month rainfall variability must match the query basin's — how sharply seasonal the rainfall is.
+*[shape]: How strongly a basin's month-by-month rainfall pattern must correlate with the query basin's — compares the timing of wet and dry months.
+

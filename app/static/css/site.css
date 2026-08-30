@@ -30,6 +30,9 @@ pre {
   overflow: auto;
 }
 
+.badge {
+  font-size: 0.85rem !important;
+}
 .subhead5 {
   margin_bottom: 0.5rem;
   font-style: italic;
@@ -65,7 +68,7 @@ pre {
 }
 
 .soc-blurb {
-  font-size: smaller;
+  font-size: 0.9rem;
 }
 
 .red-subhead {
@@ -183,9 +186,34 @@ pre {
   cursor: pointer;
 }
 .edops-help-decorator {
-  font-size: 0.75em;
-  color: #6c757d;
+  font-size: 1em;
+  color: #993333;
   margin-left: 2px;
   cursor: pointer;
 }
 
+/* Soft light-blue button, black text -- bare .btn has no hover state of its own (Bootstrap's
+   hover rules live on the .btn-* variant classes), so this needs an explicit :hover rather than
+   relying on Bootstrap. Used by the API Guide modal's Swagger link (_edops_modals.html).
+   Compound selector (.btn.btn-swagger-link, not just .btn-swagger-link) deliberately -- site.css
+   loads before the Bootstrap <link> in every page's <head>, so a same-specificity single-class
+   rule here would lose the cascade to Bootstrap's own .btn regardless of which order the classes
+   are listed in the markup; two classes outweighs Bootstrap's one regardless of load order. */
+.btn.btn-swagger-link {
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+  color: #000;
+}
+.btn.btn-swagger-link:hover {
+  background-color: #bfdbfe;
+  border-color: #93c5fd;
+  color: #000;
+}
+
+/* Experiment: kill Bootstrap's .text-muted grey everywhere, site-wide, without touching the
+   ~166 class="text-muted" instances across the templates. body .text-muted (element + class)
+   outweighs Bootstrap's own single-class .text-muted rule regardless of <link> load order --
+   site.css loads before Bootstrap's own stylesheet on every page. Revert: delete this rule. */
+body .text-muted {
+  color: inherit !important;
+}

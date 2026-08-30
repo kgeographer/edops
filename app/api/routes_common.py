@@ -355,15 +355,20 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
     tol = 0.01 if level == 6 else 0.05
     NODATA = -9999
 
+    # tmp_dc_ (temperature), slp_dg_ (slope), and sgr_dk_ (stream gradient) are all stored
+    # ×10 in basin06/basin08 -- same correction signature.py's persist views apply, needed
+    # again here since this route reads the base tables directly, not those views.
+    SCALED_10X_PREFIXES = ("tmp_dc_", "slp_dg_", "sgr_dk_")
+
     def _col_expr(col: str) -> str:
         # col names come from the codebook (server-controlled), not user input
         base = f"CASE WHEN {col} = {NODATA} THEN NULL ELSE {col}::float END"
-        if col.startswith("tmp_dc_"):
+        if col.startswith(SCALED_10X_PREFIXES):
             base = f"CASE WHEN {col} = {NODATA} THEN NULL ELSE ({col}::float / 10.0) END"
         return base
 
     if su == "delta":
-        scale = "/ 10.0" if col_s.startswith("tmp_dc_") else ""
+        scale = "/ 10.0" if col_s.startswith(SCALED_10X_PREFIXES) else ""
         val_expr = (
             f"CASE WHEN {col_s} = {NODATA} OR {col_u} = {NODATA} THEN NULL "
             f"ELSE (({col_s}::float - {col_u}::float){scale}) END"

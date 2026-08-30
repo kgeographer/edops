@@ -5,6 +5,7 @@ site_dir: site
 
 theme:
   name: material
+  logo: images/edops_icon.png
 
 markdown_extensions:
   - toc:

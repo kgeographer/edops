@@ -1257,6 +1257,46 @@ def eco_geom(level: str, id: str):
             conn.close()
 
 
+@router.get("/whc-ecoregion-wiki", include_in_schema=False)
+def whc_ecoregion_wiki(city_id: int):
+    """Wikipedia summary + OneEarth link for the OneEarth ecoregion a WH city's own point falls
+    in. wh_cities has no ecoregion field of its own -- the "Ecoregion" row shown in its profile
+    Summary table comes from BasinATLAS's own 784-class scheme (via the city's basin), a
+    different taxonomy than OneEarth's 847-class Ecoregions2017, so this resolves spatially
+    (point-in-polygon against the city's own geom) rather than by name match. 246/258 cities
+    resolve; the rest (mostly coastal/island) fall outside any Ecoregions2017 polygon."""
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT e.eco_id, e.eco_name, e.oneearth_slug, w.summary, w.wiki_url
+                FROM gaz.wh_cities c
+                JOIN gaz."Ecoregions2017" e ON ST_Contains(e.geom, c.geom)
+                LEFT JOIN public.eco_wikitext w ON w.eco_id = e.eco_id
+                WHERE c.id = %s
+            """, (city_id,))
+            row = cur.fetchone()
+
+            if not row:
+                return {"city_id": city_id, "found": False}
+
+            return {
+                "city_id": city_id,
+                "found": True,
+                "eco_id": row[0],
+                "eco_name": row[1],
+                "oneearth_slug": row[2],
+                "summary": row[3],
+                "wiki_url": row[4],
+            }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
 @router.get("/eco/wikitext", include_in_schema=False)
 def eco_wikitext(eco_id: int):
     """Get Wikipedia summary and URL for an ecoregion."""

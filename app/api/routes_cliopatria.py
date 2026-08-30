@@ -25,21 +25,23 @@ def polity_period(year: int):
         conn = db_connect()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT ST_AsGeoJSON(ST_Simplify(geom, 0.08), 4)::json AS geometry,
-                       id, name, seshatid, fromyear, toyear
-                FROM gaz.clio_polities
-                WHERE fromyear <= %(year)s AND toyear >= %(year)s
-                  AND NOT is_component
-                  AND NOT COALESCE(invalid_source_geom, false)
-                  AND geom IS NOT NULL
-                ORDER BY name
+                SELECT ST_AsGeoJSON(ST_Simplify(c.geom, 0.08), 4)::json AS geometry,
+                       c.id, c.name, c.seshatid, c.fromyear, c.toyear,
+                       (SELECT COUNT(*) FROM gaz.clio_polities c2
+                        WHERE c2.name = c.name AND NOT c2.is_component) AS n_slices
+                FROM gaz.clio_polities c
+                WHERE c.fromyear <= %(year)s AND c.toyear >= %(year)s
+                  AND NOT c.is_component
+                  AND NOT COALESCE(c.invalid_source_geom, false)
+                  AND c.geom IS NOT NULL
+                ORDER BY c.name
             """, {"year": year})
             rows = cur.fetchall()
         features = [
             {"type": "Feature", "geometry": geom,
              "properties": {"id": id_, "name": name, "seshatid": seshatid,
-                            "fromyear": fromyear, "toyear": toyear}}
-            for geom, id_, name, seshatid, fromyear, toyear in rows
+                            "fromyear": fromyear, "toyear": toyear, "n_slices": n_slices}}
+            for geom, id_, name, seshatid, fromyear, toyear, n_slices in rows
             if geom is not None
         ]
         return {"type": "FeatureCollection", "features": features}

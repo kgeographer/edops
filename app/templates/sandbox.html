@@ -17,20 +17,21 @@
 {% include "_edops_header.html" %}
 {% include "_edops_modals.html" %}
 
-<!-- Reading a signature modal (2026-08-08) -- triggered from the Signature panel's own
-     heading row (renderSignature()), not the header nav. Hardcoded to the Sandbox-specific
-     Reading a signature doc page rather than reusing #documentation-modal's per-active_page
-     include, since this link means one specific page regardless of which Guide tab a user
-     might otherwise be on. -->
-<div class="modal fade" id="reading-signature-modal" tabindex="-1" aria-labelledby="reading-signature-modal-label" aria-hidden="true">
+<!-- Shared doc modal -- one modal, content driven by whichever trigger opened it
+     (data-doc-title / data-doc-src), rather than a separate hardcoded modal block per
+     docsite page. Triggers set data-bs-target="#doc-modal" plus those two data-* attrs;
+     see the show.bs.modal listener near the top of the main <script> block. Reused for
+     Reading a signature, Similarity, and Codebook links -- one specific page regardless
+     of which Guide tab a user might otherwise be on. -->
+<div class="modal fade" id="doc-modal" tabindex="-1" aria-labelledby="doc-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 85%;">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="reading-signature-modal-label">Reading a signature</h4>
+        <h4 class="modal-title" id="doc-modal-label"></h4>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
-        <iframe src="/docs/sandbox/reading-a-signature/" style="width:100%; height:75vh; border:none;"></iframe>
+        <iframe id="doc-modal-iframe" src="" style="width:100%; height:75vh; border:none;"></iframe>
       </div>
     </div>
   </div>
@@ -230,10 +231,12 @@
                 <select id="v3-polity-example" class="form-select form-select-sm text-muted">
                   <option value="">Load an example</option>
                   <option value="polity|Northern Song">Northern Song (961–1027 CE)</option>
+                  <option value="polity|Inca Empire">Inca Empire (1440–1571 CE)</option>
+                  <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
+                  <option value="polity|Mali Empire">Mali Empire (1236–1611 CE)</option>
+                  <option value="polity|Kingdom of Poland">Kingdom of Poland (962–1449 CE)</option>
                   <option value="polity|Abbasid Caliphate">Abbasid Caliphate (750–1258 CE)</option>
                   <option value="polity|Tibetan Empire">Tibetan Empire (623–849 CE)</option>
-                  <option value="polity|Tang Dynasty">Tang Dynasty (618–907 CE)</option>
-                  <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
                   <option value="polity|Qin">Qin (750–222 BCE) — no LMR</option>
                 </select>
               </div>
@@ -354,23 +357,23 @@
         <div id="v3-intro-text" >
           <p><strong>EDOPS Signatures</strong> deliver multi-band environmental profiles for any
           point or area on Earth, drawn from global datasets covering hydrology, climate, terrain,
-            ecoregion, and historical land use. See the <a href="/docs/sandbox/overview/" target="_blank">page documentation</a> to learn more.</p>
+            ecoregion, and historical land use. See the <a href="#" data-bs-toggle="modal" data-bs-target="#documentation-modal">page documentation</a> to learn more.</p>
           <p>Choose <em>Settlements</em> to look up a place by name or coordinates.
           Choose <em>Polities</em> to query a historical polity by name and time slice.</p>
         </div>
 
         <!-- Basin choropleth controls — revealed on first scope render (hidden at cold start) -->
         <div id="v3-choropleth" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" for="v3-basin-var">Render variable</label>
+          <label class="text-muted small d-block mb-1" for="v3-basin-var">Render variable
+            (<a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Codebook" data-doc-src="/docs/codebook/">see Codebook</a>)</label>
           <select id="v3-basin-var" class="form-select form-select-sm">
             <option value="">— none —</option>
-            <optgroup label="Physiographic (modern normal)">
+            <optgroup label="BasinATLAS (various, modern)">
               <option value="aridity_index">Aridity index</option>
               <option value="precipitation_annual">Annual precipitation</option>
               <option value="temperature_annual">Mean annual temperature</option>
-            </optgroup>
-            <optgroup label="Land use — BasinATLAS">
               <option value="cropland_pct">Cropland extent % (modern)</option>
+              <option value="slope_deg">Slope</option>
             </optgroup>
             <optgroup label="Paleoclimate — LMR v2.1">
               <option value="lmr_temp_anomaly">Temperature anomaly</option>
@@ -397,10 +400,62 @@
           </div>
         </div>
 
-        <!-- Context blurb -- Context-tab-only, mirrors #v3-choropleth's Map-tab-only visibility -->
-        <div id="v3-ctx-blurb-panel" class="mt-2" style="display:none;">
-          <label class="text-muted small d-block mb-1" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.05em;">Regional context</label>
-          <p class="mb-0" style="font-size:0.85rem;" id="v3-ctx-blurb-text"></p>
+        <!-- Tab-intro blurbs (kgreview #35 / #26) -- one div per tab, shown only while that
+             tab is active, visibility driven by _TAB_BLURB_PANELS/_syncLeftColumnPanel() so
+             adding another tab's blurb is one map entry + one div, no new plumbing. Context's
+             is query-derived (filled by _buildContextBlurb()); the rest are static intro text
+             written once here. Signature/Similarity link out to a docsite page devoted to the
+             topic, both via the shared #doc-modal (see its definition near the top of this
+             file); Analysis/Seasonality don't have a page of their own, just the blurb.
+             Draft copy -- Karl's wordsmithing to follow. -->
+        <div id="v3-sig-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About the signature</label>
+          <p class="sandbox-blurb-body">A signature is every environmental variable
+            for this query, grouped by band. A single basin gets one value per variable plus its
+            global percentile; a set of basins (buffer, ring, polity) gets a distribution instead
+            -- an area-weighted percentile, a concentrated/spread badge, and a histogram. <br/>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
+          </p>
+        </div>
+
+        <div id="v3-analysis-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About this analysis</label>
+          <p class="sandbox-blurb-body">This tab compares each variable's <strong>local</strong>
+            value (this basin alone) against its <strong>upstream</strong> value (the whole
+            catchment draining into it), and classifies water provenance from the contrast --
+            endorheic, coastal terminal, exogenous supply, or local-dominant. Values are read
+            directly off the signature, not separately calculated. At L08 most basins' upstream
+            catchments are small enough that local and upstream nearly coincide; the contrast is
+            most informative at L06.</p>
+        </div>
+
+        <div id="v3-seas-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About seasonality</label>
+          <p class="sandbox-blurb-body">This tab shows the basin's monthly climatology
+            as two diagrams -- Walter-Lieth (precipitation and temperature by month) and Polar
+            (the same curves traced around a year-clock) -- plus scalar indices summarising them:
+            precipitation and temperature concentration, peak months, the phase offset between
+            the two curves, and temperature's seasonal amplitude.</p>
+        </div>
+
+        <div id="v3-ctx-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">Regional context</label>
+          <p class="sandbox-blurb-body" id="v3-ctx-blurb-text"></p>
+        </div>
+
+        <div id="v3-sim-blurb-panel" class="sandbox-blurb-panel">
+          <label class="sandbox-blurb-label">About similarity</label>
+          <p class="sandbox-blurb-body">Two places are never simply "similar" -- they may share a
+            precipitation regime and differ in almost everything else. This panel asks the
+            question one variable-group ("lens") at a time -- Precipitation, Temperature,
+            Terrain, or Climate -- rather than collapsing everything into one composite distance.</p>
+          <p class="sandbox-blurb-body">It's a membership test, not a ranking: a basin
+            either clears every threshold in the chosen lens or it doesn't, with no partial
+            credit. The result is the actual set of basins meeting those conditions together --
+            an empty set is as real an answer as a crowded one, meaning nothing else on Earth
+            matches this place on these terms. <br/>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Similarity in EDOPS" data-doc-src="/docs/similarity/">Full explanation <i class="bi bi-box-arrow-up-right sandbox-blurb-link-icon"></i></a>
+          </p>
         </div>
 
       </div><!-- /v3-intro -->
@@ -469,6 +524,12 @@
               <div class="text-muted mb-1" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Layers</div>
               <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
                 <input type="checkbox" id="v3-layer-rivers" checked> Rivers
+              </label>
+              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-cities-wrap" style="cursor:pointer; display:none;">
+                <input type="checkbox" id="v3-layer-cities"> Cities (modern)
+              </label>
+              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-countries-wrap" style="cursor:pointer; display:none;">
+                <input type="checkbox" id="v3-layer-countries"> Countries
               </label>
             </div>
           </div>
@@ -681,6 +742,13 @@
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
 <script>
 (() => {
+  // ── Shared doc modal ──────────────────────────────────────────────────────
+  // Populates #doc-modal's title/iframe from whichever trigger opened it.
+  document.getElementById('doc-modal').addEventListener('show.bs.modal', (e) => {
+    document.getElementById('doc-modal-label').textContent = e.relatedTarget.dataset.docTitle;
+    document.getElementById('doc-modal-iframe').src = e.relatedTarget.dataset.docSrc;
+  });
+
   // ── WO21 — Settlements state machine (Step 2) ────────────────────────────
   // Covers: WHG resolve → candidates → setResolvedPoint → scope → Get Signature.
   // Also: example path (locks resolve field), clearResolvedPoint, scope gate,
@@ -693,6 +761,7 @@
   let _pointMarker   = null;
   let _ringData      = null;
   let _ringPopup     = null;
+  let _citiesPopup   = null;
   let _ringSelectPopup    = null;  // persistent click-to-preview popup, distinct from the hover popup
   // Split deliberately: preview is a lightweight, pre-commit map/tooltip affordance (click a
   // basin, see a highlight + "Get signature" link); committed is what's actually loaded into
@@ -826,12 +895,10 @@
           document.getElementById('v3-basin-status').innerHTML =
             '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Loading basins…</span>';
         const r = await fetch(`/api/areas?${params}`);
-        console.log('[silentResig] polity fetch', r.status, `/api/areas?${params}`);
         if (!r.ok) return;
         const data = await r.json();
         const memberIds = data.member_ids || [];
         _sigMemberIds = memberIds.length ? new Set(memberIds.map(Number)) : null;
-        console.log('[silentResig] member_ids:', memberIds.length, '  _sigMemberIds size:', _sigMemberIds?.size ?? 0);
       } else {
         const scope = document.getElementById('v3-scope-select').value;
         if (!scope || currentLat == null) return;
@@ -920,7 +987,7 @@
     document.getElementById('v3-ring-info').style.display    = (scope === 'ring')   ? ''     : 'none';
   }
   async function _drawScopePreview(scope) {
-    ['single-basin','buffer-basins','buffer-circle','ring-center','ring-members']
+    ['single-basin','buffer-basins','buffer-circle','ring-basins']
       .forEach(n => shell.remove(n));
     if (currentLat === null) return;
     const lv = _activeLevel();
@@ -999,12 +1066,23 @@
   // ── Lower panel reveal (on first scope render) ────────────────────────────
   // The left column's lower area shows different content depending on which
   // right-column tab is active: #v3-choropleth (variable selector + legend)
-  // configures the world choropleth, meaningless off the Map tab;
-  // #v3-ctx-blurb-panel (Part D) summarizes Context's table, meaningless off
-  // the Context tab. _choroplethRevealed tracks the existing "has a scope
-  // ever been rendered" gate; _syncLeftColumnPanel additionally requires the
-  // matching tab to be the one currently shown, and the two panels are
-  // mutually exclusive (only one tab is active at a time).
+  // configures the world choropleth, meaningless off the Map tab; each entry in
+  // _TAB_BLURB_PANELS is an intro/summary div for one other tab, meaningless off that tab.
+  // _choroplethRevealed tracks the existing "has a scope ever been rendered" gate;
+  // _syncLeftColumnPanel additionally requires the matching tab to be the one currently
+  // shown, and all these panels are mutually exclusive (only one tab is active at a time).
+  //
+  // Add a new tab's blurb by adding one entry here + its markup (see #v3-ctx-blurb-panel /
+  // #v3-sim-blurb-panel for the shape) -- no new plumbing needed. `ready` is optional, for
+  // panels (like Context's) whose content is computed from query results rather than static;
+  // omit it for a panel that's always fine to show once its tab is active.
+  const _TAB_BLURB_PANELS = [
+    { tabBtn: 'v3-tab-sig-btn',         panel: 'v3-sig-blurb-panel' },
+    { tabBtn: 'v3-tab-analysis-btn',    panel: 'v3-analysis-blurb-panel' },
+    { tabBtn: 'v3-tab-seasonality-btn', panel: 'v3-seas-blurb-panel' },
+    { tabBtn: 'v3-tab-context-btn',     panel: 'v3-ctx-blurb-panel', ready: () => _ctxRows.length > 0 },
+    { tabBtn: 'v3-tab-similarity-btn',  panel: 'v3-sim-blurb-panel' },
+  ];
   let _choroplethRevealed = false;
   function _revealLowerPanel() {
     document.getElementById('v3-intro-text').style.display = 'none';
@@ -1013,9 +1091,12 @@
   }
   function _syncLeftColumnPanel() {
     const onMap = document.getElementById('v3-tab-map-btn').classList.contains('active');
-    const onCtx = document.getElementById('v3-tab-context-btn').classList.contains('active');
     document.getElementById('v3-choropleth').style.display = (_choroplethRevealed && onMap) ? '' : 'none';
-    document.getElementById('v3-ctx-blurb-panel').style.display = (_ctxRows.length && onCtx) ? '' : 'none';
+    _TAB_BLURB_PANELS.forEach(({ tabBtn, panel, ready }) => {
+      const active  = document.getElementById(tabBtn).classList.contains('active');
+      const isReady = ready ? ready() : true;
+      document.getElementById(panel).style.display = (active && isReady) ? 'block' : 'none';
+    });
   }
 
   // ── WHG settlement lookup ─────────────────────────────────────────────────
@@ -1057,7 +1138,7 @@
       return;
     }
 
-    if (!map || map.getZoom() < 4) {
+    if (!map || map.getZoom() < 3) {
       _whgSetStatus('Zoom map to your study region first, then search.');
       return;
     }
@@ -1107,6 +1188,13 @@
       const cname = r.cname
         ? `<span class="text-muted ms-1" style="font-size:0.8rem;">${escapeHtml(r.cname)}</span>`
         : '';
+      const placeType = r.place_type
+        ? `<span class="text-muted ms-1" style="font-size:0.8rem;">· ${escapeHtml(r.place_type)}</span>`
+        : '';
+      const score = r.score != null
+        ? `<span class="badge bg-light text-dark border ms-auto" style="font-size:0.7rem;font-weight:500;"
+                 title="WHG match confidence">${r.score}</span>`
+        : '';
       const alts = r.alt_names || [];
       let altHtml = '';
       if (alts.length) {
@@ -1115,7 +1203,7 @@
         altHtml = `<span class="text-muted d-block" style="font-size:0.85rem;">${shown}`;
         if (rest.length) {
           altHtml += ` <a href="#" class="whg-more-link text-muted"
-            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.85rem;">+${rest.length} more</a>`;
+            data-more="${escapeHtml(rest.join(', '))}" style="font-size:0.85rem;">+${rest.length} more names</a>`;
         }
         altHtml += '</span>';
       }
@@ -1124,7 +1212,9 @@
                      width:18px;height:18px;border-radius:50%;background:${color};
                      color:#fff;font-size:10px;font-weight:bold;flex-shrink:0;margin-top:2px;">${i + 1}</span>
         <span class="flex-grow-1 min-w-0">
-          <span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${altHtml}
+          <span class="d-flex align-items-baseline">
+            <span><span class="fw-semibold">${escapeHtml(r.name)}</span>${cname}${placeType}</span>${score}
+          </span>${altHtml}
         </span>
       </a>`;
     }).join('');
@@ -1376,9 +1466,8 @@
     const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
 
     // ── Assemble ──────────────────────────────────────────────────────────
-    const _ringSuffix = _activeBasinLabel();
     const nameHtml = _currentPlaceName
-      ? `<h5 class="mb-0">${_currentPlaceName}${_ringSuffix ? ` · ${_ringSuffix}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     document.getElementById('v3-seas-placeholder').style.display = 'none';
     const content = document.getElementById('v3-seas-content');
@@ -1541,7 +1630,7 @@
 
     const cjRingLabel = _activeBasinLabel();
     document.getElementById('v3-cj-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${cjRingLabel ? ` · ${escapeHtml(cjRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     if (_cjMarker) _cjMarker.remove();
     _cjMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -1878,9 +1967,8 @@
       _ctxMap.resize();
     }
 
-    const ctxRingLabel = _activeBasinLabel();
     document.getElementById('v3-ctx-title').innerHTML = _currentPlaceName
-      ? `<h5 class="mb-0">${escapeHtml(_currentPlaceName)}${ctxRingLabel ? ` · ${escapeHtml(ctxRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-0">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     if (_ctxMarker) _ctxMarker.remove();
     _ctxMarker = new maplibregl.Marker({ color: '#2c5f8a' })
@@ -2198,9 +2286,8 @@
     // Analysis had no title at all before -- Signature/Seasonality/Context/Similarity all show
     // one, so its absence here just meant no ring-member confusion could show up either. Adding
     // it now for consistency, same _currentPlaceName + ring-label pattern as the others.
-    const analysisRingLabel = _activeBasinLabel();
     const analysisNameHtml = _currentPlaceName
-      ? `<h5 class="mb-2">${escapeHtml(_currentPlaceName)}${analysisRingLabel ? ` · ${escapeHtml(analysisRingLabel)}` : ''}</h5>` : '';
+      ? `<h5 class="mb-2">${_basinTitleHtml(_currentPlaceName)}</h5>` : '';
 
     el.innerHTML = `
       <div class="px-1" style="font-size:0.85rem;">
@@ -2308,7 +2395,7 @@
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
-    map.flyTo({ center: [10, 20], zoom: 1 });
+    map.flyTo({ center: [10, 25], zoom: 0.9 });
     // Reset bands to A–E checked, T unchecked
     ['A','B','C','D','E'].forEach(b => { document.getElementById(`v3-band-${b}`).checked = true; });
     document.getElementById('v3-band-T').checked = false;
@@ -2454,6 +2541,15 @@
     const n = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
     return n != null ? `Ring ${n}` : null;
   }
+  // "Containing basin for {place}" / "Ring basin #N for {place}" -- same disambiguating
+  // prefix Signature uses (renderSignature()), shared here so Analysis/Seasonality/Context/
+  // Similarity titles stay in lockstep with it rather than re-deriving their own wording.
+  function _basinTitleHtml(placeName) {
+    if (!placeName) return '';
+    const n = _committedRingMemberId != null ? _ringOrdinal(_committedRingMemberId) : null;
+    const prefix = n != null ? `Ring basin #${n} for ` : `Containing basin for `;
+    return `${prefix}${escapeHtml(placeName)}`;
+  }
   // The ring list lives in the left panel, visible/clickable from any tab -- so committing a
   // ring member while already sitting on Context (not just Map) needs to force a refresh; the
   // normal shown.bs.tab / radius-change triggers won't fire on their own in that case.
@@ -2531,77 +2627,68 @@
     } catch (_) { return null; }
   }
 
+  // Center and ring members share ONE combined layer (2026-08-25, kgreview #13) rather than two
+  // separately z-stacked ones. Every ring member borders the center by definition, so whichever
+  // layer was added second (previously ring-members, always last) painted its own default color
+  // directly over the center's shared boundary -- no matter what paint property ring-center's own
+  // (now-hidden) line carried, that segment always rendered as ring-members' unselected crimson.
+  // One layer + one case expression keyed on hybas_id (falling back to the center's own hybas_id
+  // when nothing is previewed/committed, so it's highlighted by default) removes the z-order
+  // race entirely instead of just relocating it to the opposite basin.
   async function drawRingGeometry(ringData) {
     if (!ringData?.center || !Array.isArray(ringData.ring)) return null;
     _previewRingMemberId = null;
     _committedRingMemberId = null;  // fresh ring query -- clear any selection from a prior place
-    shell.add('ring-center',
-      { type: 'geojson', data: ringData.center },
-      [
-        { type: 'fill', paint: { 'fill-color': '#1a4a6e', 'fill-opacity': 0 } },
-        { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 5.5 } },
-        { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 2.5 } },
-      ]
-    );
-    shell.add('ring-members',
-      { type: 'geojson', data: { type: 'FeatureCollection', features: ringData.ring.map(m => m.feature) } },
+    const allFeatures = [ringData.center, ...ringData.ring.map(m => m.feature)];
+    shell.add('ring-basins',
+      { type: 'geojson', data: { type: 'FeatureCollection', features: allFeatures } },
       [
         { type: 'fill', paint: { 'fill-color': '#4a90c4', 'fill-opacity': 0 } },
         { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.94)', 'line-width': 3.5 } },
         { type: 'line', paint: { 'line-color': '#c2185b', 'line-width': 1.5 } },
       ]
     );
-    const memberFillId = _layers['ring-members'].layerIds[0];
-    const centerFillId = _layers['ring-center'].layerIds[0];
+    const basinsFillId = _layers['ring-basins'].layerIds[0];
+    const centerId = ringData.center.properties?.hybas_id;
 
-    map.on('mousemove', memberFillId, e => {
+    map.on('mousemove', basinsFillId, e => {
       map.getCanvas().style.cursor = 'pointer';
-      const n = _ringOrdinal(e.features[0].properties.hybas_id);
-      _ringPopup.setLngLat(e.lngLat).setHTML(`<span style="font-size:0.78rem;">Preview Ring ${n}</span>`).addTo(map);
+      const hid   = e.features[0].properties.hybas_id;
+      const label = hid === centerId ? 'Return to center' : `Preview Ring ${_ringOrdinal(hid)}`;
+      _ringPopup.setLngLat(e.lngLat).setHTML(`<span style="font-size:0.78rem;">${label}</span>`).addTo(map);
     });
-    map.on('mouseleave', memberFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
-    map.on('click',      memberFillId, e => {
-      const hid    = e.features[0].properties.hybas_id;
+    map.on('mouseleave', basinsFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
+    map.on('click',      basinsFillId, e => {
+      const hid = e.features[0].properties.hybas_id;
+      if (hid === centerId) { previewCenter(); return; }
       const member = ringData.ring.find(m => m.hybas_id === hid);
       if (member) previewRingMember(member);
     });
-    map.on('mousemove', centerFillId, e => {
-      map.getCanvas().style.cursor = 'pointer';
-      _ringPopup.setLngLat(e.lngLat).setHTML('<span style="font-size:0.78rem;">Return to center</span>').addTo(map);
-    });
-    map.on('mouseleave', centerFillId, () => { map.getCanvas().style.cursor = ''; _ringPopup.remove(); });
-    map.on('click',      centerFillId, () => previewCenter());
 
     _applyRingSelectionStyle();
     _renderRingGlyph();
 
-    return geojsonBbox({ type: 'FeatureCollection',
-      features: [ringData.center, ...ringData.ring.map(m => m.feature)] });
+    return geojsonBbox({ type: 'FeatureCollection', features: allFeatures });
   }
 
-  // Data-driven paint expressions keyed on the hybas_id property already present on every
-  // ring-member feature -- no MapLibre feature-state / promoteId plumbing needed, just
+  // Data-driven paint expression keyed on the hybas_id property present on every ring-basins
+  // feature, center included -- no MapLibre feature-state / promoteId plumbing needed, just
   // setPaintProperty on selection change.
   function _applyRingSelectionStyle() {
-    const memberLine  = _layers['ring-members']?.layerIds?.[2];
-    const centerLine  = _layers['ring-center']?.layerIds?.[2];
-    if (!memberLine) return;
-    // Map highlight follows preview-if-present, else committed -- gives immediate feedback on
-    // click even before "Get signature" is hit, without touching titles/Context (those only
-    // read the committed variable).
+    const basinsLine = _layers['ring-basins']?.layerIds?.[2];
+    if (!basinsLine) return;
+    // Map highlight follows preview-if-present, else committed, else the center itself -- gives
+    // immediate feedback on click even before "Get signature" is hit, without touching titles/
+    // Context (those only read the committed variable).
     // Outline only, deliberately -- a fill here sits on the same layers the #v3-basin-var
     // choropleth paints via feature-state, so a solid highlight fill visually stomped whatever
     // variable coloring was underneath. The outline treatment doesn't compete with it.
-    const selId = _previewRingMemberId ?? _committedRingMemberId ?? -1;
-    map.setPaintProperty(memberLine, 'line-color',
+    const centerId = _ringData?.center?.properties?.hybas_id ?? -1;
+    const selId = _previewRingMemberId ?? _committedRingMemberId ?? centerId;
+    map.setPaintProperty(basinsLine, 'line-color',
       ['case', ['==', ['get', 'hybas_id'], selId], '#e67e22', '#c2185b']);
-    map.setPaintProperty(memberLine, 'line-width',
-      ['case', ['==', ['get', 'hybas_id'], selId], 3, 1.5]);
-    const centerActive = (_previewRingMemberId ?? _committedRingMemberId) == null;
-    if (centerLine) {
-      map.setPaintProperty(centerLine, 'line-color', centerActive ? '#e67e22' : '#c2185b');
-      map.setPaintProperty(centerLine, 'line-width', centerActive ? 3.5 : 2.5);
-    }
+    map.setPaintProperty(basinsLine, 'line-width',
+      ['case', ['==', ['get', 'hybas_id'], selId], 3.5, 1.5]);
   }
 
   // Small compass-rose glyph, flush right in the same blurb row rather than its own section.
@@ -2818,7 +2905,7 @@
     // Scope-switch cleanup (2026-08-08) -- leaving ring scope previously left both a stale
     // hybas_id sitting in _committedRingMemberId (renderSignature's heading would then mislabel
     // a fresh single/buffer payload as a ring member forever, until a ring query happened to
-    // reset it) and stale ring-center/ring-members map layers (shell.add only replaces layers
+    // reset it) and stale ring-basins map layers (shell.add only replaces layers
     // under its own name, so switching scopes never removed the other scopes' geometry). Doing
     // this unconditionally on every click, for whichever scopes are NOT the one being fetched,
     // keeps state and map geometry in sync with whatever's about to be rendered regardless of
@@ -2826,8 +2913,7 @@
     if (scope !== 'ring') {
       _previewRingMemberId = null;
       _committedRingMemberId = null;
-      shell.remove('ring-center');
-      shell.remove('ring-members');
+      shell.remove('ring-basins');
     }
     if (scope !== 'single') shell.remove('single-basin');
     if (scope !== 'buffer') { shell.remove('buffer-basins'); shell.remove('buffer-circle'); }
@@ -3199,7 +3285,7 @@
     let html = `
       <div class="d-flex justify-content-between align-items-baseline mb-2">
         <h5 class="mb-0">${headingHtml}</h5>
-        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#reading-signature-modal">How to read this <i class="bi bi-question-circle edops-help" data-help-modal="#reading-signature-modal"></i></a>
+        <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/">How to read this <i class="bi bi-question-circle edops-help" data-help-modal="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/"></i></a>
       </div>
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
     for (const band of BAND_ORDER) {
@@ -3334,7 +3420,10 @@
   let _politySlices     = [];
   let _polityCurrentIdx = -1;
   let _polityPlayTimer  = null;
+  let _polityGeomAbort  = null;
   let _searchTimer      = null;
+  let _currentPolityFeature = null;  // GeoJSON feature currently drawn as the boundary -- read by _renderCitiesLayer()
+  let _citiesData       = null;      // flat [gnid, name, ccode, population, lon, lat][] cache, fetched once
 
   function updatePolityButton() {
     document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
@@ -3396,6 +3485,7 @@
     shell.clear({ skip: ['rivers'] });
     _basinLayerLoaded = false;
     _basinLayerLevel  = null;
+    _countriesLoaded  = false;
     _sigMemberIds     = null;
     document.getElementById('v3-basin-var').value              = '';
     document.getElementById('v3-basin-legend').style.display   = 'none';
@@ -3406,7 +3496,10 @@
     document.getElementById('v3-choropleth').style.display  = 'none';
     document.getElementById('v3-ctx-blurb-panel').style.display = 'none';
     document.getElementById('v3-intro-text').style.display  = '';
-    map.flyTo({ center: [10, 20], zoom: 1 });
+    map.flyTo({ center: [10, 25], zoom: 0.9 });
+    _currentPolityFeature = null;
+    document.getElementById('v3-layer-cities').checked    = false;
+    document.getElementById('v3-layer-countries').checked = false;
   }
 
   // Polity search
@@ -3487,11 +3580,22 @@
     _showMapTab();
   }
 
-  async function drawPolityBoundary(id) {
+  async function drawPolityBoundary(id, forIdx) {
+    // Play advances every 1500ms without waiting for the previous geom fetch to land -- on a
+    // many-slice polity (Tang, 32 slices) that let unthrottled requests pile up behind the
+    // browser's per-origin connection limit, with some taking 10s of seconds to resolve. Late
+    // responses kept painting stale boundaries (slice 1, 2, 3...) long after Play had stopped
+    // (kgreview #11, confirmed 2026-08-25 with per-request timing/idx logging). Aborting the
+    // superseded request on every new slice, plus the forIdx staleness check below as a
+    // backstop, fixes both the wasted network/backend load and the late-paint symptom.
+    _polityGeomAbort?.abort();
+    const controller = new AbortController();
+    _polityGeomAbort = controller;
     try {
-      const r = await fetch(`/api/polity/geom?id=${id}`);
-      if (!r.ok) return;
+      const r = await fetch(`/api/polity/geom?id=${id}`, { signal: controller.signal });
+      if (!r.ok || forIdx !== _polityCurrentIdx) return;
       const feature = await r.json();
+      if (forIdx !== _polityCurrentIdx) return;
       shell.remove('polity-boundary');
       shell.add('polity-boundary',
         { type: 'geojson', data: feature },
@@ -3501,10 +3605,107 @@
         ]
       );
       _fitMap(geojsonBbox(feature));
-    } catch (_) { /* boundary is optional */ }
+      _currentPolityFeature = feature;
+      _renderCitiesLayer();
+    } catch (_) { /* boundary is optional -- includes abort of a superseded request */ }
   }
 
-  function applySlice(idx, resolverYear = null) {
+  // ── Cities reference layer (Polities tab only) ───────────────────────────
+  // Ray-casting point-in-ring test; a polygon is "inside its outer ring and outside every hole".
+  function _pointInRing(lon, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      const crosses = (yi > lat) !== (yj > lat) &&
+        lon < (xj - xi) * (lat - yi) / (yj - yi) + xi;
+      if (crosses) inside = !inside;
+    }
+    return inside;
+  }
+  function _pointInPolygonRings(lon, lat, rings) {
+    if (!_pointInRing(lon, lat, rings[0])) return false;
+    for (let k = 1; k < rings.length; k++) if (_pointInRing(lon, lat, rings[k])) return false;
+    return true;
+  }
+  function pointInPolygon(lon, lat, geometry) {
+    if (geometry.type === 'Polygon') return _pointInPolygonRings(lon, lat, geometry.coordinates);
+    if (geometry.type === 'MultiPolygon')
+      return geometry.coordinates.some(poly => _pointInPolygonRings(lon, lat, poly));
+    return false;
+  }
+
+  async function _renderCitiesLayer() {
+    const checked = document.getElementById('v3-layer-cities')?.checked;
+    if (!checked || !_currentPolityFeature) { shell.remove('cities'); return; }
+    if (!_citiesData) {
+      const r = await fetch('/api/sandbox/cities');
+      const body = await r.json();
+      _citiesData = body.cities;
+    }
+    const geometry = _currentPolityFeature.geometry;
+    const CITIES_DISPLAY_BASE = 30;  // <= this many matches: show every dot
+    const CITIES_LABEL_TOP_N  = 30;  // of whatever's actually shown, label the N largest
+    const matched = _citiesData.filter(([, , , , lon, lat]) => pointInPolygon(lon, lat, geometry));
+    // Sliding-scale display cap: below the base, show everything; above it, grow the
+    // shown count as sqrt(n) rather than a fixed fraction -- a flat percentage-per-band
+    // table regresses right at its own boundary (e.g. 31 cities @ 75% = 23 shown, fewer
+    // than 30 cities @ 100% = 30 shown); sqrt growth is strictly increasing in n, so more
+    // matches never means fewer dots on screen.
+    const shownCount = matched.length <= CITIES_DISPLAY_BASE
+      ? matched.length
+      : Math.round(CITIES_DISPLAY_BASE * Math.sqrt(matched.length / CITIES_DISPLAY_BASE));
+    const features = matched
+      .sort((a, b) => b[3] - a[3])  // population is index 3; biggest survive the cap
+      .slice(0, shownCount)
+      .map(([gnid, name, ccode, population, lon, lat]) => ({
+        type: 'Feature',
+        properties: { gnid, name, ccode, population },
+        geometry: { type: 'Point', coordinates: [lon, lat] },
+      }));
+    // features is already population-descending from the cap step above -- label the N
+    // largest of what's shown, adapting to polity size instead of a fixed threshold that
+    // could label nothing for a small polity or too much for a large one.
+    features.slice(0, CITIES_LABEL_TOP_N).forEach(f => { f.properties._labelTop = true; });
+    shell.remove('cities');
+    shell.add('cities',
+      { type: 'geojson', data: { type: 'FeatureCollection', features } },
+      [
+        { type: 'circle', paint: {
+          'circle-radius': 4, 'circle-color': '#2c5f8a',
+          'circle-stroke-width': 1.2, 'circle-stroke-color': 'rgba(255,255,255,0.9)',
+        } },
+        { type: 'symbol', filter: ['==', ['get', '_labelTop'], true],
+          layout: {
+            'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'],
+            'text-size': 16, 'text-offset': [0, 0.3], 'text-anchor': 'top',
+          },
+          paint: {
+            'text-color': '#1a3a52', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.2,
+          } },
+      ]
+    );
+    const citiesLayerId = _layers['cities'].layerIds[0];
+    map.on('mousemove', citiesLayerId, e => {
+      map.getCanvas().style.cursor = 'pointer';
+      const p = e.features[0].properties;
+      _citiesPopup.setLngLat(e.lngLat)
+        .setHTML(`<span style="font-size:0.78rem;">${p.name}, ${p.ccode} — pop. ${Number(p.population).toLocaleString()}</span>`)
+        .addTo(map);
+    });
+    map.on('mouseleave', citiesLayerId, () => { map.getCanvas().style.cursor = ''; _citiesPopup.remove(); });
+  }
+
+  // async so Play can await the boundary paint per step instead of firing on a blind clock --
+  // fire-and-forget callers (manual VCR buttons, slider, selectPolity) are unaffected, they just
+  // don't await the returned promise.
+  //
+  // skipResig: /api/areas?scope=polity&detail=true (what _silentResig() calls) measured at ~9s
+  // standalone for a single Tang slice (kgreview #11, confirmed 2026-08-25 via curl) -- firing it
+  // on every automatic Play tick was blocking the dev server enough to starve the concurrently-
+  // fetched, otherwise-~70ms /api/polity/geom request behind it. Play passes true here and lets
+  // stopPolityPlay() run one resync once the view actually settles; every other caller (manual
+  // VCR buttons, slider, selectPolity) leaves it false and stays exactly as before.
+  async function applySlice(idx, resolverYear = null, skipResig = false) {
     const s = _politySlices[idx];
     if (!s) return;
     _polityCurrentIdx = idx;
@@ -3512,10 +3713,10 @@
     document.getElementById('v3-polity-from-year').value = s.fromyear;
     document.getElementById('v3-polity-to-year').value   = s.toyear;
     updateSliceLabel(idx);
-    drawPolityBoundary(s.id);
     updatePolityButton();
     _revealLowerPanel();
-    _silentResig();
+    if (!skipResig) _silentResig();
+    await drawPolityBoundary(s.id, idx);
   }
 
   // ── Slice slider + VCR ───────────────────────────────────────────────────
@@ -3567,23 +3768,44 @@
     applySlice(next);
   }
 
-  function startPolityPlay() {
+  const POLITY_PLAY_STEP_MS = 1500;
+
+  // Self-pacing loop, not setInterval -- some Tang-scale polities have individual slice geom
+  // fetches that take well over a second on their own (kgreview #11), so a fixed-clock interval
+  // either aborts every step before it can finish (starved) or piles up a request backlog that
+  // keeps painting stale boundaries long after Play stopped (both observed 2026-08-25). Waiting
+  // for each step's paint to actually land, then padding up to the floor, guarantees every slice
+  // renders exactly once and Play only runs faster than the floor when a step was already fast.
+  async function startPolityPlay() {
     if (_polityPlayTimer) return;
+    const token = {};
+    _polityPlayTimer = token;
     document.getElementById('v3-btn-play').innerHTML = '<i class="bi bi-pause-fill"></i>';
     document.getElementById('v3-btn-play').title = 'Pause';
-    _polityPlayTimer = setInterval(() => {
-      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(); return; }
+    while (_polityPlayTimer === token) {
+      if (_polityCurrentIdx >= _politySlices.length - 1) { stopPolityPlay(/* resync */ true); return; }
       const next = _polityCurrentIdx + 1;
+      const stepStart = performance.now();
       document.getElementById('v3-slice-slider').value = _politySlices[next].fromyear;
-      applySlice(next);
-    }, 1500);
+      await applySlice(next, null, /* skipResig */ true);
+      if (_polityPlayTimer !== token) return;  // paused/stopped while awaiting this step
+      const remaining = POLITY_PLAY_STEP_MS - (performance.now() - stepStart);
+      if (remaining > 0) await new Promise(res => setTimeout(res, remaining));
+    }
   }
 
-  function stopPolityPlay() {
-    if (_polityPlayTimer) { clearInterval(_polityPlayTimer); _polityPlayTimer = null; }
+  // resync: the Play loop's own steps run with skipResig=true (see applySlice), so the two
+  // stop paths with no follow-up applySlice call -- reaching the last slice, and the Pause
+  // button -- need one _silentResig() to catch the settled slice up. Every other stop path
+  // (Next/Prev/First/slider) already calls applySlice() itself right after, which resyncs on
+  // its own default path -- passing resync there too would just fire it twice.
+  function stopPolityPlay(resync = false) {
+    const wasPlaying = !!_polityPlayTimer;
+    if (_polityPlayTimer) { _polityPlayTimer = null; }
     const btn = document.getElementById('v3-btn-play');
     btn.innerHTML = '<i class="bi bi-play-fill"></i>';
     btn.title = 'Play through slices';
+    if (resync && wasPlaying) _silentResig();
   }
 
   document.getElementById('v3-slice-slider').addEventListener('input', () => {
@@ -3605,7 +3827,7 @@
   });
   document.getElementById('v3-btn-prev').addEventListener('click', () => stepPolitySlice(-1));
   document.getElementById('v3-btn-play').addEventListener('click', () => {
-    if (_polityPlayTimer) stopPolityPlay(); else startPolityPlay();
+    if (_polityPlayTimer) stopPolityPlay(/* resync */ true); else startPolityPlay();
   });
   document.getElementById('v3-btn-next').addEventListener('click', () => stepPolitySlice(1));
 
@@ -3673,6 +3895,10 @@
   function _setPolitiesTabVisibility(onPolities) {
     ['v3-tab-analysis-li', 'v3-tab-seasonality-li', 'v3-tab-context-li', 'v3-tab-similarity-li']
       .forEach(id => document.getElementById(id)?.classList.toggle('d-none', onPolities));
+    // Cities/Countries are Polities-only for now (no comparable boundary to filter cities
+    // against on Settlements' single basin/buffer/ring) -- shown here, not on Settlements.
+    document.getElementById('v3-layer-cities-wrap').style.display    = onPolities ? '' : 'none';
+    document.getElementById('v3-layer-countries-wrap').style.display = onPolities ? '' : 'none';
   }
 
   // ── Tab-switch hard reset ─────────────────────────────────────────────────
@@ -3713,11 +3939,9 @@
     return `rgb(${Math.round(((a>>16)&0xff)*(1-f)+((b>>16)&0xff)*f)},${Math.round(((a>>8)&0xff)*(1-f)+((b>>8)&0xff)*f)},${Math.round((a&0xff)*(1-f)+(b&0xff)*f)})`;
   }
 
-  // Terrain (hypsometric) palette for elevation/slope -- these aren't a
-  // warmer/colder or wetter/drier axis, so the RdBu diverging scheme doesn't
-  // apply; green-to-tan-to-white reads as "terrain" the way RdBu reads as
-  // "climate" (Google Maps terrain layer convention).
-  const TERRAIN_PAL = ['#4d7c4d', '#8fae67', '#c9b579', '#a97d54', '#e8e4e0'];
+  // Terrain (hypsometric) palette for elevation/slope -- ColorBrewer YlOrBr-7,
+  // monotonic light-to-dark.
+  const TERRAIN_PAL = ['#ffffd4', '#fee391', '#fec44f', '#fe9929', '#ec7014', '#cc4c02', '#8c2d04'];
 
   // Seasonal amplitude isn't warm/cold (RdBu) or terrain -- it's a magnitude
   // of swing, so a plain sequential light-grey-to-purple scale (narrow range
@@ -3755,9 +3979,11 @@
     { key: 'temperature_annual',  su: 's', reverse: true,  loLabel: 'cold', hiLabel: 'warm' },
     { key: 'cropland_pct',        su: 's', reverse: false, loLabel: '0%',   hiLabel: '~80%',
       palette: { lo: '#ffffff', hi: '#006d2c' }, fixedDomain: [0, 79.72] },
+    { key: 'slope_deg',           su: 's', reverse: false, loLabel: 'flat', hiLabel: 'steep', pal: TERRAIN_PAL },
   ];
 
   let _basinLayerLoaded = false;
+  let _countriesLoaded  = false;
   function loadBasinLayer() {
     const level = _activeLevel();
     if (_basinLayerLoaded && _basinLayerLevel === level) return;
@@ -3815,7 +4041,8 @@
         const numId = Number(id);
         if (level === 8 && _sigMemberIds && !_sigMemberIds.has(numId)) return;
         const t  = Math.max(0, Math.min(1, (v - lo) / range));
-        const fc = varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
+        const fc = varMeta.pal     ? interpPalette(varMeta.pal, Math.sqrt(t))
+                 : varMeta.palette ? interpTwo(varMeta.palette.lo, varMeta.palette.hi, t)
                                    : interpRdbu(varMeta.reverse ? 1 - t : t);
         map.setFeatureState({ source: sid, sourceLayer: sl, id: numId }, { fc });
       });
@@ -3829,7 +4056,9 @@
   }
 
   function renderBasinLegend(meta, lo, hi) {
-    const stops = meta.palette
+    const stops = meta.pal
+      ? meta.pal.map((c, i) => `${c} ${(i/(meta.pal.length-1)*100).toFixed(1)}%`).join(', ')
+      : meta.palette
       ? `${meta.palette.lo} 0%, ${meta.palette.hi} 100%`
       : (meta.reverse
           ? [...RDBU_PAL].reverse().map((c, i) => `${c} ${(i/(RDBU_PAL.length-1)*100).toFixed(1)}%`).join(', ')
@@ -3969,11 +4198,14 @@
 
   // ── HYDE choropleth ───────────────────────────────────────────────────────
   const HYDE_DB_VAR = { hyde_cropland:'cropland', hyde_grazing:'grazing', hyde_pasture:'pasture', hyde_rangeland:'rangeland' };
+  // lo is always pure white (kgreview #23) -- t = v / domMax below, so t=0 always means v=0
+  // exactly; grazing/pasture/rangeland previously started from a pale tint (#fff7ec/#deebf7/
+  // #ffffd4) instead of white, so a 0-value basin rendered as that tint rather than no color.
   const HYDE_RAMPS  = {
     hyde_cropland:  { lo: '#ffffff', hi: '#006d2c' },
-    hyde_grazing:   { lo: '#fff7ec', hi: '#7f2704' },
-    hyde_pasture:   { lo: '#deebf7', hi: '#2171b5' },
-    hyde_rangeland: { lo: '#ffffd4', hi: '#993404' },
+    hyde_grazing:   { lo: '#ffffff', hi: '#7f2704' },
+    hyde_pasture:   { lo: '#ffffff', hi: '#2171b5' },
+    hyde_rangeland: { lo: '#ffffff', hi: '#993404' },
   };
 
   async function applyHydeChoropleth(varKey, year) {
@@ -4071,8 +4303,8 @@
 
   const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
-    center: [10, 20],
-    zoom: 1,
+    center: [10, 25],
+    zoom: 0.9,
     attributionControl: true,
     style: {
       version: 8,
@@ -4138,6 +4370,7 @@
   });
 
   _ringPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: [0, -4] });
+  _citiesPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 6 });
   window._v3map = map;
 
   map.on('load', () => {
@@ -4173,6 +4406,30 @@
     (_layers['rivers']?.layerIds ?? []).forEach(id => {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
     });
+  });
+
+  document.getElementById('v3-layer-cities').addEventListener('change', () => { _renderCitiesLayer(); });
+
+  document.getElementById('v3-layer-countries').addEventListener('change', async function () {
+    if (!this.checked) {
+      (_layers['countries']?.layerIds ?? []).forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+      });
+      return;
+    }
+    if (!_countriesLoaded) {
+      const r = await fetch('/api/sandbox/countries');
+      const geojson = await r.json();
+      shell.add('countries',
+        { type: 'geojson', data: geojson },
+        [{ type: 'line', paint: { 'line-color': 'rgba(90,90,90,0.55)', 'line-width': 0.8 } }]
+      );
+      _countriesLoaded = true;
+    } else {
+      (_layers['countries']?.layerIds ?? []).forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'visible');
+      });
+    }
   });
 
   // ?tab=settlements or ?tab=polities overrides the HTML default — lets the
