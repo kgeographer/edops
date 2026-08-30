@@ -609,7 +609,7 @@ def attach_values(basin_set, meta_df, conn, table, view,
                 part of this function's scope)
     conn      : psycopg3 connection
     table     : str — raw basin table, e.g. 'public.basin06'
-    view      : str — persist view with text labels, e.g. 'public.v_basin06_persist_rev1'
+    view      : str — persist view with text labels, e.g. 'public.v_basin06_persist_rev2'
     zero_fraction_threshold : float — threshold for zero-aware PARTITION scoring (0.20)
 
     Returns
@@ -2165,7 +2165,7 @@ def _areal_signature_from_basin_set(
 _CATALOG_CACHE = {}   # level (int) → meta_df; populated lazily on first call
 
 _LEVEL_TABLE = {6: 'public.basin06',               8: 'public.basin08'}
-_LEVEL_VIEW  = {6: 'public.v_basin06_persist_rev1', 8: 'public.v_basin08_persist_rev1'}
+_LEVEL_VIEW  = {6: 'public.v_basin06_persist_rev2', 8: 'public.v_basin08_persist_rev2'}
 _BASIN_BANDS = list('ABCDE')
 
 

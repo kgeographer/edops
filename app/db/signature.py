@@ -490,7 +490,7 @@ def get_signature(
     # Drop None values so psycopg/libpq can fall back to defaults / .pgpass when appropriate
     conn_kwargs = {k: v for k, v in conn_kwargs.items() if v not in (None, "")}
 
-    view = _VIEW_FOR_LEVEL.get(level, "v_basin08_persist_rev1")
+    view = _VIEW_FOR_LEVEL.get(level, "v_basin08_persist_rev2")
     sql = SIGNATURE_SQL_TMPL.format(view=view)
 
     with psycopg.connect(**conn_kwargs, row_factory=dict_row) as conn:
