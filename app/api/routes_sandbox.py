@@ -913,6 +913,11 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
 # -----------------------
 
 _LMR_SAFE_VARS  = {"air", "prate"}
+# LMR's stored `air`/`prate` fields carry their native (modern) reference, so a raw
+# span mean reads as uniformly cold for any pre-industrial period. Re-baseline each
+# grid cell to its own last-millennium (850-1850 CE) mean so the map shows genuine
+# within-millennium anomalies. Matches the legend's "0 = 850-1850 mean".
+_LMR_BASELINE = (850, 1850)
 
 # _HYDE_EPOCH_RANGES/_HYDE_SAFE_VARS/_load_hyde_epoch_maxes moved to routes_common.py
 # (2026-08-16, routes split) — shared with Cliopatria's /explorer/hyde-epoch-max.
@@ -976,7 +981,9 @@ def hyde_values(var: str, year: int, level: int = 6):
 def lmr_values(var: str, from_year: int, to_year: int):
     """Return flat {"lat,lon": mean_anomaly} dict for one LMR variable over a CE span.
 
-    Anomalies are vs the CCSM4 model climatology 850–1850 CE (Tardif et al. 2019).
+    Each cell's span mean is re-baselined to that cell's own 850–1850 CE mean
+    (_LMR_BASELINE), so values are anomalies vs the last-millennium normal — not
+    vs LMR's native modern reference (which skews every historical map cold).
     Quality floor at 700 CE: actual_from = max(from_year, 700).
     Spans entirely below 700 CE return an empty values dict.
     Straddling spans use [700, to_year]; actual_from reflects the effective start.
@@ -997,10 +1004,12 @@ def lmr_values(var: str, from_year: int, to_year: int):
             cur.execute(
                 f"""
                 SELECT CONCAT(lat, ',', CASE WHEN lon > 180 THEN lon - 360 ELSE lon END),
-                       (SELECT AVG(v) FROM unnest({var}[%(y1)s:%(y2)s]) AS v) AS mean_val
+                         (SELECT AVG(v) FROM unnest({var}[%(y1)s:%(y2)s]) AS v)
+                       - (SELECT AVG(v) FROM unnest({var}[%(b1)s:%(b2)s]) AS v) AS mean_val
                 FROM temporal.lmr_climate
                 """,
-                {"y1": actual_from, "y2": to_year},
+                {"y1": actual_from, "y2": to_year,
+                 "b1": _LMR_BASELINE[0], "b2": _LMR_BASELINE[1]},
             )
             rows = cur.fetchall()
     finally:
