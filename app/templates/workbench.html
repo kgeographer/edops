@@ -34,23 +34,27 @@
 
 <main>
 <div class="container-fluid">
-  <div class="row g-3">
 
-    <!-- LEFT: tabs + forms + outputs -->
+  <ul class="nav nav-tabs" id="edopTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
+    </li>
+  </ul>
+
+  <div class="row g-3 pt-2">
+
+    <!-- LEFT: tab content + shared outputs -->
     <div class="col-12 col-lg-6">
-      <ul class="nav nav-tabs" id="edopTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
-        </li>
-      </ul>
-
-      <div class="tab-content pt-2" id="edopTabContent">
+      <div class="tab-content" id="edopTabContent">
         <!-- WH CITIES TAB (258 cities) -->
         <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">Similarity Among 254 World Heritage Cities</h4>
@@ -200,6 +204,16 @@
           <div id="soc-content"></div>
         </div>
 
+        <!-- AFRICAN REGIONS TAB — layout attempt #1, grey-box (no map yet) -->
+        <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
+          <div id="afr-map" style="height:460px;background:#d7e3d0;border:1px solid #b9c9ad;display:flex;align-items:center;justify-content:center;text-align:center;padding:1rem;color:#4a5a3c;">
+            MAP — African Regions<br>(MapLibre + Protomaps light basemap goes here)
+          </div>
+          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#e7ddc9;border:1px solid #d3c6a8;color:#6b5d3c;font-size:.85rem;">
+            readouts strip — selection · painted variable · legend · cell count (later WO)
+          </div>
+        </div>
+
       </div>
 
       <!-- Outputs (shared across tabs) -->
@@ -232,6 +246,12 @@
 <!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
+
+      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active (layout attempt #1) -->
+      <div id="afr-right" style="display:none;height:460px;background:#d8dce8;border:1px solid #b9c0d6;padding:.75rem;color:#454f6b;font-size:.9rem;">
+        <div style="font-weight:600;border-bottom:1px solid #b9c0d6;padding-bottom:.4rem;margin-bottom:.5rem;">INFO PANEL — right column</div>
+        Two tabs later: <em>What's here</em> (basin signature, L6 &amp; L8) · <em>What's claimed</em> (region prose / society attributes). Grey-box for now.
+      </div>
 
       <!-- Similar sites results (shown below map) -->
       <div id="similar-results" class="mt-3" style="display:none;">
@@ -1445,6 +1465,21 @@
         // Societies-specific: load societies
         if (targetSel === '#panel-soc') {
           loadSocieties();
+        }
+
+        // African Regions: map lives in its own left pane; the info panel swaps into the
+        // right column in place of the shared Leaflet map (layout attempt #1).
+        const afrRight = document.getElementById('afr-right');
+        const sharedMapEl = document.getElementById('map');
+        if (targetSel === '#panel-afr') {
+          if (sharedMapEl) sharedMapEl.style.display = 'none';
+          if (afrRight) afrRight.style.display = 'block';
+        } else {
+          if (sharedMapEl) sharedMapEl.style.display = '';
+          if (afrRight) afrRight.style.display = 'none';
+          // #map was display:none while on the African Regions tab -- re-measure once
+          // the browser has laid it back out, or Leaflet keeps its stale (partial) size.
+          if (map) requestAnimationFrame(() => map.invalidateSize());
         }
       });
     });
