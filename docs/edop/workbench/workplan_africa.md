@@ -137,21 +137,25 @@ byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon
 ### Part A — geometry + attributes → artifact + render
 
 - Build `app/static/workbench/lovejoy_regions.geojson` (new dir): 34 features, each with
-  `src_id`, `name` (published), `macro` (parent), `geom_source` (`"whg-1155"` ×32,
-  `"whg-staging-polygon"` for Western Sahara + Kalahari).
-  - 32 geometries from the published TSV `geowkt` (or LPF).
-  - Western Sahara (`hc_02`, wid 7130907) and Kalahari (`hc_25`, wid 7130908): multipolygons from
-    `whg_staging.lovejoy.regions`.
-  - Build script `scripts/edop/workbench/build_lovejoy_geojson.py` — reads the TSV + queries
-    `whg_staging` for the 2 substitutions. Committed. If the `.geojson` is small (~200–400 KB
+  `src_id`, `name` (from the published LPF/TSV — current, so `hc_18` = "Eastern Interior"),
+  `macro` (parent region), `blurb` (the LPF short description).
+  - **All 34 geometries from `whg_staging.lovejoy.regions`** (`geom`) — the 32 that match the
+    published export byte-for-byte, plus the real Western Sahara + Kalahari polygons the export
+    lost. One source, no per-feature split.
+  - Names + blurbs joined on `src_id` from `data/lovejoy/whg_dataset_1155.lpf` (or `.tsv`).
+  - Build script `scripts/edop/workbench/build_lovejoy_geojson.py` — queries `whg_staging` +
+    reads the LPF, writes the merged GeoJSON. Committed. If the `.geojson` is small (~200–400 KB
     likely) commit it too; else gitignore + add to `MAINTAIN_DEPLOY` rsync list.
 - Render on `#afr-map`: GeoJSON source + fill layer (low opacity) + line layer (outline), fetched
   once in `ensureAfrMap()` after style load. Africa bounds unchanged.
 - Click a region → show its `name` for now (MapLibre popup, or minimal drop into `#afr-right`).
   Full panel wiring is a later WO.
-- **Prereq check, do first (~10 min):** vertex density of the polygons vs L6/L8 basin edges. If
-  heavily generalized, the "boundary coincidence" framing is out and only within-polygon framing
-  remains — record the result here.
+- **Prereq check — DONE (2026-08-31).** Mainland Lovejoy boundaries are schematic: ~15–58 km per
+  vertex (median ~27 km), can't trace L8 (~2–10 km) or really L6 (~10–50 km) basin edges. Island
+  groups are finer (~1.5–2.2 km/vertex). **Boundary-coincidence framing is out; within-polygon is
+  the instrument** (overlay a region → which basins fall inside → paint variables within → does
+  the interior cohere). Polygons render fine on a continental map. Karl: precise outer-edge
+  alignment doesn't matter for this application.
 
 ### Part B — per-region rationale from the article
 

@@ -955,7 +955,36 @@
       fitBoundsOptions: { padding: 10 },
     });
     _afrMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
-    _afrMap.once('load', () => _afrMap.resize());
+
+    _afrMap.on('load', () => {
+      _afrMap.resize();
+
+      // Lovejoy pre-colonial African subregions (34). Built by
+      // scripts/edop/workbench/build_lovejoy_geojson.py.
+      _afrMap.addSource('lovejoy', { type: 'geojson', data: '/static/workbench/lovejoy_regions.geojson' });
+      _afrMap.addLayer({
+        id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
+        paint: { 'fill-color': '#6a51a3', 'fill-opacity': 0.10 },
+      });
+      _afrMap.addLayer({
+        id: 'lovejoy-line', type: 'line', source: 'lovejoy',
+        paint: { 'line-color': '#54278f', 'line-width': 1, 'line-opacity': 0.7 },
+      });
+
+      const afrPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '300px' });
+      _afrMap.on('click', 'lovejoy-fill', (e) => {
+        const p = e.features[0].properties;
+        afrPopup.setLngLat(e.lngLat)
+          .setHTML(
+            `<strong>${p.name}</strong><br>` +
+            `<span style="color:#666;font-size:.85rem;">${p.macro}</span>` +
+            (p.blurb ? `<p style="margin:.45rem 0 0;font-size:.82rem;line-height:1.35;">${p.blurb}</p>` : '')
+          )
+          .addTo(_afrMap);
+      });
+      _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
+      _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
+    });
   }
 
   function setMarkerFromLonLat(lon, lat) {
