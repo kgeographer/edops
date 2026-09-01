@@ -62,6 +62,8 @@ docs/edop/*
 !docs/edop/surface/**
 !docs/edop/demo/
 !docs/edop/demo/**
+!docs/edop/workbench/
+!docs/edop/workbench/**
 !docs/cdop/
 docs/cdop/*
 !docs/cdop/pilot/
