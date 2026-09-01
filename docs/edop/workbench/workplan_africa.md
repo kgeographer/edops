@@ -17,7 +17,7 @@ execution; we still take them one at a time.
 
 | WO | Title | State |
 |----|-------|-------|
-| WO01 | African Regions tab scaffold + left map | drafted |
+| WO01 | African Regions tab scaffold + left map | **complete** |
 
 ---
 
@@ -39,9 +39,13 @@ Short investigations, done before the WOs that depend on them (prospectus §4). 
 
 ---
 
-## WO01 — African Regions tab scaffold (grey-box)
+## WO01 — African Regions tab scaffold + left map
 
-**State:** drafted.
+**State: complete.** `d5da6d0` (grey-box layout: tab, nav moved above the row, map-left /
+info-right, tab-switch show/hide + Leaflet `invalidateSize` fix). `<next>` (real MapLibre map:
+`pmLightStyle()` extracted to shared `app/static/js/pm_basemap.js`; workbench loads MapLibre +
+pmtiles; `ensureAfrMap()` lazy-inits the map, Protomaps light basemap, `bounds` fit to Africa,
+nav control; `resize()` on re-show). `#afr-right` / `#afr-readouts` remain placeholders.
 
 **Goal.** A new **African Regions** tab in `workbench.html` that lays out as *map on the left,
 info panel on the right* (inverting the other three tabs, which are controls-left / map-right),

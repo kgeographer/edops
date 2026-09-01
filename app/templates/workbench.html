@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" crossorigin="">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
@@ -204,11 +205,9 @@
           <div id="soc-content"></div>
         </div>
 
-        <!-- AFRICAN REGIONS TAB — layout attempt #1, grey-box (no map yet) -->
+        <!-- AFRICAN REGIONS TAB — layout attempt #1 -->
         <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
-          <div id="afr-map" style="height:460px;background:#d7e3d0;border:1px solid #b9c9ad;display:flex;align-items:center;justify-content:center;text-align:center;padding:1rem;color:#4a5a3c;">
-            MAP — African Regions<br>(MapLibre + Protomaps light basemap goes here)
-          </div>
+          <div id="afr-map" style="height:460px;border:1px solid #ddd;"></div>
           <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#e7ddc9;border:1px solid #d3c6a8;color:#6b5d3c;font-size:.85rem;">
             readouts strip — selection · painted variable · legend · cell count (later WO)
           </div>
@@ -438,6 +437,7 @@
   // }
 
   let map = null;
+  let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let marker = null;
   let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
   let similarMarkers = []; // Markers for similar sites
@@ -936,6 +936,26 @@
       },
       { collapsed: true }
     ).addTo(map);
+  }
+
+  // African Regions tab: its own MapLibre map, light Protomaps basemap, fit to Africa.
+  // Lazy-init on first tab show; resize() on re-show (container was display:none).
+  function ensureAfrMap() {
+    if (_afrMap) { _afrMap.resize(); return; }
+    if (!window.maplibregl || typeof pmLightStyle !== 'function') {
+      console.warn('maplibre-gl / pm_basemap not loaded; African Regions map inert.');
+      return;
+    }
+    maplibregl.addProtocol('pmtiles', new pmtiles.Protocol().tile);
+    _afrMap = new maplibregl.Map({
+      container: 'afr-map',
+      style: pmLightStyle(),
+      attributionControl: true,
+      bounds: [[-20, -36], [52, 38]],      // Africa
+      fitBoundsOptions: { padding: 10 },
+    });
+    _afrMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+    _afrMap.once('load', () => _afrMap.resize());
   }
 
   function setMarkerFromLonLat(lon, lat) {
@@ -1474,6 +1494,7 @@
         if (targetSel === '#panel-afr') {
           if (sharedMapEl) sharedMapEl.style.display = 'none';
           if (afrRight) afrRight.style.display = 'block';
+          ensureAfrMap();
         } else {
           if (sharedMapEl) sharedMapEl.style.display = '';
           if (afrRight) afrRight.style.display = 'none';
@@ -3731,6 +3752,9 @@
 </script>
 </main>
 
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js" crossorigin=""></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
+<script src="/static/js/pm_basemap.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
