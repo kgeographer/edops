@@ -246,10 +246,10 @@
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
-      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active (layout attempt #1) -->
-      <div id="afr-right" style="display:none;height:460px;background:#d8dce8;border:1px solid #b9c0d6;padding:.75rem;color:#454f6b;font-size:.9rem;">
-        <div style="font-weight:600;border-bottom:1px solid #b9c0d6;padding-bottom:.4rem;margin-bottom:.5rem;">INFO PANEL — right column</div>
-        Two tabs later: <em>What's here</em> (basin signature, L6 &amp; L8) · <em>What's claimed</em> (region prose / society attributes). Grey-box for now.
+      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active.
+           The single click-output target: region attributes now, D-PLACE society data later. -->
+      <div id="afr-right" style="display:none;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
+        <p class="text-secondary mb-0">Click a region on the map for its name and description.</p>
       </div>
 
       <!-- Similar sites results (shown below map) -->
@@ -438,6 +438,7 @@
 
   let map = null;
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
+  let _afrNotes = null;  // src_id -> {name, page, blurb, rationale, ...} from lovejoy_region_notes.json
   let marker = null;
   let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
   let similarMarkers = []; // Markers for similar sites
@@ -959,8 +960,8 @@
     _afrMap.on('load', () => {
       _afrMap.resize();
 
-      // Lovejoy pre-colonial African subregions (34). Built by
-      // scripts/edop/workbench/build_lovejoy_geojson.py.
+      // Lovejoy pre-colonial African subregions (34) + per-region notes. Built by
+      // scripts/edop/workbench/build_lovejoy_{geojson,notes}.py.
       _afrMap.addSource('lovejoy', { type: 'geojson', data: '/static/workbench/lovejoy_regions.geojson' });
       _afrMap.addLayer({
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
@@ -970,21 +971,30 @@
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: { 'line-color': '#54278f', 'line-width': 1, 'line-opacity': 0.7 },
       });
+      fetch('/static/workbench/lovejoy_region_notes.json')
+        .then(r => r.ok ? r.json() : {}).then(j => { _afrNotes = j; }).catch(() => {});
 
-      const afrPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '300px' });
-      _afrMap.on('click', 'lovejoy-fill', (e) => {
-        const p = e.features[0].properties;
-        afrPopup.setLngLat(e.lngLat)
-          .setHTML(
-            `<strong>${p.name}</strong><br>` +
-            `<span style="color:#666;font-size:.85rem;">${p.macro}</span>` +
-            (p.blurb ? `<p style="margin:.45rem 0 0;font-size:.82rem;line-height:1.35;">${p.blurb}</p>` : '')
-          )
-          .addTo(_afrMap);
-      });
+      _afrMap.on('click', 'lovejoy-fill', (e) => renderAfrRegion(e.features[0].properties));
       _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
       _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
     });
+  }
+
+  // Region click -> right-column info box (#afr-right). The single click-output
+  // target for this tab; D-PLACE society clicks will render here too, later.
+  function renderAfrRegion(p) {
+    const el = document.getElementById('afr-right');
+    if (!el) return;
+    const note = (_afrNotes && _afrNotes[p.src_id]) || {};
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    el.innerHTML =
+      `<h5 class="mb-0">${esc(p.name)}</h5>` +
+      `<div class="text-secondary small mb-2">${esc(p.macro)}</div>` +
+      (p.blurb ? `<p class="mb-2">${esc(p.blurb)}</p>` : '') +
+      (note.rationale
+        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article</p>` +
+          `<p class="mb-0">${esc(note.rationale)}</p>`
+        : '');
   }
 
   function setMarkerFromLonLat(lon, lat) {

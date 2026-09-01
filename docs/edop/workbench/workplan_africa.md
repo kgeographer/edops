@@ -18,7 +18,7 @@ execution; we still take them one at a time.
 | WO | Title | State |
 |----|-------|-------|
 | WO01 | African Regions tab scaffold + left map | **complete** |
-| WO02 | Load Lovejoy regions onto the map (+ maybe region prose) | drafted |
+| WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B has follow-ups) |
 
 ---
 
@@ -148,8 +148,9 @@ byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon
     likely) commit it too; else gitignore + add to `MAINTAIN_DEPLOY` rsync list.
 - Render on `#afr-map`: GeoJSON source + fill layer (low opacity) + line layer (outline), fetched
   once in `ensureAfrMap()` after style load. Africa bounds unchanged.
-- Click a region → show its `name` for now (MapLibre popup, or minimal drop into `#afr-right`).
-  Full panel wiring is a later WO.
+- **Click a region → populate `#afr-right`** (name, macro, LPF blurb, and the article rationale
+  from `lovejoy_region_notes.json`) via `renderAfrRegion()`. No popups. `#afr-right` is the single
+  click-output target for this tab — D-PLACE society-marker clicks will render here too (later WO).
 - **Prereq check — DONE (2026-08-31).** Mainland Lovejoy boundaries are schematic: ~15–58 km per
   vertex (median ~27 km), can't trace L8 (~2–10 km) or really L6 (~10–50 km) basin edges. Island
   groups are finer (~1.5–2.2 km/vertex). **Boundary-coincidence framing is out; within-polygon is
@@ -157,23 +158,37 @@ byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon
   the interior cohere). Polygons render fine on a continental map. Karl: precise outer-edge
   alignment doesn't matter for this application.
 
-### Part B — per-region rationale from the article
+### Part B — per-region rationale from the article  (DRAFT, 2026-08-31)
 
-- Read the Lovejoy PDF's region-by-region section; pull the passage(s) explaining each region's
-  defining logic — ~1 short paragraph per region, fuller than the LPF blurb.
-- Store keyed by `src_id`: `app/static/workbench/lovejoy_region_notes.json`
-  (`{src_id: {blurb, rationale, page}}`) — `blurb` = LPF short form (kept), `rationale` = PDF
-  passage. Surfaced in the "what's claimed" panel later.
-- Curation, not extraction. All 34 if the article covers them evenly; else do the substantive
-  ones and note gaps.
+- `scripts/edop/workbench/build_lovejoy_notes.py` → `app/static/workbench/lovejoy_region_notes.json`
+  (`{src_id: {name, page, blurb, rationale, needs_review}}`) — `blurb` = LPF short form,
+  `rationale` = the article's defining paragraph(s), pp. 12–23.
+- **27/34 land clean automatically; 7 flagged `needs_review`** — hand-finish against
+  `data/lovejoy/lovejoy_regions_prose.txt` (the cleaned section text, written by the same script):
+  **Comoros, Horn, Nile Valley, North Coast, Northwest, Southeast, West Central South** (missed
+  the defining paragraph — it's in a broad-region intro — or got a short/boundary-bled slice).
+  Horn is genuinely short (the article gives it 3 sentences).
+- Wired: region click renders `blurb` + `rationale` into `#afr-right` (`renderAfrRegion()`).
 
-### Part C — WHG export-bug issue (draft only)
+**Follow-ups (WO03+, not now):**
+- The WHG `blurb` is often just the opening of the article `rationale` — sometimes verbatim,
+  sometimes lightly shortened. Showing both is redundant for many regions. Refine: diff them and
+  present one (or the blurb as a lead, rationale as expandable).
+- Minor extraction cruft in `rationale` for some regions: mid-word hyphen breaks from PDF line
+  wraps ("north- ern"), trailing footnote numbers stuck to the last word ("Zombo.51"). Clean in
+  the same pass, or in `build_lovejoy_notes.py`.
+- Hand-finish the 7 `needs_review` entries.
 
-- Draft, don't file: save `data/lovejoy/whg_export_bug_issue.md`. WHG's LPF and TSV dataset
-  exports emit one geometry per place and, for places with multiple `place_geom` rows, pick the
-  reconciliation-pass Wikidata point over the contributor polygon. Dataset 1155: Western Sahara
-  (wid 7130907, `wd:Q6250`) and Kalahari (wid 7130908, `wd:Q14202768`) — both exports give
-  `MULTIPOINT`, `geo_source` names the Wikidata id. Karl files it separately.
+**"North Coaast" typo** — WHG dataset 1155's title for `hc_10` is misspelled (double-a), in the
+published export *and* `whg_staging`. Display-corrected via `NAME_FIX` in both build scripts;
+flagged as a secondary item in the WHG issue draft.
+
+### Part C — WHG export-bug issue  (DRAFT written, 2026-08-31)
+
+`docs/edop/workbench/whg_export_bug_issue.md` — dataset export (LPF + TSV) drops contributor polygons
+for places with multiple geometries, picking the reconciliation Wikidata point. Dataset 1155:
+Western Sahara (wid 7130907, `wd:Q6250`) and Kalahari (wid 7130908, `wd:Q14202768`). Plus the
+"North Coaast" typo as a secondary item. **Karl to file against WHG.**
 
 ### Out of scope (later WOs)
 
@@ -190,7 +205,7 @@ byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon
   tab switch-away-and-back still fine.
 - Vertex-density prereq result recorded.
 - `lovejoy_region_notes.json` with `blurb` + `rationale` per region (or noted gaps).
-- `data/lovejoy/whg_export_bug_issue.md` drafted.
+- `docs/edop/workbench/whg_export_bug_issue.md` drafted.
 - `pytest tests/` green (build script is offline).
 
 ### Notes

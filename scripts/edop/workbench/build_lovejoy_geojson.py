@@ -35,6 +35,12 @@ PG_KWARGS = dict(
     password=os.environ.get("PGPASSWORD"),
 )
 
+# Display-name corrections for typos in the WHG source (both the published dataset
+# 1155 and whg_staging carry these). Flagged upstream in the WHG issue draft.
+NAME_FIX = {
+    "hc_10": "North Coast",   # published title is "North Coaast"
+}
+
 
 def load_lpf_attrs(path):
     """src_id -> {"name": title, "blurb": first description value or ""}."""
@@ -81,7 +87,7 @@ def main():
             "id": src_id,
             "properties": {
                 "src_id": src_id,
-                "name": a.get("name") or src_id,
+                "name": NAME_FIX.get(src_id, a.get("name") or src_id),
                 "macro": g["macro"],
                 "blurb": a.get("blurb", ""),
             },
