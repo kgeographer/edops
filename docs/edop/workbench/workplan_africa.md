@@ -18,6 +18,7 @@ execution; we still take them one at a time.
 | WO | Title | State |
 |----|-------|-------|
 | WO01 | African Regions tab scaffold + left map | **complete** |
+| WO02 | Load Lovejoy regions onto the map (+ maybe region prose) | drafted |
 
 ---
 
@@ -106,4 +107,90 @@ societies, no painting, no wiring.
 - `pm_basemap.js` extraction: keep it a plain function returning the style object; Sandbox's
   three call sites switch to it in the same change (small, low-risk) or a follow-up — executor's call.
 - `docs/edop/workbench/` may need adding to `.gitignore` exceptions if this workplan should be
-  tracked (the other `docs/edop/*` WO folders are). Karl's call.
+  tracked (the other `docs/edop/*` WO folders are). Karl's call. *(done — `491e3ae`.)*
+
+---
+
+## WO02 — Load Lovejoy regions onto the map + region rationale
+
+**State:** drafted.
+
+**Reconciliation already done** (2026-08-31, this session — findings below). Data sources are
+settled; no "examine" step remains.
+
+### Sources
+
+- **Published WHG dataset 1155** (*Pre-Colonial African Subregions*), downloaded to
+  `data/lovejoy/whg_dataset_1155.lpf` and `.tsv` — the citable version. Current names,
+  macro-region parents, per-region blurbs, and **32/34 polygons**.
+- **`whg_staging.lovejoy.regions`** (dev DB `whg_staging`, schema `lovejoy`, 34 rows) — Karl's
+  working copy. Geometry byte-identical to the published export for 32 regions; holds the **real
+  multipolygons for the 2 the export is missing** (Western Sahara, Kalahari — see Part C). Older
+  `hc_18` name, no blurbs. `regions_take1` (32 rows) is an earlier draft — ignore.
+- **The article** `articles/Lovejoy_etal_defining-regions-of-pre-colonial-africa.pdf` — per-region
+  *rationale*, fuller than the LPF blurbs.
+
+Reconciliation result: all 34 `src_id`s (`hc_01`…`hc_67`) match both sides; 32 geometries
+byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon regions, and
+`hc_18` "Eastern" (staging) vs "Eastern Interior" (published — use published).
+
+### Part A — geometry + attributes → artifact + render
+
+- Build `app/static/workbench/lovejoy_regions.geojson` (new dir): 34 features, each with
+  `src_id`, `name` (published), `macro` (parent), `geom_source` (`"whg-1155"` ×32,
+  `"whg-staging-polygon"` for Western Sahara + Kalahari).
+  - 32 geometries from the published TSV `geowkt` (or LPF).
+  - Western Sahara (`hc_02`, wid 7130907) and Kalahari (`hc_25`, wid 7130908): multipolygons from
+    `whg_staging.lovejoy.regions`.
+  - Build script `scripts/edop/workbench/build_lovejoy_geojson.py` — reads the TSV + queries
+    `whg_staging` for the 2 substitutions. Committed. If the `.geojson` is small (~200–400 KB
+    likely) commit it too; else gitignore + add to `MAINTAIN_DEPLOY` rsync list.
+- Render on `#afr-map`: GeoJSON source + fill layer (low opacity) + line layer (outline), fetched
+  once in `ensureAfrMap()` after style load. Africa bounds unchanged.
+- Click a region → show its `name` for now (MapLibre popup, or minimal drop into `#afr-right`).
+  Full panel wiring is a later WO.
+- **Prereq check, do first (~10 min):** vertex density of the polygons vs L6/L8 basin edges. If
+  heavily generalized, the "boundary coincidence" framing is out and only within-polygon framing
+  remains — record the result here.
+
+### Part B — per-region rationale from the article
+
+- Read the Lovejoy PDF's region-by-region section; pull the passage(s) explaining each region's
+  defining logic — ~1 short paragraph per region, fuller than the LPF blurb.
+- Store keyed by `src_id`: `app/static/workbench/lovejoy_region_notes.json`
+  (`{src_id: {blurb, rationale, page}}`) — `blurb` = LPF short form (kept), `rationale` = PDF
+  passage. Surfaced in the "what's claimed" panel later.
+- Curation, not extraction. All 34 if the article covers them evenly; else do the substantive
+  ones and note gaps.
+
+### Part C — WHG export-bug issue (draft only)
+
+- Draft, don't file: save `data/lovejoy/whg_export_bug_issue.md`. WHG's LPF and TSV dataset
+  exports emit one geometry per place and, for places with multiple `place_geom` rows, pick the
+  reconciliation-pass Wikidata point over the contributor polygon. Dataset 1155: Western Sahara
+  (wid 7130907, `wd:Q6250`) and Kalahari (wid 7130908, `wd:Q14202768`) — both exports give
+  `MULTIPOINT`, `geo_source` names the Wikidata id. Karl files it separately.
+
+### Out of scope (later WOs)
+
+- Variable-painting `<select>`s / choropleth over L6/L8 basins.
+- D-PLACE society marker layer; regions-vs-societies click-mode toggle.
+- Full "what's here" / "what's claimed" panel design and wiring (Part A click just shows a name).
+- Promoting the GeoJSON to a `gaz` table (only if a later WO needs server-side spatial joins).
+
+### Acceptance
+
+- `lovejoy_regions.geojson`: 34 features, `src_id` + `name` + `macro` + `geom_source`; Western
+  Sahara + Kalahari are polygons; `hc_18` is "Eastern Interior".
+- Regions render on `#afr-map` (fill + outline); clicking one shows its name; no console errors;
+  tab switch-away-and-back still fine.
+- Vertex-density prereq result recorded.
+- `lovejoy_region_notes.json` with `blurb` + `rationale` per region (or noted gaps).
+- `data/lovejoy/whg_export_bug_issue.md` drafted.
+- `pytest tests/` green (build script is offline).
+
+### Notes
+
+- `whg_staging` is dev-only — build script runs locally, emits a static artifact; nothing at app
+  runtime touches `whg_staging` (same as `gaz.geonames_cities`).
+- New static dir `app/static/workbench/` — `app/static` is already a StaticFiles mount, no route.
