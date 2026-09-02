@@ -90,21 +90,20 @@ the Braga talk (2026-09-23), built from a draft prospectus
 per-WO detail in `docs/edop/workbench/`. Work proceeds from Claude-drafted, Karl-approved WOs
 (no Opus).
 
-- **WO01 done** — new tab; layout map-left / info-right within the 6/6 row (nav moved full-width
-  above it); `#afr-map` is a MapLibre map on its own instance (lazy-init, `resize()` on re-show)
-  with the shared Protomaps light basemap. `pmLightStyle()` extracted to
-  `app/static/js/pm_basemap.js` (Sandbox + Workbench share it). Full Leaflet→MapLibre port of the
-  rest of `workbench.html` is **deferred** — this tab keeps its own map.
-- **WO02 done** — 34 Lovejoy pre-colonial African subregions on the map (fill + outline). Click a
-  region → `renderAfrRegion()` fills `#afr-right` (name / macro / WHG blurb / the article's fuller
-  per-region rationale). `#afr-right` is the single click-output target (D-PLACE society-marker
-  clicks land there too, later). Artifacts under `app/static/workbench/`, built from
-  `whg_staging.lovejoy.regions` + the published WHG dataset 1155 LPF by
-  `scripts/edop/workbench/build_lovejoy_{geojson,notes}.py`.
-- **Remaining** — variable painting over L6/L8 basins (Sandbox `_atlasMap` pattern — pmtiles
-  basins + feature-state paint from `/api/explorer/values`); the D-PLACE society marker layer
-  (`cedop.dplace.*`, local + prod); the regions/societies click-mode toggle; WO02 follow-ups
-  (7 rationale entries to hand-finish, blurb/rationale de-dup).
+- **WO01 / WO02 / WO02.5 done.** New tab, map-left / info-right in the 6/6 row; `#afr-map` is its
+  own lazy-init MapLibre instance (shared Protomaps light basemap via `app/static/js/pm_basemap.js`;
+  full Leaflet→MapLibre port of the rest of `workbench.html` deferred). 34 Lovejoy pre-colonial
+  African subregions render (fill + outline); a click highlights the region outline and writes the
+  **verbatim article rationale + page cite** into `#afr-region` (top of the right column), above a
+  persistent About / article-citation block. Single served source
+  `app/static/workbench/lovejoy_regions.geojson` (`?v=<mtime>` cache-bust), built by
+  `scripts/edop/workbench/build_lovejoy_geojson.py` from `whg_staging.lovejoy.regions` + WHG
+  dataset 1155 LPF + the curated master `data/lovejoy/lovejoy_rationales.md` (34 rationales +
+  page + ethnonyms; extractor `build_lovejoy_rationale.py`). `lovejoy_region_notes.json` /
+  `build_lovejoy_notes.py` / `_afrNotes` retired. Full detail: `docs/edop/workbench/workplan_africa.md`.
+- **Next — WO03** (not scoped): variable painting over L6/L8 basins (Sandbox `_atlasMap` pattern —
+  pmtiles + feature-state paint from `/api/explorer/values`); D-PLACE society marker layer
+  (`cedop.dplace.*`, local + prod); regions/societies click-mode toggle.
 
 **Cutover** (deferred, ~mid-Sept): merge `wb_africa` → `v04`, redeploy `edops-v4`, re-verify on
 `edops04`, then flip one nginx `proxy_pass` line `:8001`→`:8004` on the `edops.computingplace.org`

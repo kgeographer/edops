@@ -19,9 +19,17 @@ execution; we still take them one at a time.
 |----|-------|-------|
 | WO01 | African Regions tab scaffold + left map | **complete** |
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
-| WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | Part A **done**; Part B (geojson fold + UI) in progress |
+| WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 
 ---
+
+## You are here
+
+WO01 / WO02 / WO02.5 done. `#afr-map` renders the 34 Lovejoy regions; a region click highlights
+its outline and writes the verbatim article rationale + page cite into `#afr-region` (top of the
+right column), above a persistent About / citation block. Next: **WO03** — scope with Karl
+(variable painting over L6/L8 basins, D-PLACE society layer, click-mode toggle; prospectus §4 +
+the prerequisite checks below).
 
 ## Prerequisite checks
 
@@ -214,10 +222,9 @@ Western Sahara (wid 7130907, `wd:Q6250`) and Kalahari (wid 7130908, `wd:Q1420276
 
 ## WO02.5 — Subregion rationale extraction (verbatim spans + page numbers)
 
-**State: Part A done (extraction + curated master, Karl-reviewed); Part B = step 3 (geojson fold
-+ UI rework), in progress.** Interjected between WO02 and WO03. Supersedes the WO02 Part B
+**State: complete (2026-09-01).** Interjected between WO02 and WO03. Superseded the WO02 Part B
 follow-ups (blurb/rationale redundancy, extraction cruft, 7 `needs_review` entries) and the whole
-`lovejoy_region_notes.json` / `_afrNotes` path. Source draft:
+`lovejoy_region_notes.json` / `_afrNotes` path — both deleted. Source draft:
 `docs/edop/workbench/WO- Subregion Rationale Extraction (Lovejoy et al. 2021).md`.
 
 **Why.** WO02's Part B `rationale` field was an ad-hoc `DEF` regex per region plus heuristic
@@ -290,19 +297,22 @@ best-effort list from the span's "Ethnonyms included …" sentences; Karl curate
 (Eastern Savanna, Southeast, Kalahari, WCN/WCS). `build_lovejoy_notes.py` is superseded — delete
 at step 3.
 
-### Output — Part B / step 3 (in progress)
+### Output — Part B / step 3 (done)
 
-- `build_lovejoy_geojson.py` gains a markdown parser for `lovejoy_rationales.md`; folds
-  `rationale` + `page` + `ethnonyms` into each feature's `properties` (keyed on `src_id`).
-- `renderAfrRegion()` reworked: **drop the blurb `<p>`** (LPF `descriptions` — a truncated version
-  of the same text); header becomes `FROM THE ARTICLE (P. n)` / `(PP. n–m)` (dash-detect on the
-  `page` value), styled as now (`mb-1 small text-uppercase text-secondary`); body is the rationale
-  **in quotes**. `properties.ethnonyms` rides along **unrendered** (the paragraph already contains
-  them) — for Karl's later use.
-- On feature click: **highlight the clicked region's outline** (MapLibre `setFeatureState` +
-  `line-*` paint expression; needs `promoteId: 'src_id'` on the geojson source; clear prior
-  selection each click).
-- Remove `lovejoy_region_notes.json` and the `_afrNotes` fetch/global from `workbench.html`.
+- `build_lovejoy_geojson.py` parses `lovejoy_rationales.md` and folds `rationale` + `page` +
+  `ethnonyms` into each feature's `properties` (keyed on `src_id`); `blurb` dropped.
+- `renderAfrRegion()` writes into **`#afr-region`** (top of the right column): region name / macro
+  / `FROM THE ARTICLE (P. n)` / `(PP. n–m)` header (dash-detect on `page`) / rationale in quotes,
+  then an `<hr>`. Below it, a **persistent `#afr-about` block** — heading "African Regions in
+  Historical Perspective" + flush-right `web site` link (africanregions.org/about.php), a
+  placeholder intro paragraph (Karl to edit), `<hr>`, and the full article citation at `.78rem`
+  (title bolded). `properties.ethnonyms` rides along **unrendered** — Karl's later use.
+- Feature click **highlights the clicked outline** — `setFeatureState({selected})` +
+  `line-*` `['case', ['feature-state','selected'], …]` paint; `promoteId: 'src_id'` on the source;
+  prior selection cleared each click.
+- `lovejoy_region_notes.json` + `_afrNotes` removed; `build_lovejoy_notes.py` deleted.
+- `?v=<mtime>` cache-bust on the geojson URL (`_static_mtime()` in `app/web/pages.py`,
+  `lovejoy_v` context on both workbench render paths) — the file changes during rationale review.
 
 ### Flagging (assign, don't fix — set Karl's review priority)
 
@@ -322,15 +332,16 @@ was **not needed** — bold anchors + size filter gave a clean deterministic pas
 - Full "what's here" / "what's claimed" panel redesign.
 - D-PLACE / variable-painting work (WO03).
 
-### Acceptance
+### Acceptance — met 2026-09-01
 
-- **Part A (done):** `data/lovejoy/lovejoy_rationales.md` — 34 subregion sections with verbatim
-  rationale + `page` + `ethnonyms`, 6 lead-in appendix entries; free of running headers/footers,
-  footnote markers, footnote-block citations; diacritics preserved. Extractor re-runnable offline.
-- **Part B / step 3:** geojson features carry `rationale` / `page` / `ethnonyms`; `renderAfrRegion()`
-  shows quoted rationale + `FROM THE ARTICLE (P. …)` header, no blurb, clicked outline highlighted,
-  no console errors; `lovejoy_region_notes.json` + `_afrNotes` gone; `build_lovejoy_notes.py`
-  deleted; `pytest tests/` green.
+- `data/lovejoy/lovejoy_rationales.md` — 34 verbatim rationale sections + `page` + `ethnonyms`,
+  6 lead-in appendix entries; free of headers/footers, footnote markers, footnote-block citations;
+  diacritics preserved. Both extractors re-runnable offline.
+- geojson features carry `rationale` / `page` / `ethnonyms`; `renderAfrRegion()` → `#afr-region`
+  with quoted rationale + page cite, no blurb, clicked outline highlighted, persistent About /
+  citation block below; no console errors. `lovejoy_region_notes.json` + `_afrNotes` +
+  `build_lovejoy_notes.py` gone. `pytest tests/` green (519 passed, 14 skipped). Karl reviewed in
+  browser.
 
 ### Notes
 

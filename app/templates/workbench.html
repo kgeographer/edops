@@ -249,7 +249,29 @@
       <!-- African Regions info panel — swaps in for #map when the African Regions tab is active.
            The single click-output target: region attributes now, D-PLACE society data later. -->
       <div id="afr-right" style="display:none;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
-        <p class="text-secondary mb-0">Click a region on the map for its name and description.</p>
+        <!-- filled by renderAfrRegion() on a map click; empty until then -->
+        <div id="afr-region"></div>
+        <div id="afr-about">
+          <div class="d-flex justify-content-between align-items-baseline">
+            <h6 class="mb-1">African Regions in Historical Perspective</h6>
+            <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
+          </div>
+          <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
+            Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
+            historical data. Select a region to read the article's rationale for its extent and
+            the peoples associated with it. The regions were drawn for organising data rather than
+            for environmental analysis; the Workbench places them over EDOPS basin signatures to
+            ask how far each one holds together as an environmental unit.</p>
+          <hr class="my-2">
+          <p class="mb-0" style="font-size:.78rem;color:#666;">
+            Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
+            Matthew S. Hopper, Ghislaine Lydon, Colleen Kriger, and John Thornton,
+            &ldquo;<b>Defining Regions of Pre-Colonial Africa: A Controlled Vocabulary for Linking
+            Open-Source Data for Digital History Projects</b>,&rdquo; <i>History in Africa</i> 48
+            (2021): 1&ndash;26,
+            <a href="https://doi.org/10.1017/hia.2020.17" target="_blank" rel="noopener">https://doi.org/10.1017/hia.2020.17</a>.
+          </p>
+        </div>
       </div>
 
       <!-- Similar sites results (shown below map) -->
@@ -438,7 +460,7 @@
 
   let map = null;
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
-  let _afrNotes = null;  // src_id -> {name, page, blurb, rationale, ...} from lovejoy_region_notes.json
+  let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
   let marker = null;
   let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
   let similarMarkers = []; // Markers for similar sites
@@ -960,41 +982,60 @@
     _afrMap.on('load', () => {
       _afrMap.resize();
 
-      // Lovejoy pre-colonial African subregions (34) + per-region notes. Built by
-      // scripts/edop/workbench/build_lovejoy_{geojson,notes}.py.
-      _afrMap.addSource('lovejoy', { type: 'geojson', data: '/static/workbench/lovejoy_regions.geojson' });
+      // Lovejoy pre-colonial African subregions (34). rationale/page/ethnonyms
+      // ride in feature properties. Built by scripts/edop/workbench/build_lovejoy_geojson.py.
+      _afrMap.addSource('lovejoy', {
+        type: 'geojson',
+        data: '/static/workbench/lovejoy_regions.geojson?v={{ lovejoy_v | default("") }}',
+        promoteId: 'src_id',
+      });
       _afrMap.addLayer({
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
         paint: { 'fill-color': '#6a51a3', 'fill-opacity': 0.10 },
       });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
-        paint: { 'line-color': '#54278f', 'line-width': 1, 'line-opacity': 0.7 },
+        paint: {
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+        },
       });
-      fetch('/static/workbench/lovejoy_region_notes.json')
-        .then(r => r.ok ? r.json() : {}).then(j => { _afrNotes = j; }).catch(() => {});
 
-      _afrMap.on('click', 'lovejoy-fill', (e) => renderAfrRegion(e.features[0].properties));
+      _afrMap.on('click', 'lovejoy-fill', (e) => {
+        selectAfrRegion(e.features[0].id);
+        renderAfrRegion(e.features[0].properties);
+      });
       _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
       _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
     });
   }
 
-  // Region click -> right-column info box (#afr-right). The single click-output
-  // target for this tab; D-PLACE society clicks will render here too, later.
+  // Highlight one Lovejoy region's outline; clear the previous selection.
+  function selectAfrRegion(srcId) {
+    if (_afrSelected && _afrSelected !== srcId) {
+      _afrMap.setFeatureState({ source: 'lovejoy', id: _afrSelected }, { selected: false });
+    }
+    _afrSelected = srcId;
+    _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
+  }
+
+  // Region click -> #afr-region (top of the right column, above the persistent
+  // About / citation block). D-PLACE society clicks will render here too, later.
   function renderAfrRegion(p) {
-    const el = document.getElementById('afr-right');
+    const el = document.getElementById('afr-region');
     if (!el) return;
-    const note = (_afrNotes && _afrNotes[p.src_id]) || {};
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const pg = (p.page || '').trim();
+    const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
     el.innerHTML =
       `<h5 class="mb-0">${esc(p.name)}</h5>` +
       `<div class="text-secondary small mb-2">${esc(p.macro)}</div>` +
-      (p.blurb ? `<p class="mb-2">${esc(p.blurb)}</p>` : '') +
-      (note.rationale
-        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article</p>` +
-          `<p class="mb-0">${esc(note.rationale)}</p>`
-        : '');
+      (p.rationale
+        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article${esc(pgLabel)}</p>` +
+          `<p class="mb-0">“${esc(p.rationale)}”</p>`
+        : '') +
+      `<hr class="my-3">`;
   }
 
   function setMarkerFromLonLat(lon, lat) {
