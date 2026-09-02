@@ -123,13 +123,15 @@ def explorer_categorical(var: str, level: int = 6, bbox: Optional[str] = None):
     lu_table, lu_id_col, lu_name_col = _CAT_LOOKUP[var]
 
     env = _parse_bbox(bbox)   # raises 400 on malformed — keep outside the try's 500 wrap
-    bbox_and = "AND b.geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else ""
+    # bbox trims the returned {hybas_id: cat_id} payload only. Category ranking +
+    # colour assignment are ALWAYS global, so a class keeps its colour across
+    # Explorer and any bbox-scoped view.
     bbox_where = "WHERE geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else ""
 
     try:
         conn = db_connect()
         with conn.cursor() as cur:
-            # 1. Category counts with names (cast both sides to text for type safety)
+            # 1. Category counts with names — global (cast both sides to text for type safety)
             cur.execute(f"""
                 SELECT lu.{lu_name_col} AS cat_name,
                        b.{basin_col}    AS cat_id,
@@ -138,10 +140,9 @@ def explorer_categorical(var: str, level: int = 6, bbox: Optional[str] = None):
                 LEFT JOIN public.{lu_table} lu
                     ON b.{basin_col}::text = lu.{lu_id_col}::text
                 WHERE b.{basin_col} IS NOT NULL
-                {bbox_and}
                 GROUP BY b.{basin_col}, lu.{lu_name_col}
                 ORDER BY cnt DESC
-            """, env if env else None)
+            """)
             count_rows = cur.fetchall()   # (cat_name, cat_id, cnt)
 
             # 2. Determine top-N set; anything beyond is "Other"
