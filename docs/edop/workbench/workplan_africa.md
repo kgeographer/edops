@@ -20,16 +20,20 @@ execution; we still take them one at a time.
 | WO01 | African Regions tab scaffold + left map | **complete** |
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
+| WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **spec ready** — 4 commits, awaiting go |
 
 ---
 
 ## You are here
 
 WO01 / WO02 / WO02.5 done. `#afr-map` renders the 34 Lovejoy regions; a region click highlights
-its outline and writes the verbatim article rationale + page cite into `#afr-region` (top of the
-right column), above a persistent About / citation block. Next: **WO03** — scope with Karl
-(variable painting over L6/L8 basins, D-PLACE society layer, click-mode toggle; prospectus §4 +
-the prerequisite checks below).
+its outline and writes the verbatim article rationale + page cite into `#afr-region`, above a
+persistent About / citation block. **WO03 spec is written** (below, "Build spec" section) — 4 commits:
+(1) YlOrBr terrain ramp for elevation+slope in `explorer.html`; (2) optional `bbox=` on
+`/explorer/{values,categorical}` + tests; (3) `#afr-right` flex restructure + `#afr-var` select +
+L6/L8 pill + citation flush-bottom; (4) the paint module (`_afrBasinSource` / `_afrPaint` /
+legend, ported from `explorer.html`'s `makeColorFn`, basin layers `beforeId:'lovejoy-fill'`).
+Awaiting Karl's go. D-PLACE society layer + region-vs-basin click-mode toggle are still later WOs.
 
 ## Prerequisite checks
 
@@ -349,3 +353,403 @@ was **not needed** — bold anchors + size filter gave a clean deterministic pas
   anchors are at least partly reliable, but the cruft in those 27 says the text layer has ligature
   and footnote-flattening damage. Expect rule 6 to do real work.
 - Keep `data/lovejoy/lovejoy_regions_prose.txt` regen in the script — Karl's review reads it.
+
+---
+
+## WO03 — Environmental variable painting on `#afr-map`
+
+**State: outline approved (2026-09-02), not started.** Karl's answers to the 5 [Q] are folded in
+below (see *Decisions*). One new side-item: the slope ramp.
+
+### Decisions (Karl, 2026-09-02)
+
+1. `dist_sink_km` — show under **Band E** (my catalog error, now fixed in the table).
+2. **Africa-bounds fetch:** add `?bbox=` to `/api/explorer/values` (option a). Africa bbox pulls
+   the Arabian peninsula too — accepted for now; go to a static id allowlist only if that reads
+   badly later.
+3. **PNV:** in scope. Categorical branch + a legend **below the panel content**, styled like
+   Explorer's category meter-bars (swatch + label + proportional bar); long tail is fine, users
+   scroll.
+4. **`lovejoy-fill` wash:** stays on page load, **hides when a variable is painted**, returns when
+   the selector is back on "Paint a variable…".
+5. **Discharge ramp:** the bbox fetch fixes it for free — `meta` percentiles come back
+   Africa-scoped, so the linear ramp domain adapts to the Africa range. No log scale needed.
+   General rule for this WO: **ramp domain = the bbox-filtered response's `meta`**, not global.
+
+### Side-item — slope ramp (decided)
+
+Karl: the elevation group renders correctly; **`slope_deg` is the outlier and is wrong**. Fix =
+all four terrain variables — `elevation_max`, `elevation_min`, `elevation_mean`, `slope_deg` —
+render with the **same ramp the elevation group uses**, i.e. Sandbox's `TERRAIN_PAL` = ColorBrewer
+**YlOrBr-7** (`#ffffd4 … #8c2d04`, pale yellow → dark brown; `sandbox.html` ~L3913, wired via
+`CONTEXT_VAR_RAMP`).
+
+Executor: confirm by eyeballing `elevation_max` in Explorer, then make `makeColorFn` special-case
+those four `schema_key`s onto that palette — in **both** `explorer.html` and the workbench port.
+(In the current `explorer.html` `makeColorFn`, all four fall through to VIRIDIS; if elev already
+looks right in Explorer today, find the path that makes it so and bring slope onto it.)
+
+### Goal
+
+Paint one BasinATLAS variable at a time as a choropleth over the African basins on `#afr-map`,
+**L8 by default** with an **L6/L8 pill**. A variable `<select>` (grouped by band) sits below the
+intro paragraph; the article citation moves to the bottom of the right column. The Lovejoy region
+outlines and click→rationale behaviour (WO02.5) stay on top and unchanged. This is the
+"within-polygon" instrument from the prospectus — overlay the regions on a painted surface and
+read whether each one's interior coheres.
+
+### The 8 variables (initial offering)
+
+Grouped as Karl wants them shown (talk grouping, not strictly the catalog band):
+
+| group | label in UI | `schema_key` (→ `/api/explorer/values?var=`) | col / type | ramp |
+|---|---|---|---|---|
+| **A** | Elevation maximum | `elevation_max` | `ele_mt_smx` float m | sequential |
+| **A** | Slope | `slope_deg` | `slp_dg_sav` float ° (API ÷10) | sequential |
+| **B** | Discharge, annual mean | `discharge_annual` | `dis_m3_pyr` float m³/s | **log / hard percentile clip** — range is 0 → >200 000 |
+| **B** | Potential natural vegetation | `pnv_majority_name` | `pnv_cl_smj` **string** | **categorical** — different endpoint + swatch legend |
+| **E** | Flow distance to marine outlet | `dist_sink_km` | `dist_sink` float km | sequential |
+| **B** | Clay content | `pct_clay` | `cly_pc_sav` float % | sequential |
+| **C** | Aridity index (P/PET) | `aridity_index` | `ari_ix_sav` float ×100 | RDBU, low = red (dry) |
+| **C** | Precipitation, annual | `precipitation_annual` | `pre_mm_syr` float mm/yr | RDBU, low = red (dry) |
+
+### Data path (reuse Explorer's, not Sandbox's)
+
+- **Geometry:** `pmtiles:///static/explorer/basin0{6,8}.pmtiles`, source-layer `basin0{6,8}` —
+  already served, gitignored, on the rsync/deploy list. New vector source + fill + hairline layer
+  on `#afr-map`, inserted **below** `lovejoy-fill` / `lovejoy-line` (so region outlines + the
+  click target stay on top).
+- **Values:** `GET /api/explorer/values?var=<schema_key>&level=8&su=s` → `{meta:{min,max,p10,p90,
+  zero_fraction,var_type,…}, values:{hybas_id: value|null}}`. Loop `setFeatureState({source,
+  sourceLayer, id:Number(hybas_id)}, {fc: colorFn(value)})`; `fill-color` =
+  `['coalesce',['feature-state','fc'],'transparent']`.
+- **PNV only:** `GET /api/explorer/categorical?var=pnv_majority_name&level=8` →
+  `{categories:[{id,name,count,color}], values:{hybas_id:cat_id}}`; swatch legend, no ramp.
+- **Ramp:** port `makeColorFn(meta, 's', schemaKey)` + `interpPalette` / `RDBU` / `VIRIDIS` from
+  `explorer.html` (universal rubric: warm/dry = red, cold/wet = blue; aridity + precip special-cased
+  low = red; diverging when min < 0; else VIRIDIS sequential). Ramp domain from the **bbox-filtered**
+  `meta` — this is what makes discharge (and any wide-range var) readable at Africa scale. Slope
+  ramp: see *Side-item* above.
+- **s only.** No s/u toggle in this WO (all 8 are surface columns).
+
+### Africa-bounds fetch  — `?bbox=` on `/api/explorer/values`
+
+Add an optional `bbox=w,s,e,n` param. When present, append
+`WHERE geom && ST_MakeEnvelope(w,s,e,n,4326)` (GiST index on `basin0{6,8}.geom`) to both the
+value query and any stats pass, so `meta` (min/max/p10/p90) is computed over the returned subset,
+not the globe. Purely additive to the shared route — Explorer's existing callers pass no `bbox`
+and are unaffected; add one route test. Africa bbox ≈ `[-20, -36, 55, 38]` (also catches the
+Arabian peninsula — accepted). Payload for L8 drops from ~190 k basins to the Africa subset.
+
+### UI / layout changes (`workbench.html`, `workbench.css`)
+
+- **`#afr-right` → flex column.** Children top→bottom: `#afr-region` (WO02.5 dynamic block),
+  `#afr-about` (heading + `web site` link + intro paragraph + **new controls**), then a pulled-out
+  `#afr-cite` sibling with `margin-top:auto` so the citation sits flush at the bottom. (Citation
+  markup moves out of `#afr-about`.)
+- **Controls** under the intro paragraph: a `<select id="afr-var">` with `<optgroup label="A —
+  Terrain">` / `B — Hydrology & soils` / `C — Climate`, default option "Paint a variable…"
+  (nothing painted on load — tab still opens as the plain regions map); an L6/L8 segmented pill
+  (`btn-group`, radio-style, L8 checked) next to it.
+- **Legend** goes in `#afr-readouts` (the strip below the map — WO01 reserved it for "painted
+  variable · legend · cell count"): variable name + units, the painted-basin count, and:
+  - *numeric vars* — the ramp gradient with min / p10 / p90 / max ticks (Africa-scoped `meta`).
+  - *PNV* — a **category meter-bar list** ported from Explorer's `renderCategoryBars` (swatch +
+    class name + proportional bar, count/pct). Long tail is expected; it scrolls. If the strip is
+    too short, the PNV legend can render into a panel-side block instead — executor's call.
+- **`lovejoy-fill`** — wash stays as-is on load; when a variable is painted set `fill-opacity` to
+  0 (keeps it as the invisible click target); restore the wash when the selector returns to
+  "Paint a variable…".
+
+### Interaction
+
+- Region click: unchanged — highlight outline + rationale into `#afr-region`. Basin values are
+  backdrop only; **no** basin-value readout or region-vs-basin click-mode toggle in this WO.
+- Level pill or variable change → refetch values for the new (var, level), repaint, redraw legend.
+  Debounce/guard against overlapping fetches.
+
+### Out of scope (later WOs)
+
+- Clipping / summarising the painted surface *within* a selected region (the actual "does the
+  interior cohere" read — needs a spatial join, own WO).
+- Basin hover/click value readout; region-vs-society click-mode toggle.
+- D-PLACE society marker layer.
+- Band T / temporal layers, s/u, month sliders.
+
+### Acceptance (draft)
+
+- African Regions tab: variable `<select>` (optgroups A / B / E / C, 8 options) + L6/L8 pill
+  below the intro; article citation flush to the bottom of the right column.
+- Pick a numeric variable → Africa basins paint at L8; legend in `#afr-readouts` shows variable +
+  units + Africa-scoped ramp (min/p10/p90/max) + basin count. Discharge reads with real contrast
+  (Africa-scoped domain).
+- Pick PNV → categorical paint + a meter-bar legend (swatch / name / proportional bar), scrollable.
+- `lovejoy-fill` wash shows on load, hides while a variable is painted, returns on "Paint a
+  variable…". Region outlines + click→rationale work throughout, on top of the choropleth.
+- L6/L8 pill switches level and repaints; no overlapping-fetch races.
+- `/api/explorer/values?bbox=…` returns only in-envelope basins with subset `meta`; no-`bbox`
+  behaviour unchanged (route test).
+- Slope no longer renders purple→yellow (per the resolved side-item).
+- No console errors; other Workbench tabs and Explorer unaffected; `pytest tests/` green.
+
+---
+
+## WO03 — Build spec (2026-09-02)
+
+Executable. Four commits, in order. Karl reviews the UI in-browser before commit 4.
+Africa bbox constant: **`-20,-36,55,38`** (W,S,E,N). Africa basin counts: **L8 ≈ 48,002**,
+**L6 ≈ 4,187** (both `geom` GiST-indexed).
+
+### Commit 1 — `feat(explorer): YlOrBr terrain ramp for elevation + slope`
+
+`app/templates/explorer.html`, `makeColorFn` (~L451). Add the palette next to `VIRIDIS`/`RDBU`:
+
+```js
+// ColorBrewer YlOrBr-7 — matches sandbox.html TERRAIN_PAL (hypsometric)
+const TERRAIN_PAL = ['#ffffd4','#fee391','#fec44f','#fe9929','#ec7014','#cc4c02','#8c2d04'];
+```
+
+In `makeColorFn`, **after** the `aridity_index`/`precipitation_annual` block and **before** the
+final `VIRIDIS` return:
+
+```js
+if (['elevation_max','elevation_min','elevation_mean','slope_deg'].includes(schemaKey)) {
+  const range = (hi - lo) || 1;
+  return v => v == null ? '#d3d3d3'
+    : interpPalette(TERRAIN_PAL, Math.max(0, Math.min(1, (v - lo) / range)));
+}
+```
+
+First **verify in-browser**: open Explorer, select `elevation_max`. Per Karl it renders correctly
+today and `slope_deg` is the outlier — if elev already looks YlOrBr (not purple→yellow), there is
+a path this grep missed; find it and route all four keys through it instead. Otherwise the block
+above is the fix (elev currently also VIRIDIS; this brings all four onto YlOrBr, elev unchanged in
+spirit, slope corrected). Confirm the numeric legend gradient (`ex-legend`/`renderNumericLegend`
+via `currentColorFn`) picks it up automatically — it samples `currentColorFn`, so yes.
+
+Regression check: cycle every A–E numeric var in Explorer, no console errors, ramps sane.
+
+### Commit 2 — `feat(api): optional bbox on /explorer/{values,categorical}`
+
+`app/api/routes_common.py :: explorer_values` and `app/api/routes_explorer.py :: explorer_categorical`.
+
+Add `bbox: Optional[str] = None` to both signatures. Shared parse helper (put in
+`routes_common.py`, import into `routes_explorer.py`):
+
+```python
+def _parse_bbox(bbox: Optional[str]):
+    if not bbox:
+        return None
+    try:
+        w, s, e, n = (float(x) for x in bbox.split(","))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bbox must be 'w,s,e,n'")
+    if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
+        raise HTTPException(status_code=400, detail="bbox out of range or degenerate")
+    return w, s, e, n
+```
+
+In each route, when `_parse_bbox` returns coords, add
+`WHERE geom && ST_MakeEnvelope(w, s, e, n, 4326)` to **every** SELECT against `public.basin0{6,8}`
+in that handler (values: one query; categorical: the top-N count pass **and** the per-basin
+`cat_id` pass — both, so counts/pcts match the painted subset). Params passed positionally via
+psycopg (`cur.execute(sql, (w, s, e, n))`), not f-string-interpolated. `meta` needs no change —
+it's already derived from the filtered rows.
+
+Test — `tests/` (wherever explorer routes are covered; else `tests/test_areas.py`):
+- `values?var=elevation_max&level=8&bbox=-20,-36,55,38` → `len(values)` ≈ 48000, `< ` the no-bbox
+  count; `meta.n_valid` matches.
+- a hybas_id known to be outside Africa is absent from the bbox response.
+- `bbox=1,2,3` → 400; `bbox=200,0,210,10` → 400.
+- no `bbox` → byte-identical behaviour to before (count == global).
+
+### Commit 3 — `workbench(africa): WO03 panel restructure + controls`
+
+`app/templates/workbench.html`. **`#afr-right`** (currently the WO02.5 block) → flex column;
+citation pulled out as a flush-bottom sibling; controls added under the intro. New inner markup:
+
+```html
+<div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
+  <div id="afr-region"></div>
+  <div id="afr-about">
+    <div class="d-flex justify-content-between align-items-baseline">
+      <h6 class="mb-1">African Regions in Historical Perspective</h6>
+      <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
+    </div>
+    <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
+      Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source historical
+      data. Select a region to read the article's rationale for its extent and the peoples
+      associated with it. The regions were drawn for organising data rather than for
+      environmental analysis; the Workbench places them over EDOPS basin signatures to ask how
+      far each one holds together as an environmental unit.</p>
+    <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
+      <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
+        <option value="">Paint a variable…</option>
+        <optgroup label="A — Terrain">
+          <option value="elevation_max">Elevation maximum</option>
+          <option value="slope_deg">Slope</option>
+        </optgroup>
+        <optgroup label="B — Hydrology &amp; soils">
+          <option value="discharge_annual">Discharge, annual mean</option>
+          <option value="pnv_majority_name">Potential natural vegetation</option>
+          <option value="pct_clay">Clay content</option>
+        </optgroup>
+        <optgroup label="E — Coastality">
+          <option value="dist_sink_km">Flow distance to marine outlet</option>
+        </optgroup>
+        <optgroup label="C — Climate">
+          <option value="aridity_index">Aridity index (P/PET)</option>
+          <option value="precipitation_annual">Precipitation, annual</option>
+        </optgroup>
+      </select>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Basin level">
+        <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
+        <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-8" value="8" autocomplete="off" checked>
+        <label class="btn btn-outline-secondary" for="afr-lvl-8">L8</label>
+      </div>
+    </div>
+  </div>
+  <div id="afr-cite" style="margin-top:auto;padding-top:.5rem;">
+    <hr class="my-2">
+    <p class="mb-0" style="font-size:.78rem;color:#666;">
+      Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
+      Matthew S. Hopper, Ghislaine Lydon, Colleen Kriger, and John Thornton,
+      &ldquo;<b>Defining Regions of Pre-Colonial Africa: A Controlled Vocabulary for Linking
+      Open-Source Data for Digital History Projects</b>,&rdquo; <i>History in Africa</i> 48
+      (2021): 1&ndash;26,
+      <a href="https://doi.org/10.1017/hia.2020.17" target="_blank" rel="noopener">https://doi.org/10.1017/hia.2020.17</a>.
+    </p>
+  </div>
+</div>
+```
+
+(Only changes vs WO02.5: `display:none` → keeps, add `flex-direction:column`; `#afr-controls`
+added; citation `<p>` + its `<hr>` moved from inside `#afr-about` into new `#afr-cite` with
+`margin-top:auto`. `renderAfrRegion` already targets `#afr-region` and appends its own trailing
+`<hr>` — unchanged.)
+
+**`#afr-readouts`** — becomes the legend host:
+
+```html
+<div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;">
+  <span class="text-secondary">Pick a variable to paint the basins.</span>
+</div>
+```
+
+No `workbench.css` changes — all inline, matching the existing afr style.
+
+### Commit 4 — `workbench(africa): WO03 variable painting on #afr-map`
+
+`app/templates/workbench.html` `<script>`. State vars by `_afrSelected` (~L441):
+
+```js
+let _afrVarKey = '';          // selected schema_key ('' = none painted)
+let _afrLevel = 8;            // 6 | 8
+let _afrBasinLevel = null;    // pmtiles level currently on the map
+let _afrPaintSeq = 0;         // stale-fetch guard
+const AFR_BBOX = '-20,-36,55,38';
+const AFR_VAR_LABEL = {
+  elevation_max:'Elevation maximum', slope_deg:'Slope',
+  discharge_annual:'Discharge, annual mean', pnv_majority_name:'Potential natural vegetation',
+  pct_clay:'Clay content', dist_sink_km:'Flow distance to marine outlet',
+  aridity_index:'Aridity index (P/PET)', precipitation_annual:'Precipitation, annual',
+};
+```
+
+Port verbatim from `explorer.html` into the workbench `<script>` (one-line provenance comment,
+no shared file this WO): `VIRIDIS`, `RDBU`, `TERRAIN_PAL`, `lerpColor`, `interpPalette`,
+`makeColorFn` — **including the Commit-1 terrain block** so the two copies stay in step.
+
+**`_afrBasinSource(level)`** — model on `sandbox.html :: _atlasBasinLayer`:
+
+```js
+function _afrBasinSource(level) {
+  const sl = 'basin0' + level;
+  if (_afrBasinLevel === level && _afrMap.getSource('afr-basins')) return sl;
+  ['afr-basin-fill','afr-basin-line'].forEach(id => { if (_afrMap.getLayer(id)) _afrMap.removeLayer(id); });
+  if (_afrMap.getSource('afr-basins')) _afrMap.removeSource('afr-basins');
+  _afrMap.addSource('afr-basins', { type:'vector', url:`pmtiles:///static/explorer/${sl}.pmtiles` });
+  _afrMap.addLayer({ id:'afr-basin-fill', type:'fill', source:'afr-basins', 'source-layer':sl,
+    paint:{ 'fill-color':['coalesce',['feature-state','fc'],'transparent'], 'fill-opacity':0.82 } }, 'lovejoy-fill');
+  _afrMap.addLayer({ id:'afr-basin-line', type:'line', source:'afr-basins', 'source-layer':sl,
+    paint:{ 'line-color':'rgba(90,90,90,0.10)', 'line-width':0.3 } }, 'lovejoy-fill');
+  _afrBasinLevel = level;
+  return sl;
+}
+```
+
+`beforeId:'lovejoy-fill'` puts basins **under** the region fill (invisible click target) and
+`lovejoy-line` (outlines) — regions and their click→rationale stay on top.
+
+**`async _afrPaint()`** — the only paint entry; called on `<select>` change and level change:
+
+```
+seq = ++_afrPaintSeq
+if !_afrMap || !_afrMap.getLayer('lovejoy-fill'): return          // map/tab not ready; user re-picks
+key = _afrVarKey
+if !key:
+  _afrClearPaint(); _afrMap.setPaintProperty('lovejoy-fill','fill-opacity', <wash>)   // wash = current literal, e.g. 0.10
+  #afr-readouts -> '<span class="text-secondary">Pick a variable to paint the basins.</span>'
+  return
+_afrMap.setPaintProperty('lovejoy-fill','fill-opacity', 0)
+#afr-readouts -> 'Loading…'
+isCat = key === 'pnv_majority_name'
+url = isCat
+  ? `/api/explorer/categorical?var=${key}&level=${_afrLevel}&bbox=${AFR_BBOX}`
+  : `/api/explorer/values?var=${key}&level=${_afrLevel}&su=s&bbox=${AFR_BBOX}`
+data = await fetch(url).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail) }))
+if seq !== _afrPaintSeq: return                                  // superseded
+sl = _afrBasinSource(_afrLevel)
+_afrMap.removeFeatureState({ source:'afr-basins', sourceLayer:sl })
+if isCat:
+  idToColor = Object.fromEntries(data.categories.map(c => [c.id, c.color]))
+  for [id,cat] of data.values: setFeatureState({source:'afr-basins',sourceLayer:sl,id:Number(id)}, {fc: idToColor[cat] ?? '#ccc'})
+  _afrLegendCategorical(key, data.categories, Object.keys(data.values).length)
+else:
+  fn = makeColorFn(data.meta, 's', key)
+  for [id,v] of data.values: setFeatureState({source:'afr-basins',sourceLayer:sl,id:Number(id)}, {fc: fn(v)})
+  _afrLegendNumeric(key, data.meta, fn, Object.keys(data.values).length)
+catch -> #afr-readouts shows `<span class="text-danger">${msg}</span>`, restore lovejoy-fill wash
+```
+
+**`_afrClearPaint()`** — `if (_afrMap.getSource('afr-basins')) _afrMap.removeFeatureState({ source:'afr-basins', sourceLayer:'basin0'+_afrBasinLevel });` (keep source/layers; just drop states).
+
+**`_afrLegendNumeric(key, meta, fn, n)`** — into `#afr-readouts`. Port explorer's numeric legend
+SVG (explorer.html ~L1066–1085): `lo = meta.p10 ?? meta.min`, `hi = meta.p90 ?? meta.max`; ~40
+`<rect>` sampling `fn(lo + t*(hi-lo))`; labels `lo`/`mid`/`hi` with `meta.units`; caption
+`${AFR_VAR_LABEL[key]} · ${n.toLocaleString()} basins`.
+
+**`_afrLegendCategorical(key, categories, n)`** — into `#afr-readouts`. Port explorer's
+`renderCategoryBars` table (swatch / name / proportional bar / pct) filtered to `count > 0`;
+wrap in `<div style="max-height:120px;overflow-y:auto;">`; caption
+`${AFR_VAR_LABEL[key]} · ${n.toLocaleString()} basins`.
+
+**Wiring** — in the DOMContentLoaded init near the other afr setup:
+
+```js
+document.getElementById('afr-var').addEventListener('change', e => { _afrVarKey = e.target.value; _afrPaint(); });
+document.querySelectorAll('input[name="afr-level"]').forEach(r => r.addEventListener('change', e => {
+  if (!e.target.checked) return;
+  _afrLevel = Number(e.target.value);
+  _afrPaint();          // _afrPaint -> _afrBasinSource swaps the pmtiles level
+}));
+```
+
+No auto-paint on `ensureAfrMap` load (`_afrVarKey` starts `''`). No teardown on tab-away
+(feature-state persists harmlessly). Keep the `TEMP (dev eyeball)` default-tab line for now.
+
+### Deploy
+
+No new static assets — `basin0{6,8}.pmtiles` already on the `MAINTAIN_DEPLOY.md` rsync list and
+on `edops04` (Explorer uses them). Commits 1–2 ship with the branch merge.
+
+### Acceptance — as the outline's *Acceptance (draft)*, plus:
+
+- Explorer: `elevation_max`, `elevation_min`, `slope_deg` render YlOrBr (not purple→yellow);
+  every other A–E var unchanged; numeric legend gradient matches the map.
+- `values` / `categorical` with `bbox=-20,-36,55,38&level=8` → ~48 k basins, subset `meta`;
+  malformed `bbox` → 400; no-`bbox` calls unchanged (route tests).
+- Workbench: picking each of the 8 paints Africa at L8; discharge shows real contrast; PNV shows
+  the scrollable meter-bar legend; L6/L8 swaps and repaints; `lovejoy-fill` wash toggles; region
+  click→rationale still works over the choropleth; no console errors; `pytest tests/` green.
