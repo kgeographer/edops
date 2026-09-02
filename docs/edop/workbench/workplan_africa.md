@@ -20,20 +20,19 @@ execution; we still take them one at a time.
 | WO01 | African Regions tab scaffold + left map | **complete** |
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
-| WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **spec ready** — 4 commits, awaiting go |
+| WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
 
 ---
 
 ## You are here
 
-WO01 / WO02 / WO02.5 done. `#afr-map` renders the 34 Lovejoy regions; a region click highlights
-its outline and writes the verbatim article rationale + page cite into `#afr-region`, above a
-persistent About / citation block. **WO03 spec is written** (below, "Build spec" section) — 4 commits:
-(1) YlOrBr terrain ramp for elevation+slope in `explorer.html`; (2) optional `bbox=` on
-`/explorer/{values,categorical}` + tests; (3) `#afr-right` flex restructure + `#afr-var` select +
-L6/L8 pill + citation flush-bottom; (4) the paint module (`_afrBasinSource` / `_afrPaint` /
-legend, ported from `explorer.html`'s `makeColorFn`, basin layers `beforeId:'lovejoy-fill'`).
-Awaiting Karl's go. D-PLACE society layer + region-vs-basin click-mode toggle are still later WOs.
+WO01–WO03 done. `#afr-map` renders the 34 Lovejoy regions (click → outline highlight + verbatim
+rationale into `#afr-region`, intro hides) and paints one of 8 BasinATLAS variables at L6/L8
+underneath (`#afr-var` select + pill, global ramp domain, legend in `#afr-readouts`). Karl signed
+off the UI 2026-09-02. `explorer.html` terrain ramp is now YlOrBr for elevation + slope.
+**Not yet scoped:** D-PLACE society marker layer (`cedop.dplace.*`), regions/societies click-mode
+toggle, discharge log-ramp tweak. The `TEMP (dev eyeball)` line in `workbench.html` still forces
+the African Regions tab open — **remove before the branch merges**.
 
 ## Prerequisite checks
 
