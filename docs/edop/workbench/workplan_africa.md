@@ -22,7 +22,7 @@ execution; we still take them one at a time.
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
-| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **outline** — scoping; branch `wb_africa_wo04` |
+| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **outline** — 3 Qs answered; branch `wb_africa_wo04` |
 
 ---
 
@@ -763,11 +763,25 @@ on `edops04` (Explorer uses them). Commits 1–2 ship with the branch merge.
 
 ## WO04 — Operationalize D-PLACE societies (+ layer control, rivers)
 
-**State: outline for discussion (2026-09-02).** Branch `wb_africa_wo04` off `wb_africa`.
+**State: outline — 3 questions answered 2026-09-02 (see *Decisions*), ready for a build spec.**
+Branch `wb_africa_wo04` off `wb_africa`.
 Broad goal: **make the D-PLACE societies usable on the African Regions tab — how, exactly, is
 TBD.** This WO stands up the display pieces first; what to *do* with them (click behaviour,
 region↔society cross-highlight, filtering, a societies-vs-regions mode) becomes later WO04
 elements once we can see them on the map.
+
+### Decisions (Karl, 2026-09-02)
+
+1. **Society set = African continent** — point-in-polygon vs Natural Earth `admin0`
+   (`continent='Africa'`), **528** societies. Not the paint bbox.
+2. **Layer control = on-map box, top-right** ("a cliché that earned its place") — HTML checkboxes,
+   not a row in `#afr-controls`.
+3. **Both layers must render at the default (continental) Africa zoom** — no zoom-in required. So
+   the `sandbox/rivers.pmtiles` reuse is **out** (its tileset is baked `minzoom 3`). Piece B needs
+   a low-zoom source instead — a static Africa **major-rivers GeoJSON** (HydroRIVERS filtered to
+   the high Strahler orders + simplified; the mainstems you'd want on a continental map anyway),
+   built once from `gaz.rivers`, served from `app/static/workbench/`. Same for societies — a
+   GeoJSON source renders at any zoom.
 
 ### Context
 
@@ -780,39 +794,44 @@ elements once we can see them on the map.
   (fill + hairline, only when a variable is painted), a `NavigationControl`. No layer control.
 - MapLibre has **no built-in layer-control widget**. Sandbox's MapLibre map does it with plain
   HTML checkboxes in an on-map box (`#v3-layer-control` / `#v3-layer-rivers`), toggling
-  `setLayoutProperty(id,'visibility',…)`. Rivers there reuse `pmtiles:///static/sandbox/rivers.pmtiles`
-  (`source-layer` `rivers`, width keyed on `ord_clas`) — **that tileset has `minzoom 3`; nothing
-  renders below zoom 3**, and the Africa-fit view sits around zoom 2.5–3.
+  `setLayoutProperty(id,'visibility',…)` — the pattern to copy.
+- `sandbox/rivers.pmtiles` is **not reusable here** — its tileset is baked `minzoom 3` and the
+  Africa-fit view sits ~zoom 2.5–3, so nothing would draw. Africa needs its own low-zoom source
+  (see Piece B).
 
 ### Piece A — African societies as a toggleable layer
 
-- **New endpoint** (lean, purpose-built): `GET /api/workbench/afr-societies` → GeoJSON
-  FeatureCollection of the African societies, minimal props (`soc_id`, `name`, `subsistence`,
-  `religion` — enough for the eventual popup; add more when the click WO needs them). ~550
-  points, a few KB. **[Q]** "African" = continent (528) or paint bbox (551)? Continent is
-  cleaner; bbox matches the choropleth envelope. Lean continent.
-- **Layer:** GeoJSON source `afr-societies` + a `circle` layer `afr-soc-dots` on top of every
-  other layer (points, so always topmost). Neutral styling for now — small filled circle, white
-  stroke; no data-driven colour, no clustering (550 is fine raw).
-- **Layer control:** a small box on `#afr-map` (top-right, mirroring the other tabs' Leaflet
-  layer control) **[Q — on-map box vs a row in `#afr-controls`?]**, with a **Societies** checkbox,
-  **off by default**. Toggle = `setLayoutProperty('afr-soc-dots','visibility', …)`.
-- **Invariant:** toggling Societies must not disturb a painted variable — separate source/layer,
-  so automatic; assert it in the acceptance check.
-- **No click behaviour.** `afr-soc-dots` gets a cursor-pointer on hover (signals it's live) but
-  no popup / no `#afr-region` write yet — that's a later WO04 element.
+- **Data:** a purpose-built GeoJSON — either a static artifact `app/static/workbench/afr_societies.geojson`
+  (built once by a script, like `lovejoy_regions.geojson`) or a route `GET /api/workbench/afr-societies`.
+  Lean toward the **static artifact** (the set is fixed; no runtime DB hit; `?v=<mtime>` cache-bust
+  like the geojson). Point features, props `soc_id` / `name` / `subsistence` / `religion` (enough
+  for the later popup; extend when the click WO needs it). 528 features, a few KB. Built from
+  `dplace.societies` ⋈ `admin0` (continent = Africa).
+- **Layer:** source `afr-societies` + `circle` layer `afr-soc-dots`, added last so it's topmost.
+  Neutral styling — small filled circle + white stroke; no data-driven colour, no clustering.
+- **Invariant:** toggling Societies must not disturb a painted variable (separate source/layer) —
+  assert in the acceptance check.
+- **No click behaviour.** Cursor-pointer on hover to signal it's live; no popup / `#afr-region`
+  write yet.
 
 ### Piece B — rivers as a toggleable layer
 
-- Reuse `pmtiles:///static/sandbox/rivers.pmtiles` (already deployed, on the rsync list). Vector
-  source `afr-rivers` + a `line` layer `afr-rivers-line`, **off by default**, added to the same
-  layer-control box (**Rivers** checkbox).
-- **Z-order:** provisional — above `afr-basin-line`, below `lovejoy-line` (rivers read as
-  environment, region boundaries stay legible on top). Revisit with Karl once both are visible.
-- **minzoom-3 caveat:** at the default Africa view rivers won't draw. Options for later — disable
-  the Rivers checkbox below zoom 3 (Sandbox hides the whole box), or leave it checkable and let
-  it populate on zoom-in. For this piece: wire the toggle, note the behaviour, decide the
-  affordance with Karl.
+- **Data:** static `app/static/workbench/afr_rivers.geojson` — HydroRIVERS (`gaz.rivers`) clipped
+  to Africa, filtered to the high Strahler orders (`ord_clas` threshold TBD at build — pick the
+  cut that yields the continental mainstems: Nile, Congo, Niger, Zambezi, Orange, Senegal,
+  Volta, Shabelle/Jubba, Okavango…), `ST_SimplifyPreserveTopology` for size. Renders at any zoom.
+  Build script under `scripts/edop/workbench/`. Size-check at build; keep it well under ~1 MB.
+- **Layer:** source `afr-rivers` + `line` layer `afr-rivers-line`, **off by default**, second
+  checkbox in the control. Width can key on `ord_clas` (as Sandbox does).
+- **Z-order:** provisional — above `afr-basin-line`, below `lovejoy-line`. Revisit once both
+  layers are visible together.
+
+### Layer control (both pieces)
+
+- Small HTML box on `#afr-map`, **top-right**, styled like the Leaflet layer controls on the
+  other tabs. Two checkboxes — **Societies**, **Rivers** — **both off on load**. Toggle flips
+  `setLayoutProperty(<layerId>,'visibility','visible'|'none')`. Build once when the layers are
+  added in `_afrMap.on('load')`; a MapLibre `IControl` shim or just a positioned `<div>`.
 
 ### Out of scope (this WO / later WO04 elements)
 
@@ -824,16 +843,16 @@ elements once we can see them on the map.
 
 ### Acceptance (draft)
 
-- `/api/workbench/afr-societies` returns ~530 GeoJSON point features with the agreed props;
-  a route test.
-- `#afr-map` gains a layer-control box with **Societies** and **Rivers** checkboxes, both off on
-  load. Ticking Societies shows the dots; ticking Rivers adds the river lines (where zoom allows).
+- `afr_societies.geojson` — 528 point features, props `soc_id`/`name`/`subsistence`/`religion`;
+  build script re-runnable offline.
+- `afr_rivers.geojson` — the African mainstems, simplified, well under ~1 MB; renders at the
+  default continental zoom.
+- `#afr-map` has a top-right layer-control box with **Societies** and **Rivers** checkboxes, both
+  off on load. Ticking each shows its layer at the current zoom (no zoom-in needed).
 - A painted variable stays painted through either toggle; region click→rationale still works;
   no console errors; `pytest tests/` green.
 
-### Open questions → Karl
+### Still open
 
-1. "African" society set — continent polygon (528) or paint bbox (551)?
-2. Layer control — on-map box (top-right), or checkboxes in the `#afr-controls` row?
-3. Rivers at continental zoom don't render (minzoom 3) — disable the checkbox below z3, or leave
-   it and let rivers appear on zoom-in?
+- `ord_clas` cut for the rivers extract — decide at build by eyeballing the result.
+- Rivers z-order vs basins / region outlines — settle once both layers are on screen.
