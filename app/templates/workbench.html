@@ -1669,9 +1669,6 @@
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
 
-    // TEMP (dev eyeball): open on the African Regions tab. Delete this line to restore Societies.
-    setTimeout(() => bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-afr')).show(), 0);
-
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
     if (whcSel) {
