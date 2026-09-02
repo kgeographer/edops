@@ -376,18 +376,14 @@ below (see *Decisions*). One new side-item: the slope ramp.
    Africa-scoped, so the linear ramp domain adapts to the Africa range. No log scale needed.
    General rule for this WO: **ramp domain = the bbox-filtered response's `meta`**, not global.
 
-### Side-item — slope ramp (decided)
+### Side-item — terrain ramp (done in commit 1)
 
-Karl: the elevation group renders correctly; **`slope_deg` is the outlier and is wrong**. Fix =
-all four terrain variables — `elevation_max`, `elevation_min`, `elevation_mean`, `slope_deg` —
-render with the **same ramp the elevation group uses**, i.e. Sandbox's `TERRAIN_PAL` = ColorBrewer
-**YlOrBr-7** (`#ffffd4 … #8c2d04`, pale yellow → dark brown; `sandbox.html` ~L3913, wired via
-`CONTEXT_VAR_RAMP`).
-
-Executor: confirm by eyeballing `elevation_max` in Explorer, then make `makeColorFn` special-case
-those four `schema_key`s onto that palette — in **both** `explorer.html` and the workbench port.
-(In the current `explorer.html` `makeColorFn`, all four fall through to VIRIDIS; if elev already
-looks right in Explorer today, find the path that makes it so and bring slope onto it.)
+`makeColorFn` had no terrain path — `elevation_{max,min,mean}` and `slope_deg` all fell through
+to VIRIDIS (purple→yellow). Commit 1 adds a hypsometric branch for **all four** —
+`elevation_max`, `elevation_min`, `elevation_mean`, `slope_deg` → `TERRAIN_PAL` = ColorBrewer
+**YlOrBr-7** (matches Sandbox). Karl reviewed: purple is out for both; elevation and slope on the
+same brown family is fine (they still differ by domain). The workbench port carries the identical
+four-key branch.
 
 ### Goal
 
@@ -489,7 +485,7 @@ Arabian peninsula — accepted). Payload for L8 drops from ~190 k basins to the 
 - L6/L8 pill switches level and repaints; no overlapping-fetch races.
 - `/api/explorer/values?bbox=…` returns only in-envelope basins with subset `meta`; no-`bbox`
   behaviour unchanged (route test).
-- Slope no longer renders purple→yellow (per the resolved side-item).
+- Elevation + slope render YlOrBr (browns), not purple→yellow.
 - No console errors; other Workbench tabs and Explorer unaffected; `pytest tests/` green.
 
 ---
@@ -520,12 +516,9 @@ if (['elevation_max','elevation_min','elevation_mean','slope_deg'].includes(sche
 }
 ```
 
-First **verify in-browser**: open Explorer, select `elevation_max`. Per Karl it renders correctly
-today and `slope_deg` is the outlier — if elev already looks YlOrBr (not purple→yellow), there is
-a path this grep missed; find it and route all four keys through it instead. Otherwise the block
-above is the fix (elev currently also VIRIDIS; this brings all four onto YlOrBr, elev unchanged in
-spirit, slope corrected). Confirm the numeric legend gradient (`ex-legend`/`renderNumericLegend`
-via `currentColorFn`) picks it up automatically — it samples `currentColorFn`, so yes.
+All four keys go in the `.includes` list. `makeColorFn` had no terrain path — all four fell to
+VIRIDIS. Karl reviewed the browns in-browser and OK'd them (purple out for both elevation and
+slope). The numeric legend gradient samples `currentColorFn`, so it follows automatically.
 
 Regression check: cycle every A–E numeric var in Explorer, no console errors, ramps sane.
 
@@ -746,7 +739,7 @@ on `edops04` (Explorer uses them). Commits 1–2 ship with the branch merge.
 
 ### Acceptance — as the outline's *Acceptance (draft)*, plus:
 
-- Explorer: `elevation_max`, `elevation_min`, `slope_deg` render YlOrBr (not purple→yellow);
+- Explorer: `elevation_{max,min,mean}` + `slope_deg` render YlOrBr browns (not purple→yellow);
   every other A–E var unchanged; numeric legend gradient matches the map.
 - `values` / `categorical` with `bbox=-20,-36,55,38&level=8` → ~48 k basins, subset `meta`;
   malformed `bbox` → 400; no-`bbox` calls unchanged (route tests).
