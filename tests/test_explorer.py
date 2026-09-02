@@ -180,6 +180,56 @@ def test_values_stats_fields(client):
 
 
 # ---------------------------------------------------------------------------
+# bbox filter (WO03) — /explorer/values + /explorer/categorical
+# ---------------------------------------------------------------------------
+
+AFRICA_BBOX = "-20,-36,55,38"
+
+
+def test_values_bbox_scopes_subset(client):
+    """bbox returns a strict subset, and meta is recomputed over it."""
+    full = client.get("/api/explorer/values",
+                      params={"var": "elevation_max", "level": 8, "su": "s"}).json()
+    sub = client.get("/api/explorer/values",
+                     params={"var": "elevation_max", "level": 8, "su": "s", "bbox": AFRICA_BBOX}).json()
+    assert 0 < sub["meta"]["n_valid"] < full["meta"]["n_valid"]
+    assert len(sub["values"]) == sub["meta"]["n_valid"]
+    assert set(sub["values"]).issubset(set(full["values"]))
+    # Africa-scoped percentile differs from global — the point of the filter
+    assert sub["meta"]["p90"] != full["meta"]["p90"]
+
+
+def test_values_no_bbox_unchanged(client):
+    """Omitting bbox is the pre-WO03 global behaviour."""
+    r = client.get("/api/explorer/values", params={"var": "aridity_index", "level": 6, "su": "s"})
+    assert r.status_code == 200
+    assert r.json()["meta"]["n_valid"] > 15000  # ~all L6 basins
+
+
+@pytest.mark.parametrize("bad", ["1,2,3", "200,0,210,10", "0,0,10,100", "10,0,5,20", "a,b,c,d"])
+def test_values_bbox_malformed_400(client, bad):
+    r = client.get("/api/explorer/values",
+                   params={"var": "elevation_max", "level": 8, "bbox": bad})
+    assert r.status_code == 400
+
+
+def test_categorical_bbox_scopes_subset(client):
+    full = client.get("/api/explorer/categorical",
+                      params={"var": "pnv_majority_name", "level": 8}).json()
+    sub = client.get("/api/explorer/categorical",
+                     params={"var": "pnv_majority_name", "level": 8, "bbox": AFRICA_BBOX}).json()
+    assert 0 < sub["meta"]["n_basins"] < full["meta"]["n_basins"]
+    assert len(sub["values"]) == sub["meta"]["n_basins"]
+    assert set(sub["values"]).issubset(set(full["values"]))
+
+
+def test_categorical_bbox_malformed_400(client):
+    r = client.get("/api/explorer/categorical",
+                   params={"var": "pnv_majority_name", "level": 8, "bbox": "1,2,3"})
+    assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
 # /api/explorer/categorical
 # ---------------------------------------------------------------------------
 

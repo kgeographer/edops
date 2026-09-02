@@ -7,12 +7,12 @@ re-run that audit if explorer.html's calls change. /explorer/values itself
 is shared (sandbox.html, cliopatria.html too) and lives in routes_common.py.
 """
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
 from app.db.connection import db_connect
-from app.api.routes_common import _load_variables
+from app.api.routes_common import _load_variables, _parse_bbox
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -99,7 +99,7 @@ _OTHER_COLOR = "#cccccc"
 _TOP_N = 20   # classes beyond this are collapsed to "Other"
 
 @router.get("/explorer/categorical", include_in_schema=False)
-def explorer_categorical(var: str, level: int = 6):
+def explorer_categorical(var: str, level: int = 6, bbox: Optional[str] = None):
     """Return category counts + flat {hybas_id: cat_id} dict for a categorical variable.
 
     Categories are sorted by basin count descending; if more than _TOP_N unique
@@ -122,6 +122,10 @@ def explorer_categorical(var: str, level: int = 6):
     basin_table = "basin06" if level == 6 else "basin08"
     lu_table, lu_id_col, lu_name_col = _CAT_LOOKUP[var]
 
+    env = _parse_bbox(bbox)   # raises 400 on malformed — keep outside the try's 500 wrap
+    bbox_and = "AND b.geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else ""
+    bbox_where = "WHERE geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else ""
+
     try:
         conn = db_connect()
         with conn.cursor() as cur:
@@ -134,9 +138,10 @@ def explorer_categorical(var: str, level: int = 6):
                 LEFT JOIN public.{lu_table} lu
                     ON b.{basin_col}::text = lu.{lu_id_col}::text
                 WHERE b.{basin_col} IS NOT NULL
+                {bbox_and}
                 GROUP BY b.{basin_col}, lu.{lu_name_col}
                 ORDER BY cnt DESC
-            """)
+            """, env if env else None)
             count_rows = cur.fetchall()   # (cat_name, cat_id, cnt)
 
             # 2. Determine top-N set; anything beyond is "Other"
@@ -168,8 +173,9 @@ def explorer_categorical(var: str, level: int = 6):
             cur.execute(f"""
                 SELECT hybas_id, {basin_col} AS cat_id
                 FROM public.{basin_table}
+                {bbox_where}
                 ORDER BY hybas_id
-            """)
+            """, env if env else None)
             val_rows = cur.fetchall()
 
         values = {
