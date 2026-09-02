@@ -252,16 +252,19 @@
         <!-- filled by renderAfrRegion() on a map click; empty until then -->
         <div id="afr-region"></div>
         <div id="afr-about">
-          <div class="d-flex justify-content-between align-items-baseline">
-            <h6 class="mb-1">African Regions in Historical Perspective</h6>
-            <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
+          <!-- intro text — hidden once a region rationale is showing (renderAfrRegion) -->
+          <div id="afr-about-text">
+            <div class="d-flex justify-content-between align-items-baseline">
+              <h6 class="mb-1">African Regions in Historical Perspective</h6>
+              <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
+            </div>
+            <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
+              Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
+              historical data. Select a region to read the article's rationale for its extent and
+              the peoples associated with it. The regions were drawn for organising data rather than
+              for environmental analysis; the Workbench places them over EDOPS basin signatures to
+              ask how far each one holds together as an environmental unit.</p>
           </div>
-          <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
-            Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
-            historical data. Select a region to read the article's rationale for its extent and
-            the peoples associated with it. The regions were drawn for organising data rather than
-            for environmental analysis; the Workbench places them over EDOPS basin signatures to
-            ask how far each one holds together as an environmental unit.</p>
           <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
             <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
               <option value="">Paint a variable…</option>
@@ -490,6 +493,57 @@
   let map = null;
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
+
+  // ── Basin variable painting (WO03) ──
+  let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
+  let _afrLevel = 8;          // 6 | 8
+  let _afrBasinLevel = null;  // pmtiles level currently sourced on _afrMap
+  let _afrPaintSeq = 0;       // stale-fetch guard
+  const AFR_BBOX = '-20,-36,55,38';
+  const AFR_WASH = 0.10;      // lovejoy-fill opacity when no variable is painted
+  const AFR_VAR_LABEL = {
+    elevation_max: 'Elevation maximum', slope_deg: 'Slope',
+    discharge_annual: 'Discharge, annual mean', pnv_majority_name: 'Potential natural vegetation',
+    pct_clay: 'Clay content', dist_sink_km: 'Flow distance to marine outlet',
+    aridity_index: 'Aridity index (P/PET)', precipitation_annual: 'Precipitation, annual',
+  };
+  // Ramp helpers — ported verbatim from explorer.html (no shared file yet).
+  const VIRIDIS = ['#440154','#443982','#31688e','#21918c','#35b779','#8fd744','#fde725'];
+  const RDBU = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
+  const TERRAIN_PAL = ['#ffffd4','#fee391','#fec44f','#fe9929','#ec7014','#cc4c02','#8c2d04'];
+  function _afrLerp(c1, c2, t) {
+    const h = s => [parseInt(s.slice(1,3),16), parseInt(s.slice(3,5),16), parseInt(s.slice(5,7),16)];
+    const [r1,g1,b1] = h(c1), [r2,g2,b2] = h(c2);
+    return `rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;
+  }
+  function _afrInterp(pal, t) {
+    const n = pal.length - 1, i = Math.min(n-1, Math.floor(t*n));
+    return _afrLerp(pal[i], pal[i+1], t*n - i);
+  }
+  function _afrColorFn(meta, schemaKey) {
+    const isDiverge  = meta.min < 0 && meta.var_type !== 'string';
+    const isZeroInfl = !isDiverge && meta.zero_fraction > 0.5;
+    const lo = meta.p10 ?? meta.min, hi = meta.p90 ?? meta.max;
+    if (isDiverge) {
+      const absMax = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
+      return v => v == null ? '#d3d3d3'
+        : _afrInterp(RDBU, 1 - Math.max(0, Math.min(1, (v + absMax) / (2 * absMax))));
+    }
+    if (schemaKey === 'aridity_index' || schemaKey === 'precipitation_annual') {
+      const range = (hi - lo) || 1;
+      return v => v == null ? '#d3d3d3' : _afrInterp(RDBU, Math.max(0, Math.min(1, (v - lo) / range)));
+    }
+    if (['elevation_max','elevation_min','elevation_mean','slope_deg'].includes(schemaKey)) {
+      const range = (hi - lo) || 1;
+      return v => v == null ? '#d3d3d3' : _afrInterp(TERRAIN_PAL, Math.max(0, Math.min(1, (v - lo) / range)));
+    }
+    const range = (hi - lo) || 1;
+    return v => {
+      if (v == null) return '#d3d3d3';
+      if (isZeroInfl && v === 0) return '#e8e8e8';
+      return _afrInterp(VIRIDIS, Math.max(0, Math.min(1, (v - lo) / range)));
+    };
+  }
   let marker = null;
   let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
   let similarMarkers = []; // Markers for similar sites
@@ -1054,6 +1108,10 @@
   function renderAfrRegion(p) {
     const el = document.getElementById('afr-region');
     if (!el) return;
+    // once a rationale is up, the intro has done its job — hide it (controls stay).
+    // Painting a variable never calls this, so "paint first" leaves the intro visible.
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
@@ -1065,6 +1123,122 @@
           `<p class="mb-0">“${esc(p.rationale)}”</p>`
         : '') +
       `<hr class="my-3">`;
+  }
+
+  // ── Basin variable painting (WO03) ──────────────────────────────────────────
+  // basin0{6,8}.pmtiles under lovejoy-fill; choropleth via feature-state, values
+  // from /api/explorer/{values,categorical} scoped to the Africa bbox.
+
+  function _afrBasinSource(level) {
+    const sl = 'basin0' + level;
+    if (_afrBasinLevel === level && _afrMap.getSource('afr-basins')) return sl;
+    ['afr-basin-fill','afr-basin-line'].forEach(id => { if (_afrMap.getLayer(id)) _afrMap.removeLayer(id); });
+    if (_afrMap.getSource('afr-basins')) _afrMap.removeSource('afr-basins');
+    _afrMap.addSource('afr-basins', { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` });
+    _afrMap.addLayer({
+      id: 'afr-basin-fill', type: 'fill', source: 'afr-basins', 'source-layer': sl,
+      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.82 },
+    }, 'lovejoy-fill');
+    _afrMap.addLayer({
+      id: 'afr-basin-line', type: 'line', source: 'afr-basins', 'source-layer': sl,
+      paint: { 'line-color': 'rgba(90,90,90,0.10)', 'line-width': 0.3 },
+    }, 'lovejoy-fill');
+    _afrBasinLevel = level;
+    return sl;
+  }
+
+  function _afrClearPaint() {
+    if (_afrMap && _afrBasinLevel != null && _afrMap.getSource('afr-basins')) {
+      _afrMap.removeFeatureState({ source: 'afr-basins', sourceLayer: 'basin0' + _afrBasinLevel });
+    }
+  }
+
+  async function _afrPaint() {
+    if (!_afrMap || !_afrMap.getLayer('lovejoy-fill')) return;   // map/tab not ready — user re-picks
+    const seq = ++_afrPaintSeq;
+    const key = _afrVarKey;
+    const readouts = document.getElementById('afr-readouts');
+
+    if (!key) {
+      _afrClearPaint();
+      _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+      readouts.innerHTML = '<span class="text-secondary">Pick a variable to paint the basins.</span>';
+      return;
+    }
+    _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', 0);
+    readouts.innerHTML = '<span class="text-secondary">Loading…</span>';
+
+    const isCat = key === 'pnv_majority_name';
+    const url = isCat
+      ? `/api/explorer/categorical?var=${key}&level=${_afrLevel}&bbox=${AFR_BBOX}`
+      : `/api/explorer/values?var=${key}&level=${_afrLevel}&su=s&bbox=${AFR_BBOX}`;
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || r.statusText);
+      if (seq !== _afrPaintSeq) return;   // superseded by a newer pick
+
+      const sl = _afrBasinSource(_afrLevel);
+      _afrMap.removeFeatureState({ source: 'afr-basins', sourceLayer: sl });
+
+      if (isCat) {
+        const idToColor = Object.fromEntries(data.categories.map(c => [c.id, c.color]));
+        for (const [id, cat] of Object.entries(data.values)) {
+          _afrMap.setFeatureState({ source: 'afr-basins', sourceLayer: sl, id: Number(id) },
+                                  { fc: idToColor[cat] ?? '#ccc' });
+        }
+        _afrLegendCategorical(key, data.categories, data.values, Object.keys(data.values).length);
+      } else {
+        const fn = _afrColorFn(data.meta, key);
+        for (const [id, v] of Object.entries(data.values)) {
+          _afrMap.setFeatureState({ source: 'afr-basins', sourceLayer: sl, id: Number(id) }, { fc: fn(v) });
+        }
+        _afrLegendNumeric(key, data.meta, fn, Object.keys(data.values).length);
+      }
+    } catch (err) {
+      if (seq !== _afrPaintSeq) return;
+      readouts.innerHTML = `<span class="text-danger">Could not paint: ${String(err.message || err)}</span>`;
+      _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+    }
+  }
+
+  function _afrLegendNumeric(key, meta, fn, n) {
+    const lo = meta.p10 ?? meta.min, hi = meta.p90 ?? meta.max;
+    const units = meta.units ? ` ${meta.units}` : '';
+    const N = 60, VBW = 300, H = 15;   // VBW = viewBox width (internal only); SVG stretches to 100%
+    const bars = Array.from({ length: N }, (_, i) => {
+      const t = i / (N - 1), v = lo + t * (hi - lo);
+      return `<rect x="${(i * VBW / N).toFixed(1)}" y="0" width="${(VBW / N + 0.6).toFixed(1)}" height="${H}" fill="${fn(v)}"/>`;
+    }).join('');
+    document.getElementById('afr-readouts').innerHTML =
+      `<div class="mb-1"><b>${AFR_VAR_LABEL[key] || key}</b> · ${n.toLocaleString()} basins`
+      + `<span class="text-secondary"> · Africa L${_afrLevel}</span></div>`
+      + `<svg width="100%" height="${H}" viewBox="0 0 ${VBW} ${H}" preserveAspectRatio="none" style="display:block;">${bars}</svg>`
+      + `<div class="d-flex justify-content-between text-secondary">`
+      + `<span>${lo.toFixed(1)}${units}</span><span>p10–p90</span><span>${hi.toFixed(1)}${units}</span></div>`;
+  }
+
+  function _afrLegendCategorical(key, categories, values, n) {
+    // categories carry global colours/ids; recompute counts over the painted (Africa) basins
+    const afr = {};
+    for (const cat of Object.values(values)) afr[cat] = (afr[cat] || 0) + 1;
+    const rows = categories
+      .map(c => ({ ...c, cnt: afr[c.id] || 0 }))
+      .filter(c => c.cnt > 0)
+      .sort((a, b) => b.cnt - a.cnt)
+      .map(c => {
+        const pct = n ? (100 * c.cnt / n) : 0;
+        return `<tr style="line-height:1.25;">
+          <td style="width:14px;"><span style="display:inline-block;width:12px;height:12px;background:${c.color};border-radius:2px;"></span></td>
+          <td style="padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;" title="${c.name.replace(/"/g,'&quot;')}">${c.name}</td>
+          <td style="width:55%;"><div style="background:${c.color};height:9px;width:${Math.max(2, Math.round(pct))}%;opacity:.85;border-radius:1px;"></div></td>
+          <td class="text-secondary" style="padding-left:6px;">${pct.toFixed(1)}%</td>
+        </tr>`;
+      }).join('');
+    document.getElementById('afr-readouts').innerHTML =
+      `<div class="mb-1"><b>${AFR_VAR_LABEL[key] || key}</b> · ${n.toLocaleString()} basins`
+      + `<span class="text-secondary"> · Africa L${_afrLevel}</span></div>`
+      + `<div style="max-height:120px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;">${rows}</table></div>`;
   }
 
   function setMarkerFromLonLat(lon, lat) {
@@ -1495,6 +1669,8 @@
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
 
+    // TEMP (dev eyeball): open on the African Regions tab. Delete this line to restore Societies.
+    setTimeout(() => bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-afr')).show(), 0);
 
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
@@ -1543,6 +1719,17 @@
         if (textToggle) bootstrap.Dropdown.getOrCreateInstance(textToggle).hide();
         const band = item.getAttribute('data-band');
         whcShowSimilarText(band);
+      });
+    });
+
+    // African Regions: variable-paint controls
+    const afrVarSel = document.getElementById('afr-var');
+    if (afrVarSel) afrVarSel.addEventListener('change', e => { _afrVarKey = e.target.value; _afrPaint(); });
+    document.querySelectorAll('input[name="afr-level"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (!e.target.checked) return;
+        _afrLevel = Number(e.target.value);
+        _afrPaint();   // _afrPaint -> _afrBasinSource swaps the pmtiles level
       });
     });
 

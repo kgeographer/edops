@@ -372,9 +372,12 @@ below (see *Decisions*). One new side-item: the slope ramp.
    scroll.
 4. **`lovejoy-fill` wash:** stays on page load, **hides when a variable is painted**, returns when
    the selector is back on "Paint a variable…".
-5. **Discharge ramp:** the bbox fetch fixes it for free — `meta` percentiles come back
-   Africa-scoped, so the linear ramp domain adapts to the Africa range. No log scale needed.
-   General rule for this WO: **ramp domain = the bbox-filtered response's `meta`**, not global.
+5. **Discharge ramp:** ~~bbox fixes it for free~~ — **reversed 2026-09-02.** Karl: every var on
+   this page reads against the **global** distribution, exactly like Explorer — "wet in Africa" is
+   not the same question as "wet vs. everywhere," and the Africa-only question is a different,
+   narrower one we're not asking here. So `bbox` trims the returned `values` payload **only**;
+   `meta` (and categorical ranking/colours) are always global. Discharge therefore still needs a
+   real fix (log transform) — tracked as a follow-up tweak, not blocking.
 
 ### Side-item — terrain ramp (done in commit 1)
 
@@ -423,17 +426,18 @@ Grouped as Karl wants them shown (talk grouping, not strictly the catalog band):
   `{categories:[{id,name,count,color}], values:{hybas_id:cat_id}}`; swatch legend, no ramp.
 - **Ramp:** port `makeColorFn(meta, 's', schemaKey)` + `interpPalette` / `RDBU` / `VIRIDIS` from
   `explorer.html` (universal rubric: warm/dry = red, cold/wet = blue; aridity + precip special-cased
-  low = red; diverging when min < 0; else VIRIDIS sequential). Ramp domain from the **bbox-filtered**
-  `meta` — this is what makes discharge (and any wide-range var) readable at Africa scale. Slope
-  ramp: see *Side-item* above.
+  low = red; diverging when min < 0; else VIRIDIS sequential; terrain branch YlOrBr). **Ramp domain
+  = global `meta`**, same as Explorer — `bbox` never scopes the domain.
 - **s only.** No s/u toggle in this WO (all 8 are surface columns).
 
-### Africa-bounds fetch  — `?bbox=` on `/api/explorer/values`
+### Africa-bounds fetch  — `?bbox=` on `/api/explorer/values` (+ `/categorical`)
 
-Add an optional `bbox=w,s,e,n` param. When present, append
-`WHERE geom && ST_MakeEnvelope(w,s,e,n,4326)` (GiST index on `basin0{6,8}.geom`) to both the
-value query and any stats pass, so `meta` (min/max/p10/p90) is computed over the returned subset,
-not the globe. Purely additive to the shared route — Explorer's existing callers pass no `bbox`
+Optional `bbox=w,s,e,n`. It trims the returned **`values` payload only** — one query selects all
+basins plus a `geom && ST_MakeEnvelope(…)` boolean; `meta` (min/max/p10/p90/n_valid) is computed
+over **all** rows, `values` is emitted only for in-envelope rows. `/categorical` likewise: the
+count/ranking/colour pass is global, only the per-basin `values` pass is bbox-filtered. So a
+bbox call is byte-identical to Explorer on `meta`/`categories`, just fewer `values`. Purely
+additive — Explorer passes no `bbox`
 and are unaffected; add one route test. Africa bbox ≈ `[-20, -36, 55, 38]` (also catches the
 Arabian peninsula — accepted). Payload for L8 drops from ~190 k basins to the Africa subset.
 
@@ -449,7 +453,7 @@ Arabian peninsula — accepted). Payload for L8 drops from ~190 k basins to the 
   (`btn-group`, radio-style, L8 checked) next to it.
 - **Legend** goes in `#afr-readouts` (the strip below the map — WO01 reserved it for "painted
   variable · legend · cell count"): variable name + units, the painted-basin count, and:
-  - *numeric vars* — the ramp gradient with min / p10 / p90 / max ticks (Africa-scoped `meta`).
+  - *numeric vars* — the ramp gradient with min / p10 / p90 / max ticks (global `meta`).
   - *PNV* — a **category meter-bar list** ported from Explorer's `renderCategoryBars` (swatch +
     class name + proportional bar, count/pct). Long tail is expected; it scrolls. If the strip is
     too short, the PNV legend can render into a panel-side block instead — executor's call.
@@ -477,13 +481,12 @@ Arabian peninsula — accepted). Payload for L8 drops from ~190 k basins to the 
 - African Regions tab: variable `<select>` (optgroups A / B / E / C, 8 options) + L6/L8 pill
   below the intro; article citation flush to the bottom of the right column.
 - Pick a numeric variable → Africa basins paint at L8; legend in `#afr-readouts` shows variable +
-  units + Africa-scoped ramp (min/p10/p90/max) + basin count. Discharge reads with real contrast
-  (Africa-scoped domain).
+  units + global ramp (min/p10/p90/max) + painted-basin count. Reads identically to Explorer.
 - Pick PNV → categorical paint + a meter-bar legend (swatch / name / proportional bar), scrollable.
 - `lovejoy-fill` wash shows on load, hides while a variable is painted, returns on "Paint a
   variable…". Region outlines + click→rationale work throughout, on top of the choropleth.
 - L6/L8 pill switches level and repaints; no overlapping-fetch races.
-- `/api/explorer/values?bbox=…` returns only in-envelope basins with subset `meta`; no-`bbox`
+- `/api/explorer/values?bbox=…` returns only in-envelope `values` with **global** `meta`; no-`bbox`
   behaviour unchanged (route test).
 - Elevation + slope render YlOrBr (browns), not purple→yellow.
 - No console errors; other Workbench tabs and Explorer unaffected; `pytest tests/` green.
@@ -551,7 +554,7 @@ it's already derived from the filtered rows.
 
 Test — `tests/` (wherever explorer routes are covered; else `tests/test_areas.py`):
 - `values?var=elevation_max&level=8&bbox=-20,-36,55,38` → `len(values)` ≈ 48000, `< ` the no-bbox
-  count; `meta.n_valid` matches.
+  count; `meta.p10/p90/n_valid` stay equal to the no-bbox call (global).
 - a hybas_id known to be outside Africa is absent from the bbox response.
 - `bbox=1,2,3` → 400; `bbox=200,0,210,10` → 400.
 - no `bbox` → byte-identical behaviour to before (count == global).
@@ -732,6 +735,14 @@ document.querySelectorAll('input[name="afr-level"]').forEach(r => r.addEventList
 No auto-paint on `ensureAfrMap` load (`_afrVarKey` starts `''`). No teardown on tab-away
 (feature-state persists harmlessly). Keep the `TEMP (dev eyeball)` default-tab line for now.
 
+**Intro-text visibility.** The About intro (`#afr-about-text` = heading + `web site` link +
+paragraph) is wrapped separately from `#afr-controls`. `renderAfrRegion()` sets
+`#afr-about-text` `display:none` on first region click — once a rationale is up the intro is
+noise. Painting a variable never calls `renderAfrRegion`, so "paint first" keeps the intro
+visible. It does not come back (there is no region-deselect). `#afr-controls` and `#afr-cite`
+are unaffected. `_afrLegendNumeric` renders the ramp SVG at `width="100%"` + `viewBox` /
+`preserveAspectRatio="none"` so it fills `#afr-readouts`.
+
 ### Deploy
 
 No new static assets — `basin0{6,8}.pmtiles` already on the `MAINTAIN_DEPLOY.md` rsync list and
@@ -741,7 +752,7 @@ on `edops04` (Explorer uses them). Commits 1–2 ship with the branch merge.
 
 - Explorer: `elevation_{max,min,mean}` + `slope_deg` render YlOrBr browns (not purple→yellow);
   every other A–E var unchanged; numeric legend gradient matches the map.
-- `values` / `categorical` with `bbox=-20,-36,55,38&level=8` → ~48 k basins, subset `meta`;
+- `values` / `categorical` with `bbox=-20,-36,55,38&level=8` → ~48 k `values`, `meta`/`categories` global;
   malformed `bbox` → 400; no-`bbox` calls unchanged (route tests).
 - Workbench: picking each of the 8 paints Africa at L8; discharge shows real contrast; PNV shows
   the scrollable meter-bar legend; L6/L8 swaps and repaints; `lovejoy-fill` wash toggles; region
