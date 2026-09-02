@@ -18,7 +18,8 @@ execution; we still take them one at a time.
 | WO | Title | State |
 |----|-------|-------|
 | WO01 | African Regions tab scaffold + left map | **complete** |
-| WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B has follow-ups) |
+| WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
+| WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | Part A **done**; Part B (geojson fold + UI) in progress |
 
 ---
 
@@ -170,14 +171,9 @@ byte-identical; macro-regions all match. Only real diffs: the 2 point-vs-polygon
   Horn is genuinely short (the article gives it 3 sentences).
 - Wired: region click renders `blurb` + `rationale` into `#afr-right` (`renderAfrRegion()`).
 
-**Follow-ups (WO03+, not now):**
-- The WHG `blurb` is often just the opening of the article `rationale` — sometimes verbatim,
-  sometimes lightly shortened. Showing both is redundant for many regions. Refine: diff them and
-  present one (or the blurb as a lead, rationale as expandable).
-- Minor extraction cruft in `rationale` for some regions: mid-word hyphen breaks from PDF line
-  wraps ("north- ern"), trailing footnote numbers stuck to the last word ("Zombo.51"). Clean in
-  the same pass, or in `build_lovejoy_notes.py`.
-- Hand-finish the 7 `needs_review` entries.
+**Follow-ups → folded into WO02.5.** The three Part B follow-ups (blurb/rationale redundancy,
+extraction cruft, the 7 `needs_review` entries) are all subsumed by the systematic re-extraction
+in WO02.5. Do not hand-patch the 7 here.
 
 **"North Coaast" typo** — WHG dataset 1155's title for `hc_10` is misspelled (double-a), in the
 published export *and* `whg_staging`. Display-corrected via `NAME_FIX` in both build scripts;
@@ -213,3 +209,132 @@ Western Sahara (wid 7130907, `wd:Q6250`) and Kalahari (wid 7130908, `wd:Q1420276
 - `whg_staging` is dev-only — build script runs locally, emits a static artifact; nothing at app
   runtime touches `whg_staging` (same as `gaz.geonames_cities`).
 - New static dir `app/static/workbench/` — `app/static` is already a StaticFiles mount, no route.
+
+---
+
+## WO02.5 — Subregion rationale extraction (verbatim spans + page numbers)
+
+**State: Part A done (extraction + curated master, Karl-reviewed); Part B = step 3 (geojson fold
++ UI rework), in progress.** Interjected between WO02 and WO03. Supersedes the WO02 Part B
+follow-ups (blurb/rationale redundancy, extraction cruft, 7 `needs_review` entries) and the whole
+`lovejoy_region_notes.json` / `_afrNotes` path. Source draft:
+`docs/edop/workbench/WO- Subregion Rationale Extraction (Lovejoy et al. 2021).md`.
+
+**Why.** WO02's Part B `rationale` field was an ad-hoc `DEF` regex per region plus heuristic
+trimming — 27/34 auto, 7 flagged, and the 27 carry ligature/footnote/hyphenation cruft and
+inconsistent span boundaries. This is talk-facing copy for Braga. Redone on one deterministic rule.
+
+**Architecture (settled with Karl 2026-09-01):**
+- **One runtime source** — `app/static/workbench/lovejoy_regions.geojson`. `rationale` + `page` +
+  `ethnonyms` become feature `properties`. `lovejoy_region_notes.json` and the `_afrNotes` fetch/
+  global are removed.
+- **One curated master** — `data/lovejoy/lovejoy_rationales.md`, git-tracked (force-added; `data/`
+  is gitignored), reviewed and edited by Karl. Durable source of the rationale prose, page
+  numbers, and ethnonym lists.
+- **`whg_staging`** — untouched (read-only, geometry + `src_id`). No DB field for any of this.
+- **Build** — `build_lovejoy_geojson.py` merges three inputs per feature: geometry from
+  `whg_staging.lovejoy.regions`, `name`/`macro` from LPF dataset 1155, `rationale`/`page`/
+  `ethnonyms` parsed from the curated master.
+
+### Goal
+
+For each of the 34 subregions, extract the **verbatim** article text presenting that subregion's
+rationale, with page numbers, suitable for quoting in `#afr-right`. No rewriting, summarising, or
+interpretation — quotable source text with provenance. Karl reviews all 34 by hand; the job is to
+make that review fast, not to remove it.
+
+### Source
+
+`articles/Lovejoy_etal_defining-regions-of-pre-colonial-africa.pdf`, region-description section
+**pp. 8–22** ("North Africa / Northwest" … "Kalahari", ends at "Conclusion"). Subregion and
+broad-region names are **set bold** in the PDF (subsetted font, `.B` fontname suffix) — the
+extractor reads bold runs to get the ordered anchor list + each anchor's page. Body prose is
+**10 pt**; footnote blocks (9 pt), the Table 1 controlled-vocabulary page (8 pt) and superscript
+markers (6 pt) are excluded by size filter, which removes header/footer/footnote contamination in
+one pass. Names match WHG dataset 1155 (Table 1).
+
+### Extraction rules
+
+1. **Span start** — the full sentence containing the first bold occurrence of the subregion name
+   under its parent broad-region heading (not just from the bold token).
+2. **Span end** — immediately before the next subregion's span start, or the next broad-region
+   heading, whichever comes first.
+3. **Keep everything in the span** — ethnonym lists, trade/polity narrative included. Do not trim
+   to "the environmental part"; the mix of claim types is the point.
+4. **Broad-region lead-in** — capture the text between a broad-region heading and its first
+   subregion span **once**, on the parent record. Do not duplicate into children. (Most likely
+   point of disagreement — the West Africa lead-in runs over a page before Central Savanna.)
+5. **Page numbers** — record `page_start` and `page_end`; if a span crosses pages, both.
+6. **Mechanical cleanup only:**
+   - Strip flattened footnote-reference markers (trailing `.51`, `.22` superscripts).
+   - Repair line-break hyphenation (`north- ern` → `northern`); preserve genuine hyphens.
+   - Normalise whitespace; remove running headers/footers (`History in Africa`,
+     `Defining Regions of Pre-Colonial Africa`, the `https://doi.org/…Cambridge University Press`
+     line).
+   - Preserve diacritics and non-Latin transliterations as they appear.
+7. **Footnote body text** is out of scope. Record footnote numbers that occurred within the span
+   if cheap, for later citation-chasing.
+
+### Output — Part A (done)
+
+New extractor `scripts/edop/workbench/build_lovejoy_rationale.py` → **`data/lovejoy/lovejoy_rationales.md`**
+(the curated master). One `## <src_id> · <name>` section per subregion, a `- macro/page/flags/
+ethnonyms` block, then the verbatim rationale as one wrapping paragraph; plus a 6-entry appendix
+of broad-region lead-in text (review context, not a feature). Per-entry `hyphen-joins:` line lists
+line-wrap joins for eyeball (some are real hyphens the repair fused). Parser contract for step 3
+is in the file's header comment.
+
+Result: **34/34 captured, 0 missing, 16 flagged** (SHORT / NO_BOUNDARY_LANGUAGE / CROSS_PAGE /
+LONG / one HYPHEN_JOIN) — all with legible reasons, no escalation needed. `ethnonyms` is a
+best-effort list from the span's "Ethnonyms included …" sentences; Karl curated the rough spots
+(Eastern Savanna, Southeast, Kalahari, WCN/WCS). `build_lovejoy_notes.py` is superseded — delete
+at step 3.
+
+### Output — Part B / step 3 (in progress)
+
+- `build_lovejoy_geojson.py` gains a markdown parser for `lovejoy_rationales.md`; folds
+  `rationale` + `page` + `ethnonyms` into each feature's `properties` (keyed on `src_id`).
+- `renderAfrRegion()` reworked: **drop the blurb `<p>`** (LPF `descriptions` — a truncated version
+  of the same text); header becomes `FROM THE ARTICLE (P. n)` / `(PP. n–m)` (dash-detect on the
+  `page` value), styled as now (`mb-1 small text-uppercase text-secondary`); body is the rationale
+  **in quotes**. `properties.ethnonyms` rides along **unrendered** (the paragraph already contains
+  them) — for Karl's later use.
+- On feature click: **highlight the clicked region's outline** (MapLibre `setFeatureState` +
+  `line-*` paint expression; needs `promoteId: 'src_id'` on the geojson source; clear prior
+  selection each click).
+- Remove `lovejoy_region_notes.json` and the `_afrNotes` fetch/global from `workbench.html`.
+
+### Flagging (assign, don't fix — set Karl's review priority)
+
+`SHORT` / `LONG` (>~2× off median) · `NO_BOUNDARY_LANGUAGE` (no spatial-extent terms) ·
+`CROSS_PAGE` (span straddles a page break; `page` shows the range) · `SPAN_UNCERTAIN` (located
+page ≠ bold-run page hint) · `HYPHEN_JOIN` (line-wrap repair fused a real hyphen — camelCase
+residue, e.g. `EssoukTadmekka`). Escalation ladder (offsets-only model call, degraded-source stop)
+was **not needed** — bold anchors + size filter gave a clean deterministic pass.
+
+### Follow-up (WO03+, not this WO)
+
+- `blurb` is dropped, not reconciled — the redundancy question is moot.
+- `ethnonyms` — Karl "has in mind to do something further" with these; for now a passenger field.
+
+### Out of scope
+
+- Full "what's here" / "what's claimed" panel redesign.
+- D-PLACE / variable-painting work (WO03).
+
+### Acceptance
+
+- **Part A (done):** `data/lovejoy/lovejoy_rationales.md` — 34 subregion sections with verbatim
+  rationale + `page` + `ethnonyms`, 6 lead-in appendix entries; free of running headers/footers,
+  footnote markers, footnote-block citations; diacritics preserved. Extractor re-runnable offline.
+- **Part B / step 3:** geojson features carry `rationale` / `page` / `ethnonyms`; `renderAfrRegion()`
+  shows quoted rationale + `FROM THE ARTICLE (P. …)` header, no blurb, clicked outline highlighted,
+  no console errors; `lovejoy_region_notes.json` + `_afrNotes` gone; `build_lovejoy_notes.py`
+  deleted; `pytest tests/` green.
+
+### Notes
+
+- PDF text-layer quality is the main unknown; WO02's `DEF`-regex success on 27/34 says bold
+  anchors are at least partly reliable, but the cruft in those 27 says the text layer has ligature
+  and footnote-flattening damage. Expect rule 6 to do real work.
+- Keep `data/lovejoy/lovejoy_regions_prose.txt` regen in the script — Karl's review reads it.
