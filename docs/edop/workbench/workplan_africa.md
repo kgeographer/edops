@@ -22,7 +22,7 @@ execution; we still take them one at a time.
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
-| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **outline** — 3 Qs answered; branch `wb_africa_wo04` |
+| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **spec ready** — 3 commits; branch `wb_africa_wo04` |
 
 ---
 
@@ -854,5 +854,93 @@ elements once we can see them on the map.
 
 ### Still open
 
-- `ord_clas` cut for the rivers extract — decide at build by eyeballing the result.
+- rivers size filter — `upland_skm >= 100000` is the starting cut (see spec); eyeball and adjust.
 - Rivers z-order vs basins / region outlines — settle once both layers are on screen.
+
+---
+
+## WO04 — Build spec (2026-09-02)
+
+Executable. Branch **`wb_africa_wo04`** off `wb_africa`; 3 commits; Karl eyeballs each map change
+before commit. Both data artifacts are **static, committed** (like `lovejoy_regions.geojson`) —
+`dplace` + `gaz` are local-and-prod, but the sets are fixed so no runtime route.
+
+### Commit 1 — `afr_societies.geojson` + build script
+
+`scripts/edop/workbench/build_afr_societies.py` → `app/static/workbench/afr_societies.geojson`.
+
+- Query `dplace.societies s` (`WHERE s.contribution_id='dplace-dataset-ea'`), LEFT JOIN
+  `dplace.data`/`dplace.codes` for **EA042** (subsistence) and **EA034** (religion) — reuse the
+  join + code-name filters from `routes_workbench.py :: societies()` (excludes `'Missing data'`,
+  `''`, `'Two or more sources'`, etc.), INNER JOIN
+  `gaz.admin0 a ON ST_Contains(a.geom, ST_SetSRID(ST_MakePoint(s.longitude, s.latitude), 4326))
+  AND a.continent = 'Africa'`.
+- Emit a FeatureCollection: `Point` geoms, props `{ soc_id, name, subsistence, religion }`
+  (null where the trait is missing). **Expect 528 features** (~60–90 KB). Print the count.
+  Re-runnable offline; commit the geojson.
+
+### Commit 2 — `afr_rivers.geojson` + build script
+
+`scripts/edop/workbench/build_afr_rivers.py` → `app/static/workbench/afr_rivers.geojson`.
+
+- `gaz.rivers` has full HydroRIVERS attrs. Continental mainstems = a **catchment-area** cut, not
+  `ord_clas` (which is Strahler-ish: `ord_clas<=1` is still 124k reaches). Measured, Africa bbox:
+
+  | filter | reaches | ~geojson (simplify 0.02°) |
+  |---|---|---|
+  | `upland_skm >= 150000` | ~9k | ~0.5 MB |
+  | **`upland_skm >= 100000`** | **12.9k** | **~0.67 MB** |
+  | `upland_skm >= 50000` | 21.5k | ~1.1 MB |
+
+- Query: `SELECT hyriv_id, ord_clas,
+  ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.02)) FROM gaz.rivers
+  WHERE geom && ST_MakeEnvelope(-20,-36,55,38,4326) AND upland_skm >= 100000`.
+  Props `{ ord_clas }` (kept for line-width). Print feature count + file size. Eyeball on the map;
+  drop the threshold to 50000 if too sparse, raise to 150000 if too busy; loosen the simplify
+  tolerance if lines look crude. Commit the geojson if ≤ ~1 MB; else gitignore + add to
+  `MAINTAIN_DEPLOY.md` rsync list.
+
+### Commit 3 — layer control + both layers on `#afr-map`
+
+`app/web/pages.py` — add `afr_societies_v` + `afr_rivers_v` (via the existing `_static_mtime`)
+to **both** workbench render calls, beside `lovejoy_v`.
+
+`app/templates/workbench.html`, in `_afrMap.on('load')` after the lovejoy layers:
+
+- **Rivers:** `addSource('afr-rivers', { type:'geojson', data:'/static/workbench/afr_rivers.geojson?v={{ afr_rivers_v | default("") }}' })`;
+  `addLayer({ id:'afr-rivers-line', type:'line', source:'afr-rivers',
+  layout:{ visibility:'none' },
+  paint:{ 'line-color':'#5a9bd4', 'line-opacity':0.8,
+  'line-width':['case', ['<=', ['to-number',['get','ord_clas']], 1], 1.2, 0.6] } }, 'lovejoy-line')` —
+  `beforeId:'lovejoy-line'` puts rivers under region outlines, above the (dynamically added)
+  `afr-basin-*`.
+- **Societies:** `addSource('afr-societies', { type:'geojson', data:'/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}' })`;
+  `addLayer({ id:'afr-soc-dots', type:'circle', source:'afr-societies',
+  layout:{ visibility:'none' },
+  paint:{ 'circle-radius':3.5, 'circle-color':'#333', 'circle-opacity':0.9,
+  'circle-stroke-width':1, 'circle-stroke-color':'#fff' } })` — added last ⇒ topmost.
+  `mouseenter`/`mouseleave` set the canvas cursor to `pointer`/`''`. **No click handler.**
+- **Control box** — `document.createElement('div')` appended to `#afr-map` (MapLibre's container
+  is `position:relative`), styled from Sandbox's `#v3-layer-control`
+  (`position:absolute;top:10px;right:10px;z-index:1;background:rgba(255,255,255,.92);border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:.78rem;box-shadow:0 1px 4px rgba(0,0,0,.15)`):
+  an uppercase "Layers" caption + two `<label><input type="checkbox">…</label>` rows —
+  `#afr-lyr-societies`, `#afr-lyr-rivers`, **both unchecked**. Each `change` handler flips its
+  layer's `visibility` via `setLayoutProperty`.
+
+Nav control is `top-left` on this map, so `top-right` is clear. `_afrPaint` only ever touches
+`afr-basins` + `lovejoy-fill` opacity → the two overlay layers are independent by construction.
+
+### Acceptance
+
+- `build_afr_societies.py` → 528-feature geojson, props `soc_id`/`name`/`subsistence`/`religion`;
+  `build_afr_rivers.py` → African mainstems geojson, count + size printed. Both re-runnable offline.
+- `#afr-map` top-right **Layers** box: Societies + Rivers, both off on load. Tick Societies → grey
+  dots at the default continental zoom (no zoom-in). Tick Rivers → blue lines, same.
+- Paint a variable → toggle either overlay → variable stays painted. Toggle an overlay → click a
+  region → rationale still renders. No console errors; `pytest tests/` green.
+
+### Still open (build / review)
+
+- `upland_skm` threshold + simplify tolerance — tune by eye.
+- rivers z-order once a choropleth is also on — provisional above basins / below region outlines.
+- society dot colour/size — neutral grey now; trait styling is a later WO04 element.
