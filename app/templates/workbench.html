@@ -208,8 +208,8 @@
         <!-- AFRICAN REGIONS TAB — layout attempt #1 -->
         <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
           <div id="afr-map" style="height:460px;border:1px solid #ddd;"></div>
-          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#e7ddc9;border:1px solid #d3c6a8;color:#6b5d3c;font-size:.85rem;">
-            readouts strip — selection · painted variable · legend · cell count (later WO)
+          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;">
+            <span class="text-secondary">Pick a variable to paint the basins.</span>
           </div>
         </div>
 
@@ -248,7 +248,7 @@
 
       <!-- African Regions info panel — swaps in for #map when the African Regions tab is active.
            The single click-output target: region attributes now, D-PLACE society data later. -->
-      <div id="afr-right" style="display:none;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
+      <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
         <!-- filled by renderAfrRegion() on a map click; empty until then -->
         <div id="afr-region"></div>
         <div id="afr-about">
@@ -262,6 +262,35 @@
             the peoples associated with it. The regions were drawn for organising data rather than
             for environmental analysis; the Workbench places them over EDOPS basin signatures to
             ask how far each one holds together as an environmental unit.</p>
+          <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
+            <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
+              <option value="">Paint a variable…</option>
+              <optgroup label="A — Terrain">
+                <option value="elevation_max">Elevation maximum</option>
+                <option value="slope_deg">Slope</option>
+              </optgroup>
+              <optgroup label="B — Hydrology &amp; soils">
+                <option value="discharge_annual">Discharge, annual mean</option>
+                <option value="pnv_majority_name">Potential natural vegetation</option>
+                <option value="pct_clay">Clay content</option>
+              </optgroup>
+              <optgroup label="E — Coastality">
+                <option value="dist_sink_km">Flow distance to marine outlet</option>
+              </optgroup>
+              <optgroup label="C — Climate">
+                <option value="aridity_index">Aridity index (P/PET)</option>
+                <option value="precipitation_annual">Precipitation, annual</option>
+              </optgroup>
+            </select>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Basin level">
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-8" value="8" autocomplete="off" checked>
+              <label class="btn btn-outline-secondary" for="afr-lvl-8">L8</label>
+            </div>
+          </div>
+        </div>
+        <div id="afr-cite" style="margin-top:auto;padding-top:.5rem;">
           <hr class="my-2">
           <p class="mb-0" style="font-size:.78rem;color:#666;">
             Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
@@ -1466,6 +1495,7 @@
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
 
+
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
     if (whcSel) {
@@ -1573,7 +1603,7 @@
         const sharedMapEl = document.getElementById('map');
         if (targetSel === '#panel-afr') {
           if (sharedMapEl) sharedMapEl.style.display = 'none';
-          if (afrRight) afrRight.style.display = 'block';
+          if (afrRight) afrRight.style.display = 'flex';   // flex column: #afr-cite pinned bottom
           ensureAfrMap();
         } else {
           if (sharedMapEl) sharedMapEl.style.display = '';
