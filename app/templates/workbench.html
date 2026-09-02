@@ -1091,6 +1091,56 @@
       });
       _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
       _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
+
+      // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
+      // Rivers: African mainstems (dissolved HydroRIVERS), under the region outlines.
+      _afrMap.addSource('afr-rivers', {
+        type: 'geojson', data: '/static/workbench/afr_rivers.geojson?v={{ afr_rivers_v | default("") }}',
+      });
+      _afrMap.addLayer({
+        id: 'afr-rivers-line', type: 'line', source: 'afr-rivers',
+        layout: { visibility: 'none' },
+        paint: {
+          'line-color': '#5a9bd4', 'line-opacity': 0.8,
+          'line-width': ['case', ['<=', ['to-number', ['get', 'ord_clas']], 1], 1.2, 0.6],
+        },
+      }, 'lovejoy-line');
+      // Societies: 528 African D-PLACE points; added last -> topmost. No click yet.
+      _afrMap.addSource('afr-societies', {
+        type: 'geojson', data: '/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}',
+      });
+      _afrMap.addLayer({
+        id: 'afr-soc-dots', type: 'circle', source: 'afr-societies',
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 3.5, 'circle-color': '#333', 'circle-opacity': 0.9,
+          'circle-stroke-width': 1, 'circle-stroke-color': '#fff',
+        },
+      });
+      _afrMap.on('mouseenter', 'afr-soc-dots', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
+      _afrMap.on('mouseleave', 'afr-soc-dots', () => { _afrMap.getCanvas().style.cursor = ''; });
+
+      // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
+      const lc = document.createElement('div');
+      lc.id = 'afr-layer-control';
+      lc.style.cssText = 'position:absolute;top:10px;right:10px;z-index:1;background:rgba(255,255,255,0.92);'
+        + 'border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:.78rem;box-shadow:0 1px 4px rgba(0,0,0,.15);';
+      lc.innerHTML =
+        '<div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Layers</div>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-regions" checked> Regions</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-societies"> Societies</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-rivers"> Rivers</label>';
+      document.getElementById('afr-map').appendChild(lc);
+      lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
+        const vis = this.checked ? 'visible' : 'none';
+        ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+      });
+      lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
+      });
+      lc.querySelector('#afr-lyr-rivers').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-rivers-line', 'visibility', this.checked ? 'visible' : 'none');
+      });
     });
   }
 

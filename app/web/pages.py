@@ -22,14 +22,22 @@ def _render(request: Request, name: str, **context):
     return templates.TemplateResponse(request, name, context)
 
 
+def _workbench_ctx() -> dict:
+    """Cache-bust stamps for the African Regions tab's static geojson artifacts."""
+    return {
+        "lovejoy_v":       _static_mtime("workbench/lovejoy_regions.geojson"),
+        "afr_societies_v": _static_mtime("workbench/afr_societies.geojson"),
+        "afr_rivers_v":    _static_mtime("workbench/afr_rivers.geojson"),
+    }
+
+
 @router.get("/")
 def index(request: Request):
     host = request.headers.get("host", "")
     if "edops" in host:
         return _render(request, "edops.html")
     if "workbench" in host:
-        return _render(request, "workbench.html",
-                       lovejoy_v=_static_mtime("workbench/lovejoy_regions.geojson"))
+        return _render(request, "workbench.html", **_workbench_ctx())
     return _render(request, "index.html")
 
 @router.get("/about")
@@ -67,8 +75,7 @@ def polities(request: Request):
 
 @router.get("/workbench")
 def workbench(request: Request):
-    return _render(request, "workbench.html",
-                   lovejoy_v=_static_mtime("workbench/lovejoy_regions.geojson"))
+    return _render(request, "workbench.html", **_workbench_ctx())
 
 @router.get("/sandbox/lookup3")
 def sandbox_lookup3_compat(request: Request):
