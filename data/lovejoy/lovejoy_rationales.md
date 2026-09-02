@@ -95,7 +95,7 @@ Eastern Interior includes the plains and mountains of eastern Africa that domina
 - macro: East Africa
 - page: 20
 - flags: SHORT
-- ethnonyms: Wadai, Darfur, Nuer, Sara, Shilluk
+- ethnonyms: Arabs, Dinka, Nuer, Sara, Shilluk
 
 Eastern Savanna incorporates Wadai, Darfur, and Kordofan west of the Nile valley. It includes the Sudd region and sources of the Congo River’s northern tributaries. Besides the inhabitants of Wadai and Darfur, it included nomadic Arabs as well as Dinka, Nuer, Sara, and Shilluk.
 
@@ -230,7 +230,7 @@ South Central is the Zimbabwe plateau and mostly consists of wide-open grassland
 - macro: Southern Africa
 - page: 22
 - flags: none
-- ethnonyms: Bitonga, Chope, Ronga, Tsonga, Southern Nguni
+- ethnonyms: Bitonga, Chope, Ronga, Tsonga, Nguni, Zulu
 
 Southeast refers to the coastal belt from Sofala Bay south to Maputo Bay, formerly known as Delagoa Bay or Lourenço Marques, and separated from the Highveld in the interior by the Drakensberg Mountains. Inhabitants included Bitonga, Chope, Ronga, and Tsonga. The principal slaving port was Inhambane, while Delagoa Bay had Austrian, Dutch, and Portuguese establishments from the eighteenth century onward. The area south of Maputo represents the historic and current heartland of Nguni-speaking people with most of them in that area speaking IsiZulu. The Zulu once were referred to as the “Northern Nguni” to distinguish them from the Xhosa, or “Southern Nguni,” but these terms have fallen away.
 
