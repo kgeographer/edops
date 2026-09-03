@@ -246,19 +246,37 @@
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
-      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active.
-           The single click-output target: region attributes now, D-PLACE society data later. -->
+      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
+      <!-- SKUNKWORKS: marker-click reflows this panel -->
+      <style>
+        #soc-vars                               { display:none; }
+        #afr-right.mode-society #soc-vars        { display:block; }
+        #afr-right.mode-society #var-select      { margin-top:auto; }
+        #afr-right.cite-retired #afr-cite        { display:none; }
+        #afr-rationale-toggle                    { cursor:pointer; user-select:none; }
+        #afr-rationale-caret                     { font-size:1.2rem; line-height:1; vertical-align:-2px; }
+        .afr-soc-tip .maplibregl-popup-content   { padding:2px 7px; font-size:.78rem; line-height:1.2; }
+      </style>
       <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
-        <!-- filled by renderAfrRegion() on a map click; empty until then -->
-        <div id="afr-region"></div>
-        <div id="afr-about">
+        <div id="afr-region">
+          <div id="afr-region-head"></div>              <!-- title + macro subtitle (region OR marker's containing region) -->
+          <div id="afr-region-body">
+            <p id="afr-rationale-toggle" class="mb-1 small text-uppercase" style="letter-spacing:.04em;" hidden>
+              <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
+            </p>
+            <div id="afr-rationale-text"></div>          <!-- the quoted rationale; collapsed via the toggle -->
+            <hr id="afr-rationale-hr" class="my-3" hidden>
+          </div>
+        </div>
+        <div id="soc-vars"></div>                        <!-- D-PLACE content on marker click; shown via .mode-society -->
+        <div id="var-select">
           <!-- intro text — hidden once a region rationale is showing (renderAfrRegion) -->
           <div id="afr-about-text">
             <div class="d-flex justify-content-between align-items-baseline">
               <h6 class="mb-1">African Regions in Historical Perspective</h6>
               <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
             </div>
-            <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
+            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions proposed by
               Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
               historical data. Select a region to read the article's rationale for its extent and
               the peoples associated with it. The regions were drawn for organising data rather than
@@ -295,7 +313,7 @@
         </div>
         <div id="afr-cite" style="margin-top:auto;padding-top:.5rem;">
           <hr class="my-2">
-          <p class="mb-0" style="font-size:.78rem;color:#666;">
+          <p class="mb-0" style="font-size:.78rem;">
             Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
             Matthew S. Hopper, Ghislaine Lydon, Colleen Kriger, and John Thornton,
             &ldquo;<b>Defining Regions of Pre-Colonial Africa: A Controlled Vocabulary for Linking
@@ -386,6 +404,24 @@
       </div>
       <div class="modal-body" id="summariesModalBody">
         <div class="text-center text-muted">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKUNKWORKS: D-PLACE society page in an iframe (CC-BY-NC 4.0). If framing is
+     blocked, wipe this block + afrOpenDplaceModal() + the .afr-soc-modal link/branch;
+     the plain "Cc2 ↗" link is untouched. -->
+<div class="modal fade" id="afr-dplace-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:90vw;width:90vw;">
+    <div class="modal-content" style="height:88vh;">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0">D-PLACE society <span class="text-muted small">— CC-BY-NC 4.0</span></h6>
+        <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
       </div>
     </div>
   </div>
@@ -493,6 +529,7 @@
   let map = null;
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
+  let _afrSocTip = null;    // hover-name Popup for society markers
 
   // ── Basin variable painting (WO03) ──
   let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
@@ -1079,50 +1116,215 @@
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
-          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#54278f'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2, 1],
           'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+          // 'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
+          // 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
         },
       });
 
-      _afrMap.on('click', 'lovejoy-fill', (e) => {
-        selectAfrRegion(e.features[0].id);
-        renderAfrRegion(e.features[0].properties);
+
+      // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
+      // Rivers: African mainstems (dissolved HydroRIVERS), under the region outlines.
+      _afrMap.addSource('afr-rivers', {
+        type: 'geojson', data: '/static/workbench/afr_rivers.geojson?v={{ afr_rivers_v | default("") }}',
       });
-      _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
-      _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
+      _afrMap.addLayer({
+        id: 'afr-rivers-line', type: 'line', source: 'afr-rivers',
+        layout: { visibility: 'none' },
+        paint: {
+          'line-color': '#5a9bd4', 'line-opacity': 0.8,
+          'line-width': ['case', ['<=', ['to-number', ['get', 'ord_clas']], 1], 1.2, 0.6],
+        },
+      }, 'lovejoy-line');
+      // Societies: 528 African D-PLACE points; added last -> topmost. Click handled
+      // by the unified dispatcher below (renderAfrSociety).
+      _afrMap.addSource('afr-societies', {
+        type: 'geojson', data: '/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}',
+        promoteId: 'soc_id',
+      });
+      _afrMap.addLayer({
+        id: 'afr-soc-dots', type: 'circle', source: 'afr-societies',
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 3.5, 3],
+          'circle-color': '#666', 'circle-opacity': 0.7,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
+        },
+      });
+      // Hollow ring around markers sharing an EA value the user magnifier-clicks.
+      _afrMap.addLayer({
+        id: 'afr-soc-match', type: 'circle', source: 'afr-societies',
+        filter: ['==', ['literal', 1], ['literal', 0]],   // matches nothing until set
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 5, 'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 2.5, 'circle-stroke-color': '#1c7ed6',
+        },
+      });
+      // Unified click / cursor dispatcher — topmost of [societies, regions] wins.
+      // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
+      const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
+      _afrSocTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
+      _afrMap.on('click', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        const region = hits.find(h => h.layer.id === 'lovejoy-fill');
+        _afrMap.removeFeatureState({ source: 'afr-societies' });   // reset every marker to default
+        afrHighlightBy(null, null);                               // any map click clears a value-highlight
+        if (soc) {
+          _afrMap.setFeatureState({ source: 'afr-societies', id: soc.id }, { selected: true });
+          if (region) selectAfrRegion(region.id);
+          renderAfrSociety(soc.properties, region ? region.properties : null);
+        } else if (region) {
+          selectAfrRegion(region.id);
+          renderAfrRegion(region.properties);
+        } else {
+          selectAfrRegion(null);   // empty space -> deselect region outline (markers already reset)
+        }
+      });
+      _afrMap.on('mousemove', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        _afrMap.getCanvas().style.cursor = hits.length ? 'pointer' : '';
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        if (soc) _afrSocTip.setLngLat(soc.geometry.coordinates).setText(soc.properties.name || '').addTo(_afrMap);
+        else _afrSocTip.remove();
+      });
+      _afrMap.on('mouseout', () => _afrSocTip.remove());
+
+      // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
+      const lc = document.createElement('div');
+      lc.id = 'afr-layer-control';
+      lc.style.cssText = 'position:absolute;top:10px;right:10px;z-index:1;background:rgba(255,255,255,0.92);'
+        + 'border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:.78rem;box-shadow:0 1px 4px rgba(0,0,0,.15);';
+      lc.innerHTML =
+        '<div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Layers</div>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-regions" checked> Regions</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-societies"> Societies</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-rivers"> Rivers</label>';
+      document.getElementById('afr-map').appendChild(lc);
+      lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
+        const vis = this.checked ? 'visible' : 'none';
+        ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+      });
+      lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
+        if (!this.checked) afrHighlightBy(null, null);   // drop any value-highlight with the layer
+      });
+      lc.querySelector('#afr-lyr-rivers').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-rivers-line', 'visibility', this.checked ? 'visible' : 'none');
+      });
     });
   }
 
-  // Highlight one Lovejoy region's outline; clear the previous selection.
+  // Highlight one Lovejoy region's outline; clear the previous. srcId null = clear only.
   function selectAfrRegion(srcId) {
     if (_afrSelected && _afrSelected !== srcId) {
       _afrMap.setFeatureState({ source: 'lovejoy', id: _afrSelected }, { selected: false });
     }
-    _afrSelected = srcId;
-    _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
+    _afrSelected = srcId || null;
+    if (srcId) _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
   }
 
-  // Region click -> #afr-region (top of the right column, above the persistent
-  // About / citation block). D-PLACE society clicks will render here too, later.
-  function renderAfrRegion(p) {
-    const el = document.getElementById('afr-region');
-    if (!el) return;
-    // once a rationale is up, the intro has done its job — hide it (controls stay).
-    // Painting a variable never calls this, so "paint first" leaves the intro visible.
-    const about = document.getElementById('afr-about-text');
-    if (about) about.style.display = 'none';
-    const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const _afrEsc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  function renderAfrRegionHead(name, macro) {
+    document.getElementById('afr-region-head').innerHTML =
+      `<h5 class="mb-0">${_afrEsc(name)}</h5>` +
+      `<div class="small mb-2">${_afrEsc(macro)}</div>`;
+  }
+
+  function _afrRationaleExpand(expanded) {
+    document.getElementById('afr-rationale-text').hidden = !expanded;
+    document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
+  }
+
+  // Fill the collapsible rationale block from a Lovejoy region's feature props.
+  function _afrSetRationale(p, expanded) {
+    const toggle = document.getElementById('afr-rationale-toggle');
+    const text = document.getElementById('afr-rationale-text');
+    const hr = document.getElementById('afr-rationale-hr');
+    if (!p || !p.rationale) {
+      toggle.hidden = true; text.hidden = true; text.innerHTML = ''; hr.hidden = true;
+      return;
+    }
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
-    el.innerHTML =
-      `<h5 class="mb-0">${esc(p.name)}</h5>` +
-      `<div class="text-secondary small mb-2">${esc(p.macro)}</div>` +
-      (p.rationale
-        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article${esc(pgLabel)}</p>` +
-          `<p class="mb-0">“${esc(p.rationale)}”</p>`
-        : '') +
+    document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
+    text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
+    toggle.hidden = false;
+    hr.hidden = false;
+    _afrRationaleExpand(expanded);
+  }
+
+  // Region click -> title + macro + the (expanded) article rationale.
+  function renderAfrRegion(p) {
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';           // intro has done its job
+    document.getElementById('afr-right').classList.remove('mode-society');
+    renderAfrRegionHead(p.name, p.macro);
+    _afrSetRationale(p, true);
+  }
+
+  // Marker click (SKUNKWORKS) -> keep the containing region's title/macro with the
+  // rationale collapsed (still reachable via the caret), hide the citation, drop
+  // #var-select to the bottom, reveal #soc-vars for D-PLACE content.
+  function renderAfrSociety(soc, region) {
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';
+    const right = document.getElementById('afr-right');
+    right.classList.add('mode-society', 'cite-retired');
+    if (region) { renderAfrRegionHead(region.name, region.macro); _afrSetRationale(region, false); }
+    else { renderAfrRegionHead(soc.name || 'Society', 'D-PLACE'); _afrSetRationale(null); }
+    const row = (k, html) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${html}</td></tr>`;
+    const eaCell = (field, v) => {
+      if (v == null || v === '') return '—';
+      const mag = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.8" cy="6.8" r="4.3"/><line x1="10" y1="10" x2="14" y2="14"/></svg>';
+      return `${_afrEsc(v)} <button type="button" class="afr-hl-btn" data-field="${field}" data-value="${_afrEsc(v)}" title="Highlight societies sharing this value">${mag}</button>`;
+    };
+    const sid = soc.soc_id || '';
+    const nameCell = _afrEsc(soc.name || '—') + (sid
+      ? ` (<a href="#" class="afr-soc-modal" data-sid="${_afrEsc(sid)}">${_afrEsc(sid)} record</a>)`
+      : '');
+    document.getElementById('soc-vars').innerHTML =
+      `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
+      `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
+      row('Name', nameCell) +
+      row('Subsistence (EA042)', eaCell('subsistence', soc.subsistence)) +
+      row('High gods (EA034)', eaCell('religion', soc.religion)) +
+      `</tbody></table>` +
+      `<div id="afr-hl-status" class="small mb-2" style="display:none;"></div>` +
       `<hr class="my-3">`;
+  }
+
+  // SKUNKWORKS: open the D-PLACE society page in a 90vw modal iframe.
+  function afrOpenDplaceModal(sid) {
+    const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
+    document.getElementById('afr-dplace-frame').src = url;
+    document.getElementById('afr-dplace-ext').href = url;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+  }
+
+  // Ring every marker whose `field` == `value`; null/empty clears the highlight.
+  function afrHighlightBy(field, value) {
+    const status = document.getElementById('afr-hl-status');
+    if (!field || value == null || value === '') {
+      _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'none');
+      if (status) status.style.display = 'none';
+      return;
+    }
+    const filt = ['==', ['get', field], value];
+    _afrMap.setFilter('afr-soc-match', filt);
+    _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'visible');
+    if (status) {
+      const n = new Set(_afrMap.querySourceFeatures('afr-societies', { filter: filt }).map(f => f.id)).size;
+      status.innerHTML = `${n} societ${n === 1 ? 'y' : 'ies'} share “${_afrEsc(value)}” `
+        + `· <a href="#" id="afr-hl-clear">clear</a>`;
+      status.style.display = '';
+    }
   }
 
   // ── Basin variable painting (WO03) ──────────────────────────────────────────
@@ -1731,6 +1933,25 @@
         _afrLevel = Number(e.target.value);
         _afrPaint();   // _afrPaint -> _afrBasinSource swaps the pmtiles level
       });
+    });
+    // African Regions: caret-toggle the article rationale
+    const afrRatToggle = document.getElementById('afr-rationale-toggle');
+    if (afrRatToggle) afrRatToggle.addEventListener('click', () => {
+      _afrRationaleExpand(document.getElementById('afr-rationale-text').hidden);
+    });
+    // African Regions: #soc-vars magnifier / clear (delegated — #soc-vars is re-rendered per click)
+    const socVarsEl = document.getElementById('soc-vars');
+    if (socVarsEl) socVarsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.afr-hl-btn');
+      if (btn) { afrHighlightBy(btn.dataset.field, btn.dataset.value); return; }
+      if (e.target.closest('#afr-hl-clear')) { e.preventDefault(); afrHighlightBy(null, null); return; }
+      const dm = e.target.closest('.afr-soc-modal');
+      if (dm) { e.preventDefault(); afrOpenDplaceModal(dm.dataset.sid); }
+    });
+    // SKUNKWORKS: blank the D-PLACE iframe on close so it stops loading
+    const dpModal = document.getElementById('afr-dplace-modal');
+    if (dpModal) dpModal.addEventListener('hidden.bs.modal', () => {
+      document.getElementById('afr-dplace-frame').src = 'about:blank';
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.

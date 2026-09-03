@@ -22,19 +22,31 @@ execution; we still take them one at a time.
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
-| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **spec ready** — 3 commits; branch `wb_africa_wo04` |
+| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (`bee0638` on `wb_africa_wo04`) |
 
 ---
 
 ## You are here
 
-WO01–WO03 done. `#afr-map` renders the 34 Lovejoy regions (click → outline highlight + verbatim
-rationale into `#afr-region`, intro hides) and paints one of 8 BasinATLAS variables at L6/L8
-underneath (`#afr-var` select + pill, global ramp domain, legend in `#afr-readouts`). Karl signed
-off the UI 2026-09-02. `explorer.html` terrain ramp is now YlOrBr for elevation + slope.
-**Not yet scoped:** D-PLACE society marker layer (`cedop.dplace.*`), regions/societies click-mode
-toggle, discharge log-ramp tweak. The `TEMP (dev eyeball)` line in `workbench.html` still forces
-the African Regions tab open — **remove before the branch merges**.
+WO01–WO04 done, on branch **`wb_africa_wo04`** (@ `bee0638`). `#afr-map` renders the 34 Lovejoy
+regions + a paintable BasinATLAS variable (`#afr-var` select + L6/L8 pill, global ramp domain,
+legend in `#afr-readouts`), and a top-right **Layers** box toggling **Regions** / **Societies**
+(528 African D-PLACE points) / **Rivers** (34 mainstems). A unified click dispatcher resolves
+topmost of {marker, region}; the right panel reflows between region mode (title + collapsible
+rationale + paint controls + citation) and society mode (region title, collapsed rationale,
+`#soc-vars` D-PLACE card, paint controls dropped to the bottom, citation retired). Society card:
+name + `<id> record` link (opens the D-PLACE page in a 90vw modal iframe), EA042 / EA034 with a
+magnifier that rings every marker sharing that value + a count.
+
+**Branches:** `wb_africa_wo04` holds WO01–WO04. `wb_africa` (@ `4d91156`) is one commit behind
+(the WO04 build spec). The `TEMP (dev eyeball)` line in `workbench.html` still forces the African
+Regions tab open — **remove before `wb_africa_wo04` merges up**.
+
+**Next / not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
+variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read);
+society ↔ region cross-highlight; graduate the skunkworks D-PLACE modal / EA magnifier out of
+`SKUNKWORKS` tags; discharge log-ramp; rivers `upland_skm` / z-order tuning; the two untracked
+reference files (`africaregions.html`, `D-PLACE_Markers.md`) are local-only.
 
 ## Prerequisite checks
 
@@ -943,4 +955,54 @@ Nav control is `top-left` on this map, so `top-right` is clear. `_afrPaint` only
 
 - `upland_skm` threshold + simplify tolerance — tune by eye.
 - rivers z-order once a choropleth is also on — provisional above basins / below region outlines.
+
+---
+
+## WO04 — Close-out (2026-09-03)
+
+**Done.** Stated purpose — *operationalize the D-PLACE societies on the African Regions tab* —
+met. What follows are refinements/additions, and they get their own WOs.
+
+### Built to spec (branch `wb_africa_wo04`)
+
+- **c1 `120a3e1`** — `build_afr_societies.py` → `afr_societies.geojson`: 528 continent-clipped EA
+  societies (`ST_Contains` vs `admin0`), props `soc_id`/`name`/`subsistence`(EA042)/`religion`(EA034).
+- **c2 `f3ddda2`** — `build_afr_rivers.py` → `afr_rivers.geojson`: `gaz.rivers` `upland_skm ≥ 100000`,
+  **dissolved by `main_riv`** → 34 river systems, 47 KB (not the 1.8 MB per-reach cut).
+- **c3 `a5cdbb3`** — `#afr-map` top-right **Layers** box; `afr-soc-dots` (circle) + `afr-rivers-line`
+  layers; `pages.py :: _workbench_ctx()` cache-bust for all three geojson artifacts.
+
+### Diverging track — skunkworks UX/UI (merged `bee0638`, was branch `wb_africa_socpanel_skunk`)
+
+Once the layer was live it was faster to iterate the interaction/panel behaviour freehand than
+to spec each nit. Ran on its own branch off `wb_africa_wo04`, merged back `--no-ff`. Five commits:
+
+- **`3c83575`** — marker-click **panel reflow** + **unified click/cursor dispatcher**
+  (`queryRenderedFeatures` over `['afr-soc-dots','lovejoy-fill']`, topmost wins; one `mousemove`
+  for the cursor — replaces the per-layer region click + four hover handlers). `#afr-right` split
+  into `#afr-region-head` / `#afr-region-body`; `#afr-about` → `#var-select`; new `#soc-vars`.
+  `.mode-society` / `.cite-retired` classes drive the reflow.
+- **`c8886d8`** — rationale is a **caret toggle** (`#afr-rationale-toggle` → `#afr-rationale-text`);
+  region mode shows it expanded, society mode collapsed-but-reachable. `text-muted`/`text-secondary`
+  stripped from `#afr-right`.
+- **`2f78cfb`** — hover **name tooltip** on markers; **selection outline** via `promoteId:'soc_id'`
+  + feature-state (`removeFeatureState` then set on click); `#soc-vars` polish (Name row, `<id>`
+  linked).
+- **`4d44405`** — **EA-value magnifier**: click the glass by an EA042/EA034 value → `afr-soc-match`
+  ring layer filters to `['==',['get',field],value]`, `#afr-hl-status` shows the deduped count +
+  a `clear` link. Empty-space map click also deselects the region outline.
+- **`1cbe0b1`** — **D-PLACE society page in a 90 vw modal iframe** (`#afr-dplace-modal`); d-place.org
+  sends no `X-Frame-Options`/CSP so it frames, and its own layout is responsive. `<id> record`
+  link replaced the external new-tab link; modal header keeps an "open on d-place.org" escape.
+  All tagged `SKUNKWORKS` — the modal + EA magnifier want a deliberate spec + de-tag in a
+  follow-up WO.
+
+### Explicitly not in WO04 (later WOs)
+
+- Society dot colour by trait; societies-in-region membership list; environmental spread + n per
+  region; society ↔ region cross-highlight; society clustering / a societies legend.
+- Graduating the skunkworks modal + magnifier out of `SKUNKWORKS` (spec, a11y, de-tag).
+- Discharge log-ramp (WO03 carry-over); rivers `upland_skm` / z-order fine-tune.
+- `wb_africa_wo04` still carries the `TEMP (dev eyeball)` default-tab line — pull before it
+  merges toward `v04`.
 - society dot colour/size — neutral grey now; trait styling is a later WO04 element.
