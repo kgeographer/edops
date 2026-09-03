@@ -255,6 +255,7 @@
         #afr-right.cite-retired #afr-cite        { display:none; }
         #afr-rationale-toggle                    { cursor:pointer; user-select:none; }
         #afr-rationale-caret                     { font-size:1.2rem; line-height:1; vertical-align:-2px; }
+        .afr-soc-tip .maplibregl-popup-content   { padding:2px 7px; font-size:.78rem; line-height:1.2; }
       </style>
       <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
         <div id="afr-region">
@@ -510,6 +511,7 @@
   let map = null;
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
+  let _afrSocTip = null;    // hover-name Popup for society markers
 
   // ── Basin variable painting (WO03) ──
   let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
@@ -1096,9 +1098,12 @@
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
-          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#54278f'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2, 1],
           'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+          // 'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
+          // 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
         },
       });
 
@@ -1120,23 +1125,29 @@
       // by the unified dispatcher below (renderAfrSociety).
       _afrMap.addSource('afr-societies', {
         type: 'geojson', data: '/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}',
+        promoteId: 'soc_id',
       });
       _afrMap.addLayer({
         id: 'afr-soc-dots', type: 'circle', source: 'afr-societies',
         layout: { visibility: 'none' },
         paint: {
-          'circle-radius': 3.5, 'circle-color': '#333', 'circle-opacity': 0.9,
-          'circle-stroke-width': 1, 'circle-stroke-color': '#fff',
+          'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 3.5, 3],
+          'circle-color': '#666', 'circle-opacity': 0.7,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
         },
       });
       // Unified click / cursor dispatcher — topmost of [societies, regions] wins.
       // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
       const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
+      _afrSocTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
       _afrMap.on('click', (e) => {
         const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
         const region = hits.find(h => h.layer.id === 'lovejoy-fill');
+        _afrMap.removeFeatureState({ source: 'afr-societies' });   // reset every marker to default
         if (soc) {
+          _afrMap.setFeatureState({ source: 'afr-societies', id: soc.id }, { selected: true });
           if (region) selectAfrRegion(region.id);
           renderAfrSociety(soc.properties, region ? region.properties : null);
         } else if (region) {
@@ -1147,7 +1158,11 @@
       _afrMap.on('mousemove', (e) => {
         const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
         _afrMap.getCanvas().style.cursor = hits.length ? 'pointer' : '';
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        if (soc) _afrSocTip.setLngLat(soc.geometry.coordinates).setText(soc.properties.name || '').addTo(_afrMap);
+        else _afrSocTip.remove();
       });
+      _afrMap.on('mouseout', () => _afrSocTip.remove());
 
       // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
       const lc = document.createElement('div');
@@ -1232,14 +1247,19 @@
     right.classList.add('mode-society', 'cite-retired');
     if (region) { renderAfrRegionHead(region.name, region.macro); _afrSetRationale(region, false); }
     else { renderAfrRegionHead(soc.name || 'Society', 'D-PLACE'); _afrSetRationale(null); }
-    const row = (k, v) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${_afrEsc(v || '—')}</td></tr>`;
+    const row = (k, html) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${html}</td></tr>`;
+    const cell = v => _afrEsc(v || '—');
+    const sid = soc.soc_id || '';
+    const nameCell = _afrEsc(soc.name || '—') + (sid
+      ? ` (<a href="https://d-place.org/society/${encodeURIComponent(sid)}" target="_blank" rel="noopener">${_afrEsc(sid)} <span aria-hidden="true" style="font-size:.85em;">↗</span></a>)`
+      : '');
     document.getElementById('soc-vars').innerHTML =
-      `<p class="mb-1 small text-uppercase" style="letter-spacing:.04em;">D-PLACE society</p>` +
+      `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
       `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
-      row('Society', soc.name) + row('D-PLACE id', soc.soc_id) +
-      row('Subsistence (EA042)', soc.subsistence) + row('High gods (EA034)', soc.religion) +
+      row('Name', nameCell) +
+      row('Subsistence (EA042)', cell(soc.subsistence)) + row('High gods (EA034)', cell(soc.religion)) +
       `</tbody></table>` +
-      `<p class="small mb-2">— placeholder; EA variable values land here —</p>` +
+      // `<p class="small mb-2">— placeholder; EA variable values land here —</p>` +
       `<hr class="my-3">`;
   }
 

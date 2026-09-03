@@ -134,3 +134,12 @@
 .wo4-comp-count.is-thin { font-style: italic; }
 .wo4-comp-row.is-neutral .wo4-comp-name { color: var(--wo4-text-secondary); }
 .wo4-map-dot-lit { }
+
+/* African Regions — #soc-vars section header (D-PLACE SOCIETY) */
+.afr-soc-head {
+  letter-spacing: .04em;
+  display: block;
+  background: aliceblue;
+  padding-left: .3rem;
+  font-weight: 600;
+}
