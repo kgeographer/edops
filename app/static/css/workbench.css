@@ -143,3 +143,20 @@
   padding-left: .3rem;
   font-weight: 600;
 }
+
+/* African Regions — #soc-vars EA-value magnifier button */
+.afr-hl-btn {
+  border: 0; background: none; padding: 0 2px; margin-left: 4px;
+  color: #1c7ed6; cursor: pointer; line-height: 1; vertical-align: -1px;
+}
+.afr-hl-btn:hover { color: #1456a0; }
+
+#afr-hl-status {
+  display: block;
+  background: antiquewhite;
+  padding-left: .25rem;
+}
+#afr-hl-status a {
+  white-space: nowrap;
+}
+

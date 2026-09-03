@@ -276,7 +276,7 @@
               <h6 class="mb-1">African Regions in Historical Perspective</h6>
               <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
             </div>
-            <p class="mb-2">This tab overlays the 34 pre-colonial African subregions proposed by
+            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions proposed by
               Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
               historical data. Select a region to read the article's rationale for its extent and
               the peoples associated with it. The regions were drawn for organising data rather than
@@ -1137,6 +1137,16 @@
           'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
         },
       });
+      // Hollow ring around markers sharing an EA value the user magnifier-clicks.
+      _afrMap.addLayer({
+        id: 'afr-soc-match', type: 'circle', source: 'afr-societies',
+        filter: ['==', ['literal', 1], ['literal', 0]],   // matches nothing until set
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 5, 'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 2.5, 'circle-stroke-color': '#1c7ed6',
+        },
+      });
       // Unified click / cursor dispatcher — topmost of [societies, regions] wins.
       // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
       const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
@@ -1146,6 +1156,7 @@
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
         const region = hits.find(h => h.layer.id === 'lovejoy-fill');
         _afrMap.removeFeatureState({ source: 'afr-societies' });   // reset every marker to default
+        afrHighlightBy(null, null);                               // any map click clears a value-highlight
         if (soc) {
           _afrMap.setFeatureState({ source: 'afr-societies', id: soc.id }, { selected: true });
           if (region) selectAfrRegion(region.id);
@@ -1153,6 +1164,8 @@
         } else if (region) {
           selectAfrRegion(region.id);
           renderAfrRegion(region.properties);
+        } else {
+          selectAfrRegion(null);   // empty space -> deselect region outline (markers already reset)
         }
       });
       _afrMap.on('mousemove', (e) => {
@@ -1181,6 +1194,7 @@
       });
       lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
         _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
+        if (!this.checked) afrHighlightBy(null, null);   // drop any value-highlight with the layer
       });
       lc.querySelector('#afr-lyr-rivers').addEventListener('change', function () {
         _afrMap.setLayoutProperty('afr-rivers-line', 'visibility', this.checked ? 'visible' : 'none');
@@ -1188,13 +1202,13 @@
     });
   }
 
-  // Highlight one Lovejoy region's outline; clear the previous selection.
+  // Highlight one Lovejoy region's outline; clear the previous. srcId null = clear only.
   function selectAfrRegion(srcId) {
     if (_afrSelected && _afrSelected !== srcId) {
       _afrMap.setFeatureState({ source: 'lovejoy', id: _afrSelected }, { selected: false });
     }
-    _afrSelected = srcId;
-    _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
+    _afrSelected = srcId || null;
+    if (srcId) _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
   }
 
   const _afrEsc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -1248,7 +1262,11 @@
     if (region) { renderAfrRegionHead(region.name, region.macro); _afrSetRationale(region, false); }
     else { renderAfrRegionHead(soc.name || 'Society', 'D-PLACE'); _afrSetRationale(null); }
     const row = (k, html) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${html}</td></tr>`;
-    const cell = v => _afrEsc(v || '—');
+    const eaCell = (field, v) => {
+      if (v == null || v === '') return '—';
+      const mag = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.8" cy="6.8" r="4.3"/><line x1="10" y1="10" x2="14" y2="14"/></svg>';
+      return `${_afrEsc(v)} <button type="button" class="afr-hl-btn" data-field="${field}" data-value="${_afrEsc(v)}" title="Highlight societies sharing this value">${mag}</button>`;
+    };
     const sid = soc.soc_id || '';
     const nameCell = _afrEsc(soc.name || '—') + (sid
       ? ` (<a href="https://d-place.org/society/${encodeURIComponent(sid)}" target="_blank" rel="noopener">${_afrEsc(sid)} <span aria-hidden="true" style="font-size:.85em;">↗</span></a>)`
@@ -1257,10 +1275,30 @@
       `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
       `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
       row('Name', nameCell) +
-      row('Subsistence (EA042)', cell(soc.subsistence)) + row('High gods (EA034)', cell(soc.religion)) +
+      row('Subsistence (EA042)', eaCell('subsistence', soc.subsistence)) +
+      row('High gods (EA034)', eaCell('religion', soc.religion)) +
       `</tbody></table>` +
-      // `<p class="small mb-2">— placeholder; EA variable values land here —</p>` +
+      `<div id="afr-hl-status" class="small mb-2" style="display:none;"></div>` +
       `<hr class="my-3">`;
+  }
+
+  // Ring every marker whose `field` == `value`; null/empty clears the highlight.
+  function afrHighlightBy(field, value) {
+    const status = document.getElementById('afr-hl-status');
+    if (!field || value == null || value === '') {
+      _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'none');
+      if (status) status.style.display = 'none';
+      return;
+    }
+    const filt = ['==', ['get', field], value];
+    _afrMap.setFilter('afr-soc-match', filt);
+    _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'visible');
+    if (status) {
+      const n = new Set(_afrMap.querySourceFeatures('afr-societies', { filter: filt }).map(f => f.id)).size;
+      status.innerHTML = `${n} societ${n === 1 ? 'y' : 'ies'} share “${_afrEsc(value)}” `
+        + `· <a href="#" id="afr-hl-clear">clear</a>`;
+      status.style.display = '';
+    }
   }
 
   // ── Basin variable painting (WO03) ──────────────────────────────────────────
@@ -1874,6 +1912,13 @@
     const afrRatToggle = document.getElementById('afr-rationale-toggle');
     if (afrRatToggle) afrRatToggle.addEventListener('click', () => {
       _afrRationaleExpand(document.getElementById('afr-rationale-text').hidden);
+    });
+    // African Regions: #soc-vars magnifier / clear (delegated — #soc-vars is re-rendered per click)
+    const socVarsEl = document.getElementById('soc-vars');
+    if (socVarsEl) socVarsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.afr-hl-btn');
+      if (btn) { afrHighlightBy(btn.dataset.field, btn.dataset.value); return; }
+      if (e.target.closest('#afr-hl-clear')) { e.preventDefault(); afrHighlightBy(null, null); }
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.
