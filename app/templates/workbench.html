@@ -249,17 +249,25 @@
       <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
       <!-- SKUNKWORKS: marker-click reflows this panel -->
       <style>
-        #afr-right.mode-society #afr-region-body { display:none; }
+        #soc-vars                               { display:none; }
         #afr-right.mode-society #soc-vars        { display:block; }
         #afr-right.mode-society #var-select      { margin-top:auto; }
         #afr-right.cite-retired #afr-cite        { display:none; }
+        #afr-rationale-toggle                    { cursor:pointer; user-select:none; }
+        #afr-rationale-caret                     { font-size:1.2rem; line-height:1; vertical-align:-2px; }
       </style>
       <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
         <div id="afr-region">
           <div id="afr-region-head"></div>              <!-- title + macro subtitle (region OR marker's containing region) -->
-          <div id="afr-region-body"></div>             <!-- FROM THE ARTICLE rationale + hr; hidden in society mode -->
+          <div id="afr-region-body">
+            <p id="afr-rationale-toggle" class="mb-1 small text-uppercase" style="letter-spacing:.04em;" hidden>
+              <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
+            </p>
+            <div id="afr-rationale-text"></div>          <!-- the quoted rationale; collapsed via the toggle -->
+            <hr id="afr-rationale-hr" class="my-3" hidden>
+          </div>
         </div>
-        <div id="soc-vars" style="display:none;"></div>  <!-- D-PLACE content on marker click (placeholder for now) -->
+        <div id="soc-vars"></div>                        <!-- D-PLACE content on marker click; shown via .mode-society -->
         <div id="var-select">
           <!-- intro text — hidden once a region rationale is showing (renderAfrRegion) -->
           <div id="afr-about-text">
@@ -304,7 +312,7 @@
         </div>
         <div id="afr-cite" style="margin-top:auto;padding-top:.5rem;">
           <hr class="my-2">
-          <p class="mb-0" style="font-size:.78rem;color:#666;">
+          <p class="mb-0" style="font-size:.78rem;">
             Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
             Matthew S. Hopper, Ghislaine Lydon, Colleen Kriger, and John Thornton,
             &ldquo;<b>Defining Regions of Pre-Colonial Africa: A Controlled Vocabulary for Linking
@@ -1179,43 +1187,59 @@
   function renderAfrRegionHead(name, macro) {
     document.getElementById('afr-region-head').innerHTML =
       `<h5 class="mb-0">${_afrEsc(name)}</h5>` +
-      `<div class="text-secondary small mb-2">${_afrEsc(macro)}</div>`;
+      `<div class="small mb-2">${_afrEsc(macro)}</div>`;
   }
 
-  // Region click -> title + macro + the article rationale, in #afr-region.
+  function _afrRationaleExpand(expanded) {
+    document.getElementById('afr-rationale-text').hidden = !expanded;
+    document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
+  }
+
+  // Fill the collapsible rationale block from a Lovejoy region's feature props.
+  function _afrSetRationale(p, expanded) {
+    const toggle = document.getElementById('afr-rationale-toggle');
+    const text = document.getElementById('afr-rationale-text');
+    const hr = document.getElementById('afr-rationale-hr');
+    if (!p || !p.rationale) {
+      toggle.hidden = true; text.hidden = true; text.innerHTML = ''; hr.hidden = true;
+      return;
+    }
+    const pg = (p.page || '').trim();
+    const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
+    document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
+    text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
+    toggle.hidden = false;
+    hr.hidden = false;
+    _afrRationaleExpand(expanded);
+  }
+
+  // Region click -> title + macro + the (expanded) article rationale.
   function renderAfrRegion(p) {
     const about = document.getElementById('afr-about-text');
     if (about) about.style.display = 'none';           // intro has done its job
     document.getElementById('afr-right').classList.remove('mode-society');
     renderAfrRegionHead(p.name, p.macro);
-    const pg = (p.page || '').trim();
-    const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
-    document.getElementById('afr-region-body').innerHTML =
-      (p.rationale
-        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article${_afrEsc(pgLabel)}</p>` +
-          `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`
-        : '') +
-      `<hr class="my-3">`;
+    _afrSetRationale(p, true);
   }
 
-  // Marker click (SKUNKWORKS) -> keep the containing region's title/macro, hide the
-  // rationale + citation, drop the paint-a-variable block to the bottom, reveal
-  // #soc-vars for D-PLACE content (placeholder for now).
+  // Marker click (SKUNKWORKS) -> keep the containing region's title/macro with the
+  // rationale collapsed (still reachable via the caret), hide the citation, drop
+  // #var-select to the bottom, reveal #soc-vars for D-PLACE content.
   function renderAfrSociety(soc, region) {
     const about = document.getElementById('afr-about-text');
     if (about) about.style.display = 'none';
     const right = document.getElementById('afr-right');
     right.classList.add('mode-society', 'cite-retired');
-    if (region) renderAfrRegionHead(region.name, region.macro);
-    else renderAfrRegionHead(soc.name || 'Society', 'D-PLACE');
-    const row = (k, v) => `<tr><td class="text-secondary" style="width:44%;">${_afrEsc(k)}</td><td>${_afrEsc(v || '—')}</td></tr>`;
+    if (region) { renderAfrRegionHead(region.name, region.macro); _afrSetRationale(region, false); }
+    else { renderAfrRegionHead(soc.name || 'Society', 'D-PLACE'); _afrSetRationale(null); }
+    const row = (k, v) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${_afrEsc(v || '—')}</td></tr>`;
     document.getElementById('soc-vars').innerHTML =
-      `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">D-PLACE society</p>` +
+      `<p class="mb-1 small text-uppercase" style="letter-spacing:.04em;">D-PLACE society</p>` +
       `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
       row('Society', soc.name) + row('D-PLACE id', soc.soc_id) +
       row('Subsistence (EA042)', soc.subsistence) + row('High gods (EA034)', soc.religion) +
       `</tbody></table>` +
-      `<p class="small text-muted mb-2">— placeholder; EA variable values land here —</p>` +
+      `<p class="small mb-2">— placeholder; EA variable values land here —</p>` +
       `<hr class="my-3">`;
   }
 
@@ -1825,6 +1849,11 @@
         _afrLevel = Number(e.target.value);
         _afrPaint();   // _afrPaint -> _afrBasinSource swaps the pmtiles level
       });
+    });
+    // African Regions: caret-toggle the article rationale
+    const afrRatToggle = document.getElementById('afr-rationale-toggle');
+    if (afrRatToggle) afrRatToggle.addEventListener('click', () => {
+      _afrRationaleExpand(document.getElementById('afr-rationale-text').hidden);
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.
