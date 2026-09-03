@@ -22,7 +22,9 @@ execution; we still take them one at a time.
 | WO02 | Load Lovejoy regions onto the map + region rationale | **complete** (B superseded by WO02.5) |
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
-| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (`bee0638` on `wb_africa_wo04`) |
+| WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (merged `80fec2c` into `wb_africa`) |
+| WO05 | Areal signature per Lovejoy region | **scope** (2026-09-03) — below |
+| WO06 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
 
 ---
 
@@ -1006,3 +1008,92 @@ to spec each nit. Ran on its own branch off `wb_africa_wo04`, merged back `--no-
 - `wb_africa_wo04` still carries the `TEMP (dev eyeball)` default-tab line — pull before it
   merges toward `v04`.
 - society dot colour/size — neutral grey now; trait styling is a later WO04 element.
+
+---
+
+## WO05 — Areal signature per Lovejoy region (scope, 2026-09-03)
+
+**Not started.** Scope / guiding spec — decisions settled with Karl below; one diagnostic done
+(coherence badge), one number still Karl's to confirm (the 50-year window).
+
+### Goal
+
+For each of the 34 Lovejoy regions, a full **areal signature** — the per-variable distribution
+over the region's containing basins, with the histogram + summary the polity signature already
+renders — surfaced from a **profile modal** on the African Regions tab.
+
+### Why this, and why cheap
+
+- **Prospectus framing.** The prospectus names these subregions as EDOPS study areas going
+  forward. Computationally a Lovejoy region is just a polygon — the same shape as a polity time
+  slice, and `engine.py` already generates areal signatures for those.
+- **Machinery done.** `engine.py :: areal_signature_polygon(geom_wkt, conn, level=6, bands,
+  from_year, to_year, include_detail, resolver_year, polity_id)`. HTTP: `/api/areas?scope=polity
+  &year=<int>&detail=true` (year is **required** — it's the resolver/extent year). The Sandbox
+  Polities renderer consumes `profile_groups`: per row `${score} percentile` + coherence badge +
+  `renderHistogram(detail.distribution)`, grouped into A–T band accordions.
+- **Sidesteps the D-PLACE problems.** Reads the region's *own* basins, not societies — **no
+  coverage gaps**, no ethnographic-present caveat. Wide distributions are the point (the panel's
+  copy already says the regions were drawn for data organisation, not environmental analysis).
+
+### Decisions (Karl, 2026-09-03)
+
+1. **Precompute, static artifact.** `scripts/edop/workbench/build_lovejoy_signatures.py` runs
+   `areal_signature_polygon` once per region (geom from `whg_staging.lovejoy.regions` /
+   `lovejoy_regions.geojson`) → `app/static/workbench/lovejoy_signatures.json`
+   `{src_id: {profile_groups, …}}`. Commit if ≤ ~1 MB; else gitignore + `MAINTAIN_DEPLOY.md`.
+2. **Level L6 only.**
+3. **Band T IN**, with a **fixed 50-year window** (not the 400-year LPF `whens`, which smooths
+   LMR to nothing) — the first sustained Atlantic-trade surge. **Proposed `from_year=1600,
+   to_year=1650`** (West Central Africa → Brazil; aligns with the SlaveVoyages 1601–1650 era).
+   Alternative if "first crossing into scale" is wanted rather than "first great surge":
+   1575–1625. **[Karl to lock.]** HYDE over that window: use one representative epoch (~1650) or
+   the endpoints — `detail` handles either; pick at build.
+4. **UI: a `profile` modal.** An `<a id="afr-profile-link">` in `#afr-controls`, to the right of
+   the `#afr-var` `<select>` (after the L6/L8 pill). Region-scoped: **disabled/hidden until a
+   region is selected**; opens a modal (reuse the `#afr-dplace-modal` markup pattern, narrower —
+   a signature is tall, not wide) whose body is the ported signature renderer for the
+   currently-selected region's precomputed entry.
+
+### Depends on / must-do-first — the coherence badge
+
+**Diagnostic done (2026-09-03), no engine edits yet.**
+
+- Rule: on the area's *weighted percentile scores*, `spread = p90 − p10`; `concentrated` if
+  `spread < _SPREAD_THRESHOLD (20.0)` else `spread`. (`aggregate_b1` ~L1985, `aggregate_b5`
+  ~L1663; threshold `# provisional`, WO9.)
+- Not stuck — small areas get a mix (Goguryeo@300: 12 conc / 22 spread; Kongo@1550: 9 / 24).
+  **Large areas collapse to `spread`** (Songhai@1497, 113 basins: 2 / 29): a continental-scale
+  polygon genuinely spans a wide slice of the global gradient for almost every variable, so
+  `p90 − p10 > 20` nearly always. `20` was calibrated for settlement/ring scale.
+- Secondary: `p90 − p10` is blind to mass-concentration-with-a-tail (a spiked histogram with a
+  thin tail still reads `spread`). IQR (p25−p75) or modal-bin weight-share would fix that.
+- **Lovejoy regions are the largest areas of all** — even a re-tuned threshold mostly says
+  `spread`. So for WO05: **suppress the badge at region scale**; lead with histogram + p10/p90
+  range + area-weighted percentile. Re-tuning the classifier for mid-size polities (size-aware
+  `T`, or switch to IQR) is a **separate engine task**, not a WO05 blocker.
+- Shelved alongside: the "as of {resolver_year} CE" stamp rendering on *static* A–E variables
+  (Karl's original bug from the same screenshots) — the resolver year describes the region's
+  spatial extent, not the vintage of a soil measurement. Fix when the renderer is ported: a
+  single area-level "extent as of {year}" caption, or scope the stamp to Band T rows only.
+
+### Renderer port
+
+The Sandbox Polities signature renderer is coupled to Sandbox state; WO05 ports a trimmed copy
+into `workbench.html` (band accordions + `renderLeaf` + `renderHistogram`), fed from
+`lovejoy_signatures.json` rather than a live fetch. Main JS cost.
+
+### Caveats to state in the modal
+
+- Distributions are **wide by construction** — big, deliberately heterogeneous areas; that's
+  informative, not a defect (hence the badge suppression above).
+- Points-stand-for-territories does **not** apply (no society points) — cleaner than the
+  society-spread version.
+- Band T is one fixed 50-year window, no scrub — a region-character summary, not the interactive
+  polity panel.
+
+### Rough cost
+
+Build script ~an afternoon (engine call per region + assemble + size-check). Renderer port +
+modal wiring: the bulk, ~a day depending on how tangled the Sandbox renderer is. Coherence
+re-tune: deferred, separate.
