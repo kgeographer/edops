@@ -246,12 +246,21 @@
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
-      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active.
-           The single click-output target: region attributes now, D-PLACE society data later. -->
+      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
+      <!-- SKUNKWORKS: marker-click reflows this panel -->
+      <style>
+        #afr-right.mode-society #afr-region-body { display:none; }
+        #afr-right.mode-society #soc-vars        { display:block; }
+        #afr-right.mode-society #var-select      { margin-top:auto; }
+        #afr-right.cite-retired #afr-cite        { display:none; }
+      </style>
       <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
-        <!-- filled by renderAfrRegion() on a map click; empty until then -->
-        <div id="afr-region"></div>
-        <div id="afr-about">
+        <div id="afr-region">
+          <div id="afr-region-head"></div>              <!-- title + macro subtitle (region OR marker's containing region) -->
+          <div id="afr-region-body"></div>             <!-- FROM THE ARTICLE rationale + hr; hidden in society mode -->
+        </div>
+        <div id="soc-vars" style="display:none;"></div>  <!-- D-PLACE content on marker click (placeholder for now) -->
+        <div id="var-select">
           <!-- intro text — hidden once a region rationale is showing (renderAfrRegion) -->
           <div id="afr-about-text">
             <div class="d-flex justify-content-between align-items-baseline">
@@ -1085,12 +1094,6 @@
         },
       });
 
-      _afrMap.on('click', 'lovejoy-fill', (e) => {
-        selectAfrRegion(e.features[0].id);
-        renderAfrRegion(e.features[0].properties);
-      });
-      _afrMap.on('mouseenter', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
-      _afrMap.on('mouseleave', 'lovejoy-fill', () => { _afrMap.getCanvas().style.cursor = ''; });
 
       // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
       // Rivers: African mainstems (dissolved HydroRIVERS), under the region outlines.
@@ -1105,7 +1108,8 @@
           'line-width': ['case', ['<=', ['to-number', ['get', 'ord_clas']], 1], 1.2, 0.6],
         },
       }, 'lovejoy-line');
-      // Societies: 528 African D-PLACE points; added last -> topmost. No click yet.
+      // Societies: 528 African D-PLACE points; added last -> topmost. Click handled
+      // by the unified dispatcher below (renderAfrSociety).
       _afrMap.addSource('afr-societies', {
         type: 'geojson', data: '/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}',
       });
@@ -1117,8 +1121,25 @@
           'circle-stroke-width': 1, 'circle-stroke-color': '#fff',
         },
       });
-      _afrMap.on('mouseenter', 'afr-soc-dots', () => { _afrMap.getCanvas().style.cursor = 'pointer'; });
-      _afrMap.on('mouseleave', 'afr-soc-dots', () => { _afrMap.getCanvas().style.cursor = ''; });
+      // Unified click / cursor dispatcher — topmost of [societies, regions] wins.
+      // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
+      const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
+      _afrMap.on('click', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        const region = hits.find(h => h.layer.id === 'lovejoy-fill');
+        if (soc) {
+          if (region) selectAfrRegion(region.id);
+          renderAfrSociety(soc.properties, region ? region.properties : null);
+        } else if (region) {
+          selectAfrRegion(region.id);
+          renderAfrRegion(region.properties);
+        }
+      });
+      _afrMap.on('mousemove', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        _afrMap.getCanvas().style.cursor = hits.length ? 'pointer' : '';
+      });
 
       // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
       const lc = document.createElement('div');
@@ -1153,25 +1174,48 @@
     _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
   }
 
-  // Region click -> #afr-region (top of the right column, above the persistent
-  // About / citation block). D-PLACE society clicks will render here too, later.
+  const _afrEsc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  function renderAfrRegionHead(name, macro) {
+    document.getElementById('afr-region-head').innerHTML =
+      `<h5 class="mb-0">${_afrEsc(name)}</h5>` +
+      `<div class="text-secondary small mb-2">${_afrEsc(macro)}</div>`;
+  }
+
+  // Region click -> title + macro + the article rationale, in #afr-region.
   function renderAfrRegion(p) {
-    const el = document.getElementById('afr-region');
-    if (!el) return;
-    // once a rationale is up, the intro has done its job — hide it (controls stay).
-    // Painting a variable never calls this, so "paint first" leaves the intro visible.
     const about = document.getElementById('afr-about-text');
-    if (about) about.style.display = 'none';
-    const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    if (about) about.style.display = 'none';           // intro has done its job
+    document.getElementById('afr-right').classList.remove('mode-society');
+    renderAfrRegionHead(p.name, p.macro);
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
-    el.innerHTML =
-      `<h5 class="mb-0">${esc(p.name)}</h5>` +
-      `<div class="text-secondary small mb-2">${esc(p.macro)}</div>` +
+    document.getElementById('afr-region-body').innerHTML =
       (p.rationale
-        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article${esc(pgLabel)}</p>` +
-          `<p class="mb-0">“${esc(p.rationale)}”</p>`
+        ? `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">From the article${_afrEsc(pgLabel)}</p>` +
+          `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`
         : '') +
+      `<hr class="my-3">`;
+  }
+
+  // Marker click (SKUNKWORKS) -> keep the containing region's title/macro, hide the
+  // rationale + citation, drop the paint-a-variable block to the bottom, reveal
+  // #soc-vars for D-PLACE content (placeholder for now).
+  function renderAfrSociety(soc, region) {
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';
+    const right = document.getElementById('afr-right');
+    right.classList.add('mode-society', 'cite-retired');
+    if (region) renderAfrRegionHead(region.name, region.macro);
+    else renderAfrRegionHead(soc.name || 'Society', 'D-PLACE');
+    const row = (k, v) => `<tr><td class="text-secondary" style="width:44%;">${_afrEsc(k)}</td><td>${_afrEsc(v || '—')}</td></tr>`;
+    document.getElementById('soc-vars').innerHTML =
+      `<p class="mb-1 small text-uppercase text-secondary" style="letter-spacing:.04em;">D-PLACE society</p>` +
+      `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
+      row('Society', soc.name) + row('D-PLACE id', soc.soc_id) +
+      row('Subsistence (EA042)', soc.subsistence) + row('High gods (EA034)', soc.religion) +
+      `</tbody></table>` +
+      `<p class="small text-muted mb-2">— placeholder; EA variable values land here —</p>` +
       `<hr class="my-3">`;
   }
 
