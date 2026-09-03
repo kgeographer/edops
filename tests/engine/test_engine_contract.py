@@ -34,6 +34,7 @@ from scripts.edop.areas.engine import (
     load_catalog,
     dispatch_variable,
     _agg_hyde_b7,
+    _SPREAD_THRESHOLD,
 )
 from scripts.shared.db_utils import db_connect
 
@@ -298,19 +299,33 @@ class TestPayloadEnvelope:
 
 class TestBlockContracts:
     def test_b1_detail_fields(self, buf_rows):
-        """B1 rows carry spread, p10, p90 in detail; coherence in vocabulary."""
+        """B1 rows carry spread + iqr + the quartiles in detail; coherence in vocabulary."""
         b1 = [r for r in buf_rows if r['method'] == 'area_weighted']
         assert b1, 'No B1 rows found'
         for r in b1:
             detail = r.get('detail') or {}
             if r['status'] == 'ok':
-                assert 'spread' in detail, f'{r["variable"]}: missing spread'
-                assert 'p10' in detail,    f'{r["variable"]}: missing p10'
-                assert 'p90' in detail,    f'{r["variable"]}: missing p90'
+                for k in ('spread', 'iqr', 'p10', 'p25', 'p75', 'p90'):
+                    assert k in detail, f'{r["variable"]}: missing {k}'
             coh = r.get('coherence')
             if coh is not None:
                 assert coh in VALID_COHERENCES, \
                     f'{r["variable"]}: unknown coherence {coh!r}'
+
+    def test_b1_coherence_is_iqr_driven(self, buf_rows):
+        """coherence follows the tail-robust IQR (p75-p25), not the p10-p90 span
+        (2026-09-03: long tails were making concentrated-mass distributions read 'spread')."""
+        b1 = [r for r in buf_rows
+              if r['method'] == 'area_weighted' and r['status'] == 'ok'
+              and r.get('coherence') in ('concentrated', 'spread')]
+        assert b1, 'No classified B1 rows found'
+        for r in b1:
+            d = r['detail']
+            expect = 'concentrated' if d['iqr'] < _SPREAD_THRESHOLD else 'spread'
+            assert r['coherence'] == expect, \
+                f'{r["variable"]}: coherence={r["coherence"]!r} but iqr={d["iqr"]} → {expect}'
+            assert d['iqr'] <= d['spread'] + 1e-6, \
+                f'{r["variable"]}: iqr {d["iqr"]} > span {d["spread"]}'
 
     def test_b1_spread_rows_carry_score(self, buf_rows):
         """Spread B1 rows emit the weighted-mean score; coherence='spread' is the flag.

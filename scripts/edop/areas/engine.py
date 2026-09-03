@@ -1564,7 +1564,9 @@ def aggregate_b4(basin_set, raw_df,
 
 # Only river_area takes the extreme path; river_area_upstream is deferred (register).
 _B5_EXTREME_VARS    = frozenset({'river_area'})
-_SPREAD_THRESHOLD   = 20.0  # concentrated if (p90-p10) < T — provisional; shared by B1 + B5
+_SPREAD_THRESHOLD   = 20.0  # concentrated if weighted IQR (p75-p25) < T — tail-robust; B1 + B5
+                            # (was p90-p10; long tails made large heterogeneous areas read 'spread'
+                            #  when the mass was concentrated — 2026-09-03)
 
 
 def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
@@ -1575,8 +1577,9 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
       Surfaces the weighted distribution without rendering a verdict.
       representative_score = weighted mean percentile (always populated).
       representative_raw   = None (native-unit means deferred per register).
-      coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
-      detail               = {spread, p10, p90, unit: 'percentile'}.
+      coherence            = 'concentrated' if IQR (p75-p25) < _SPREAD_THRESHOLD else 'spread'.
+      detail               = {spread, iqr, p10, p25, p75, p90, unit: 'percentile'}
+                             (spread = p90-p10, retained for B6 modality + histogram labels).
       status               = 'ok' (the fallback's untyped-ness is carried by
                              method='distribution_only', not status; Pin 1
                              vocabulary is {ok, outside_active_domain, no_data}).
@@ -1656,17 +1659,23 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
         wmean    = round(float(np.dot(scores, wts_norm)), 2)
         p10_raw  = weighted_quantile(scores, wts_norm, 0.10)
         p90_raw  = weighted_quantile(scores, wts_norm, 0.90)
+        p25_raw  = weighted_quantile(scores, wts_norm, 0.25)
+        p75_raw  = weighted_quantile(scores, wts_norm, 0.75)
         spread   = round(p90_raw - p10_raw, 2)
+        iqr      = round(p75_raw - p25_raw, 2)
         p10      = round(p10_raw, 2)
         p90      = round(p90_raw, 2)
+        p25      = round(p25_raw, 2)
+        p75      = round(p75_raw, 2)
 
-        coherence = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'
+        coherence = 'concentrated' if iqr < _SPREAD_THRESHOLD else 'spread'
         rows.append(make_row(
             variable=var, band=band,
             method='distribution_only', unit_type='basin', n_units=n,
             representative_score=wmean, representative_raw=None,
             coverage=round(cov, 4), status='ok', coherence=coherence,
-            detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
+            detail={'spread': spread, 'iqr': iqr, 'p10': p10, 'p25': p25,
+                    'p75': p75, 'p90': p90, 'unit': 'percentile'},
         ))
 
         for hid, score, wt in zip(joined.index[mask], scores, w[mask].values):
@@ -1901,7 +1910,8 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
       - scores = global-percentile scores from matrix_df
       - null scores dropped; surviving weights renormalized → coverage
       - weight_at_zero = fraction of total buffer weight at score 0.0
-      - coherence: 'concentrated' if weighted (p90-p10) < T, else 'spread'
+      - coherence: 'concentrated' if weighted IQR (p75-p25) < T, else 'spread'
+        (spread = weighted p90-p10 is still emitted in detail for B6 + histogram labels)
       - outside_active_domain guard: if zero_fraction >= threshold AND
         weight_at_zero >= zero_coverage_threshold
 
@@ -1918,7 +1928,7 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
     matrix_df  : DataFrame — hybas_id as index; continuous position scores
     meta_df    : DataFrame — api_key as index; columns include band,
                              typology_cluster, kind, zero_fraction
-    spread_threshold       : float — T; coherence boundary (default 20.0, provisional)
+    spread_threshold       : float — T; coherence boundary on IQR (p75-p25), default 20.0
     zero_fraction_threshold: float — catalog threshold for zero-aware vars (default 0.20)
     zero_coverage_threshold: float — outside_active_domain guard (default 0.90)
 
@@ -1970,9 +1980,14 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         wmean   = round(float(np.dot(scores, wts_norm)), 2)
         p10_raw = weighted_quantile(scores, wts_norm, 0.10)
         p90_raw = weighted_quantile(scores, wts_norm, 0.90)
-        spread  = round(p90_raw - p10_raw, 2)   # from unrounded values, matching notebook
+        p25_raw = weighted_quantile(scores, wts_norm, 0.25)
+        p75_raw = weighted_quantile(scores, wts_norm, 0.75)
+        spread  = round(p90_raw - p10_raw, 2)   # p10–p90 span — kept for B6 modality + hist labels
+        iqr     = round(p75_raw - p25_raw, 2)   # middle-half span — tail-robust; drives coherence
         p10     = round(p10_raw, 2)
         p90     = round(p90_raw, 2)
+        p25     = round(p25_raw, 2)
+        p75     = round(p75_raw, 2)
 
         if (zf is not None
                 and zf >= zero_fraction_threshold
@@ -1980,7 +1995,7 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             status_val = 'outside_active_domain'
             coherence  = None
             rep_score  = None
-        elif spread < spread_threshold:
+        elif iqr < spread_threshold:
             status_val = 'ok'
             coherence  = 'concentrated'
             rep_score  = wmean
@@ -2008,7 +2023,10 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             weight_at_zero=weight_at_zero,
             detail={
                 'spread':       spread,
+                'iqr':          iqr,
                 'p10':          p10,
+                'p25':          p25,
+                'p75':          p75,
                 'p90':          p90,
                 'unit':         'percentile',
                 'distribution': hist_b,
