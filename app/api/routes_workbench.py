@@ -10,9 +10,11 @@ import re
 import ssl
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import certifi
+import shapely.geometry
 from fastapi import APIRouter, HTTPException
 
 from app.db.connection import db_connect
@@ -20,6 +22,7 @@ from app.db.seasonality import find_similar
 from app.db.societies_scan import run_societies_env_scan
 from app.settings import settings
 from app.api.routes_common import _whg_suggest_first, _whg_entity, _extract_lonlat
+from scripts.edop.areas.engine import areal_signature_polygon, resolve_polygon
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -1474,3 +1477,76 @@ def societies_env_scan(trait: str, value: str):
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+# -----------------------
+# /lovejoy-signature -- areal signature for one African Regions tab Lovejoy polygon (WO05)
+# -----------------------
+
+_LOVEJOY_GEOJSON_PATH = Path(__file__).resolve().parents[1] / "static" / "workbench" / "lovejoy_regions.geojson"
+_LOVEJOY_T_FROM, _LOVEJOY_T_TO = 1600, 1650  # locked WO05 decision -- first Atlantic-trade surge window
+
+_lovejoy_geoms_cache: Optional[Dict[str, Tuple[str, str, str]]] = None  # {src_id: (geom_wkt, name, macro)}
+
+
+def _lovejoy_geoms() -> Dict[str, Tuple[str, str, str]]:
+    """Lazy, cached read of the served lovejoy_regions.geojson -- the app never queries
+    whg_staging at runtime, and this static artifact is already the single source of truth
+    for these 34 polygons (built by build_lovejoy_geojson.py)."""
+    global _lovejoy_geoms_cache
+    if _lovejoy_geoms_cache is None:
+        data = json.loads(_LOVEJOY_GEOJSON_PATH.read_text())
+        _lovejoy_geoms_cache = {
+            f["properties"]["src_id"]: (
+                shapely.geometry.shape(f["geometry"]).wkt,
+                f["properties"]["name"],
+                f["properties"]["macro"],
+            )
+            for f in data["features"]
+        }
+    return _lovejoy_geoms_cache
+
+
+@router.get("/lovejoy-signature", include_in_schema=False)
+def lovejoy_signature(src_id: str):
+    """Areal signature for one Lovejoy pre-colonial African subregion (WO05).
+
+    Live, not precomputed -- mirrors GET /api/area's own areal_signature_polygon call, keyed by
+    a Lovejoy src_id instead of a Cliopatria polity name. L6, all bands, Band T pinned to the
+    locked 1600-1650 window (see workplan_africa.md WO05). Real compute cost, same order as a
+    polity areal signature (~9s measured in sandbox.html) -- no server-side cache; the African
+    Regions tab caches per-src_id client-side after the first fetch.
+    """
+    geoms = _lovejoy_geoms()
+    if src_id not in geoms:
+        raise HTTPException(status_code=404, detail=f"Unknown Lovejoy src_id '{src_id}'")
+    geom_wkt, name, macro = geoms[src_id]
+    conn = None
+    try:
+        conn = db_connect()
+        # 3 of the 34 regions (small offshore island groups: St. Helena, Cabo Verde,
+        # Mascarenes) resolve to zero L6 basins -- BasinATLAS has no coverage there.
+        # areal_signature_polygon's SQL blows up on an empty IN() clause in that case
+        # (a pre-existing engine gap, not WO05-specific); check first and fail clean.
+        if resolve_polygon(geom_wkt, "06", conn).empty:
+            raise HTTPException(
+                status_code=422,
+                detail=f"'{name}' has no BasinATLAS L6 basin coverage (a small offshore "
+                        "island group) -- no areal signature is available for this region.",
+            )
+        payload = areal_signature_polygon(
+            geom_wkt, conn,
+            level=6, bands=None,  # None = A-E + T, since from_year/to_year are given
+            from_year=_LOVEJOY_T_FROM, to_year=_LOVEJOY_T_TO,
+            include_detail=True,
+            resolver_year=None, polity_id=None,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn is not None:
+            conn.close()
+    payload["resolver"] = {"type": "lovejoy_region", "src_id": src_id, "name": name, "macro": macro}
+    return payload
