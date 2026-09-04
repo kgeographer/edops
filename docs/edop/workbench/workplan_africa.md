@@ -23,32 +23,41 @@ execution; we still take them one at a time.
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
 | WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (merged `80fec2c` into `wb_africa`) |
-| WO05 | Areal signature per Lovejoy region | **build spec ready** (2026-09-04) — below |
+| WO05 | Areal signature per Lovejoy region | **complete** (2026-09-04) — below |
 | WO06 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
 
 ---
 
 ## You are here
 
-WO01–WO04 done, on branch **`wb_africa_wo04`** (@ `bee0638`). `#afr-map` renders the 34 Lovejoy
-regions + a paintable BasinATLAS variable (`#afr-var` select + L6/L8 pill, global ramp domain,
-legend in `#afr-readouts`), and a top-right **Layers** box toggling **Regions** / **Societies**
-(528 African D-PLACE points) / **Rivers** (34 mainstems). A unified click dispatcher resolves
-topmost of {marker, region}; the right panel reflows between region mode (title + collapsible
-rationale + paint controls + citation) and society mode (region title, collapsed rationale,
-`#soc-vars` D-PLACE card, paint controls dropped to the bottom, citation retired). Society card:
-name + `<id> record` link (opens the D-PLACE page in a 90vw modal iframe), EA042 / EA034 with a
-magnifier that rings every marker sharing that value + a count.
+WO01–WO05 done. WO01–WO04 merged into `wb_africa`; **WO05 done on branch `wb_africa_wo05`**
+(off `wb_africa`), not yet merged back. `#afr-map` renders the 34 Lovejoy regions + a paintable
+BasinATLAS variable (`#afr-var` select + L6/L8 pill, global ramp domain, legend in
+`#afr-readouts`), and a top-right **Layers** box toggling **Regions** / **Societies** (528
+African D-PLACE points) / **Rivers** (34 mainstems). A unified click dispatcher resolves topmost
+of {marker, region}; the right panel reflows between region mode (title + flush-right **Region
+signature** link + collapsible rationale + paint controls + citation) and society mode (region
+title, same signature link when there's a containing region, collapsed rationale, `#soc-vars`
+D-PLACE card, paint controls dropped to the bottom, citation retired). Society card: name +
+`<id> record` link (opens the D-PLACE page in a 90vw modal iframe), EA042 / EA034 with a
+magnifier that rings every marker sharing that value + a count. **WO05 adds**: clicking "Region
+signature ↗" opens the same modal shell in a second mode, fetching `GET /api/lovejoy-signature`
+live (~1.5–3.7s, client-cached per region) and rendering a full band-accordion areal signature
+(A–E + T, T's LMR rows keep their interactive year slider) — see the WO05 sections below for the
+full build record.
 
-**Branches:** `wb_africa_wo04` holds WO01–WO04. `wb_africa` (@ `4d91156`) is one commit behind
-(the WO04 build spec). The `TEMP (dev eyeball)` line in `workbench.html` still forces the African
-Regions tab open — **remove before `wb_africa_wo04` merges up**.
+**Branches:** `wb_africa_wo04` (WO01–WO04) already merged into `wb_africa`. `wb_africa_wo05`
+(this WO) sits on top, ready to merge `--no-ff` into `wb_africa`. The `TEMP (dev eyeball)` line in
+`workbench.html` still forces the African Regions tab open — **remove before `wb_africa` merges
+toward `v04`** (the actual pre-Braga cutover point, not this WO's own merge).
 
 **Next / not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
-variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read);
-society ↔ region cross-highlight; graduate the skunkworks D-PLACE modal / EA magnifier out of
-`SKUNKWORKS` tags; discharge log-ramp; rivers `upland_skm` / z-order tuning; the two untracked
-reference files (`africaregions.html`, `D-PLACE_Markers.md`) are local-only.
+variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read); society ↔
+region cross-highlight; a "Society basin signature" link on the society-info header (the natural
+sibling to WO05's "Region signature" link, once a society's own containing-basin lookup exists);
+graduate the skunkworks D-PLACE modal / EA magnifier out of `SKUNKWORKS` tags; discharge log-ramp;
+rivers `upland_skm` / z-order tuning; the two untracked reference files (`africaregions.html`,
+`D-PLACE_Markers.md`) are local-only.
 
 ## Prerequisite checks
 
@@ -1218,7 +1227,7 @@ lookup.
   calling `areal_signature_polygon`. The other three small island regions in the geometry set —
   Comoros, Gulf Islands, Canarias — do resolve (1–2 basins each) and are unaffected. `Commit 2`'s
   modal error-handling path (the `catch` block that renders `e.message` as `text-danger`) already
-  covers this case for free — clicking one of the 3 affected regions' "Signature ↗" link will show
+  covers this case for free — clicking one of the 3 affected regions' "Region signature ↗" link will show
   the 422 message in the modal rather than a scary error.
 - **Latency is real, not a defect.** Lovejoy regions are large polygons — plausibly *slower* than
   the ~9s polity baseline for the bigger ones (more L6 basins to aggregate). No caching layer on
@@ -1230,7 +1239,26 @@ lookup.
 
 ### Commit 2 — panel + modal shell: profile link + dual-purpose `#afr-dplace-modal`
 
-### Commit 2 — panel + modal shell: profile link + dual-purpose `#afr-dplace-modal`
+**Revision (2026-09-04, after Karl's in-browser review).** The link's placement below moved
+again: not on the rationale-toggle line after all, but **flush-right on the `#afr-region-head`
+`<h5>` title line**, and relabeled **"Region signature ↗"** (plain "Signature" read ambiguously
+in society mode, where the head still shows the containing region's title). Reasoning: Karl
+flagged that a future WO will likely add a second, related link — a society's *own* containing
+basin's signature, on the society-info header — and the two should sit vertically aligned but
+clearly distinct ("Region signature" vs. "Society basin signature" when that lands), which the
+rationale-toggle line can't support. Implementation consequence: `renderAfrRegionHead(name, macro)`
+became `renderAfrRegionHead(name, macro, srcId)` — the link is only emitted into the generated
+markup when `srcId` is given (region click, or a society click with a containing region; `null`
+in the society-with-no-containing-region fallback) — passed explicitly rather than read off the
+shared `_afrSelected` global, so there's no staleness risk if `_afrSelected` and the head's actual
+content ever diverge. Because `#afr-region-head` is replaced via `innerHTML` on every click, the
+link is a fresh DOM node each time — its click handler is **delegated** on `#afr-region-head`
+(same pattern `#soc-vars`' magnifier/clear already uses, for the same reason) rather than bound
+directly. `afrOpenProfileModal()` now takes `srcId` as a parameter instead of reading
+`_afrSelected` internally. The `#afr-rationale-toggle` line and `_afrSetRationale()` revert to
+their pre-WO05 form (no wrapping row, no shared gate) since the link no longer lives there. The
+snippets below are the as-built Commit 2, before this revision — kept for the reasoning trail, not
+as current markup; the *Commit 3* section and the file's close-out reflect the final placement.
 
 **Rationale-row restructure** (`app/templates/workbench.html`, ~L264–266). Currently
 `#afr-rationale-toggle` is a bare `<p>` carrying its own `hidden` attribute (toggled by
@@ -1244,7 +1272,7 @@ computes from `p.rationale`:
   <p id="afr-rationale-toggle" class="mb-0 small text-uppercase" style="letter-spacing:.04em;cursor:pointer;">
     <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
   </p>
-  <a href="#" id="afr-profile-link" class="small text-decoration-none">Signature ↗</a>
+  <a href="#" id="afr-profile-link" class="small text-decoration-none">Region signature ↗</a>
 </div>
 ```
 
@@ -1424,6 +1452,28 @@ session — not committed unless it's genuinely reusable) before finishing Commi
   just the decision — the WO03/WO04 close-outs both did this and it's what makes the badge fix's
   effect traceable later.
 
+**Done (2026-09-04).** Ran the live route over all 34 regions (31 resolve; the 3 no-coverage
+islands skipped) and tallied `coherence` across every A–E row. **Result: a real mix, not a wall of
+`spread`** — **620 concentrated / 480 spread (56%) across 31 regions.** Even the largest,
+most heterogeneous-looking regions read a genuine split, same pattern the `59bfcea` fix showed for
+polities:
+
+| region | L6 basins | concentrated | spread |
+|---|---|---|---|
+| Central Sahara (largest) | 438 | 27 | 11 |
+| Western Sahara | 434 | 24 | 14 |
+| Rainforest | 361 | 22 | 15 |
+| Western Savanna | 337 | 12 | 27 |
+| Nile Valley | 117 | 15 | 25 |
+| East Coast | 56 | 18 | 18 |
+
+**Decision: no suppression.** The badge renders as-is via `_afrSigLeaf`, unmodified from
+Sandbox's own logic — the scope section's fallback (suppress at region scale) is not needed. The
+1–2-basin island regions (Canarias, Comoros, Gulf Islands) trend near-universally "concentrated,"
+as expected for a near-single-basin area, but those are mostly `n_units===1` rows anyway, which
+bypass the badge entirely via `renderSingleBasinContinuousLeaf` in the real renderer — not a
+special case to design around.
+
 ### Deploy
 
 No new static asset — Commit 1 is a route (app code), Commit 2/3 are template changes. Nothing
@@ -1446,11 +1496,13 @@ any other route/template change.
 - `GET /api/lovejoy-signature?src_id=<id>` returns the `areal_signature_polygon` payload (L6, all
   bands, `from_year=1600, to_year=1650, include_detail=True`) plus a `resolver` block; unknown
   `src_id` → 404; engine errors → 500. No new static asset, no DB hit against `whg_staging`.
-- `#afr-rationale-row` shows the rationale toggle **and** a flush-right "Signature ↗" link
-  whenever a region is in scope (region click or society click with a containing region); both
-  hidden together on empty-space deselect.
-- Clicking "Signature ↗" opens `#afr-dplace-modal` in profile mode (narrower dialog, title reads
-  "Areal signature", D-PLACE-only chrome hidden) with a loading message, then fetches
+- `#afr-region-head`'s `<h5>` title line carries a flush-right "Region signature ↗" link
+  whenever the head is showing a real Lovejoy region (region click, or a society click with a
+  containing region) — absent (not just hidden) when it's showing a bare society name with no
+  containing region. `#afr-rationale-toggle` is unrelated to this link now (reverted to its
+  pre-WO05 form after the 2026-09-04 revision, above).
+- Clicking "Region signature ↗" opens `#afr-dplace-modal` in profile mode (narrower dialog, title reads
+  "Areal signature", D-PLACE-only chrome hidden) with a spinner + loading message, then fetches
   `/api/lovejoy-signature` for the selected region and renders band accordions (T open by
   default, slider live) with `_afrSigLeaf` percentile/coherence/histogram output per row.
   Re-opening the same region's modal within the session renders instantly from
@@ -1476,3 +1528,14 @@ any other route/template change.
 - Exact wording/placement of the coherence-suppression fallback copy, if that branch is taken.
 - Whether the Band T slider stays interactive through the actual Braga talk or gets pinned to the
   midpoint for a calmer demo — decide after seeing it live, not now.
+
+---
+
+## WO05 — Close-out (2026-09-04)
+
+**Done**, branch `wb_africa_wo05` (off `wb_africa`), ready to merge. Three commits per the build
+spec above, plus Karl's in-browser review fixes folded in: `GET /api/lovejoy-signature` (live,
+no precompute), the dual-purpose modal + ported band-accordion renderer, and the "Region
+signature" link moved to the `#afr-region-head` title line. Coherence badge: no suppression
+needed (620 concentrated / 480 spread across 31 regions). Latency: 1.5–3.7s live, no server cache
+needed. `pytest tests/`: 529 passed, 14 skipped throughout.
