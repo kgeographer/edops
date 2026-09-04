@@ -24,14 +24,14 @@ execution; we still take them one at a time.
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
 | WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (merged `80fec2c` into `wb_africa`) |
 | WO05 | Areal signature per Lovejoy region | **complete** (2026-09-04) — below |
-| WO06 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
+| WO06 | Core-share exploration (notebook only) | **scoped** (2026-09-04) — below; full spec `docs/design/_workbench/coherence_study_opus.md` |
+| WO07 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
 
 ---
 
 ## You are here
 
-WO01–WO05 done. WO01–WO04 merged into `wb_africa`; **WO05 done on branch `wb_africa_wo05`**
-(off `wb_africa`), not yet merged back. `#afr-map` renders the 34 Lovejoy regions + a paintable
+WO01–WO05 done and merged into `wb_africa` (`8b14e8c`). `#afr-map` renders the 34 Lovejoy regions + a paintable
 BasinATLAS variable (`#afr-var` select + L6/L8 pill, global ramp domain, legend in
 `#afr-readouts`), and a top-right **Layers** box toggling **Regions** / **Societies** (528
 African D-PLACE points) / **Rivers** (34 mainstems). A unified click dispatcher resolves topmost
@@ -46,12 +46,17 @@ live (~1.5–3.7s, client-cached per region) and rendering a full band-accordion
 (A–E + T, T's LMR rows keep their interactive year slider) — see the WO05 sections below for the
 full build record.
 
-**Branches:** `wb_africa_wo04` (WO01–WO04) already merged into `wb_africa`. `wb_africa_wo05`
-(this WO) sits on top, ready to merge `--no-ff` into `wb_africa`. The `TEMP (dev eyeball)` line in
-`workbench.html` still forces the African Regions tab open — **remove before `wb_africa` merges
-toward `v04`** (the actual pre-Braga cutover point, not this WO's own merge).
+**Branches:** `wb_africa_wo04` and `wb_africa_wo05` both merged into `wb_africa`; neither deleted
+yet. The `TEMP (dev eyeball)` line in `workbench.html` still forces the African Regions tab open —
+**remove before `wb_africa` merges toward `v04`** (the actual pre-Braga cutover point, not any
+single WO's own merge).
 
-**Next / not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
+**Next: WO06** — a notebook-only study (no engine/API/UI changes) of an alternative dispersion
+statistic ("core share") against the shipped IQR badge, prompted by a real misclassification
+(`snd_pc_sav`/`snd_pc_uav` reading opposite badges for visually similar skewed distributions).
+Full spec below and in `docs/design/_workbench/coherence_study_opus.md`.
+
+**Not yet scoped (own WOs, past WO06):** society styling by trait (EA042 colour) over a painted
 variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read); society ↔
 region cross-highlight; a "Society basin signature" link on the society-info header (the natural
 sibling to WO05's "Region signature" link, once a society's own containing-basin lookup exists);
@@ -1533,9 +1538,62 @@ any other route/template change.
 
 ## WO05 — Close-out (2026-09-04)
 
-**Done**, branch `wb_africa_wo05` (off `wb_africa`), ready to merge. Three commits per the build
-spec above, plus Karl's in-browser review fixes folded in: `GET /api/lovejoy-signature` (live,
-no precompute), the dual-purpose modal + ported band-accordion renderer, and the "Region
+**Done**, branch `wb_africa_wo05` merged `--no-ff` into `wb_africa` (`8b14e8c`). Three commits per
+the build spec above, plus Karl's in-browser review fixes folded in: `GET /api/lovejoy-signature`
+(live, no precompute), the dual-purpose modal + ported band-accordion renderer, and the "Region
 signature" link moved to the `#afr-region-head` title line. Coherence badge: no suppression
 needed (620 concentrated / 480 spread across 31 regions). Latency: 1.5–3.7s live, no server cache
 needed. `pytest tests/`: 529 passed, 14 skipped throughout.
+
+---
+
+## WO06 — Core-share exploration (notebook only) (2026-09-04)
+
+**State: scoped, not started.** Full spec: `docs/design/_workbench/coherence_study_opus.md`
+(Opus draft, Karl's WO number confirmed, two technical notes folded in by Claude Code — see
+below). This entry is a pointer + summary per the usual convention; the linked doc is the
+source of record, not re-derived here.
+
+**Standing proviso — nothing in this WO changes engine, API, or UI code.** Deliverable is a
+notebook plus its outputs. The shipped dispersion badge (`coherence_iqr`, `59bfcea`, carried
+through WO05 unchanged) stays exactly as-is until a separate, later WO retires it.
+
+**Why.** The shipped IQR-based badge misclassifies skewed distributions — confirmed live against
+real data before writing this in: `snd_pc_sav`/`snd_pc_uav` (visually near-identical, bulk-left/
+thin-tail-right shapes) receive opposite badges for real regions (Rivers: concentrated 12.74 /
+spread 20.88; North Coast: concentrated 15.79 / spread 29.05). IQR counts inward from both ends,
+so a lopsided tail pulls its upper edge outside the actual dense region even when the bulk is
+tight — not a threshold problem, the statistic answers a different question than "how tight is
+the core."
+
+**Proposed alternative — core share.** The fraction of a region's weighted area falling inside
+the densest fixed-width window on the global rank axis. Tail-immune by construction, one knob
+(window half-width δ), reports as a percentage.
+
+**Part A — does core share track visual reading?** Compute core share (δ ∈ {10, 15, 20}) and
+current IQR side by side for every (region × variable) pair; check ordering stability across δ;
+scatter the two statistics and hand-inspect the ~20 strongest disagreements (histogram + both
+numbers + the core window drawn on the axis) against Karl's own reading — the motivating
+`snd_pc_sav`/`snd_pc_uav` pair included regardless of rank. A tie-handling and NaN-handling check
+on the global percentile transform runs **first** — a real risk (zero-inflated BasinATLAS vars
+like karst), and if it turns up a problem, Part A stops there rather than building ranked results
+on a corrupted axis. Gate: Karl's own eye against the disagreement panel, not a second metric.
+
+**Part B — region-level profile (exploratory, no gate).** Using Part A's table: per region, how
+many variables clear a given core-share level (by band); the 34 regions ranked by that count —
+which declared Lovejoy regions actually cohere environmentally and which don't; which variables
+carry the coherence; whether coherence tracks region size (a confound that has to be controlled
+for before any absolute cutoff means anything). Output: tables + a regions × variables heatmap.
+No threshold is adopted — Part B exists to show whether a region-level read has anything to say
+before anything is built around it.
+
+**Two technical notes folded in (Claude Code review, 2026-09-04) before execution:**
+1. The API's `detail.distribution` histogram (`engine.py :: _weighted_histogram`) bins over each
+   region's own local `[min, max]` at a fixed 20 bins — not the global `[0,100]` rank axis A1's
+   1-rank sliding window needs. The notebook works from `engine.py`'s raw per-basin weighted
+   scores directly (`scores`/`wts_norm`, computed just before the histogram call inside
+   `aggregate_b1`/`aggregate_b5`), not the HTTP route's payload.
+2. "Core share" as defined is a fixed-width relative of the shorth / highest-density-interval
+   family — worth a short literature check in the write-up so the framing uses established
+   vocabulary rather than re-deriving it under a new name (this project has done that before with
+   similarity work). Doesn't change the math or block starting.
