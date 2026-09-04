@@ -261,9 +261,12 @@
         <div id="afr-region">
           <div id="afr-region-head"></div>              <!-- title + macro subtitle (region OR marker's containing region) -->
           <div id="afr-region-body">
-            <p id="afr-rationale-toggle" class="mb-1 small text-uppercase" style="letter-spacing:.04em;" hidden>
-              <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
-            </p>
+            <div id="afr-rationale-row" class="d-flex justify-content-between align-items-baseline mb-1" hidden>
+              <p id="afr-rationale-toggle" class="mb-0 small text-uppercase" style="letter-spacing:.04em;">
+                <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
+              </p>
+              <a href="#" id="afr-profile-link" class="small text-decoration-none">Signature ↗</a>
+            </div>
             <div id="afr-rationale-text"></div>          <!-- the quoted rationale; collapsed via the toggle -->
             <hr id="afr-rationale-hr" class="my-3" hidden>
           </div>
@@ -411,17 +414,20 @@
 
 <!-- SKUNKWORKS: D-PLACE society page in an iframe (CC-BY-NC 4.0). If framing is
      blocked, wipe this block + afrOpenDplaceModal() + the .afr-soc-modal link/branch;
-     the plain "Cc2 ↗" link is untouched. -->
+     the plain "Cc2 ↗" link is untouched.
+     Dual-purpose (WO05): also hosts a region's areal signature (afrOpenProfileModal()),
+     swapped in via #afr-profile-body + _afrModalMode() rather than a second modal. -->
 <div class="modal fade" id="afr-dplace-modal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:90vw;width:90vw;">
+  <div class="modal-dialog modal-dialog-centered" id="afr-dplace-dialog" style="max-width:90vw;width:90vw;">
     <div class="modal-content" style="height:88vh;">
       <div class="modal-header py-2">
-        <h6 class="modal-title mb-0">D-PLACE society <span class="text-muted small">— CC-BY-NC 4.0</span></h6>
+        <h6 class="modal-title mb-0" id="afr-dplace-title">D-PLACE society <span class="text-muted small" id="afr-dplace-subtitle">— CC-BY-NC 4.0</span></h6>
         <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
         <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
+        <div id="afr-profile-body" style="display:none;width:100%;height:100%;overflow-y:auto;padding:1rem 1.25rem;"></div>
       </div>
     </div>
   </div>
@@ -1242,20 +1248,22 @@
     document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
   }
 
-  // Fill the collapsible rationale block from a Lovejoy region's feature props.
+  // Fill the collapsible rationale block from a Lovejoy region's feature props. The rationale
+  // toggle and the "Signature" profile-modal link (WO05) share one visibility gate -- #afr-
+  // rationale-row -- since both only make sense once a region is in scope.
   function _afrSetRationale(p, expanded) {
-    const toggle = document.getElementById('afr-rationale-toggle');
+    const row = document.getElementById('afr-rationale-row');
     const text = document.getElementById('afr-rationale-text');
     const hr = document.getElementById('afr-rationale-hr');
     if (!p || !p.rationale) {
-      toggle.hidden = true; text.hidden = true; text.innerHTML = ''; hr.hidden = true;
+      row.hidden = true; text.hidden = true; text.innerHTML = ''; hr.hidden = true;
       return;
     }
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
     document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
     text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
-    toggle.hidden = false;
+    row.hidden = false;
     hr.hidden = false;
     _afrRationaleExpand(expanded);
   }
@@ -1300,12 +1308,66 @@
       `<hr class="my-3">`;
   }
 
+  // #afr-dplace-modal is dual-purpose (WO05): the D-PLACE iframe (SKUNKWORKS, below) or a
+  // region's areal signature (afrOpenProfileModal). _afrModalMode() swaps the shared chrome.
+  function _afrModalMode(mode) {   // 'dplace' | 'profile'
+    const isDplace = mode === 'dplace';
+    document.getElementById('afr-dplace-frame').style.display = isDplace ? '' : 'none';
+    document.getElementById('afr-profile-body').style.display = isDplace ? 'none' : '';
+    document.getElementById('afr-dplace-subtitle').style.display = isDplace ? '' : 'none';
+    document.getElementById('afr-dplace-ext').style.display = isDplace ? '' : 'none';
+    const dlg = document.getElementById('afr-dplace-dialog');
+    dlg.style.width = isDplace ? '90vw' : '640px';
+    dlg.style.maxWidth = isDplace ? '90vw' : '92vw';   // narrower -- a signature reads tall, not wide
+  }
+
   // SKUNKWORKS: open the D-PLACE society page in a 90vw modal iframe.
   function afrOpenDplaceModal(sid) {
     const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
     document.getElementById('afr-dplace-frame').src = url;
     document.getElementById('afr-dplace-ext').href = url;
+    document.getElementById('afr-dplace-title').firstChild.textContent = 'D-PLACE society ';
+    _afrModalMode('dplace');
     bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+  }
+
+  // WO05: fetch (and cache) one region's areal signature, render it into the shared modal.
+  const _afrSigCache = {};   // {src_id: payload} -- fetched once per session, data doesn't change
+  let _afrSigSeq = 0;        // stale-fetch guard, same pattern as _afrPaintSeq
+
+  async function afrOpenProfileModal() {
+    if (!_afrSelected) return;   // link is hidden whenever this would be true
+    const srcId = _afrSelected;
+    const body = document.getElementById('afr-profile-body');
+    document.getElementById('afr-dplace-title').firstChild.textContent = 'Areal signature ';
+    _afrModalMode('profile');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+
+    if (_afrSigCache[srcId]) { body.innerHTML = _afrRenderSigHtml(_afrSigCache[srcId]); return; }
+
+    const seq = ++_afrSigSeq;
+    body.innerHTML = '<p class="text-secondary mb-0">Computing areal signature — this can take several seconds for a large region…</p>';
+    try {
+      const r = await fetch(`/api/lovejoy-signature?src_id=${encodeURIComponent(srcId)}`);
+      const payload = await r.json();
+      if (!r.ok) throw new Error(payload.detail || `HTTP ${r.status}`);
+      if (seq !== _afrSigSeq) return;   // modal reopened for a different region meanwhile
+      _afrSigCache[srcId] = payload;
+      body.innerHTML = _afrRenderSigHtml(payload);
+    } catch (e) {
+      if (seq !== _afrSigSeq) return;
+      body.innerHTML = `<p class="text-danger mb-0">${_afrEsc(e.message)}</p>`;
+    }
+  }
+
+  // TEMP (WO05 commit 2 placeholder) -- replaced by the ported band-accordion renderer in
+  // commit 3. Just enough to prove the fetch/cache/loading-state pipeline end-to-end.
+  function _afrRenderSigHtml(payload) {
+    const r = payload.resolver || {};
+    return `<h6 class="mb-1">${_afrEsc(r.name || 'Region')}</h6>
+      <div class="small mb-2">${_afrEsc(r.macro || '')}</div>
+      <p class="small mb-0">${payload.scope.n_units} L6 basins · ${payload.rows.length} rows
+      · bands ${_afrEsc([...new Set(payload.rows.map(x => x.band))].sort().join(', '))}</p>`;
   }
 
   // Ring every marker whose `field` == `value`; null/empty clears the highlight.
@@ -1939,6 +2001,9 @@
     if (afrRatToggle) afrRatToggle.addEventListener('click', () => {
       _afrRationaleExpand(document.getElementById('afr-rationale-text').hidden);
     });
+    // African Regions (WO05): open the areal-signature modal for the selected region
+    const afrProfileLink = document.getElementById('afr-profile-link');
+    if (afrProfileLink) afrProfileLink.addEventListener('click', e => { e.preventDefault(); afrOpenProfileModal(); });
     // African Regions: #soc-vars magnifier / clear (delegated — #soc-vars is re-rendered per click)
     const socVarsEl = document.getElementById('soc-vars');
     if (socVarsEl) socVarsEl.addEventListener('click', (e) => {

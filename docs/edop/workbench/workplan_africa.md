@@ -1466,9 +1466,13 @@ any other route/template change.
 
 - Modal-sharing mechanics as spec'd above (shared shell + mode toggle) vs. a second modal if that
   turns out cleaner in practice — CC's call during the build, not a blocker to starting.
-- Real per-region latency, especially for the largest regions (Sahara-scale polygons) — eyeball
-  during the build; a server-side cache is the fallback if it's genuinely too slow for the talk,
-  but not built preemptively.
+- ~~Real per-region latency~~ **measured (2026-09-04), closed** — timed `/api/lovejoy-signature`
+  across the full basin-count range (0–438 L6 basins/region): Rivers (25 basins) 1.68s, East
+  Coast (56) 1.49s, Nile Valley (117) 1.94s, Southern Savanna (217) 2.35s, Rainforest (361) 3.20s,
+  Central Sahara (438, the largest region) 3.72s. Much better than the ~9s ballpark the Sandbox
+  polity comment suggested worrying about — cost is dominated by a ~1.3–1.5s fixed base, not
+  basin count (17× the basins bought only ~2.5× the time). No server-side cache needed; the
+  Commit-2 loading message covers the range comfortably.
 - Exact wording/placement of the coherence-suppression fallback copy, if that branch is taken.
 - Whether the Band T slider stays interactive through the actual Braga talk or gets pinned to the
   midpoint for a calmer demo — decide after seeing it live, not now.
