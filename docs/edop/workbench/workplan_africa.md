@@ -23,7 +23,7 @@ execution; we still take them one at a time.
 | WO02.5 | Subregion rationale extraction — verbatim spans + page numbers | **complete** |
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
 | WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (merged `80fec2c` into `wb_africa`) |
-| WO05 | Areal signature per Lovejoy region | **scope** (2026-09-03) — below |
+| WO05 | Areal signature per Lovejoy region | **build spec ready** (2026-09-04) — below |
 | WO06 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
 
 ---
@@ -1013,8 +1013,9 @@ to spec each nit. Ran on its own branch off `wb_africa_wo04`, merged back `--no-
 
 ## WO05 — Areal signature per Lovejoy region (scope, 2026-09-03)
 
-**Not started.** Scope / guiding spec — decisions settled with Karl below; one diagnostic done
-(coherence badge), one number still Karl's to confirm (the 50-year window).
+**Not started.** Scope decisions all settled (50-year Band T window, modal trigger placement/reuse
+locked 2026-09-04); coherence-badge prerequisite fix done and merged. **Build spec written
+2026-09-04** — see *WO05 — Build spec*, below — ready to execute on branch `wb_africa_wo05`.
 
 ### Goal
 
@@ -1038,40 +1039,58 @@ renders — surfaced from a **profile modal** on the African Regions tab.
 
 ### Decisions (Karl, 2026-09-03)
 
-1. **Precompute, static artifact.** `scripts/edop/workbench/build_lovejoy_signatures.py` runs
-   `areal_signature_polygon` once per region (geom from `whg_staging.lovejoy.regions` /
-   `lovejoy_regions.geojson`) → `app/static/workbench/lovejoy_signatures.json`
-   `{src_id: {profile_groups, …}}`. Commit if ≤ ~1 MB; else gitignore + `MAINTAIN_DEPLOY.md`.
+1. ~~Precompute, static artifact.~~ **Reversed in the build spec (2026-09-04)** — Karl pointed
+   out Sandbox's own Polities tab doesn't precompute either: geometry is loaded for every time
+   slice up front, but the areal signature itself is fetched live, on demand, one slice at a
+   time (it's ~9s of compute, per `sandbox.html`'s own measurement — too slow to do for all of
+   them speculatively). WO05 has the same shape already: all 34 region geometries are always on
+   the map; the signature is the expensive per-region step. **Now: a live route,
+   `GET /api/lovejoy-signature?src_id=…`**, fetched on modal-open with a client-side cache so a
+   repeat open of the same region is instant. See *WO05 — Build spec*, Commit 1, for the reasoning
+   and the route itself.
 2. **Level L6 only.**
 3. **Band T IN**, with a **fixed 50-year window** (not the 400-year LPF `whens`, which smooths
-   LMR to nothing) — the first sustained Atlantic-trade surge. **Proposed `from_year=1600,
-   to_year=1650`** (West Central Africa → Brazil; aligns with the SlaveVoyages 1601–1650 era).
-   Alternative if "first crossing into scale" is wanted rather than "first great surge":
-   1575–1625. **[Karl to lock.]** HYDE over that window: use one representative epoch (~1650) or
-   the endpoints — `detail` handles either; pick at build.
-4. **UI: a `profile` modal.** An `<a id="afr-profile-link">` in `#afr-controls`, to the right of
-   the `#afr-var` `<select>` (after the L6/L8 pill). Region-scoped: **disabled/hidden until a
-   region is selected**; opens a modal (reuse the `#afr-dplace-modal` markup pattern, narrower —
-   a signature is tall, not wide) whose body is the ported signature renderer for the
-   currently-selected region's precomputed entry.
+   LMR to nothing) — the first sustained Atlantic-trade surge. **Locked (2026-09-04):
+   `from_year=1600, to_year=1650`** (West Central Africa → Brazil; aligns with the SlaveVoyages
+   1601–1650 era). HYDE over that window: use one representative epoch (~1650) or the endpoints —
+   `detail` handles either; pick at build.
+4. **UI: a `profile` modal, triggered from the rationale line.** **Locked (2026-09-04):** the
+   trigger is a link **flush-right on the `#afr-rationale-toggle` line** (not a separate control
+   in `#afr-controls`) — region-scoped, disabled/hidden until a region is selected. It opens a
+   modal whose body is the ported signature renderer, fed live from the Commit-1 route rather
+   than a precomputed entry (all bands, the locked 1600–1650 T window). **Reuse the existing
+   `#afr-dplace-modal` markup/logic for dual purpose** (society D-PLACE page + region signature)
+   rather than building a second modal — share the shell, parameterize header/body/escape-link
+   per use; narrow it for the signature case since a signature reads tall, not wide. Exact
+   mechanics (shared modal element with swapped content vs. a second modal cloned from the same
+   CSS) are an executor call at build-spec time.
 
 ### Depends on / must-do-first — the coherence badge
 
-**Diagnostic done (2026-09-03), no engine edits yet.**
+**Done and merged (`59bfcea`, merged to `wb_africa` `1b95cf8`, 2026-09-03/04).** The diagnostic
+below is now history — recorded for context on *why* the fix was needed, not a live blocker.
 
-- Rule: on the area's *weighted percentile scores*, `spread = p90 − p10`; `concentrated` if
-  `spread < _SPREAD_THRESHOLD (20.0)` else `spread`. (`aggregate_b1` ~L1985, `aggregate_b5`
-  ~L1663; threshold `# provisional`, WO9.)
-- Not stuck — small areas get a mix (Goguryeo@300: 12 conc / 22 spread; Kongo@1550: 9 / 24).
-  **Large areas collapse to `spread`** (Songhai@1497, 113 basins: 2 / 29): a continental-scale
+- Original rule: on the area's *weighted percentile scores*, `spread = p90 − p10`; `concentrated`
+  if `spread < _SPREAD_THRESHOLD (20.0)` else `spread`. (`aggregate_b1` ~L1985, `aggregate_b5`
+  ~L1663.)
+- Not stuck — small areas got a mix (Goguryeo@300: 12 conc / 22 spread; Kongo@1550: 9 / 24).
+  **Large areas collapsed to `spread`** (Songhai@1497, 113 basins: 2 / 29): a continental-scale
   polygon genuinely spans a wide slice of the global gradient for almost every variable, so
   `p90 − p10 > 20` nearly always. `20` was calibrated for settlement/ring scale.
-- Secondary: `p90 − p10` is blind to mass-concentration-with-a-tail (a spiked histogram with a
-  thin tail still reads `spread`). IQR (p25−p75) or modal-bin weight-share would fix that.
-- **Lovejoy regions are the largest areas of all** — even a re-tuned threshold mostly says
-  `spread`. So for WO05: **suppress the badge at region scale**; lead with histogram + p10/p90
-  range + area-weighted percentile. Re-tuning the classifier for mid-size polities (size-aware
-  `T`, or switch to IQR) is a **separate engine task**, not a WO05 blocker.
+- Secondary problem: `p90 − p10` is blind to mass-concentration-with-a-tail (a spiked histogram
+  with a thin tail still read `spread`).
+- **Fix:** switched the coherence test to weighted **IQR (p75−p25) < 20**, tail-robust to the
+  thin-tail case; `p90−p10` is still emitted in `detail.spread` (B6 modality + histogram range
+  labels still use it unchanged). `detail` gained `iqr`, `p25`, `p75`. Threshold stays 20 —
+  live-probe effect: Songhai 2/29 → 14/17, Goguryeo 12/22 → 25/9, Kongo 9/24 → 19/14; genuinely
+  broad variables (elev_min, dist_sink, karst) still read `spread`. New contract test
+  `test_b1_coherence_is_iqr_driven`; engine + app test suites green.
+- **Consequence for WO05:** this was one shared fix — it changes badge output for **both**
+  Sandbox polity signatures and whatever WO05 renders for Lovejoy regions. The prior plan to
+  **suppress the badge at region scale** (because even a re-tuned p90–p10 threshold would mostly
+  say `spread` for continent-scale polygons) needs re-checking against real Lovejoy-region IQR
+  output before the WO05 build spec locks that suppression in — it may no longer be necessary,
+  or may still be warranted at a different threshold. Check at build time, don't assume either way.
 - Shelved alongside: the "as of {resolver_year} CE" stamp rendering on *static* A–E variables
   (Karl's original bug from the same screenshots) — the resolver year describes the region's
   spatial extent, not the vintage of a soil measurement. Fix when the renderer is ported: a
@@ -1080,8 +1099,9 @@ renders — surfaced from a **profile modal** on the African Regions tab.
 ### Renderer port
 
 The Sandbox Polities signature renderer is coupled to Sandbox state; WO05 ports a trimmed copy
-into `workbench.html` (band accordions + `renderLeaf` + `renderHistogram`), fed from
-`lovejoy_signatures.json` rather than a live fetch. Main JS cost.
+into `workbench.html` (band accordions + `renderLeaf` + `renderHistogram`, Band T slider kept —
+see the build spec's reversed decision below), fed from the live `/api/lovejoy-signature` route
+rather than a precomputed artifact. Main JS cost.
 
 ### Caveats to state in the modal
 
@@ -1097,3 +1117,358 @@ into `workbench.html` (band accordions + `renderLeaf` + `renderHistogram`), fed 
 Build script ~an afternoon (engine call per region + assemble + size-check). Renderer port +
 modal wiring: the bulk, ~a day depending on how tangled the Sandbox renderer is. Coherence
 re-tune: deferred, separate.
+
+---
+
+## WO05 — Build spec (2026-09-04, revised same day — precompute dropped for a live route)
+
+**Revision note.** The first pass of this spec (precompute all 34 regions to a static
+`lovejoy_signatures.json`) is superseded before any commit landed. Karl's pushback: Sandbox
+doesn't do this either — the Polities tab loads geometry for every time slice up front but only
+computes/fetches the **areal signature** for one slice at a time, on an explicit "Get Signature"
+click, precisely because that computation isn't cheap (`sandbox.html`'s own code comment clocks
+`/api/areas?scope=polity&detail=true` at **~9s**). Precomputing all 34 Lovejoy regions would mean
+paying that cost ~34 times up front (for regions nobody may look at during the talk) *and* still
+juggling a potentially-oversized static JSON (gitignore/rsync dance) for something that doesn't
+need to be static at all. WO05 already has the exact analog to "geometry for every slice, sig on
+demand": **the map already renders all 34 region geometries** (the `lovejoy` layer, always on) —
+signature-on-demand for the one region you click is the natural fit, not a bulk precompute.
+
+Commit 1 below replaces the build script with a live route mirroring `/api/area`'s own
+`areal_signature_polygon` call. Commit 2's modal fetches it on open, with a loading state (that
+~9s isn't disappearing — it's real per-region compute time, level=6 or not) and a small
+client-side cache so re-opening the same region's modal within a session is instant.
+
+Executable. Branch **`wb_africa_wo05`** off `wb_africa`. Three commits; Karl eyeballs the modal
+in-browser before commit 3. Modal-sharing mechanics (below) are a CC implementation call — Karl
+has no opinion beyond "reuse if it's cheaper than building a second modal."
+
+### Commit 1 — `GET /api/lovejoy-signature` (live route, no precompute)
+
+`app/api/routes_workbench.py`, same file/conventions as the tab's other endpoints
+(`@router.get(..., include_in_schema=False)`, `app.db.connection.db_connect` — **not**
+`scripts.shared.db_utils.db_connect**, the offline-script one; the two are different functions,
+see CLAUDE.md's `db_utils` note). Modeled directly on `routes_sandbox.py :: area()`'s
+`areal_signature_polygon` call (~L1105), swapping the polity-name lookup for a Lovejoy `src_id`
+lookup.
+
+- **Geometry lookup — lazy module-level cache, not a DB hit.** The app never touches
+  `whg_staging` at runtime (standing rule); `app/static/workbench/lovejoy_regions.geojson` is
+  already the single served source of truth for these 34 polygons, so read it once, cache in a
+  module global, same idiom the LISA parquet cache already uses ("read once → cached in a module
+  global" per CLAUDE.md's data-source table):
+  ```python
+  import shapely.geometry
+  _LOVEJOY_GEOMS: Optional[Dict[str, tuple]] = None   # {src_id: (wkt, name, macro)}, lazy
+
+  def _lovejoy_geoms() -> Dict[str, tuple]:
+      global _LOVEJOY_GEOMS
+      if _LOVEJOY_GEOMS is None:
+          path = Path(__file__).resolve().parents[2] / "static" / "workbench" / "lovejoy_regions.geojson"
+          data = json.loads(path.read_text())
+          _LOVEJOY_GEOMS = {
+              f["properties"]["src_id"]: (
+                  shapely.geometry.shape(f["geometry"]).wkt,
+                  f["properties"]["name"],
+                  f["properties"]["macro"],
+              )
+              for f in data["features"]
+          }
+      return _LOVEJOY_GEOMS
+  ```
+- **Route:**
+  ```python
+  _LOVEJOY_T_FROM, _LOVEJOY_T_TO = 1600, 1650   # locked WO05 decision
+
+  @router.get("/lovejoy-signature", include_in_schema=False)
+  def lovejoy_signature(src_id: str):
+      geoms = _lovejoy_geoms()
+      if src_id not in geoms:
+          raise HTTPException(status_code=404, detail=f"Unknown Lovejoy src_id '{src_id}'")
+      geom_wkt, name, macro = geoms[src_id]
+      try:
+          conn = db_connect()
+          payload = areal_signature_polygon(
+              geom_wkt, conn,
+              level=6, bands=None,   # None = A-E + T, since from_year/to_year are given
+              from_year=_LOVEJOY_T_FROM, to_year=_LOVEJOY_T_TO,
+              include_detail=True,
+              resolver_year=None, polity_id=None,
+          )
+      except Exception as e:
+          raise HTTPException(status_code=500, detail=str(e))
+      finally:
+          conn.close()
+      payload["resolver"] = {"type": "lovejoy_region", "src_id": src_id, "name": name, "macro": macro}
+      return payload
+  ```
+  `payload` is exactly `{scope, shortfall, bands, temporal, caveats, rows}` plus the added
+  `resolver` block — the same shape `sandbox.html`'s Polities renderer already consumes as
+  `payload.rows`/`payload.scope`, so the ported renderer (Commit 3) needs no reshaping.
+  `scope.type` will still read `'polity'` (the engine's generic polygon label); use
+  `payload.resolver.name`/`.macro` for the modal heading instead, not `scope.type`.
+- **Found while testing this commit: 3 of 34 regions have zero L6 basin coverage.** St. Helena
+  (`hc_45`), Cabo Verde (`hc_40`), and Mascarenes (`hc_44`) — small offshore island groups —
+  resolve to **zero** BasinATLAS L6 basins (`resolve_polygon(...).empty`); `areal_signature_
+  polygon` doesn't guard this and blows up with a raw SQL syntax error (`... hybas_id IN ()`) —
+  a pre-existing engine gap (never exercised before; every Cliopatria polity is real land), not
+  something WO05 introduced, and not touched here. **Fixed at the route level**: `lovejoy_
+  signature()` calls `resolve_polygon` itself first and returns a clean `422` with a plain-English
+  message (rather than a leaked SQL trace) when the region has no basin coverage, before ever
+  calling `areal_signature_polygon`. The other three small island regions in the geometry set —
+  Comoros, Gulf Islands, Canarias — do resolve (1–2 basins each) and are unaffected. `Commit 2`'s
+  modal error-handling path (the `catch` block that renders `e.message` as `text-danger`) already
+  covers this case for free — clicking one of the 3 affected regions' "Signature ↗" link will show
+  the 422 message in the modal rather than a scary error.
+- **Latency is real, not a defect.** Lovejoy regions are large polygons — plausibly *slower* than
+  the ~9s polity baseline for the bigger ones (more L6 basins to aggregate). No caching layer on
+  the server side for WO05 (would need an invalidation story this feature doesn't need yet); the
+  client-side cache in Commit 2 is what makes repeat opens cheap. If a specific region proves
+  unworkably slow in review, that's a build-time signal to revisit, not a spec change.
+- No new static asset, no cache-bust var, no `pages.py` change — this commit is app-code only,
+  ships and deploys exactly like any other route.
+
+### Commit 2 — panel + modal shell: profile link + dual-purpose `#afr-dplace-modal`
+
+### Commit 2 — panel + modal shell: profile link + dual-purpose `#afr-dplace-modal`
+
+**Rationale-row restructure** (`app/templates/workbench.html`, ~L264–266). Currently
+`#afr-rationale-toggle` is a bare `<p>` carrying its own `hidden` attribute (toggled by
+`_afrSetRationale()`). Wrap it in a flex row so a flush-right link can sit on the same line,
+and move the `hidden` gate to the wrapper — the toggle `<p>` and the new link share one
+visibility condition (a region is in scope), which is already exactly what `_afrSetRationale()`
+computes from `p.rationale`:
+
+```html
+<div id="afr-rationale-row" class="d-flex justify-content-between align-items-baseline mb-1" hidden>
+  <p id="afr-rationale-toggle" class="mb-0 small text-uppercase" style="letter-spacing:.04em;cursor:pointer;">
+    <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
+  </p>
+  <a href="#" id="afr-profile-link" class="small text-decoration-none">Signature ↗</a>
+</div>
+```
+
+`_afrSetRationale(p, expanded)` — swap `toggle.hidden = true/false` for
+`document.getElementById('afr-rationale-row').hidden = true/false` at both the early-return and
+the success path; no other change to that function's logic. This means the profile link appears
+and disappears exactly where the rationale toggle already does today — including in society mode
+(`renderAfrSociety` calls `_afrSetRationale(region, false)` for the containing region, so the link
+tracks `_afrSelected` there too) and on empty-space deselect.
+
+**Modal reuse — dual-purpose `#afr-dplace-modal`.** Rather than a second modal element, give the
+existing one a second body pane and a small set of per-mode swaps (title text, side-link
+visibility, dialog width), toggled by which `afrOpen*` function calls `.show()`. This is the
+proposed approach for the efficiency Karl asked for; if it turns out fussier in practice than
+expected, falling back to a second, near-duplicate modal is an acceptable pivot — call it during
+the build, not before.
+
+```html
+<!-- was: single-purpose D-PLACE iframe modal. Now dual-purpose: D-PLACE iframe (existing) or
+     a region signature (WO05) -- swapped by which afrOpen*Modal() function is called. -->
+<div class="modal fade" id="afr-dplace-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" id="afr-dplace-dialog" style="max-width:90vw;width:90vw;">
+    <div class="modal-content" style="height:88vh;">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="afr-dplace-title">D-PLACE society <span class="text-muted small" id="afr-dplace-subtitle">— CC-BY-NC 4.0</span></h6>
+        <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
+        <div id="afr-profile-body" style="display:none;width:100%;height:100%;overflow-y:auto;padding:1rem 1.25rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+```js
+function _afrModalMode(mode) {   // 'dplace' | 'profile' — shared show/hide + sizing
+  const isDplace = mode === 'dplace';
+  document.getElementById('afr-dplace-frame').style.display = isDplace ? '' : 'none';
+  document.getElementById('afr-profile-body').style.display = isDplace ? 'none' : '';
+  document.getElementById('afr-dplace-subtitle').style.display = isDplace ? '' : 'none';
+  document.getElementById('afr-dplace-ext').style.display = isDplace ? '' : 'none';
+  const dlg = document.getElementById('afr-dplace-dialog');
+  dlg.style.width = isDplace ? '90vw' : '640px';
+  dlg.style.maxWidth = isDplace ? '90vw' : '92vw';   // narrower + not full-bleed -- signature is tall, not wide
+}
+
+function afrOpenDplaceModal(sid) {   // unchanged behaviour, now routed through _afrModalMode
+  const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
+  document.getElementById('afr-dplace-frame').src = url;
+  document.getElementById('afr-dplace-ext').href = url;
+  document.getElementById('afr-dplace-title').firstChild.textContent = 'D-PLACE society ';
+  _afrModalMode('dplace');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+}
+
+// Client-side cache: fetched once per src_id per page load, since the underlying data
+// (BasinATLAS/LMR/HYDE/eVolv2k for a fixed 1600-1650 window) doesn't change mid-session.
+const _afrSigCache = {};   // {src_id: payload}
+let _afrSigSeq = 0;        // stale-fetch guard, same pattern as _afrPaintSeq
+
+async function afrOpenProfileModal() {
+  if (!_afrSelected) return;   // link is hidden whenever this would be true; belt-and-suspenders
+  const srcId = _afrSelected;
+  const body = document.getElementById('afr-profile-body');
+  document.getElementById('afr-dplace-title').firstChild.textContent = 'Areal signature ';
+  _afrModalMode('profile');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+
+  if (_afrSigCache[srcId]) { body.innerHTML = _afrRenderSigHtml(_afrSigCache[srcId]); return; }
+
+  const seq = ++_afrSigSeq;
+  body.innerHTML = '<p class="text-secondary mb-0">Computing areal signature — this can take several seconds for a large region…</p>';
+  try {
+    const r = await fetch(`/api/lovejoy-signature?src_id=${encodeURIComponent(srcId)}`);
+    if (!r.ok) throw new Error((await r.json()).detail || `HTTP ${r.status}`);
+    const payload = await r.json();
+    if (seq !== _afrSigSeq) return;   // modal reopened for a different region meanwhile
+    _afrSigCache[srcId] = payload;
+    body.innerHTML = _afrRenderSigHtml(payload);
+  } catch (e) {
+    if (seq !== _afrSigSeq) return;
+    body.innerHTML = `<p class="text-danger mb-0">${_afrEsc(e.message)}</p>`;
+  }
+}
+```
+
+`hidden.bs.modal` handler (existing, ~L1953) already blanks the iframe `src` unconditionally —
+harmless to leave as-is; it's a no-op when the profile pane was the one showing. It does **not**
+need to touch `_afrSigCache` — a fetched region's data is valid for the rest of the session.
+
+**Wire the link** in the DOMContentLoaded init block, beside the rationale-toggle listener
+(~L1938):
+
+```js
+const afrProfileLink = document.getElementById('afr-profile-link');
+if (afrProfileLink) afrProfileLink.addEventListener('click', e => { e.preventDefault(); afrOpenProfileModal(); });
+```
+
+### Commit 3 — ported renderer, namespaced to avoid the existing `renderSignature` collision
+
+`workbench.html` already defines its own `renderSignature(sig)` / `humanizeKey(k)` / `escapeHtml(s)`
+for the shared `#map` panel's single-basin signature (`/api/signature`'s `profile_summary`/
+`profile_groups` envelope — a different shape entirely from what `areal_signature_polygon`
+returns). **Do not overwrite these** — port the Sandbox Polities renderer under a fresh `_afrSig`
+prefix instead of reusing the bare names:
+
+- Port verbatim (one-line provenance comment, no shared file this WO — same call WO03 made for
+  its ramp helpers): `renderHistogram` → `_afrSigHistogram`, `renderRangeBar` →
+  `_afrSigRangeBar`, `renderMixtureBar` → `_afrSigMixtureBar`, `renderPercentileTrack` →
+  `_afrSigPercentileTrack`, `renderSingleBasinContinuousLeaf` → `_afrSigSingleLeaf`, `renderLeaf`
+  → `_afrSigLeaf`, `renderRow` → `_afrSigRow`, `fmtNum` (workbench has no equivalent — port as-is
+  under `_afrFmtNum` or reuse if one already exists; check first), `BAND_ORDER`/`BAND_LABELS` →
+  `_AFR_SIG_BAND_ORDER`/`_AFR_SIG_BAND_LABELS`. Reuse workbench's existing `escapeHtml` — it's a
+  strict superset (adds quote-escaping) of sandbox's, safe as a drop-in.
+- **`_afrRenderSigHtml(payload)`** — the entry point `afrOpenProfileModal()` calls. Trimmed from
+  Sandbox's `renderSignature(payload)`: same accordion-per-band structure and `defaultOpenBand`
+  logic (T if present, else C), but the heading branch collapses to one case — there's no ring/
+  basin/polity-name disambiguation here, just the region name + macro (pass those in as args:
+  `_afrRenderSigHtml(payload, name, macro)`) plus `${n_units} L6 basins` from `payload.scope`, and
+  no "How to read this" doc-modal link (that doc page is written for the Sandbox Polities flow,
+  not this one — leave it out rather than mis-point it; a WO05 follow-up can add a Workbench-side
+  explainer if wanted).
+- **Band T — keep the slider (reversed 2026-09-04).** The original scope note called this "a
+  fixed 50-year window, no scrub" and the first pass of this spec read that as "drop the slider."
+  Karl asked why, directly — and there isn't a technical reason. `aggregate_band_t` returns one
+  row **per year** across whatever `from_year`–`to_year` span it's given; a "fixed window" only
+  fixes *which* 50 years come back, not how many rows — the route in Commit 1 already fetches all
+  ~50 annual LMR rows per variable, same shape a Sandbox polity query returns for its span. The
+  "no scrub" framing was about *intent* (a region-character summary vs. an interactive research
+  tool), not a data constraint, and porting `renderTBand`/`wireTSliders` **as-is** is strictly
+  less work than trimming them — no new no-slider variant to build or maintain. **Port
+  `renderTBand` → `_afrSigTBand` and `wireTSliders` → `_afrSigWireTSliders` verbatim**, call the
+  latter after `_afrRenderSigHtml` injects the HTML (same as Sandbox does after `renderSignature`).
+  HYDE and eVolv2k table rendering ports unchanged — those were already static in Sandbox too. If
+  scrubbing through 1600–1650 turns out to be a distracting fidget during the actual talk rather
+  than a nice demo beat, that's a one-line call to make later (hide the `<input>`, keep the static
+  midpoint) — not worth deciding speculatively now.
+- **Caveats block.** `payload.caveats` (if non-empty) — Sandbox doesn't currently surface this
+  array in `renderSignature`'s own output (check at build time whether it renders elsewhere in
+  `sandbox.html`, e.g. inline per-row via `row.caveat`, vs. an unrendered top-level list); if
+  `payload.caveats` carries anything WO05-relevant (e.g. the marginal-exposure diagnostic), give
+  it one small line under the heading. Don't invent caveat copy — pass through what the engine
+  emits.
+- **Static-A–E "as of" stamp** (the shelved item from the scope section, above) — while porting
+  `_afrSigRow`, drop the per-row `resolverYear`/`asOf` line for A–E rows (`resolver_year` is
+  `None` here — `areal_signature_polygon` was called with `resolver_year=None` in Commit 1 — so
+  it would render nothing anyway; leave the dead branch out rather than port unreachable code).
+  Band T rows keep their own `band_t_from`/`band_t_to` stamp in `_afrSigHistogram` unchanged —
+  that one does apply.
+
+### Coherence-badge re-check (do this before finishing Commit 3, not after)
+
+The IQR fix (`59bfcea`) is merged, but WO05's own scope section flagged that the planned
+"suppress the badge at region scale" decision needs re-checking against **real Lovejoy-region
+IQR output**, not assumed either way. There's no persisted JSON to query now (Commit 1 is a live
+route, not a precompute) — do this as a one-off, throwaway loop calling
+`areal_signature_polygon` directly for all 34 regions (same geometry-read pattern as Commit 1's
+`_lovejoy_geoms()`, just a standalone script under `scripts/edop/workbench/` or even a REPL
+session — not committed unless it's genuinely reusable) before finishing Commit 3:
+
+- Pull `coherence` + `detail.iqr` across all 34 regions × their A–E rows and show Karl the
+  concentrated/spread mix at region scale now that IQR drives it, the same way the `59bfcea`
+  commit message reported Songhai/Goguryeo/Kongo before/after.
+- **If it now reads as a reasonable mix** (not near-universally `spread`, per-variable-type
+  variation similar to what the IQR fix showed for polities): render the badge as-is via
+  `_afrSigLeaf`, no suppression.
+- **If it still collapses to `spread` almost everywhere** at Lovejoy-region scale: keep the
+  scope-section's fallback — suppress the badge in `_afrSigLeaf`'s `area_weighted`/
+  `distribution_only` branches (lead with histogram + `p10`/`p90` + weighted mean percentile,
+  same as those branches render today minus the badge span) and note it as a still-open,
+  separately-tracked engine item (size-aware `T`, or a different scale-appropriate threshold) —
+  not a WO05 blocker either way.
+- Whichever way it goes, record the actual numbers Karl was shown in this file's close-out, not
+  just the decision — the WO03/WO04 close-outs both did this and it's what makes the badge fix's
+  effect traceable later.
+
+### Deploy
+
+No new static asset — Commit 1 is a route (app code), Commit 2/3 are template changes. Nothing
+to add to `MAINTAIN_DEPLOY.md`'s rsync list; ships with the normal branch-merge + redeploy like
+any other route/template change.
+
+### Out of scope (later WOs)
+
+- A Workbench-side "how to read this" explainer for the modal (Sandbox's doc-modal link is
+  Polities-flow-specific, left out per Commit 3 above).
+- A server-side cache for `/api/lovejoy-signature` (the client-side `_afrSigCache` covers the
+  session; a server cache would need an invalidation story this feature doesn't need yet).
+- Re-tuning the coherence threshold itself (as opposed to the suppress/don't-suppress call above)
+  — separate engine task if the re-check says it's still needed.
+- Hiding the Band T slider in favor of a static midpoint, if it proves distracting live — a
+  one-line follow-up, not scoped now (see the reversed decision above).
+
+### Acceptance
+
+- `GET /api/lovejoy-signature?src_id=<id>` returns the `areal_signature_polygon` payload (L6, all
+  bands, `from_year=1600, to_year=1650, include_detail=True`) plus a `resolver` block; unknown
+  `src_id` → 404; engine errors → 500. No new static asset, no DB hit against `whg_staging`.
+- `#afr-rationale-row` shows the rationale toggle **and** a flush-right "Signature ↗" link
+  whenever a region is in scope (region click or society click with a containing region); both
+  hidden together on empty-space deselect.
+- Clicking "Signature ↗" opens `#afr-dplace-modal` in profile mode (narrower dialog, title reads
+  "Areal signature", D-PLACE-only chrome hidden) with a loading message, then fetches
+  `/api/lovejoy-signature` for the selected region and renders band accordions (T open by
+  default, slider live) with `_afrSigLeaf` percentile/coherence/histogram output per row.
+  Re-opening the same region's modal within the session renders instantly from
+  `_afrSigCache` — no repeat fetch.
+- Clicking a D-PLACE society's `<id> record` link still opens the same modal in D-PLACE mode,
+  unchanged from WO04 — the two modes don't interfere with each other's state on repeat opens.
+- Coherence-badge re-check done and recorded (numbers shown to Karl, suppress/don't-suppress
+  decision made and applied in `_afrSigLeaf`).
+- No console errors; other Workbench tabs and Sandbox unaffected (no shared function names
+  collide); `pytest tests/` green.
+
+### Still open (build-time calls)
+
+- Modal-sharing mechanics as spec'd above (shared shell + mode toggle) vs. a second modal if that
+  turns out cleaner in practice — CC's call during the build, not a blocker to starting.
+- Real per-region latency, especially for the largest regions (Sahara-scale polygons) — eyeball
+  during the build; a server-side cache is the fallback if it's genuinely too slow for the talk,
+  but not built preemptively.
+- Exact wording/placement of the coherence-suppression fallback copy, if that branch is taken.
+- Whether the Band T slider stays interactive through the actual Braga talk or gets pinned to the
+  midpoint for a calmer demo — decide after seeing it live, not now.
