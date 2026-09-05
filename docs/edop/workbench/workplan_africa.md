@@ -1549,10 +1549,68 @@ needed. `pytest tests/`: 529 passed, 14 skipped throughout.
 
 ## WO06 — Core-share exploration (notebook only) (2026-09-04)
 
-**State: scoped, not started.** Full spec: `docs/design/_workbench/coherence_study_opus.md`
-(Opus draft, Karl's WO number confirmed, two technical notes folded in by Claude Code — see
-below). This entry is a pointer + summary per the usual convention; the linked doc is the
-source of record, not re-derived here.
+**State: in progress — A4 passed 2026-09-05.** Notebook: `notebooks/edop/workbench/
+wo06_core_share.ipynb`. Full spec: `docs/design/_workbench/coherence_study_opus.md` (Opus
+draft, Karl's WO number confirmed, two technical notes folded in by Claude Code — see below).
+This entry is a pointer + summary per the usual convention; the linked doc is the source of
+record, not re-derived here.
+
+**A4 result (both required before A2/A3):** tie-handling PASS (confirmed at the most extreme
+case in the dataset — a full 438-basin region on one raw value, zero within-tie score spread);
+NaN/NoData PASS (zero mismatches across 33 vars × 31 regions). One real bug found and fixed in
+the NaN check itself (Cell 7 compared two Series with `==` before confirming identical
+indexing — pandas raises rather than aligning; fixed by building the pair into one DataFrame
+first, same pattern Cell 6 already used). Also confirmed: `permafrost_extent` is
+`outside_active_domain` in all 31 regions (physically sensible — no permafrost in mainland
+Africa), which is why the table carries 33 of B1's 34 variables, not 34.
+
+**A2 result (2026-09-05):** stability is good — median Spearman rho 0.93/0.92/0.84 for the
+10-15/15-20/10-20 delta pairs; only 5 of 87 region×delta-pair combos churn (rho<0.7), all in
+the widest-gap comparisons. One real gap found and fixed along the way: Cell 5 was including
+Comoros and Gulf Islands (both true single-basin regions), which the shipped pipeline never
+badges at all (`engine.py`'s `_backfill_single_basin_raw` clears coherence for `n_units==1`
+sets — a step this notebook's direct `aggregate_b1` call was bypassing). With one basin,
+core_share is trivially 1.0 for everything, which silently produced undefined (NaN) Spearman
+correlations in A2 — visible only as a `ConstantInputWarning`, dropped from both `describe()`
+and the "churns" filter without explanation. Fixed by excluding `n_units==1` regions in Cell 5,
+matching production fidelity; 29 (not 31) regions carry forward from here. Also flagged, not
+yet resolved: Canarias (2 basins) shows identical rho to 6 decimals across two different
+delta-pairs — plausible small-sample coincidence given only 2 raw basins per variable, not
+clearly a bug, but genuinely coarse; Karl to decide whether it stays in as a reported caveat
+or gets excluded alongside `n_units==1`.
+
+**Scope narrowed (2026-09-05, Karl):** B1's continuous set spans bands A/B/C/D/E; restricted
+to **A/B/C/E only** (27 of 34 vars) — Band D is Anthropocene (human land-use: cropland/pasture
+extent, human footprint, pop density), a different coherence question from whether a region
+holds together *environmentally*, and EDOPS generally treats A–C/E/T as the physical-geography
+bands. Cell 4 updated; A1/A2 need re-running with the narrowed set.
+
+**A3 finding (2026-09-05):** the acceptance-gate panel (Cell 11) passed Karl's visual review,
+but surfaced something bigger than "core share vs. IQR" — **the binary concentrated/spread
+vocabulary is missing a third category.** 19 of 24 inspected disagreements share one shape: a
+large point-mass at rank 0 (most basins genuinely have none of the thing — karst, wetland)
+plus a real, non-trivial minority scattered from ~40–100. IQR reads every one of these as
+`concentrated` with **IQR = 0.0**, because once tied mass at one value exceeds half the
+region's weight, both p25 and p75 land on it by construction — IQR is blind to the real
+minority regardless of size. Terms worth keeping straight for the write-up: **zero-inflated**
+(the mechanism — a point-mass mixed with a separate population) vs. **long-tailed** (the lay
+description Karl reached for; technically imprecise here since the residual is a scattered
+comb, not a smoothly-decaying tail, but captures the gestalt). Not this WO's job to fix — a
+follow-on WO's badge redesign may need a third state, not just a statistic swap. Full note in
+the notebook's Wrap-up cell.
+
+**Low-basin-count exclusion (2026-09-05).** Canarias's identical-rho oddity from A2 recurred
+independently in Cell 12: it supplied *all 5* of the "agreed-tight" control-panel examples,
+purely because 2 basins trivially tie/fit any window — not a meaningful confirmation of
+anything. Cell 5 now excludes any region with fewer than **5 basins** (a round choice; the
+dataset has a natural gap between 0/1/1/2 and the next-smallest region at 25, so any small
+threshold is equivalent here), on top of the pre-existing `n_units==1` production-fidelity
+exclusion — two distinct reasons, kept separate in the code comment since they generalize
+differently. **Karl's broader point:** this isn't just a notebook artifact — a future badge
+redesign likely needs to handle low-basin-count regions explicitly, either via a different
+statistic suited to small n or a tag/suppression (analogous to the existing `n_units==1`
+badge suppression) rather than expecting any single dispersion statistic to behave
+meaningfully at n=2. Exact mechanism TBD; not this WO's job, flagged for the follow-on WO.
 
 **Standing proviso — nothing in this WO changes engine, API, or UI code.** Deliverable is a
 notebook plus its outputs. The shipped dispersion badge (`coherence_iqr`, `59bfcea`, carried
