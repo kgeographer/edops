@@ -1434,13 +1434,29 @@
     return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
   }
 
-  function _afrSigHistogram(dist) {
+  function _afrSigHistogram(dist, windowLo, windowHi) {
     const { bins, weights } = dist;
     if (!bins || !weights || !weights.length) return '';
     const W = 160, BAR_H = 36, LABEL_H = 12;
     const maxW = Math.max(...weights);
     if (maxW === 0) return '';
     const barW = W / weights.length;
+
+    // Core-share window shading (WO_dispersion-tag-revision) -- windowLo/Hi live on the fixed
+    // global [0,100] rank axis; this histogram's own axis is the row's local [bins[0],bins[-1]]
+    // range, so map + clip before drawing. Drawn first so the bars render on top of it. Only
+    // area_weighted rows pass windowLo/Hi; Band T's histogram calls omit them.
+    let windowRect = '';
+    if (typeof windowLo === 'number' && typeof windowHi === 'number') {
+      const axisLo = bins[0], axisHi = bins[bins.length - 1];
+      const clipLo = Math.max(windowLo, axisLo), clipHi = Math.min(windowHi, axisHi);
+      if (clipHi > clipLo && axisHi > axisLo) {
+        const xLo = ((clipLo - axisLo) / (axisHi - axisLo)) * W;
+        const xHi = ((clipHi - axisLo) / (axisHi - axisLo)) * W;
+        windowRect = `<rect x="${xLo.toFixed(1)}" y="0" width="${(xHi - xLo).toFixed(1)}" height="${BAR_H}" fill="#5b8dc4" opacity="0.15"/>`;
+      }
+    }
+
     let bars = '';
     for (let i = 0; i < weights.length; i++) {
       if (!weights[i]) continue;
@@ -1455,6 +1471,7 @@
       ? `<div style="font-size:0.65rem;color:#000;margin-top:1px;">${_afrEsc(parts.join(' · '))}</div>` : '';
     return `<div style="margin-top:3px;">
       <svg width="${W}" height="${BAR_H+LABEL_H}" style="display:block;">
+        ${windowRect}
         <g>${bars}</g>
         <text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${_afrEsc(lo)}</text>
         <text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${_afrEsc(hi)}</text>
@@ -1639,9 +1656,10 @@
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
+        else if (row.coherence === 'split')         coh = `<span class="badge bg-info-subtle text-info-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">split</span>`;
         const caveat = row.score_suppressed
           ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
-        return `<div>${s}${coh}</div>${_afrSigHistogram(det.distribution || {})}${caveat}`;
+        return `<div>${s}${coh}</div>${_afrSigHistogram(det.distribution || {}, det.window_lo, det.window_hi)}${caveat}`;
       }
       case 'dominant_basin': {
         const r = raw   !== null && raw !== undefined ? `${_afrFmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
