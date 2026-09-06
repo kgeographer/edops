@@ -435,6 +435,8 @@
   const VIRIDIS = ['#440154','#443982','#31688e','#21918c','#35b779','#8fd744','#fde725'];
   // RDBU: red→blue; for LMR use 1-t so blue=low, red=high (per spec)
   const RDBU = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
+  // Hypsometric ramp — elevation + slope (matches sandbox.html TERRAIN_PAL); ColorBrewer YlOrBr-7
+  const TERRAIN_PAL = ['#ffffd4','#fee391','#fec44f','#fe9929','#ec7014','#cc4c02','#8c2d04'];
 
   const LISA_COLORS = { HH: '#d32f2f', LL: '#1565c0', HL: '#ef9a9a', LH: '#90caf9', NS: '#e0e0e0' };
   const LISA_ORDER  = ['HH', 'HL', 'LH', 'LL', 'NS'];
@@ -468,6 +470,14 @@
       return v => {
         if (v == null) return '#d3d3d3';
         return interpPalette(RDBU, Math.max(0, Math.min(1, (v - lo) / range)));
+      };
+    }
+    // Terrain: hypsometric ramp for elevation + slope (not VIRIDIS)
+    if (['elevation_max','elevation_min','elevation_mean','slope_deg'].includes(schemaKey)) {
+      const range = (hi - lo) || 1;
+      return v => {
+        if (v == null) return '#d3d3d3';
+        return interpPalette(TERRAIN_PAL, Math.max(0, Math.min(1, (v - lo) / range)));
       };
     }
     const range = (hi - lo) || 1;

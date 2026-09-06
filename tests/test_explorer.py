@@ -180,6 +180,61 @@ def test_values_stats_fields(client):
 
 
 # ---------------------------------------------------------------------------
+# bbox filter (WO03) — /explorer/values + /explorer/categorical
+# bbox trims the returned values payload only; stats / category ranking stay global.
+# ---------------------------------------------------------------------------
+
+AFRICA_BBOX = "-20,-36,55,38"
+
+
+def test_values_bbox_trims_payload_not_stats(client):
+    """bbox returns a strict subset of values; meta (ramp domain) stays global."""
+    full = client.get("/api/explorer/values",
+                      params={"var": "elevation_max", "level": 8, "su": "s"}).json()
+    sub = client.get("/api/explorer/values",
+                     params={"var": "elevation_max", "level": 8, "su": "s", "bbox": AFRICA_BBOX}).json()
+    assert 0 < len(sub["values"]) < len(full["values"])
+    assert set(sub["values"]).issubset(set(full["values"]))
+    # stats are global regardless of bbox — Explorer parity
+    assert sub["meta"]["n_valid"] == full["meta"]["n_valid"]
+    assert sub["meta"]["p10"] == full["meta"]["p10"]
+    assert sub["meta"]["p90"] == full["meta"]["p90"]
+    assert sub["meta"]["min"] == full["meta"]["min"]
+    assert sub["meta"]["max"] == full["meta"]["max"]
+
+
+def test_values_no_bbox_unchanged(client):
+    """Omitting bbox is the pre-WO03 global behaviour."""
+    r = client.get("/api/explorer/values", params={"var": "aridity_index", "level": 6, "su": "s"})
+    assert r.status_code == 200
+    assert r.json()["meta"]["n_valid"] > 15000  # ~all L6 basins
+
+
+@pytest.mark.parametrize("bad", ["1,2,3", "200,0,210,10", "0,0,10,100", "10,0,5,20", "a,b,c,d"])
+def test_values_bbox_malformed_400(client, bad):
+    r = client.get("/api/explorer/values",
+                   params={"var": "elevation_max", "level": 8, "bbox": bad})
+    assert r.status_code == 400
+
+
+def test_categorical_bbox_trims_payload_not_ranking(client):
+    full = client.get("/api/explorer/categorical",
+                      params={"var": "pnv_majority_name", "level": 8}).json()
+    sub = client.get("/api/explorer/categorical",
+                     params={"var": "pnv_majority_name", "level": 8, "bbox": AFRICA_BBOX}).json()
+    assert 0 < len(sub["values"]) < len(full["values"])
+    assert set(sub["values"]).issubset(set(full["values"]))
+    # category ranking / counts / colours are global — same class → same colour as Explorer
+    assert sub["categories"] == full["categories"]
+
+
+def test_categorical_bbox_malformed_400(client):
+    r = client.get("/api/explorer/categorical",
+                   params={"var": "pnv_majority_name", "level": 8, "bbox": "1,2,3"})
+    assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
 # /api/explorer/categorical
 # ---------------------------------------------------------------------------
 

@@ -740,6 +740,7 @@
         crossorigin="anonymous"></script>
 <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js" crossorigin=""></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
+<script src="/static/js/pm_basemap.js"></script>
 <script>
 (() => {
   // ── Shared doc modal ──────────────────────────────────────────────────────
@@ -1556,56 +1557,9 @@
     }
   }
 
-  // Minimal Positron-style backdrop from the self-hosted Protomaps vector tiles
-  // (app/static/basemaps/protomaps-light.pmtiles, z0-9). Land / water / admin
-  // bounds / sparse labels only -- a quiet base under the choropleths. Shared by
-  // the three secondary panel maps (conjunction lens, atlas, context).
-  function pmLightStyle() {
-    const NAME = ['coalesce', ['get', 'name:en'], ['get', 'name']];
-    const FONT = ['Noto Sans Regular'];
-    const HALO = '#f6f6f4';
-    return {
-      version: 8,
-      glyphs: 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
-      sources: {
-        pm: {
-          type: 'vector',
-          url: 'pmtiles:///static/basemaps/protomaps-light.pmtiles',
-          attribution: '<a href="https://protomaps.com">Protomaps</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
-        },
-      },
-      layers: [
-        { id: 'pm-bg', type: 'background', paint: { 'background-color': HALO } },
-        { id: 'pm-earth', type: 'fill', source: 'pm', 'source-layer': 'earth',
-          filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#eceae6' } },
-        { id: 'pm-water', type: 'fill', source: 'pm', 'source-layer': 'water',
-          filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#dde4e7' } },
-        { id: 'pm-boundary-region', type: 'line', source: 'pm', 'source-layer': 'boundaries',
-          filter: ['>', ['get', 'kind_detail'], 2],
-          paint: { 'line-color': '#d2d2d2', 'line-width': 0.5, 'line-dasharray': [2, 2] } },
-        { id: 'pm-boundary-country', type: 'line', source: 'pm', 'source-layer': 'boundaries',
-          filter: ['<=', ['get', 'kind_detail'], 2],
-          paint: { 'line-color': '#bcbcbc', 'line-width': 0.7 } },
-        { id: 'pm-label-country', type: 'symbol', source: 'pm', 'source-layer': 'places',
-          filter: ['==', ['get', 'kind'], 'country'],
-          layout: { 'text-field': NAME, 'text-font': FONT, 'text-transform': 'uppercase',
-            'text-letter-spacing': 0.08, 'text-max-width': 6,
-            'text-size': ['interpolate', ['linear'], ['zoom'], 2, 9, 6, 13] },
-          paint: { 'text-color': '#6e6e70', 'text-halo-color': HALO, 'text-halo-width': 1.4 } },
-        { id: 'pm-label-region', type: 'symbol', source: 'pm', 'source-layer': 'places',
-          filter: ['==', ['get', 'kind'], 'region'], minzoom: 3,
-          layout: { 'text-field': NAME, 'text-font': FONT, 'text-max-width': 7,
-            'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9, 7, 12] },
-          paint: { 'text-color': '#8a8a8c', 'text-halo-color': HALO, 'text-halo-width': 1.1 } },
-        { id: 'pm-label-city', type: 'symbol', source: 'pm', 'source-layer': 'places',
-          filter: ['all', ['==', ['get', 'kind'], 'locality'],
-            ['>=', ['get', 'population_rank'], ['step', ['zoom'], 12, 4, 10, 7, 9]]],
-          layout: { 'text-field': NAME, 'text-font': FONT, 'text-max-width': 7,
-            'text-size': ['interpolate', ['linear'], ['zoom'], 3, 10, 8, 12] },
-          paint: { 'text-color': '#8a8a8c', 'text-halo-color': HALO, 'text-halo-width': 1.1 } },
-      ],
-    };
-  }
+  // pmLightStyle() -- the Protomaps light basemap builder -- now lives in
+  // /static/js/pm_basemap.js (shared with workbench.html). Loaded as a global
+  // via <script> below the maplibre/pmtiles CDN tags.
 
   async function renderConjunction() {
     // Active basin, not the query anchor -- same reasoning as renderContext().
@@ -3077,13 +3031,29 @@
     return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
   }
 
-  function renderHistogram(dist) {
+  function renderHistogram(dist, windowLo, windowHi) {
     const { bins, weights } = dist;
     if (!bins || !weights || !weights.length) return '';
     const W = 160, BAR_H = 36, LABEL_H = 12;
     const maxW = Math.max(...weights);
     if (maxW === 0) return '';
     const barW = W / weights.length;
+
+    // Core-share window shading (WO_dispersion-tag-revision) -- windowLo/Hi live on the fixed
+    // global [0,100] rank axis; this histogram's own axis is the row's local [bins[0],bins[-1]]
+    // range, so map + clip before drawing. Drawn first so the bars render on top of it. Only
+    // area_weighted rows pass windowLo/Hi; Band T's histogram calls omit them.
+    let windowRect = '';
+    if (typeof windowLo === 'number' && typeof windowHi === 'number') {
+      const axisLo = bins[0], axisHi = bins[bins.length - 1];
+      const clipLo = Math.max(windowLo, axisLo), clipHi = Math.min(windowHi, axisHi);
+      if (clipHi > clipLo && axisHi > axisLo) {
+        const xLo = ((clipLo - axisLo) / (axisHi - axisLo)) * W;
+        const xHi = ((clipHi - axisLo) / (axisHi - axisLo)) * W;
+        windowRect = `<rect x="${xLo.toFixed(1)}" y="0" width="${(xHi - xLo).toFixed(1)}" height="${BAR_H}" fill="#5b8dc4" opacity="0.15"/>`;
+      }
+    }
+
     let bars = '';
     for (let i = 0; i < weights.length; i++) {
       if (!weights[i]) continue;
@@ -3100,6 +3070,7 @@
       ? `<div style="font-size:0.65rem;color:#000;margin-top:1px;">${escapeHtml(parts.join(' · '))}</div>` : '';
     return `<div style="margin-top:3px;">
       <svg width="${W}" height="${BAR_H+LABEL_H}" style="display:block;">
+        ${windowRect}
         <g>${bars}</g>
         <text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${escapeHtml(lo)}</text>
         <text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${escapeHtml(hi)}</text>
@@ -3393,11 +3364,14 @@
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
+        else if (row.coherence === 'split')         coh = `<span class="badge bg-info-subtle text-info-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">split</span>`;
         const caveat = row.score_suppressed
           ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
-        return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {})}${caveat}`;
+        return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {}, det.window_lo, det.window_hi)}${caveat}`;
       }
       case 'dominant_basin': {
+        if (row.status === 'not_areal')
+          return `<span style="font-size:0.85rem;">network measure, not meaningful for areas</span>`;
         const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
         const main = [r, s].filter(Boolean).join(' · ') || '—';

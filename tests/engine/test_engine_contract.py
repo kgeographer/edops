@@ -34,6 +34,11 @@ from scripts.edop.areas.engine import (
     load_catalog,
     dispatch_variable,
     _agg_hyde_b7,
+    _CORE_SHARE_CUTOFF,
+    _SPLIT_TIE_MIN_WEIGHT,
+    _SPLIT_MIN_RESIDUAL,
+    _MIN_COHERENT_BASINS,
+    _suppress_low_n_coherence,
 )
 from scripts.shared.db_utils import db_connect
 
@@ -50,14 +55,14 @@ TIM_LEVEL        = 6
 ROME_LAT, ROME_LON = 41.8967, 12.4822
 
 # Valid vocabulary sets
-VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data'})
+VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data', 'not_areal'})
 VALID_METHODS     = frozenset({
     'area_weighted', 'dominant_basin', 'class_mixture', 'flag_fraction',
     'distribution_only', 'extreme',
     'grid_areal_distribution', 'global_forcing',
 })
 VALID_MODALITIES  = frozenset({'unimodal', 'two_regime'})
-VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'mixed', 'outside_active_domain'})
+VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'split', 'mixed', 'outside_active_domain'})
 VALID_BANDS       = frozenset({'A', 'B', 'C', 'D', 'E', 'T'})
 VALID_KINDS       = frozenset({'continuous', 'categorical', 'flag'})
 DERIVED_KEYS      = frozenset({
@@ -275,7 +280,7 @@ class TestPayloadEnvelope:
         missing = set(sourced.index) - emitted
         # B3 internals: ecoregion deduped into eco_id; strata_code excluded by design
         # B4 consumed: endorheic + coast_flag consumed to produce outlet_type/coast_fraction
-        # B5 deferred: river_area_upstream deferred within B5
+        # B1 deferred: river_area_upstream deferred within B1 (_B1_EXCLUDE)
         KNOWN_ABSENT = {'ecoregion', 'strata_code', 'endorheic', 'coast_flag', 'river_area_upstream'}
         unexpected_missing = missing - KNOWN_ABSENT
         assert not unexpected_missing, f'Variables absent from payload: {unexpected_missing}'
@@ -298,19 +303,52 @@ class TestPayloadEnvelope:
 
 class TestBlockContracts:
     def test_b1_detail_fields(self, buf_rows):
-        """B1 rows carry spread, p10, p90 in detail; coherence in vocabulary."""
+        """B1 rows carry spread + iqr + the quartiles + core_share/window in detail;
+        coherence in vocabulary."""
         b1 = [r for r in buf_rows if r['method'] == 'area_weighted']
         assert b1, 'No B1 rows found'
         for r in b1:
             detail = r.get('detail') or {}
             if r['status'] == 'ok':
-                assert 'spread' in detail, f'{r["variable"]}: missing spread'
-                assert 'p10' in detail,    f'{r["variable"]}: missing p10'
-                assert 'p90' in detail,    f'{r["variable"]}: missing p90'
+                for k in ('spread', 'iqr', 'p10', 'p25', 'p75', 'p90',
+                          'core_share', 'window_lo', 'window_hi'):
+                    assert k in detail, f'{r["variable"]}: missing {k}'
             coh = r.get('coherence')
             if coh is not None:
                 assert coh in VALID_COHERENCES, \
                     f'{r["variable"]}: unknown coherence {coh!r}'
+
+    def test_b1_coherence_is_core_share_driven(self, buf_rows):
+        """coherence follows core share (WO_dispersion-tag-revision), not IQR: 'split' when
+        a tie holds >= _SPLIT_TIE_MIN_WEIGHT of the weight and a real population sits outside
+        the core window; otherwise 'concentrated' iff core_share >= _CORE_SHARE_CUTOFF."""
+        b1 = [r for r in buf_rows
+              if r['method'] == 'area_weighted' and r['status'] == 'ok'
+              and r.get('coherence') in ('concentrated', 'spread', 'split')]
+        assert b1, 'No classified B1 rows found'
+        for r in b1:
+            d = r['detail']
+            core_share = d['core_share']
+            assert 0.0 <= core_share <= 1.0, \
+                f'{r["variable"]}: core_share {core_share} out of [0,1]'
+            assert d['window_hi'] - d['window_lo'] == pytest.approx(30.0, abs=1e-6), \
+                f'{r["variable"]}: window width {d["window_hi"] - d["window_lo"]} != 2*delta'
+            if r['coherence'] != 'split':
+                expect = 'concentrated' if core_share >= _CORE_SHARE_CUTOFF else 'spread'
+                assert r['coherence'] == expect, \
+                    f'{r["variable"]}: coherence={r["coherence"]!r} but core_share={core_share} → {expect}'
+            assert d['iqr'] <= d['spread'] + 1e-6, \
+                f'{r["variable"]}: iqr {d["iqr"]} > span {d["spread"]}'
+
+    def test_b1_split_requires_tie_and_residual(self, buf_rows):
+        """Every 'split' row must actually satisfy the two-part test the tag promises --
+        not just a high or low core_share, a real tie plus a real residual population."""
+        split_rows = [r for r in buf_rows
+                      if r['method'] == 'area_weighted' and r.get('coherence') == 'split']
+        for r in split_rows:
+            d = r['detail']
+            assert (1.0 - d['core_share']) >= _SPLIT_MIN_RESIDUAL - 1e-9, \
+                f'{r["variable"]}: split but residual {1.0 - d["core_share"]} < {_SPLIT_MIN_RESIDUAL}'
 
     def test_b1_spread_rows_carry_score(self, buf_rows):
         """Spread B1 rows emit the weighted-mean score; coherence='spread' is the flag.
@@ -458,23 +496,59 @@ class TestSingleBasinDegeneracy:
         assert 0.0 <= float(cf['representative_raw']) <= 1.0
 
 
+class TestLowBasinCountCoherence:
+    """WO_region-distinctiveness-readout follow-on (2026-09-06): n=2..4 empirically shows
+    the same core_share~1.0 degeneracy as n=1 (too few basins for a distribution) --
+    confirmed live against Canarias (n=2, a Lovejoy region): core_share 0.9999-1.0 and
+    'concentrated' on all 22 scored variables before this fix. n_units==1 is a stricter,
+    mathematically exact case of the same problem, handled separately by
+    _backfill_single_basin_raw. Pure-function test -- no DB needed, unlike the rest of
+    this file's fixture-based tests."""
+
+    def test_clears_coherence_below_floor(self):
+        rows = [
+            {'method': 'area_weighted', 'coherence': 'concentrated'},
+            {'method': 'distribution_only', 'coherence': 'spread'},
+        ]
+        _suppress_low_n_coherence(rows, n_units=2)
+        assert rows[0]['coherence'] is None
+        assert rows[1]['coherence'] is None
+
+    def test_leaves_coherence_at_or_above_floor(self):
+        rows = [
+            {'method': 'area_weighted', 'coherence': 'concentrated'},
+            {'method': 'distribution_only', 'coherence': 'spread'},
+        ]
+        _suppress_low_n_coherence(rows, n_units=_MIN_COHERENT_BASINS)
+        assert rows[0]['coherence'] == 'concentrated'
+        assert rows[1]['coherence'] == 'spread'
+
+    def test_ignores_methods_without_coherence(self):
+        """dominant_basin/extreme rows never carry coherence -- must not be disturbed."""
+        rows = [{'method': 'extreme', 'coherence': None, 'representative_score': 96.08}]
+        _suppress_low_n_coherence(rows, n_units=2)
+        assert rows[0]['representative_score'] == 96.08
+
+
 # ---------------------------------------------------------------------------
 # Section 6 — Cross-block consistency
 # ---------------------------------------------------------------------------
 
 class TestCrossBlockConsistency:
-    def test_b5_vs_b2_carrier_split(self, buf_rows):
-        """river_area carrier ≠ discharge dominant (Inner Niger Delta split)."""
-        b5_ext = next((r for r in buf_rows if r['method'] == 'extreme'), None)
-        b2_dom = next((r for r in buf_rows
-                       if r['method'] == 'dominant_basin'
-                       and r['variable'] == 'discharge_yr'), None)
-        assert b5_ext is not None, 'No extreme row found'
-        assert b2_dom is not None, 'No B2 discharge_yr row found'
-        b5_carrier = b5_ext['detail']['dominant_hybas_id']
-        b2_id      = b2_dom['detail']['dominant_hybas_id']
-        assert b5_carrier != b2_id, \
-            f'Expected distinct carriers; both = {b5_carrier}'
+    def test_river_area_is_area_weighted(self, buf_rows):
+        """WO_dominant-basin-scope-fix (2026-09-06): river_area moved from B5 extreme
+        (single-carrier selection) to B1 area_weighted -- it's a local, non-cumulative
+        spatial-extent measure, no reason it needed winner-take-all selection. Retires the
+        old 'Inner Niger Delta split' carrier-vs-carrier comparison: neither method emits a
+        single carrier basin for this variable anymore, so there's nothing left to compare."""
+        ra = next((r for r in buf_rows if r['variable'] == 'river_area'), None)
+        assert ra is not None, 'river_area row missing'
+        assert ra['method'] == 'area_weighted', \
+            f'river_area method={ra["method"]!r}, expected area_weighted'
+        assert ra['representative_score'] is not None
+        assert ra['coherence'] in ('concentrated', 'spread', 'split')
+        assert not any(r['method'] == 'extreme' for r in buf_rows), \
+            'extreme method is retired (empty _B5_EXTREME_VARS) -- no row should use it'
 
     def test_endorheic_cross_block(self, buf_rows):
         """Endorheic fraction in outlet_type ≈ dist_sink weight_at_zero (±0.01)."""
@@ -662,14 +736,20 @@ class TestArealSignaturePolygon:
         spread = sum(1 for r in nsong_payload['rows'] if r.get('coherence') == 'spread')
         assert spread >= 10, f'Only {spread} spread rows — heterogeneity not surfacing'
 
-    def test_b2_dominant_basin_high_discharge(self, nsong_payload):
-        """Dominant basin for N Song should be in top global decile for discharge."""
+    def test_b2_discharge_not_areal_for_polygon(self, nsong_payload):
+        """WO_dominant-basin-scope-fix (2026-09-06): a single carrier basin's discharge
+        doesn't characterize a large, irregular multi-basin region -- rows stay present
+        (not silently dropped) but carry status='not_areal' and no numeric value that could
+        be misread as an area-representative statistic. Buffer/single-basin scope keep the
+        old dominant-basin behavior unchanged (see TestResolver / single-basin tests)."""
         b2 = [r for r in nsong_payload['rows'] if r.get('method') == 'dominant_basin']
         assert b2, 'No B2 dominant_basin rows'
         discharge = next((r for r in b2 if r['variable'] == 'discharge_yr'), None)
         assert discharge is not None, 'discharge_yr missing from B2'
-        assert discharge['representative_score'] >= 90, \
-            f'discharge_yr score={discharge["representative_score"]} — expected ≥90 for Yangtze-class basin'
+        assert discharge['status'] == 'not_areal', \
+            f'discharge_yr status={discharge["status"]!r}, expected not_areal for polygon scope'
+        assert discharge['representative_score'] is None
+        assert discharge['representative_raw'] is None
 
     def test_payload_bands(self, nsong_payload):
         assert set(nsong_payload['bands']) == set('ABCDE')

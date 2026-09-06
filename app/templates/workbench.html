@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" crossorigin="">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
@@ -34,23 +35,27 @@
 
 <main>
 <div class="container-fluid">
-  <div class="row g-3">
 
-    <!-- LEFT: tabs + forms + outputs -->
+  <ul class="nav nav-tabs" id="edopTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
+    </li>
+  </ul>
+
+  <div class="row g-3 pt-2">
+
+    <!-- LEFT: tab content + shared outputs -->
     <div class="col-12 col-lg-6">
-      <ul class="nav nav-tabs" id="edopTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
-        </li>
-      </ul>
-
-      <div class="tab-content pt-2" id="edopTabContent">
+      <div class="tab-content" id="edopTabContent">
         <!-- WH CITIES TAB (258 cities) -->
         <div class="tab-pane fade" id="panel-whc" role="tabpanel" aria-labelledby="tab-whc">
           <h4 class="mb-1">Similarity Among 254 World Heritage Cities</h4>
@@ -77,7 +82,7 @@
               </button>
               <ul class="dropdown-menu" aria-labelledby="whc-similar-env-btn">
                 <li><a class="dropdown-item" href="#" data-lens="climate.precip">Precipitation regime</a></li>
-                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Tem perature regime</a></li>
+                <li><a class="dropdown-item" href="#" data-lens="climate.temp">Temperature regime</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" data-lens="terrain">Terrain regime</a></li>
               </ul>
@@ -200,6 +205,14 @@
           <div id="soc-content"></div>
         </div>
 
+        <!-- AFRICAN REGIONS TAB — layout attempt #1 -->
+        <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
+          <div id="afr-map" style="height:460px;border:1px solid #ddd;"></div>
+          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;">
+            <span class="text-secondary">Pick a variable to paint the basins.</span>
+          </div>
+        </div>
+
       </div>
 
       <!-- Outputs (shared across tabs) -->
@@ -232,6 +245,84 @@
 <!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
       <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
+
+      <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
+      <!-- SKUNKWORKS: marker-click reflows this panel -->
+      <style>
+        #soc-vars                               { display:none; }
+        #afr-right.mode-society #soc-vars        { display:block; }
+        #afr-right.mode-society #var-select      { margin-top:auto; }
+        #afr-right.cite-retired #afr-cite        { display:none; }
+        #afr-rationale-toggle                    { cursor:pointer; user-select:none; }
+        #afr-rationale-caret                     { font-size:1.2rem; line-height:1; vertical-align:-2px; }
+        .afr-soc-tip .maplibregl-popup-content   { padding:2px 7px; font-size:.78rem; line-height:1.2; }
+      </style>
+      <div id="afr-right" style="display:none;flex-direction:column;height:460px;overflow-y:auto;background:#fff;border:1px solid #ddd;padding:.85rem 1rem;font-size:.9rem;line-height:1.4;">
+        <div id="afr-region">
+          <div id="afr-region-head"></div>              <!-- title + macro subtitle (region OR marker's containing region) -->
+          <div id="afr-region-body">
+            <p id="afr-rationale-toggle" class="mb-1 small text-uppercase" style="letter-spacing:.04em;" hidden>
+              <span id="afr-rationale-caret">▾</span> <span id="afr-rationale-label">From the article</span>
+            </p>
+            <div id="afr-rationale-text"></div>          <!-- the quoted rationale; collapsed via the toggle -->
+            <hr id="afr-rationale-hr" class="my-3" hidden>
+          </div>
+        </div>
+        <div id="soc-vars"></div>                        <!-- D-PLACE content on marker click; shown via .mode-society -->
+        <div id="var-select">
+          <!-- intro text — hidden once a region rationale is showing (renderAfrRegion) -->
+          <div id="afr-about-text">
+            <div class="d-flex justify-content-between align-items-baseline">
+              <h6 class="mb-1">African Regions in Historical Perspective</h6>
+              <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
+            </div>
+            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions proposed by
+              Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
+              historical data. Select a region to read the article's rationale for its extent and
+              the peoples associated with it. The regions were drawn for organising data rather than
+              for environmental analysis; the Workbench places them over EDOPS basin signatures to
+              ask how far each one holds together as an environmental unit.</p>
+          </div>
+          <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
+            <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
+              <option value="">Paint a variable…</option>
+              <optgroup label="A — Terrain">
+                <option value="elevation_max">Elevation maximum</option>
+                <option value="slope_deg">Slope</option>
+              </optgroup>
+              <optgroup label="B — Hydrology &amp; soils">
+                <option value="discharge_annual">Discharge, annual mean</option>
+                <option value="pnv_majority_name">Potential natural vegetation</option>
+                <option value="pct_clay">Clay content</option>
+              </optgroup>
+              <optgroup label="E — Coastality">
+                <option value="dist_sink_km">Flow distance to marine outlet</option>
+              </optgroup>
+              <optgroup label="C — Climate">
+                <option value="aridity_index">Aridity index (P/PET)</option>
+                <option value="precipitation_annual">Precipitation, annual</option>
+              </optgroup>
+            </select>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Basin level">
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-8" value="8" autocomplete="off" checked>
+              <label class="btn btn-outline-secondary" for="afr-lvl-8">L8</label>
+            </div>
+          </div>
+        </div>
+        <div id="afr-cite" style="margin-top:auto;padding-top:.5rem;">
+          <hr class="my-2">
+          <p class="mb-0" style="font-size:.78rem;">
+            Henry B. Lovejoy, Paul E. Lovejoy, Walter Hawthorne, Edward A. Alpers, Mariana Candido,
+            Matthew S. Hopper, Ghislaine Lydon, Colleen Kriger, and John Thornton,
+            &ldquo;<b>Defining Regions of Pre-Colonial Africa: A Controlled Vocabulary for Linking
+            Open-Source Data for Digital History Projects</b>,&rdquo; <i>History in Africa</i> 48
+            (2021): 1&ndash;26,
+            <a href="https://doi.org/10.1017/hia.2020.17" target="_blank" rel="noopener">https://doi.org/10.1017/hia.2020.17</a>.
+          </p>
+        </div>
+      </div>
 
       <!-- Similar sites results (shown below map) -->
       <div id="similar-results" class="mt-3" style="display:none;">
@@ -313,6 +404,27 @@
       </div>
       <div class="modal-body" id="summariesModalBody">
         <div class="text-center text-muted">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKUNKWORKS: D-PLACE society page in an iframe (CC-BY-NC 4.0). If framing is
+     blocked, wipe this block + afrOpenDplaceModal() + the .afr-soc-modal link/branch;
+     the plain "Cc2 ↗" link is untouched.
+     Dual-purpose (WO05): also hosts a region's areal signature (afrOpenProfileModal()),
+     swapped in via #afr-profile-body + _afrModalMode() rather than a second modal. -->
+<div class="modal fade" id="afr-dplace-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" id="afr-dplace-dialog" style="max-width:90vw;width:90vw;">
+    <div class="modal-content" style="height:88vh;">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="afr-dplace-title">D-PLACE society <span class="text-muted small" id="afr-dplace-subtitle">— CC-BY-NC 4.0</span></h6>
+        <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
+        <div id="afr-profile-body" style="display:none;width:100%;padding:1rem 1.25rem;"></div>
       </div>
     </div>
   </div>
@@ -418,6 +530,60 @@
   // }
 
   let map = null;
+  let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
+  let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
+  let _afrSocTip = null;    // hover-name Popup for society markers
+
+  // ── Basin variable painting (WO03) ──
+  let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
+  let _afrLevel = 8;          // 6 | 8
+  let _afrBasinLevel = null;  // pmtiles level currently sourced on _afrMap
+  let _afrPaintSeq = 0;       // stale-fetch guard
+  const AFR_BBOX = '-20,-36,55,38';
+  const AFR_WASH = 0.10;      // lovejoy-fill opacity when no variable is painted
+  const AFR_VAR_LABEL = {
+    elevation_max: 'Elevation maximum', slope_deg: 'Slope',
+    discharge_annual: 'Discharge, annual mean', pnv_majority_name: 'Potential natural vegetation',
+    pct_clay: 'Clay content', dist_sink_km: 'Flow distance to marine outlet',
+    aridity_index: 'Aridity index (P/PET)', precipitation_annual: 'Precipitation, annual',
+  };
+  // Ramp helpers — ported verbatim from explorer.html (no shared file yet).
+  const VIRIDIS = ['#440154','#443982','#31688e','#21918c','#35b779','#8fd744','#fde725'];
+  const RDBU = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac'];
+  const TERRAIN_PAL = ['#ffffd4','#fee391','#fec44f','#fe9929','#ec7014','#cc4c02','#8c2d04'];
+  function _afrLerp(c1, c2, t) {
+    const h = s => [parseInt(s.slice(1,3),16), parseInt(s.slice(3,5),16), parseInt(s.slice(5,7),16)];
+    const [r1,g1,b1] = h(c1), [r2,g2,b2] = h(c2);
+    return `rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;
+  }
+  function _afrInterp(pal, t) {
+    const n = pal.length - 1, i = Math.min(n-1, Math.floor(t*n));
+    return _afrLerp(pal[i], pal[i+1], t*n - i);
+  }
+  function _afrColorFn(meta, schemaKey) {
+    const isDiverge  = meta.min < 0 && meta.var_type !== 'string';
+    const isZeroInfl = !isDiverge && meta.zero_fraction > 0.5;
+    const lo = meta.p10 ?? meta.min, hi = meta.p90 ?? meta.max;
+    if (isDiverge) {
+      const absMax = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
+      return v => v == null ? '#d3d3d3'
+        : _afrInterp(RDBU, 1 - Math.max(0, Math.min(1, (v + absMax) / (2 * absMax))));
+    }
+    if (schemaKey === 'aridity_index' || schemaKey === 'precipitation_annual') {
+      const range = (hi - lo) || 1;
+      return v => v == null ? '#d3d3d3' : _afrInterp(RDBU, Math.max(0, Math.min(1, (v - lo) / range)));
+    }
+    if (['elevation_max','elevation_min','elevation_mean','slope_deg'].includes(schemaKey)) {
+      const range = (hi - lo) || 1;
+      return v => v == null ? '#d3d3d3' : _afrInterp(TERRAIN_PAL, Math.max(0, Math.min(1, (v - lo) / range)));
+    }
+    const range = (hi - lo) || 1;
+    return v => {
+      if (v == null) return '#d3d3d3';
+      if (isZeroInfl && v === 0) return '#e8e8e8';
+      return _afrInterp(VIRIDIS, Math.max(0, Math.min(1, (v - lo) / range)));
+    };
+  }
   let marker = null;
   let basinLayer = null; // GeoJSON polygon overlay from signature (sub-basin)
   let similarMarkers = []; // Markers for similar sites
@@ -918,6 +1084,918 @@
     ).addTo(map);
   }
 
+  // African Regions tab: its own MapLibre map, light Protomaps basemap, fit to Africa.
+  // Lazy-init on first tab show; resize() on re-show (container was display:none).
+  function ensureAfrMap() {
+    if (_afrMap) { _afrMap.resize(); return; }
+    if (!window.maplibregl || typeof pmLightStyle !== 'function') {
+      console.warn('maplibre-gl / pm_basemap not loaded; African Regions map inert.');
+      return;
+    }
+    maplibregl.addProtocol('pmtiles', new pmtiles.Protocol().tile);
+    _afrMap = new maplibregl.Map({
+      container: 'afr-map',
+      style: pmLightStyle(),
+      attributionControl: true,
+      bounds: [[-20, -36], [52, 38]],      // Africa
+      fitBoundsOptions: { padding: 10 },
+    });
+    _afrMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+
+    _afrMap.on('load', () => {
+      _afrMap.resize();
+
+      // Lovejoy pre-colonial African subregions (34). rationale/page/ethnonyms
+      // ride in feature properties. Built by scripts/edop/workbench/build_lovejoy_geojson.py.
+      _afrMap.addSource('lovejoy', {
+        type: 'geojson',
+        data: '/static/workbench/lovejoy_regions.geojson?v={{ lovejoy_v | default("") }}',
+        promoteId: 'src_id',
+      });
+      _afrMap.addLayer({
+        id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
+        paint: { 'fill-color': '#6a51a3', 'fill-opacity': 0.10 },
+      });
+      _afrMap.addLayer({
+        id: 'lovejoy-line', type: 'line', source: 'lovejoy',
+        paint: {
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#54278f'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2, 1],
+          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+          // 'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
+          // 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
+          // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+        },
+      });
+
+
+      // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
+      // Rivers: African mainstems (dissolved HydroRIVERS), under the region outlines.
+      _afrMap.addSource('afr-rivers', {
+        type: 'geojson', data: '/static/workbench/afr_rivers.geojson?v={{ afr_rivers_v | default("") }}',
+      });
+      _afrMap.addLayer({
+        id: 'afr-rivers-line', type: 'line', source: 'afr-rivers',
+        layout: { visibility: 'none' },
+        paint: {
+          'line-color': '#5a9bd4', 'line-opacity': 0.8,
+          'line-width': ['case', ['<=', ['to-number', ['get', 'ord_clas']], 1], 1.2, 0.6],
+        },
+      }, 'lovejoy-line');
+      // Societies: 528 African D-PLACE points; added last -> topmost. Click handled
+      // by the unified dispatcher below (renderAfrSociety).
+      _afrMap.addSource('afr-societies', {
+        type: 'geojson', data: '/static/workbench/afr_societies.geojson?v={{ afr_societies_v | default("") }}',
+        promoteId: 'soc_id',
+      });
+      _afrMap.addLayer({
+        id: 'afr-soc-dots', type: 'circle', source: 'afr-societies',
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 4.5, 3],
+          'circle-color': '#666', 'circle-opacity': 0.7,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
+        },
+      });
+      // Hollow ring around markers sharing an EA value the user magnifier-clicks.
+      _afrMap.addLayer({
+        id: 'afr-soc-match', type: 'circle', source: 'afr-societies',
+        filter: ['==', ['literal', 1], ['literal', 0]],   // matches nothing until set
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 5, 'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 2.5, 'circle-stroke-color': '#1c7ed6',
+        },
+      });
+      // Unified click / cursor dispatcher — topmost of [societies, regions] wins.
+      // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
+      const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
+      _afrSocTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
+      _afrMap.on('click', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        const region = hits.find(h => h.layer.id === 'lovejoy-fill');
+        _afrMap.removeFeatureState({ source: 'afr-societies' });   // reset every marker to default
+        afrHighlightBy(null, null);                               // any map click clears a value-highlight
+        if (soc) {
+          _afrMap.setFeatureState({ source: 'afr-societies', id: soc.id }, { selected: true });
+          if (region) selectAfrRegion(region.id);
+          renderAfrSociety(soc.properties, region ? region.properties : null);
+        } else if (region) {
+          selectAfrRegion(region.id);
+          renderAfrRegion(region.properties);
+        } else {
+          selectAfrRegion(null);   // empty space -> deselect region outline (markers already reset)
+        }
+      });
+      _afrMap.on('mousemove', (e) => {
+        const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
+        _afrMap.getCanvas().style.cursor = hits.length ? 'pointer' : '';
+        const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
+        if (soc) _afrSocTip.setLngLat(soc.geometry.coordinates).setText(soc.properties.name || '').addTo(_afrMap);
+        else _afrSocTip.remove();
+      });
+      _afrMap.on('mouseout', () => _afrSocTip.remove());
+
+      // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
+      const lc = document.createElement('div');
+      lc.id = 'afr-layer-control';
+      lc.style.cssText = 'position:absolute;top:10px;right:10px;z-index:1;background:rgba(255,255,255,0.92);'
+        + 'border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:.78rem;box-shadow:0 1px 4px rgba(0,0,0,.15);';
+      lc.innerHTML =
+        '<div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Layers</div>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-regions" checked> Regions</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-societies"> Societies</label>'
+        + '<label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;"><input type="checkbox" id="afr-lyr-rivers"> Rivers</label>';
+      document.getElementById('afr-map').appendChild(lc);
+      lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
+        const vis = this.checked ? 'visible' : 'none';
+        ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+      });
+      lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
+        if (!this.checked) afrHighlightBy(null, null);   // drop any value-highlight with the layer
+      });
+      lc.querySelector('#afr-lyr-rivers').addEventListener('change', function () {
+        _afrMap.setLayoutProperty('afr-rivers-line', 'visibility', this.checked ? 'visible' : 'none');
+      });
+    });
+  }
+
+  // Highlight one Lovejoy region's outline; clear the previous. srcId null = clear only.
+  function selectAfrRegion(srcId) {
+    if (_afrSelected && _afrSelected !== srcId) {
+      _afrMap.setFeatureState({ source: 'lovejoy', id: _afrSelected }, { selected: false });
+    }
+    _afrSelected = srcId || null;
+    if (srcId) _afrMap.setFeatureState({ source: 'lovejoy', id: srcId }, { selected: true });
+  }
+
+  const _afrEsc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  // srcId (WO05): flush-right "Region signature" link on the title line, only when this head
+  // is genuinely showing a Lovejoy region (region click, or a society's containing region) --
+  // null when it's showing a bare society name with no containing region (renderAfrSociety's
+  // fallback branch). Passed explicitly rather than read off shared state, so there's no
+  // staleness risk if a later WO adds a "society's own basin signature" link on this same line
+  // (Karl, 2026-09-04) -- that one names itself "Society basin signature" and is a separate,
+  // vertically-aligned control on the society-info header, not this one.
+  function renderAfrRegionHead(name, macro, srcId) {
+    const link = srcId
+      ? ` <a href="#" id="afr-profile-link" class="small text-decoration-none" data-src-id="${_afrEsc(srcId)}">Region signature ↗</a>`
+      : '';
+    document.getElementById('afr-region-head').innerHTML =
+      `<div class="d-flex justify-content-between align-items-baseline"><h5 class="mb-0">${_afrEsc(name)}</h5>${link}</div>` +
+      `<div class="small mb-2">${_afrEsc(macro)}</div>`;
+  }
+
+  function _afrRationaleExpand(expanded) {
+    document.getElementById('afr-rationale-text').hidden = !expanded;
+    document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
+  }
+
+  // Fill the collapsible rationale block from a Lovejoy region's feature props. The rationale
+  // toggle and the "Signature" profile-modal link (WO05) share one visibility gate -- #afr-
+  // (WO05: the "Region signature" link used to share this gate, but Karl moved it to the
+  // #afr-region-head title line instead -- see renderAfrRegionHead -- so this is back to
+  // gating just the rationale toggle, same as pre-WO05.)
+  function _afrSetRationale(p, expanded) {
+    const toggle = document.getElementById('afr-rationale-toggle');
+    const text = document.getElementById('afr-rationale-text');
+    const hr = document.getElementById('afr-rationale-hr');
+    if (!p || !p.rationale) {
+      toggle.hidden = true; text.hidden = true; text.innerHTML = ''; hr.hidden = true;
+      return;
+    }
+    const pg = (p.page || '').trim();
+    const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
+    document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
+    text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
+    toggle.hidden = false;
+    hr.hidden = false;
+    _afrRationaleExpand(expanded);
+  }
+
+  // Region click -> title + macro + the (expanded) article rationale.
+  function renderAfrRegion(p) {
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';           // intro has done its job
+    document.getElementById('afr-right').classList.remove('mode-society');
+    renderAfrRegionHead(p.name, p.macro, p.src_id);
+    _afrSetRationale(p, true);
+  }
+
+  // Marker click (SKUNKWORKS) -> keep the containing region's title/macro with the
+  // rationale collapsed (still reachable via the caret), hide the citation, drop
+  // #var-select to the bottom, reveal #soc-vars for D-PLACE content.
+  function renderAfrSociety(soc, region) {
+    const about = document.getElementById('afr-about-text');
+    if (about) about.style.display = 'none';
+    const right = document.getElementById('afr-right');
+    right.classList.add('mode-society', 'cite-retired');
+    if (region) { renderAfrRegionHead(region.name, region.macro, region.src_id); _afrSetRationale(region, false); }
+    else { renderAfrRegionHead(soc.name || 'Society', 'D-PLACE', null); _afrSetRationale(null); }
+    const row = (k, html) => `<tr><td style="width:44%;">${_afrEsc(k)}</td><td>${html}</td></tr>`;
+    const eaCell = (field, v) => {
+      if (v == null || v === '') return '—';
+      const mag = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.8" cy="6.8" r="4.3"/><line x1="10" y1="10" x2="14" y2="14"/></svg>';
+      return `${_afrEsc(v)} <button type="button" class="afr-hl-btn" data-field="${field}" data-value="${_afrEsc(v)}" title="Highlight societies sharing this value">${mag}</button>`;
+    };
+    const sid = soc.soc_id || '';
+    const nameCell = _afrEsc(soc.name || '—') + (sid
+      ? ` (<a href="#" class="afr-soc-modal" data-sid="${_afrEsc(sid)}">${_afrEsc(sid)} record</a>)`
+      : '');
+    document.getElementById('soc-vars').innerHTML =
+      `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
+      `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
+      row('Name', nameCell) +
+      row('Subsistence (EA042)', eaCell('subsistence', soc.subsistence)) +
+      row('High gods (EA034)', eaCell('religion', soc.religion)) +
+      `</tbody></table>` +
+      `<div id="afr-hl-status" class="small mb-2" style="display:none;"></div>` +
+      `<hr class="my-3">`;
+  }
+
+  // #afr-dplace-modal is dual-purpose (WO05): the D-PLACE iframe (SKUNKWORKS, below) or a
+  // region's areal signature (afrOpenProfileModal). _afrModalMode() swaps the shared chrome.
+  function _afrModalMode(mode) {   // 'dplace' | 'profile'
+    const isDplace = mode === 'dplace';
+    document.getElementById('afr-dplace-frame').style.display = isDplace ? '' : 'none';
+    document.getElementById('afr-profile-body').style.display = isDplace ? 'none' : '';
+    document.getElementById('afr-dplace-subtitle').style.display = isDplace ? '' : 'none';
+    document.getElementById('afr-dplace-ext').style.display = isDplace ? '' : 'none';
+    const dlg = document.getElementById('afr-dplace-dialog');
+    dlg.style.width = isDplace ? '90vw' : '640px';
+    dlg.style.maxWidth = isDplace ? '90vw' : '92vw';   // narrower -- a signature reads tall, not wide
+  }
+
+  // SKUNKWORKS: open the D-PLACE society page in a 90vw modal iframe.
+  function afrOpenDplaceModal(sid) {
+    const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
+    document.getElementById('afr-dplace-frame').src = url;
+    document.getElementById('afr-dplace-ext').href = url;
+    document.getElementById('afr-dplace-title').firstChild.textContent = 'D-PLACE society ';
+    _afrModalMode('dplace');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+  }
+
+  // WO05: fetch (and cache) one region's areal signature, render it into the shared modal.
+  const _afrSigCache = {};   // {src_id: payload} -- fetched once per session, data doesn't change
+  let _afrSigSeq = 0;        // stale-fetch guard, same pattern as _afrPaintSeq
+
+  async function afrOpenProfileModal(srcId) {
+    if (!srcId) return;   // the link only renders (renderAfrRegionHead) when a srcId is known
+    const body = document.getElementById('afr-profile-body');
+    document.getElementById('afr-dplace-title').firstChild.textContent = 'Areal signature ';
+    _afrModalMode('profile');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('afr-dplace-modal')).show();
+
+    if (_afrSigCache[srcId]) { _afrRenderSigInto(body, _afrSigCache[srcId]); return; }
+
+    const seq = ++_afrSigSeq;
+    body.innerHTML = '<div class="d-flex align-items-center gap-2 text-secondary">'
+      + '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
+      + '<span>Computing areal signature — this can take several seconds for a large region…</span></div>';
+    try {
+      const r = await fetch(`/api/lovejoy-signature?src_id=${encodeURIComponent(srcId)}`);
+      const payload = await r.json();
+      if (!r.ok) throw new Error(payload.detail || `HTTP ${r.status}`);
+      if (seq !== _afrSigSeq) return;   // modal reopened for a different region meanwhile
+      _afrSigCache[srcId] = payload;
+      _afrRenderSigInto(body, payload);
+    } catch (e) {
+      if (seq !== _afrSigSeq) return;
+      body.innerHTML = `<p class="text-danger mb-0">${_afrEsc(e.message)}</p>`;
+    }
+  }
+
+  function _afrRenderSigInto(body, payload) {
+    body.innerHTML = _afrRenderSigHtml(payload);
+    const toggle = body.querySelector('#afr-sig-showall-toggle');
+    const panel  = body.querySelector('#afr-sig-allvars');
+    if (toggle && panel) toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      panel.hidden = !panel.hidden;
+      toggle.textContent = panel.hidden ? 'Show all variables ▾' : 'Hide all variables ▴';
+    });
+    const tRows = (payload.rows || []).filter(r => r.band === 'T');
+    if (tRows.length) _afrSigWireTSliders(tRows);
+  }
+
+  // ── WO05: ported areal-signature renderer, namespaced _afrSig* ─────────────────────────────
+  // This page already has its own renderSignature()/humanizeKey() for the shared #map panel's
+  // single-basin signature (a different payload shape entirely -- /api/signature's profile_
+  // groups envelope). Do not touch those. Ported near-verbatim from sandbox.html's Polities-tab
+  // renderer (renderSignature/renderRow/renderLeaf/renderHistogram/renderTBand/wireTSliders +
+  // helpers), which consumes the same {scope, rows, ...} shape areal_signature_polygon returns.
+  // Band T keeps its interactive slider (workplan_africa.md WO05 build spec, reversed 2026-09-04
+  // -- no technical reason to drop it; the fixed 1600-1650 window still returns one row/year).
+  const _AFR_SIG_BAND_ORDER  = ['A','B','C','D','E','T'];
+  const _AFR_SIG_BAND_LABELS = {
+    A:'Physiographic', B:'Hydroclimatic', C:'Bioclimatic',
+    D:'Anthropocene',  E:'Coastality',    T:'Temporal',
+  };
+  const _AFR_SIG_LMR_VARS    = ['lmr_pdsi','lmr_air','lmr_prate'];
+  const _AFR_SIG_HYDE_VARS   = ['hyde_cropland','hyde_grazing','hyde_pasture','hyde_rangeland'];
+  const _AFR_SIG_LMR_LABELS  = { lmr_pdsi:'PDSI (drought index)', lmr_air:'Temperature anomaly', lmr_prate:'Precipitation' };
+  const _AFR_SIG_HYDE_LABELS = { hyde_cropland:'Cropland', hyde_grazing:'Grazing', hyde_pasture:'Pasture', hyde_rangeland:'Rangeland' };
+  const _AFR_SIG_VSSI_THRESHOLD = 5;
+
+  function _afrHumanizeKey(k) {
+    return k.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function _afrFmtNum(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    return String(v);
+  }
+
+  function _afrSigMixtureBar(det) {
+    const share = det.modal_share;
+    if (share == null) return '';
+    const W = 160, BAR_H = 8, LABEL_H = 12;
+    const fillW = Math.round(share * W);
+    let inner = `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#e9ecef" rx="2"/>`;
+    inner    += `<rect x="0" y="0" width="${fillW}" height="${BAR_H}" fill="#5b8dc4" opacity="0.55" rx="2"/>`;
+    inner    += `<text x="1" y="${BAR_H + LABEL_H - 1}" font-size="10" fill="#000">${(share*100).toFixed(0)}%</text>`;
+    return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
+  }
+
+  function _afrSigRangeBar(det) {
+    const p10 = det.p10, p90 = det.p90;
+    if (p10 == null || p90 == null) return '';
+    const W = 160, BAR_H = 8, LABEL_H = 12, span = p90 - p10;
+    let inner = `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#e9ecef" rx="2"/>`;
+    inner    += `<rect x="0" y="0" width="${W}" height="${BAR_H}" fill="#5b8dc4" opacity="0.45" rx="2"/>`;
+    if (det.regimes && span > 0) {
+      for (const r of det.regimes) {
+        const pos = ((r.center - p10) / span) * W;
+        const mW  = Math.max(3, Math.round(r.weight * 14));
+        const x   = Math.max(0, Math.min(W - mW, pos - mW / 2));
+        inner += `<rect x="${x.toFixed(1)}" y="0" width="${mW}" height="${BAR_H}" fill="#2c5f8a" rx="1"/>`;
+      }
+    }
+    inner += `<text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${_afrEsc(p10.toFixed(1))}</text>`;
+    inner += `<text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${_afrEsc(p90.toFixed(1))}</text>`;
+    return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
+  }
+
+  function _afrSigHistogram(dist, windowLo, windowHi) {
+    const { bins, weights } = dist;
+    if (!bins || !weights || !weights.length) return '';
+    const W = 160, BAR_H = 36, LABEL_H = 12;
+    const maxW = Math.max(...weights);
+    if (maxW === 0) return '';
+    const barW = W / weights.length;
+
+    // Core-share window shading (WO_dispersion-tag-revision) -- windowLo/Hi live on the fixed
+    // global [0,100] rank axis; this histogram's own axis is the row's local [bins[0],bins[-1]]
+    // range, so map + clip before drawing. Drawn first so the bars render on top of it. Only
+    // area_weighted rows pass windowLo/Hi; Band T's histogram calls omit them.
+    let windowRect = '';
+    if (typeof windowLo === 'number' && typeof windowHi === 'number') {
+      const axisLo = bins[0], axisHi = bins[bins.length - 1];
+      const clipLo = Math.max(windowLo, axisLo), clipHi = Math.min(windowHi, axisHi);
+      if (clipHi > clipLo && axisHi > axisLo) {
+        const xLo = ((clipLo - axisLo) / (axisHi - axisLo)) * W;
+        const xHi = ((clipHi - axisLo) / (axisHi - axisLo)) * W;
+        windowRect = `<rect x="${xLo.toFixed(1)}" y="0" width="${(xHi - xLo).toFixed(1)}" height="${BAR_H}" fill="#5b8dc4" opacity="0.15"/>`;
+      }
+    }
+
+    let bars = '';
+    for (let i = 0; i < weights.length; i++) {
+      if (!weights[i]) continue;
+      const h = Math.max(1, Math.round((weights[i] / maxW) * BAR_H));
+      bars += `<rect x="${(i*barW).toFixed(1)}" y="${BAR_H-h}" width="${(barW-0.8).toFixed(1)}" height="${h}" fill="#5b8dc4" opacity="0.75"/>`;
+    }
+    const lo = bins[0].toFixed(1), hi = bins[bins.length-1].toFixed(1);
+    const parts = [];
+    if (dist.band_t_from != null && dist.band_t_to != null)
+      parts.push(`${dist.band_t_from}–${dist.band_t_to} CE`);
+    const stamp = parts.length
+      ? `<div style="font-size:0.65rem;color:#000;margin-top:1px;">${_afrEsc(parts.join(' · '))}</div>` : '';
+    return `<div style="margin-top:3px;">
+      <svg width="${W}" height="${BAR_H+LABEL_H}" style="display:block;">
+        ${windowRect}
+        <g>${bars}</g>
+        <text x="1" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000">${_afrEsc(lo)}</text>
+        <text x="${W-1}" y="${BAR_H+LABEL_H-1}" font-size="10" fill="#000" text-anchor="end">${_afrEsc(hi)}</text>
+      </svg>${stamp}</div>`;
+  }
+
+  function _afrSigTimeMarginal(rows) {
+    if (!rows || rows.length < 2) return '';
+    const W = 170, CH = 56, LH = 14;
+    const p10s  = rows.map(r => r.detail?.distribution?.p10 ?? r.representative_raw);
+    const p90s  = rows.map(r => r.detail?.distribution?.p90 ?? r.representative_raw);
+    const means = rows.map(r => r.representative_raw);
+    const yMin = Math.min(...p10s), yMax = Math.max(...p90s);
+    const yPad = Math.max((yMax - yMin) * 0.08, 0.05);
+    const y0 = yMin - yPad, y1 = yMax + yPad, n = rows.length;
+    const xS = i => (i / (n-1)) * W;
+    const yS = v => CH - ((v - y0) / (y1 - y0)) * CH;
+    const topPts  = rows.map((_,i) => `${xS(i).toFixed(1)},${yS(p90s[i]).toFixed(1)}`).join(' ');
+    const botPts  = [...rows].map((_,i) => `${xS(n-1-i).toFixed(1)},${yS(p10s[n-1-i]).toFixed(1)}`).join(' ');
+    const meanPts = rows.map((_,i) => `${xS(i).toFixed(1)},${yS(means[i]).toFixed(1)}`).join(' ');
+    let zeroLine = '';
+    if (y0 < 0 && y1 > 0) {
+      const zy = yS(0).toFixed(1);
+      zeroLine = `<line x1="0" y1="${zy}" x2="${W}" y2="${zy}" stroke="#ddd" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+    }
+    return `<svg width="${W}" height="${CH+LH}" style="display:block;">
+      <rect width="${W}" height="${CH}" fill="#f8f9fa" rx="2"/>
+      ${zeroLine}
+      <polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>
+      <polyline points="${meanPts}" fill="none" stroke="#2c5f8a" stroke-width="1.3" stroke-linejoin="round"/>
+      <text x="1" y="9" font-size="9" fill="#000">${yMax.toFixed(2)}</text>
+      <text x="1" y="${CH-2}" font-size="9" fill="#000">${yMin.toFixed(2)}</text>
+      <text x="1" y="${CH+LH-1}" font-size="9" fill="#000">${rows[0].year}</text>
+      <text x="${W-1}" y="${CH+LH-1}" font-size="9" fill="#000" text-anchor="end">${rows[n-1].year}</text>
+    </svg>`;
+  }
+
+  function _afrSigTBand(rows, caveats) {
+    const byVar = {};
+    for (const r of rows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
+    const lmrRows0 = byVar[_AFR_SIG_LMR_VARS.find(v => byVar[v])];
+    const spanStr  = lmrRows0 ? `${lmrRows0[0].year}–${lmrRows0[lmrRows0.length-1].year} CE` : '';
+    const nLmr     = lmrRows0?.[0]?.n_units ?? '';
+    let html = `<div class="px-2 py-2">`;
+
+    if (_AFR_SIG_LMR_VARS.some(v => byVar[v])) {
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-bottom:6px;">
+        LMR climate &mdash; ${nLmr} basins &middot; ${spanStr}</div>`;
+      // Scoped to this section (not the modal's persistent header) -- it only explains the LMR
+      // rows immediately below it, and shouldn't linger once a non-T accordion is open (Karl,
+      // 2026-09-04).
+      if (caveats?.lmr_caveat)
+        html += `<div class="small text-secondary mb-2">${_afrEsc(caveats.lmr_caveat)}</div>`;
+      for (const v of _AFR_SIG_LMR_VARS) {
+        const vRows = byVar[v];
+        if (!vRows) continue;
+        const midRow = vRows[Math.floor(vRows.length / 2)];
+        html += `<div class="mb-3 pb-3" style="border-bottom:1px solid #dee2e6;">
+          <div style="font-size:0.78rem;color:#000;margin-bottom:2px;">${_AFR_SIG_LMR_LABELS[v] || v}</div>
+          <div class="d-flex align-items-start" style="gap:24px;">
+            <div style="flex:none;">
+              <div id="afr-sig-t-hs-${v}">${_afrSigHistogram(midRow.detail?.distribution || {})}</div>
+              <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
+                <span>Year</span>
+                <input type="range" id="afr-sig-t-sl-${v}"
+                       min="${vRows[0].year}" max="${vRows[vRows.length-1].year}"
+                       step="1" value="${midRow.year}" style="width:110px;height:14px;">
+                <span id="afr-sig-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
+              </div>
+            </div>
+            <div style="flex:none;">${_afrSigTimeMarginal(vRows)}</div>
+          </div>
+        </div>`;
+      }
+    }
+
+    const hydePresent = _AFR_SIG_HYDE_VARS.filter(v => byVar[v]);
+    if (hydePresent.length) {
+      const epochRows    = byVar[hydePresent[0]];
+      const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
+        <table class="table table-sm mb-1" style="font-size:0.78rem;">
+          <thead><tr><th></th>`;
+      for (const r of epochRows) {
+        const near = r.caveat?.includes('hyde_nearest_year');
+        html += `<th>${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
+      }
+      html += `</tr></thead><tbody>`;
+      for (const v of hydePresent) {
+        html += `<tr><td>${_AFR_SIG_HYDE_LABELS[v] || v}</td>`;
+        for (const r of byVar[v]) {
+          html += `<td>${r.representative_raw != null ? _afrFmtNum(r.representative_raw) : '—'}${r.units ? ` <span>${_afrEsc(r.units)}</span>` : ''}</td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      if (hasNearest)
+        html += `<p class="mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
+    }
+
+    if (byVar['evolv2k_vssi']) {
+      const allEvolv   = byVar['evolv2k_vssi'];
+      const sigEvolv   = allEvolv.filter(r => (r.representative_raw ?? 0) >= _AFR_SIG_VSSI_THRESHOLD);
+      const minorEvolv = allEvolv.filter(r => (r.representative_raw ?? 0) < _AFR_SIG_VSSI_THRESHOLD);
+      const shown      = sigEvolv.length > 0 ? sigEvolv : allEvolv;
+      const showToggle = minorEvolv.length > 0 && sigEvolv.length > 0;
+      const toggleLink = showToggle
+        ? ` <a href="#" style="font-weight:normal;font-size:0.7rem;"
+               onclick="(function(el){var tb=document.getElementById('afr-sig-evolv-minor');var hidden=tb.style.display==='none';tb.style.display=hidden?'':'none';el.textContent=hidden?'show fewer':'show all ${allEvolv.length}'})(this);return false"
+            >show all ${allEvolv.length}</a>` : '';
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:14px;margin-bottom:4px;">
+        eVolv2k volcanic events — ${shown.length}${showToggle ? ` &ge; ${_AFR_SIG_VSSI_THRESHOLD} Tg S` : ''}${toggleLink}</div>
+        <table class="table table-sm mb-0" style="font-size:0.78rem;">
+          <thead><tr><th>Year CE</th><th>VSSI (Tg S)</th></tr></thead><tbody>`;
+      for (const r of shown)
+        html += `<tr><td>${r.year}</td><td>${r.representative_raw != null ? _afrFmtNum(r.representative_raw) : '—'}</td></tr>`;
+      html += `</tbody>`;
+      if (showToggle) {
+        html += `<tbody id="afr-sig-evolv-minor" style="display:none;">`;
+        for (const r of minorEvolv)
+          html += `<tr style="color:#000;"><td>${r.year}</td><td>${r.representative_raw != null ? _afrFmtNum(r.representative_raw) : '—'}</td></tr>`;
+        html += `</tbody>`;
+      }
+      html += `</table>`;
+    }
+    return html + `</div>`;
+  }
+
+  function _afrSigWireTSliders(tRows) {
+    const byVar = {};
+    for (const r of tRows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
+    document.querySelectorAll('input[id^="afr-sig-t-sl-"]').forEach(el => {
+      const variable = el.id.slice('afr-sig-t-sl-'.length);
+      const vRows    = byVar[variable] || [];
+      const yrLbl    = document.getElementById(`afr-sig-t-yr-${variable}`);
+      const histDiv  = document.getElementById(`afr-sig-t-hs-${variable}`);
+      if (!vRows.length || !histDiv) return;
+      el.addEventListener('input', () => {
+        const year = parseInt(el.value);
+        if (yrLbl) yrLbl.textContent = year;
+        const row = vRows.find(r => r.year === year);
+        if (row?.detail?.distribution) histDiv.innerHTML = _afrSigHistogram(row.detail.distribution);
+      });
+    });
+  }
+
+  function _afrSigPercentileTrack(score) {
+    const W = 90, cy = 5;
+    const clamped = Math.max(0, Math.min(100, score));
+    const x = 2 + (clamped / 100) * (W - 4);
+    return `<svg width="${W}" height="10" style="vertical-align:middle;">
+      <line x1="2" y1="${cy}" x2="${W-2}" y2="${cy}" stroke="#ccc" stroke-width="1.5"/>
+      <circle cx="${x.toFixed(1)}" cy="${cy}" r="3" fill="#2c5f8a"/>
+    </svg>`;
+  }
+
+  // Shared by area_weighted/distribution_only when n_units===1 -- the coherence badge and
+  // histogram/range-bar are trivially degenerate at n=1 (see sandbox.html's own comment on
+  // renderSingleBasinContinuousLeaf for the full reasoning; ported unchanged).
+  function _afrSigSingleLeaf(row) {
+    const score = row.representative_score;
+    const raw   = row.representative_raw;
+    const rawHtml = raw !== null && raw !== undefined
+      ? `${_afrFmtNum(raw)}${row.units ? ' ' + _afrEsc(row.units) : ''}` : null;
+    const pctHtml = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+    const track   = score !== null && score !== undefined ? _afrSigPercentileTrack(score) : '';
+    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || '—';
+    return `<div class="d-flex align-items-center gap-2">${parts}${track}</div>`;
+  }
+
+  function _afrSigLeaf(row) {
+    const score = row.representative_score;
+    const raw   = row.representative_raw;
+    const det   = row.detail || {};
+    switch (row.method) {
+      case 'area_weighted': {
+        if (row.n_units === 1) return _afrSigSingleLeaf(row);
+        let s;
+        if (row.status === 'outside_active_domain') s = 'outside active range';
+        else if (score !== null && score !== undefined) s = `${score.toFixed(1)} percentile`;
+        else s = '—';
+        let coh = '';
+        if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
+        else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
+        else if (row.coherence === 'split')         coh = `<span class="badge bg-info-subtle text-info-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">split</span>`;
+        const caveat = row.score_suppressed
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+        return `<div>${s}${coh}</div>${_afrSigHistogram(det.distribution || {}, det.window_lo, det.window_hi)}${caveat}`;
+      }
+      case 'dominant_basin': {
+        if (row.status === 'not_areal')
+          return `<span style="font-size:0.85rem;">network measure, not meaningful for areas</span>`;
+        const r = raw   !== null && raw !== undefined ? `${_afrFmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
+        const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const b = (row.n_units !== 1 && det.dominant_hybas_id)
+          ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        return `${main}${b}`;
+      }
+      case 'class_mixture':
+        return `<div>${raw !== null ? _afrEsc(String(raw)) : '—'}</div><div style="margin-top:3px;">${_afrSigMixtureBar(det)}</div>`;
+      case 'flag_fraction':
+        return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
+      case 'distribution_only': {
+        if (row.n_units === 1) return _afrSigSingleLeaf(row);
+        const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
+          ? `<div>${score.toFixed(1)} percentile</div>` : '';
+        const caveat = row.score_suppressed
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+        return `${scoreHtml}<div style="margin-top:3px;">${_afrSigRangeBar(det)}</div>${caveat}`;
+      }
+      case 'extreme': {
+        const r = raw   !== null && raw !== undefined ? `${_afrFmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
+        const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
+        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const b = (row.n_units !== 1 && det.dominant_hybas_id)
+          ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
+        return `${main}${b}`;
+      }
+      default:
+        return `<span style="font-size:0.72rem;">[${_afrEsc(row.method)}]</span>`;
+    }
+  }
+
+  function _afrSigRow(row) {
+    const dbCol = row.db_col
+      ? ` <span style="font-size:0.72rem;color:#000;">(${_afrEsc(row.db_col)})</span>` : '';
+    return `<tr>
+      <td class="ps-3" style="width:42%;">${_afrEsc(_afrHumanizeKey(row.variable))}${dbCol}</td>
+      <td>${_afrSigLeaf(row)}</td>
+    </tr>`;
+  }
+
+  // ── WO_region-distinctiveness-readout: position, not dispersion ────────────────────────────
+  // Rule-based, no API call -- every sentence traces to a field already in the payload. Does NOT
+  // resurrect the retired region-level aggregate coherence count (WO06 Part B): this only orders
+  // individual variables by distance from the world median, never combines them into one score.
+  const _AFR_DISTINCT_BANDS   = new Set(['A', 'B', 'C', 'E']);   // physical geography only -- Band D
+                                                                   // (Anthropocene) and T (time series,
+                                                                   // no single score) are a different question
+  const _AFR_DISTINCT_METHODS = new Set(['area_weighted', 'distribution_only']);
+  // 'extreme' (river_area) and 'dominant_basin' (discharge_yr/max/min) excluded: both are
+  // network-topology/local-anomaly winner-take-all methods answering "does a big river's
+  // network pass through here," not "is this region's own climate/terrain distinctive" -- a
+  // different kind of claim, and one exposed to a real boundary-leverage bug on large/irregular
+  // polygons (see docs/design/_workbench/dominant_basin_boundary_leverage.md; Karl+Opus agreed
+  // 2026-09-06 these don't belong in this readout regardless of that bug's eventual fix).
+  const _AFR_DISTINCT_FLOOR   = 25;   // percentile points from 50 required to count as distinctive
+  const _AFR_SU_THRESHOLD     = 10;   // percentile points of local/upstream divergence to mention --
+                                       // data-derived (2026-09-06): sorted |delta| across all 34
+                                       // Lovejoy regions clusters 0-5.2, then a clean gap to
+                                       // 11.7/16.4/21.6 -- Nile Valley (16.4) sits well inside the
+                                       // upper group, not near a boundary. 10 sits in the gap.
+  const _AFR_SU_MIN_BASINS    = 5;    // below this, engine.py already can't report a coherence
+                                       // badge for the same reason (too few basins) -- mirror that
+                                       // floor here so the s/u line doesn't fire on 1-2 basins
+                                       // either (Canarias, n=2, showed a spurious 21.6-point delta)
+
+  function _afrDistinctName(row) {
+    return row.friendly_name || _afrHumanizeKey(row.variable);
+  }
+  // Aridity index (P/PET) inverts the name's own intuition -- it rises with wetter
+  // conditions, falls with drier ones (BasinATLAS catalog) -- so a low percentile reads as
+  // arid, easy to misread as wet. Flagged by Karl 2026-09-06; scoped to this readout only,
+  // not the shared catalog friendly_name.
+  const _AFR_DISTINCT_DIRECTION_NOTE = {
+    aridity: 'higher = wetter', aridity_upstream: 'higher = wetter',
+  };
+  function _afrOrdinal(n) {
+    const r = Math.round(n), mod100 = r % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${r}th`;
+    switch (r % 10) { case 1: return `${r}st`; case 2: return `${r}nd`; case 3: return `${r}rd`; default: return `${r}th`; }
+  }
+
+  function _afrSigReadout(payload) {
+    const rows = payload.rows || [];
+    const eligible = rows.filter(r =>
+      _AFR_DISTINCT_BANDS.has(r.band) && _AFR_DISTINCT_METHODS.has(r.method) &&
+      r.status === 'ok' && !r.score_suppressed &&
+      r.representative_score !== null && r.representative_score !== undefined);
+
+    const withDist = eligible.map(r => ({ row: r, dist: r.representative_score - 50 }));
+    const low  = withDist.filter(x => x.dist <= -_AFR_DISTINCT_FLOOR).sort((a, b) => a.dist - b.dist).slice(0, 3);
+    const high = withDist.filter(x => x.dist >=  _AFR_DISTINCT_FLOOR).sort((a, b) => b.dist - a.dist).slice(0, 3);
+
+    let distinctHtml;
+    if (!low.length && !high.length) {
+      distinctHtml = `<p class="mb-2" style="font-size:0.85rem;">Nothing about this region's environment
+        stands out against the rest of the world — its variables mostly sit within the middle half
+        of the global range.</p>`;
+    } else {
+      const item = x => {
+        const note = _AFR_DISTINCT_DIRECTION_NOTE[x.row.variable];
+        const noteHtml = note
+          ? ` <span class="text-secondary" style="font-size:0.78rem;">(${_afrEsc(note)})</span>` : '';
+        return `<li>${_afrOrdinal(x.row.representative_score)} percentile
+          — <strong>${_afrEsc(_afrDistinctName(x.row))}</strong>${noteHtml}</li>`;
+      };
+      distinctHtml = `
+        ${low.length ? `<div class="small text-secondary mb-1">Furthest below the world median</div>
+          <ul class="mb-2" style="font-size:0.85rem;">${low.map(item).join('')}</ul>` : ''}
+        ${high.length ? `<div class="small text-secondary mb-1">Furthest above the world median</div>
+          <ul class="mb-2" style="font-size:0.85rem;">${high.map(item).join('')}</ul>` : ''}`;
+    }
+
+    // Local/upstream water-provenance line -- same badge register as Sandbox's single-basin
+    // Analysis panel, re-derived on percentile divergence (the only local/upstream contrast that
+    // generalizes to a 100+ basin region; the point-signature version's raw ratios and
+    // endorheic/coastal fields are basin-specific and don't have a regional equivalent).
+    let suHtml = '';
+    const localRow = eligible.find(r => r.variable === 'precip_yr');
+    const upRow     = eligible.find(r => r.variable === 'precip_yr_upstream');
+    const nUnits    = payload.scope?.n_units;
+    if (localRow && upRow && nUnits != null && nUnits >= _AFR_SU_MIN_BASINS) {
+      const delta = upRow.representative_score - localRow.representative_score;
+      if (Math.abs(delta) >= _AFR_SU_THRESHOLD) {
+        const exo = delta > 0;
+        const badge = exo
+          ? `<span class="badge bg-primary">Exogenous water supply</span>`
+          : `<span class="badge bg-success">Local-dominant</span>`;
+        const note = exo
+          ? `This region generates relatively little of its own precipitation
+             (${_afrOrdinal(localRow.representative_score)} percentile) but sits within a wetter
+             upstream catchment (${_afrOrdinal(upRow.representative_score)} percentile) — much of
+             its water arrives from outside the region.`
+          : `This region generates more of its own precipitation
+             (${_afrOrdinal(localRow.representative_score)} percentile) than its upstream
+             catchment supplies (${_afrOrdinal(upRow.representative_score)} percentile) — water is
+             predominantly generated within the region itself.`;
+        suHtml = `<div class="mb-1">${badge}</div><p class="mb-2" style="font-size:0.85rem;">${note}</p>`;
+      }
+    }
+
+    return `<div class="mb-2">${distinctHtml}${suHtml}</div>`;
+  }
+
+  // Entry point -- builds the modal body HTML for one region's payload. No ring/basin/polity
+  // heading disambiguation (Sandbox's renderSignature has several); just name + macro, and no
+  // "How to read this" doc-modal link (that doc page is written for the Sandbox Polities flow).
+  function _afrRenderSigHtml(payload) {
+    const r = payload.resolver || {};
+    const n = payload.scope?.n_units ?? '?';
+    const byBand = {};
+    for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
+    const defaultOpenBand = byBand['T'] ? 'T' : 'C';
+    let accordionHtml = `<div class="accordion accordion-flush" id="afr-sig-accordion">`;
+    for (const band of _AFR_SIG_BAND_ORDER) {
+      const rows = byBand[band];
+      if (!rows) continue;
+      const paneId = `afr-sig-acc-${band}`;
+      accordionHtml += `
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button py-1 px-2 ${band !== defaultOpenBand ? 'collapsed' : ''}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#${paneId}">
+              <span style="font-size:0.85rem;">Band ${band} — ${_AFR_SIG_BAND_LABELS[band]}</span>
+              <span class="badge bg-secondary ms-2" style="font-size:0.7rem;">${rows.length}</span>
+            </button>
+          </h2>
+          <div id="${paneId}" class="accordion-collapse collapse${band === defaultOpenBand ? ' show' : ''}">
+            <div class="accordion-body p-0">
+              ${band === 'T'
+                ? _afrSigTBand(rows, payload.caveats)
+                : `<table class="table table-sm mb-0" style="font-size:0.8rem;">
+                     <tbody>${rows.map(_afrSigRow).join('')}</tbody>
+                   </table>`}
+            </div>
+          </div>
+        </div>`;
+    }
+    accordionHtml += '</div>';
+
+    return `
+      <h6 class="mb-1">${_afrEsc(r.name || 'Region')} <span class="small text-secondary">(${n} L6 basin${n === 1 ? '' : 's'})</span></h6>
+      <div class="small mb-2">${_afrEsc(r.macro || '')}</div>
+      ${_afrSigReadout(payload)}
+      <div class="mb-2">
+        <a href="#" id="afr-sig-showall-toggle" class="small">Show all variables ▾</a>
+      </div>
+      <div id="afr-sig-allvars" hidden>${accordionHtml}</div>`;
+  }
+
+  // Ring every marker whose `field` == `value`; null/empty clears the highlight.
+  function afrHighlightBy(field, value) {
+    const status = document.getElementById('afr-hl-status');
+    if (!field || value == null || value === '') {
+      _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'none');
+      if (status) status.style.display = 'none';
+      return;
+    }
+    const filt = ['==', ['get', field], value];
+    _afrMap.setFilter('afr-soc-match', filt);
+    _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'visible');
+    if (status) {
+      const n = new Set(_afrMap.querySourceFeatures('afr-societies', { filter: filt }).map(f => f.id)).size;
+      status.innerHTML = `${n} societ${n === 1 ? 'y' : 'ies'} share “${_afrEsc(value)}” `
+        + `· <a href="#" id="afr-hl-clear">clear</a>`;
+      status.style.display = '';
+    }
+  }
+
+  // ── Basin variable painting (WO03) ──────────────────────────────────────────
+  // basin0{6,8}.pmtiles under lovejoy-fill; choropleth via feature-state, values
+  // from /api/explorer/{values,categorical} scoped to the Africa bbox.
+
+  function _afrBasinSource(level) {
+    const sl = 'basin0' + level;
+    if (_afrBasinLevel === level && _afrMap.getSource('afr-basins')) return sl;
+    ['afr-basin-fill','afr-basin-line'].forEach(id => { if (_afrMap.getLayer(id)) _afrMap.removeLayer(id); });
+    if (_afrMap.getSource('afr-basins')) _afrMap.removeSource('afr-basins');
+    _afrMap.addSource('afr-basins', { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` });
+    _afrMap.addLayer({
+      id: 'afr-basin-fill', type: 'fill', source: 'afr-basins', 'source-layer': sl,
+      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.82 },
+    }, 'lovejoy-fill');
+    _afrMap.addLayer({
+      id: 'afr-basin-line', type: 'line', source: 'afr-basins', 'source-layer': sl,
+      paint: { 'line-color': 'rgba(90,90,90,0.10)', 'line-width': 0.3 },
+    }, 'lovejoy-fill');
+    _afrBasinLevel = level;
+    return sl;
+  }
+
+  function _afrClearPaint() {
+    if (_afrMap && _afrBasinLevel != null && _afrMap.getSource('afr-basins')) {
+      _afrMap.removeFeatureState({ source: 'afr-basins', sourceLayer: 'basin0' + _afrBasinLevel });
+    }
+  }
+
+  async function _afrPaint() {
+    if (!_afrMap || !_afrMap.getLayer('lovejoy-fill')) return;   // map/tab not ready — user re-picks
+    const seq = ++_afrPaintSeq;
+    const key = _afrVarKey;
+    const readouts = document.getElementById('afr-readouts');
+
+    if (!key) {
+      _afrClearPaint();
+      _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+      readouts.innerHTML = '<span class="text-secondary">Pick a variable to paint the basins.</span>';
+      return;
+    }
+    _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', 0);
+    readouts.innerHTML = '<span class="text-secondary">Loading…</span>';
+
+    const isCat = key === 'pnv_majority_name';
+    const url = isCat
+      ? `/api/explorer/categorical?var=${key}&level=${_afrLevel}&bbox=${AFR_BBOX}`
+      : `/api/explorer/values?var=${key}&level=${_afrLevel}&su=s&bbox=${AFR_BBOX}`;
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || r.statusText);
+      if (seq !== _afrPaintSeq) return;   // superseded by a newer pick
+
+      const sl = _afrBasinSource(_afrLevel);
+      _afrMap.removeFeatureState({ source: 'afr-basins', sourceLayer: sl });
+
+      if (isCat) {
+        const idToColor = Object.fromEntries(data.categories.map(c => [c.id, c.color]));
+        for (const [id, cat] of Object.entries(data.values)) {
+          _afrMap.setFeatureState({ source: 'afr-basins', sourceLayer: sl, id: Number(id) },
+                                  { fc: idToColor[cat] ?? '#ccc' });
+        }
+        _afrLegendCategorical(key, data.categories, data.values, Object.keys(data.values).length);
+      } else {
+        const fn = _afrColorFn(data.meta, key);
+        for (const [id, v] of Object.entries(data.values)) {
+          _afrMap.setFeatureState({ source: 'afr-basins', sourceLayer: sl, id: Number(id) }, { fc: fn(v) });
+        }
+        _afrLegendNumeric(key, data.meta, fn, Object.keys(data.values).length);
+      }
+    } catch (err) {
+      if (seq !== _afrPaintSeq) return;
+      readouts.innerHTML = `<span class="text-danger">Could not paint: ${String(err.message || err)}</span>`;
+      _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+    }
+  }
+
+  function _afrLegendNumeric(key, meta, fn, n) {
+    const lo = meta.p10 ?? meta.min, hi = meta.p90 ?? meta.max;
+    const units = meta.units ? ` ${meta.units}` : '';
+    const N = 60, VBW = 300, H = 15;   // VBW = viewBox width (internal only); SVG stretches to 100%
+    const bars = Array.from({ length: N }, (_, i) => {
+      const t = i / (N - 1), v = lo + t * (hi - lo);
+      return `<rect x="${(i * VBW / N).toFixed(1)}" y="0" width="${(VBW / N + 0.6).toFixed(1)}" height="${H}" fill="${fn(v)}"/>`;
+    }).join('');
+    document.getElementById('afr-readouts').innerHTML =
+      `<div class="mb-1"><b>${AFR_VAR_LABEL[key] || key}</b> · ${n.toLocaleString()} basins`
+      + `<span class="text-secondary"> · Africa L${_afrLevel}</span></div>`
+      + `<svg width="100%" height="${H}" viewBox="0 0 ${VBW} ${H}" preserveAspectRatio="none" style="display:block;">${bars}</svg>`
+      + `<div class="d-flex justify-content-between text-secondary">`
+      + `<span>${lo.toFixed(1)}${units}</span><span>p10–p90</span><span>${hi.toFixed(1)}${units}</span></div>`;
+  }
+
+  function _afrLegendCategorical(key, categories, values, n) {
+    // categories carry global colours/ids; recompute counts over the painted (Africa) basins
+    const afr = {};
+    for (const cat of Object.values(values)) afr[cat] = (afr[cat] || 0) + 1;
+    const rows = categories
+      .map(c => ({ ...c, cnt: afr[c.id] || 0 }))
+      .filter(c => c.cnt > 0)
+      .sort((a, b) => b.cnt - a.cnt)
+      .map(c => {
+        const pct = n ? (100 * c.cnt / n) : 0;
+        return `<tr style="line-height:1.25;">
+          <td style="width:14px;"><span style="display:inline-block;width:12px;height:12px;background:${c.color};border-radius:2px;"></span></td>
+          <td style="padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;" title="${c.name.replace(/"/g,'&quot;')}">${c.name}</td>
+          <td style="width:55%;"><div style="background:${c.color};height:9px;width:${Math.max(2, Math.round(pct))}%;opacity:.85;border-radius:1px;"></div></td>
+          <td class="text-secondary" style="padding-left:6px;">${pct.toFixed(1)}%</td>
+        </tr>`;
+      }).join('');
+    document.getElementById('afr-readouts').innerHTML =
+      `<div class="mb-1"><b>${AFR_VAR_LABEL[key] || key}</b> · ${n.toLocaleString()} basins`
+      + `<span class="text-secondary"> · Africa L${_afrLevel}</span></div>`
+      + `<div style="max-height:120px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;">${rows}</table></div>`;
+  }
+
   function setMarkerFromLonLat(lon, lat) {
     ensureMap();
     if (!map) return;
@@ -1346,6 +2424,9 @@
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
 
+    // TEMP (dev eyeball): open on the African Regions tab. Delete this line to restore Societies.
+    setTimeout(() => bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-afr')).show(), 0);
+
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
     if (whcSel) {
@@ -1394,6 +2475,45 @@
         const band = item.getAttribute('data-band');
         whcShowSimilarText(band);
       });
+    });
+
+    // African Regions: variable-paint controls
+    const afrVarSel = document.getElementById('afr-var');
+    if (afrVarSel) afrVarSel.addEventListener('change', e => { _afrVarKey = e.target.value; _afrPaint(); });
+    document.querySelectorAll('input[name="afr-level"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (!e.target.checked) return;
+        _afrLevel = Number(e.target.value);
+        _afrPaint();   // _afrPaint -> _afrBasinSource swaps the pmtiles level
+      });
+    });
+    // African Regions: caret-toggle the article rationale
+    const afrRatToggle = document.getElementById('afr-rationale-toggle');
+    if (afrRatToggle) afrRatToggle.addEventListener('click', () => {
+      _afrRationaleExpand(document.getElementById('afr-rationale-text').hidden);
+    });
+    // African Regions (WO05): "Region signature" link -- delegated, since #afr-region-head is
+    // re-rendered (innerHTML) on every region/society click, which would drop a direct binding.
+    const afrRegionHeadEl = document.getElementById('afr-region-head');
+    if (afrRegionHeadEl) afrRegionHeadEl.addEventListener('click', e => {
+      const link = e.target.closest('#afr-profile-link');
+      if (!link) return;
+      e.preventDefault();
+      afrOpenProfileModal(link.dataset.srcId);
+    });
+    // African Regions: #soc-vars magnifier / clear (delegated — #soc-vars is re-rendered per click)
+    const socVarsEl = document.getElementById('soc-vars');
+    if (socVarsEl) socVarsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.afr-hl-btn');
+      if (btn) { afrHighlightBy(btn.dataset.field, btn.dataset.value); return; }
+      if (e.target.closest('#afr-hl-clear')) { e.preventDefault(); afrHighlightBy(null, null); return; }
+      const dm = e.target.closest('.afr-soc-modal');
+      if (dm) { e.preventDefault(); afrOpenDplaceModal(dm.dataset.sid); }
+    });
+    // SKUNKWORKS: blank the D-PLACE iframe on close so it stops loading
+    const dpModal = document.getElementById('afr-dplace-modal');
+    if (dpModal) dpModal.addEventListener('hidden.bs.modal', () => {
+      document.getElementById('afr-dplace-frame').src = 'about:blank';
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.
@@ -1445,6 +2565,22 @@
         // Societies-specific: load societies
         if (targetSel === '#panel-soc') {
           loadSocieties();
+        }
+
+        // African Regions: map lives in its own left pane; the info panel swaps into the
+        // right column in place of the shared Leaflet map (layout attempt #1).
+        const afrRight = document.getElementById('afr-right');
+        const sharedMapEl = document.getElementById('map');
+        if (targetSel === '#panel-afr') {
+          if (sharedMapEl) sharedMapEl.style.display = 'none';
+          if (afrRight) afrRight.style.display = 'flex';   // flex column: #afr-cite pinned bottom
+          ensureAfrMap();
+        } else {
+          if (sharedMapEl) sharedMapEl.style.display = '';
+          if (afrRight) afrRight.style.display = 'none';
+          // #map was display:none while on the African Regions tab -- re-measure once
+          // the browser has laid it back out, or Leaflet keeps its stale (partial) size.
+          if (map) requestAnimationFrame(() => map.invalidateSize());
         }
       });
     });
@@ -3696,6 +4832,9 @@
 </script>
 </main>
 
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js" crossorigin=""></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
+<script src="/static/js/pm_basemap.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>

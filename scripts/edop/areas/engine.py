@@ -467,6 +467,7 @@ def load_catalog(level=6, codebook_path=None):
             col_s      = (rec.get('basin08_col_s')     or '').strip() or None
             col_u      = (rec.get('basin08_col_u')     or '').strip() or None
             units      = (rec.get('units')             or '').strip() or None
+            fname      = (rec.get('friendly_name')     or '').strip() or None
 
             def _emit(ak, su, col, zf_raw):
                 if not ak or ak in _SKIP_API_KEYS:
@@ -500,6 +501,7 @@ def load_catalog(level=6, codebook_path=None):
                     'zero_fraction':    _parse_zf(zf_raw),
                     'derived':          is_derived,
                     'units':            units,
+                    'friendly_name':    (fname + ' (upstream)') if (fname and su == 'u') else fname,
                 })
 
             _emit(
@@ -1181,7 +1183,15 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     return rows
 
 
-_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent'})
+_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent', 'local-anomaly'})
+
+# river_area (local-anomaly) moves to B1 (WO_dominant-basin-scope-fix) -- it's a local,
+# non-cumulative spatial-extent measure, no reason it needed winner-take-all selection.
+# river_area_upstream shares the same typology_cluster and IS present in the persist view
+# (attach_values builds a score column for every continuous catalog variable regardless of
+# dispatch block), so it would silently ride along into B1 too without this exclusion --
+# stays deferred/out of scope, unchanged from its prior B5 status (register).
+_B1_EXCLUDE = frozenset({'river_area_upstream'})
 
 
 # ── WO3: dispatch ─────────────────────────────────────────────────────────────
@@ -1205,10 +1215,9 @@ def dispatch_variable(typology_cluster, kind):
 
         categorical  (any cluster)                        → B3  class_mixture
         flag         (any cluster)                        → B4  flag / structural
-        continuous + {continental-gradient, scale-dependent} → B1  area_weighted
+        continuous + {continental-gradient, scale-dependent, local-anomaly} → B1  area_weighted
         continuous + network-topology                     → B2  dominant_basin
         continuous + NaN cluster                          → B5  distribution_only
-        continuous + local-anomaly                        → B5  extreme
 
     Dropped from WO3 proposed signature:
         zero_fraction — confirmed NOT a routing input; only affects scoring within
@@ -1218,8 +1227,9 @@ def dispatch_variable(typology_cluster, kind):
     Block-internal exclusions NOT handled here (by design — locked principle):
         strata_code          dispatched → B3 but excluded within B3 (opaque codes)
         ecoregion            dispatched → B3 but deduped within B3 (same col as eco_id)
-        river_area_upstream  dispatched → B5 but deferred within B5 (EXTREME_VARS
-                             hardcoded to ['river_area'] only in step3 Cell 21)
+        river_area_upstream  dispatched → B1 but excluded within B1 (_B1_EXCLUDE) --
+                             stays deferred/out of scope (register); present in the persist
+                             view but never aggregated
         endorheic/coast_flag dispatched → B4 but produce synthetic outputs (outlet_type
                              via class_mixture, coast_fraction via flag_fraction);
                              neither appears standalone in step3_results.tsv
@@ -1237,16 +1247,37 @@ def dispatch_variable(typology_cluster, kind):
     tc = typology_cluster
     if pd.isna(tc) if isinstance(tc, float) else tc is None:
         return 'B5'
-    if tc in ('continental-gradient', 'scale-dependent'):
+    if tc in _BLOCK1_CLUSTERS:
         return 'B1'
     if tc == 'network-topology':
         return 'B2'
-    if tc == 'local-anomaly':
-        return 'B5'
     return 'unknown'
 
 
 # ── WO5: B2 dominant_basin ────────────────────────────────────────────────────
+
+# WO_dominant-basin-scope-fix (2026-09-06): discharge is well-posed for a compact,
+# point-anchored buffer (WO5's own validated case -- Timbuktu/Niger) and for a single basin
+# (n=1, no selection at all), but not for a large, irregular multi-basin polygon/polity --
+# even a correctly-overlap-gated carrier basin only answers "how big is the biggest river
+# touching this boundary," a boundary-membership fact, not a region-characterizing statistic
+# comparable to an area-weighted climate mean. `areal_signature_polygon` tags both bare
+# polygons and named polities as scope['type']=='polity' -- one value to gate on.
+_B2_NOT_AREAL_SCOPES = frozenset({'polity'})
+
+
+def _mark_b2_not_areal(rows):
+    """
+    Suppress B2's headline for polygon/polity scope -- rows stay present (not silently
+    dropped) with status='not_areal' and no numeric value that could be misread as an
+    area-representative percentile or raw discharge. detail['dominant_hybas_id'] is kept
+    for traceability. See _B2_NOT_AREAL_SCOPES for why.
+    """
+    for row in rows:
+        row['status']                = 'not_areal'
+        row['representative_score']  = None
+        row['representative_raw']    = None
+    return rows
 
 
 def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
@@ -1562,9 +1593,104 @@ def aggregate_b4(basin_set, raw_df,
 
 # ── WO9: B5 fallback + extreme ────────────────────────────────────────────────
 
-# Only river_area takes the extreme path; river_area_upstream is deferred (register).
-_B5_EXTREME_VARS    = frozenset({'river_area'})
-_SPREAD_THRESHOLD   = 20.0  # concentrated if (p90-p10) < T — provisional; shared by B1 + B5
+# river_area moved to B1 (WO_dominant-basin-scope-fix, area-weighted -- see _BLOCK1_CLUSTERS);
+# the extreme path is now empty but left in place -- structurally sound if a future variable
+# ever needs a genuine carrier-basin treatment for something other than river_area.
+_B5_EXTREME_VARS    = frozenset()
+_SPREAD_THRESHOLD   = 20.0  # legacy IQR-based cutoff -- no longer drives coherence (see
+                            # classify_dispersion below, WO_dispersion-tag-revision); iqr/p25/p75
+                            # are still computed and emitted in detail as secondary diagnostics.
+
+
+# ── WO_dispersion-tag-revision: core share + split ─────────────────────────────
+# Replaces weighted IQR as the B1/B5 coherence driver. WO06 found IQR reports a
+# degenerate 0.00 on zero-inflated distributions (a tie spanning >=50% of the
+# weight pulls both p25 and p75 inside it), asserting uniformity a real minority
+# contradicts, and confirmed core share tracks visual reading where IQR does not.
+
+_CORE_SHARE_DELTA     = 15    # half-width; WO06 stability finding (Spearman rho 0.92-0.93
+                              # between adjacent deltas -- delta is a legibility choice)
+_CORE_SHARE_CUTOFF    = 0.65  # concentrated if core_share >= T, else spread -- provisional,
+                              # not derived by this WO (the null floor itself moves with region
+                              # size, ~0.34-0.46 across the Lovejoy set); hand-set for legibility,
+                              # Karl to retune after visual review
+_SPLIT_TIE_MIN_WEIGHT = 0.50  # split candidate: a single tied score holds >= half the weight --
+                              # exactly the point IQR degenerates to 0.00 (both p25 and p75 land
+                              # inside a tie this size), not an arbitrary round number
+_SPLIT_MIN_RESIDUAL   = 0.10  # ...and a real, separate population sits outside the core window
+                              # (a big tie alone is not split -- e.g. Western Sahara/precip_yr,
+                              # WO06's control panel: near-total spike, no meaningful residual)
+_MIN_COHERENT_BASINS  = 5     # below this, core_share is empirically pinned near 1.0 regardless
+                              # of the underlying values -- confirmed live (WO_region-distinct-
+                              # iveness-readout, 2026-09-06): Canarias, n=2, shows core_share
+                              # 0.9999-1.0 and 'concentrated' on all 22 scored variables. Same
+                              # WO06 floor already used to exclude low-n regions from the
+                              # core-share validation itself; n_units==1 is a stricter,
+                              # mathematically exact case of the same problem, handled separately
+                              # by _backfill_single_basin_raw (see _suppress_low_n_coherence).
+
+
+def core_share_window(scores, wts_norm, delta=_CORE_SHARE_DELTA, step=1):
+    """
+    Max weighted share inside any window of width 2*delta on the global percentile
+    axis [0, 100], slid at `step`-rank increments. No mode estimation, no
+    tie-breaking -- exhaustive scan.
+
+    scores, wts_norm : np.array — notna-filtered; weights_norm sums to 1
+
+    Returns (share, window_lo, window_hi).
+    """
+    positions = np.arange(0, 100 - 2 * delta + step, step)
+    best_share, best_lo = 0.0, 0.0
+    for lo in positions:
+        hi = lo + 2 * delta
+        share = float(wts_norm[(scores >= lo) & (scores <= hi)].sum())
+        if share > best_share:
+            best_share, best_lo = share, lo
+    return best_share, float(best_lo), float(best_lo + 2 * delta)
+
+
+def _largest_tie_weight(scores, wts_norm):
+    """Weight held by the single most common score value -- the zero-inflation signal
+    a density-gap heuristic can't reliably see (validated against WO06's disagreement
+    set: a real gap-shaped shoulder, e.g. pct_sand_upstream, has no dominant tie and
+    is correctly not split; the archetypal zero-inflated cases sit at 77-82% tie
+    weight vs. 9-33% for the shoulder/bimodal-but-untied counter-examples)."""
+    order = np.argsort(scores)
+    s_sorted, w_sorted = scores[order], wts_norm[order]
+    best = 0.0
+    i, n = 0, len(s_sorted)
+    while i < n:
+        j = i
+        while j < n and s_sorted[j] == s_sorted[i]:
+            j += 1
+        best = max(best, float(w_sorted[i:j].sum()))
+        i = j
+    return best
+
+
+def classify_dispersion(scores, wts_norm,
+                        delta=_CORE_SHARE_DELTA,
+                        cutoff=_CORE_SHARE_CUTOFF,
+                        tie_min_weight=_SPLIT_TIE_MIN_WEIGHT,
+                        min_residual=_SPLIT_MIN_RESIDUAL):
+    """
+    Dispersion tag: 'concentrated' | 'spread' | 'split'. Checked in that order --
+    split is layered on top of (not decided against) the concentrated/spread split,
+    since a split case can also read as high-core-share (e.g. karst_upstream at
+    core_share=0.79 would otherwise pass a 0.65 cutoff as 'concentrated').
+
+    Returns (tag, core_share, window_lo, window_hi).
+    """
+    share, lo, hi = core_share_window(scores, wts_norm, delta)
+    tie_weight = _largest_tie_weight(scores, wts_norm)
+    if tie_weight >= tie_min_weight and (1.0 - share) >= min_residual:
+        tag = 'split'
+    elif share >= cutoff:
+        tag = 'concentrated'
+    else:
+        tag = 'spread'
+    return tag, share, lo, hi
 
 
 def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
@@ -1575,16 +1701,22 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
       Surfaces the weighted distribution without rendering a verdict.
       representative_score = weighted mean percentile (always populated).
       representative_raw   = None (native-unit means deferred per register).
-      coherence            = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'.
-      detail               = {spread, p10, p90, unit: 'percentile'}.
+      coherence            = 'concentrated' | 'spread' | 'split' via classify_dispersion()
+                             (core share, not IQR -- see classify_dispersion for the mechanism).
+      detail               = {spread, iqr, p10, p25, p75, p90, core_share, window_lo,
+                             window_hi, unit: 'percentile'}
+                             (spread = p90-p10, retained for B6 modality + histogram labels;
+                             iqr/p25/p75 are secondary diagnostics, no longer coherence inputs).
       status               = 'ok' (the fallback's untyped-ness is carried by
                              method='distribution_only', not status; Pin 1
                              vocabulary is {ok, outside_active_domain, no_data}).
 
-    extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
+    extreme — carrier-basin selection for a genuinely non-areal variable (currently unused;
+    river_area moved to the area_weighted branch above, WO_dominant-basin-scope-fix --
+    _B5_EXTREME_VARS is empty but the path is left in place):
       Selects the basin carrying the maximum score (monotone with raw value).
       representative_score = carrier basin's percentile score.
-      representative_raw   = carrier basin's raw value (km²).
+      representative_raw   = carrier basin's raw value (native units).
       coherence            = None.
       detail               = {dominant_hybas_id}.
       status               = 'ok'.
@@ -1656,17 +1788,24 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
         wmean    = round(float(np.dot(scores, wts_norm)), 2)
         p10_raw  = weighted_quantile(scores, wts_norm, 0.10)
         p90_raw  = weighted_quantile(scores, wts_norm, 0.90)
+        p25_raw  = weighted_quantile(scores, wts_norm, 0.25)
+        p75_raw  = weighted_quantile(scores, wts_norm, 0.75)
         spread   = round(p90_raw - p10_raw, 2)
+        iqr      = round(p75_raw - p25_raw, 2)
         p10      = round(p10_raw, 2)
         p90      = round(p90_raw, 2)
+        p25      = round(p25_raw, 2)
+        p75      = round(p75_raw, 2)
 
-        coherence = 'concentrated' if spread < _SPREAD_THRESHOLD else 'spread'
+        coherence, core_share, window_lo, window_hi = classify_dispersion(scores, wts_norm)
         rows.append(make_row(
             variable=var, band=band,
             method='distribution_only', unit_type='basin', n_units=n,
             representative_score=wmean, representative_raw=None,
             coverage=round(cov, 4), status='ok', coherence=coherence,
-            detail={'spread': spread, 'p10': p10, 'p90': p90, 'unit': 'percentile'},
+            detail={'spread': spread, 'iqr': iqr, 'p10': p10, 'p25': p25, 'p75': p75, 'p90': p90,
+                    'core_share': round(core_share, 4), 'window_lo': window_lo, 'window_hi': window_hi,
+                    'unit': 'percentile'},
         ))
 
         for hid, score, wt in zip(joined.index[mask], scores, w[mask].values):
@@ -1888,7 +2027,7 @@ def apply_modality(rows, basin_set, matrix_df,
 
 
 def aggregate_b1(basin_set, matrix_df, meta_df,
-                 spread_threshold=_SPREAD_THRESHOLD,
+                 core_share_cutoff=_CORE_SHARE_CUTOFF,
                  zero_fraction_threshold=0.20,
                  zero_coverage_threshold=0.90,
                  resolver_year=None) -> list:
@@ -1901,16 +2040,20 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
       - scores = global-percentile scores from matrix_df
       - null scores dropped; surviving weights renormalized → coverage
       - weight_at_zero = fraction of total buffer weight at score 0.0
-      - coherence: 'concentrated' if weighted (p90-p10) < T, else 'spread'
+      - coherence: 'concentrated' | 'spread' | 'split' via classify_dispersion()
+        (core share -- the densest window's weighted share on the global percentile
+        axis -- drives concentrated/spread; split is layered on top for a large tie
+        plus a real separate population. See classify_dispersion for the mechanism
+        and WO_dispersion-tag-revision for why this replaced weighted IQR.)
       - outside_active_domain guard: if zero_fraction >= threshold AND
         weight_at_zero >= zero_coverage_threshold
 
     representative_raw is always None — native-unit means are deferred.
 
-    B1 emits all rows with non-null score for 'concentrated' rows, including
-    those the frozen step3 TSV marks two_regime. Those rows are correct B6
-    inputs; B6 (WO10) owns the score-nulling and modality field. This function
-    does NOT interact with B6 — it is the first pass only.
+    B1 emits all rows with non-null score for 'concentrated'/'split' rows, including
+    those B6 marks two_regime. Those rows are correct B6 inputs; B6 (WO10) owns the
+    score-nulling and modality field. This function does NOT interact with B6 — it
+    is the first pass only.
 
     Parameters
     ----------
@@ -1918,7 +2061,8 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
     matrix_df  : DataFrame — hybas_id as index; continuous position scores
     meta_df    : DataFrame — api_key as index; columns include band,
                              typology_cluster, kind, zero_fraction
-    spread_threshold       : float — T; coherence boundary (default 20.0, provisional)
+    core_share_cutoff      : float — T; concentrated/spread boundary on core share,
+                             default 0.65 (provisional, see classify_dispersion)
     zero_fraction_threshold: float — catalog threshold for zero-aware vars (default 0.20)
     zero_coverage_threshold: float — outside_active_domain guard (default 0.90)
 
@@ -1938,7 +2082,7 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         (meta_df['kind'] == 'continuous') &
         (meta_df['typology_cluster'].isin(_BLOCK1_CLUSTERS))
     ]
-    block1_vars = [v for v in b1_meta.index if v in joined.columns]
+    block1_vars = [v for v in b1_meta.index if v in joined.columns and v not in _B1_EXCLUDE]
 
     rows = []
     for api_key in block1_vars:
@@ -1970,9 +2114,14 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         wmean   = round(float(np.dot(scores, wts_norm)), 2)
         p10_raw = weighted_quantile(scores, wts_norm, 0.10)
         p90_raw = weighted_quantile(scores, wts_norm, 0.90)
-        spread  = round(p90_raw - p10_raw, 2)   # from unrounded values, matching notebook
+        p25_raw = weighted_quantile(scores, wts_norm, 0.25)
+        p75_raw = weighted_quantile(scores, wts_norm, 0.75)
+        spread  = round(p90_raw - p10_raw, 2)   # p10–p90 span — kept for B6 modality + hist labels
+        iqr     = round(p75_raw - p25_raw, 2)   # middle-half span — secondary diagnostic only now
         p10     = round(p10_raw, 2)
         p90     = round(p90_raw, 2)
+        p25     = round(p25_raw, 2)
+        p75     = round(p75_raw, 2)
 
         if (zf is not None
                 and zf >= zero_fraction_threshold
@@ -1980,14 +2129,12 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             status_val = 'outside_active_domain'
             coherence  = None
             rep_score  = None
-        elif spread < spread_threshold:
-            status_val = 'ok'
-            coherence  = 'concentrated'
-            rep_score  = wmean
+            core_share, window_lo, window_hi = None, None, None
         else:
             status_val = 'ok'
-            coherence  = 'spread'
             rep_score  = wmean
+            coherence, core_share, window_lo, window_hi = classify_dispersion(
+                scores, wts_norm, cutoff=core_share_cutoff)
 
         hist_b = _weighted_histogram(scores, wts, unit_type='basin')
         if hist_b is not None:
@@ -2008,8 +2155,14 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
             weight_at_zero=weight_at_zero,
             detail={
                 'spread':       spread,
+                'iqr':          iqr,
                 'p10':          p10,
+                'p25':          p25,
+                'p75':          p75,
                 'p90':          p90,
+                'core_share':   round(core_share, 4) if core_share is not None else None,
+                'window_lo':    window_lo,
+                'window_hi':    window_hi,
                 'unit':         'percentile',
                 'distribution': hist_b,
             },
@@ -2032,9 +2185,10 @@ def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
     single basin: the raw value is just that basin's own column, already sitting in raw_df
     from attach_values(). This backfills it directly -- a lookup, not a computation.
 
-    Also clears 'coherence' ('concentrated'/'spread') on these same rows: at n=1, p10/p90
-    always collapse to the single score (spread is always exactly 0 by construction), so
-    'concentrated' was firing unconditionally and never carried real signal.
+    Also clears 'coherence' ('concentrated'/'spread'/'split') on these same rows: at n=1,
+    p10/p90 collapse to the single score and core_share is trivially 1.0 (one point
+    always fills any window), so 'concentrated' was firing unconditionally and never
+    carried real signal.
 
     Deliberately NOT touched: status, representative_score, the zero-fraction
     outside_active_domain guard (B1's own domain-validity check, real regardless of n), and
@@ -2071,6 +2225,35 @@ def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
                     if row['units'] is None and var in meta_df.index:
                         row['units'] = meta_df.loc[var, 'units']
         row['coherence'] = None
+    return rows
+
+
+def _suppress_low_n_coherence(rows, n_units, min_basins=_MIN_COHERENT_BASINS):
+    """
+    Clears the coherence badge ('concentrated'/'spread'/'split') on B1/B5 rows when
+    n_units < min_basins. Below _MIN_COHERENT_BASINS, core_share is empirically pinned near
+    1.0 regardless of the underlying values -- too few points for a δ=15 window to miss --
+    see _MIN_COHERENT_BASINS's own comment for the live confirmation. n_units==1 is a
+    stricter, mathematically exact case of the same problem (core_share is always exactly
+    1.0) and is handled by _backfill_single_basin_raw instead, which also backfills
+    representative_raw for that one basin -- that backfill doesn't generalize past n=1, so
+    this function only clears coherence, nothing else.
+
+    Parameters
+    ----------
+    rows     : list of make_row dicts (B1 + B5 rows; mutated in place)
+    n_units  : int -- basin count for this scope
+    min_basins : int -- floor below which coherence is cleared (default _MIN_COHERENT_BASINS)
+
+    Returns
+    -------
+    The same list, mutated in place (returned for call-site convenience).
+    """
+    if n_units >= min_basins:
+        return rows
+    for row in rows:
+        if row['method'] in ('area_weighted', 'distribution_only'):
+            row['coherence'] = None
     return rows
 
 
@@ -2115,6 +2298,8 @@ def _areal_signature_from_basin_set(
     # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
     b1_rows = aggregate_b1(basin_set, matrix_df, meta_df, resolver_year=resolver_year)
     b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    if scope.get('type') in _B2_NOT_AREAL_SCOPES:
+        _mark_b2_not_areal(b2_rows)
     b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
     b4_rows = aggregate_b4(basin_set, raw_df)
     b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)
@@ -2125,10 +2310,15 @@ def _areal_signature_from_basin_set(
 
     # Single-basin sets (n_units==1): backfill representative_raw and clear the meaningless
     # coherence badge on B1/B5 rows -- see _backfill_single_basin_raw()'s own docstring.
-    if len(basin_set) == 1:
+    # n_units 2..(_MIN_COHERENT_BASINS-1): same coherence problem, empirically confirmed
+    # rather than mathematically forced -- see _MIN_COHERENT_BASINS's own comment.
+    n_units = len(basin_set)
+    if n_units == 1:
         bs_indexed = basin_set.set_index('hybas_id') if 'hybas_id' in basin_set.columns else basin_set
         hybas_id = int(bs_indexed.index[0])
         _backfill_single_basin_raw(b1_rows + b5_rows, hybas_id, raw_df, meta_df)
+    elif n_units < _MIN_COHERENT_BASINS:
+        _suppress_low_n_coherence(b1_rows + b5_rows, n_units)
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
@@ -2136,6 +2326,8 @@ def _areal_signature_from_basin_set(
     # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
     for row in basin_rows:
         row['db_col'] = meta_df.loc[row['variable'], 'db_col'] \
+            if row['variable'] in meta_df.index else None
+        row['friendly_name'] = meta_df.loc[row['variable'], 'friendly_name'] \
             if row['variable'] in meta_df.index else None
 
     # ── 5. Band T path (gated on span presence) ───────────────────────────────

@@ -312,8 +312,26 @@ def _load_variables() -> List[Dict]:
     return rows
 
 
+def _parse_bbox(bbox: Optional[str]) -> Optional[Tuple[float, float, float, float]]:
+    """'w,s,e,n' -> (w, s, e, n), or None. 400 on malformed/degenerate/out-of-range.
+
+    Shared by /explorer/values and /explorer/categorical to scope a query to a
+    lon/lat envelope (WHERE geom && ST_MakeEnvelope). No bbox = unchanged global.
+    """
+    if not bbox:
+        return None
+    try:
+        w, s, e, n = (float(x) for x in bbox.split(","))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bbox must be 'w,s,e,n'")
+    if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
+        raise HTTPException(status_code=400, detail="bbox out of range or degenerate")
+    return w, s, e, n
+
+
 @router.get("/explorer/values", include_in_schema=False)
-def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int] = None):
+def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int] = None,
+                    bbox: Optional[str] = None):
     """Return flat {hybas_id: value} dict + summary stats for one variable at one level.
 
     su: 's' = local (basin08_col_s), 'u' = upstream (basin08_col_u),
@@ -378,17 +396,23 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
     else:
         val_expr = _col_expr(col_s)
 
+    env = _parse_bbox(bbox)   # raises 400 on malformed — keep outside the try's 500 wrap
+    # bbox trims the returned {hybas_id: value} payload only. Stats (meta) — and so
+    # the choropleth ramp domain — are ALWAYS global: "wet in Africa" is read against
+    # wetness everywhere, same as Explorer.
+    in_bbox = "geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else "TRUE"
+
     try:
         conn = db_connect()
         with conn.cursor() as cur:
             cur.execute(f"""
-                SELECT hybas_id, {val_expr} AS value
+                SELECT hybas_id, {val_expr} AS value, {in_bbox} AS in_bbox
                 FROM public.{basin_table}
                 ORDER BY hybas_id
-            """)
+            """, env if env else None)
             rows = cur.fetchall()
 
-        valid_rows = [(r[0], r[1]) for r in rows if r[1] is not None]
+        valid_rows = [(r[0], r[1]) for r in rows if r[1] is not None]   # global
         n_total = len(rows)
         n_valid = len(valid_rows)
 
@@ -415,7 +439,7 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
         else:
             meta = {"var": var, "su": su, "level": level, "n_total": n_total, "n_valid": 0}
 
-        values = {int(r[0]): r[1] for r in rows}
+        values = {int(r[0]): r[1] for r in rows if r[2]}   # bbox-scoped payload
         return {"meta": meta, "values": values}
 
     except Exception as e:
