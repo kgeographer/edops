@@ -171,9 +171,11 @@ class TestBufferPayload:
         assert len(timbuktu_buffer["rows"]) == 52
 
     def test_all_methods_present(self, timbuktu_buffer):
+        """extreme is retired (WO_dominant-basin-scope-fix, 2026-09-06): river_area moved
+        to area_weighted and _B5_EXTREME_VARS is now empty -- no row uses it anymore."""
         methods = {r["method"] for r in timbuktu_buffer["rows"]}
         expected = {"area_weighted", "dominant_basin", "class_mixture",
-                    "flag_fraction", "distribution_only", "extreme"}
+                    "flag_fraction", "distribution_only"}
         assert expected == methods
 
     def test_detail_distributions_present(self, timbuktu_buffer):

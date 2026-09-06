@@ -1183,7 +1183,15 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     return rows
 
 
-_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent'})
+_BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent', 'local-anomaly'})
+
+# river_area (local-anomaly) moves to B1 (WO_dominant-basin-scope-fix) -- it's a local,
+# non-cumulative spatial-extent measure, no reason it needed winner-take-all selection.
+# river_area_upstream shares the same typology_cluster and IS present in the persist view
+# (attach_values builds a score column for every continuous catalog variable regardless of
+# dispatch block), so it would silently ride along into B1 too without this exclusion --
+# stays deferred/out of scope, unchanged from its prior B5 status (register).
+_B1_EXCLUDE = frozenset({'river_area_upstream'})
 
 
 # ── WO3: dispatch ─────────────────────────────────────────────────────────────
@@ -1207,10 +1215,9 @@ def dispatch_variable(typology_cluster, kind):
 
         categorical  (any cluster)                        → B3  class_mixture
         flag         (any cluster)                        → B4  flag / structural
-        continuous + {continental-gradient, scale-dependent} → B1  area_weighted
+        continuous + {continental-gradient, scale-dependent, local-anomaly} → B1  area_weighted
         continuous + network-topology                     → B2  dominant_basin
         continuous + NaN cluster                          → B5  distribution_only
-        continuous + local-anomaly                        → B5  extreme
 
     Dropped from WO3 proposed signature:
         zero_fraction — confirmed NOT a routing input; only affects scoring within
@@ -1220,8 +1227,9 @@ def dispatch_variable(typology_cluster, kind):
     Block-internal exclusions NOT handled here (by design — locked principle):
         strata_code          dispatched → B3 but excluded within B3 (opaque codes)
         ecoregion            dispatched → B3 but deduped within B3 (same col as eco_id)
-        river_area_upstream  dispatched → B5 but deferred within B5 (EXTREME_VARS
-                             hardcoded to ['river_area'] only in step3 Cell 21)
+        river_area_upstream  dispatched → B1 but excluded within B1 (_B1_EXCLUDE) --
+                             stays deferred/out of scope (register); present in the persist
+                             view but never aggregated
         endorheic/coast_flag dispatched → B4 but produce synthetic outputs (outlet_type
                              via class_mixture, coast_fraction via flag_fraction);
                              neither appears standalone in step3_results.tsv
@@ -1239,16 +1247,37 @@ def dispatch_variable(typology_cluster, kind):
     tc = typology_cluster
     if pd.isna(tc) if isinstance(tc, float) else tc is None:
         return 'B5'
-    if tc in ('continental-gradient', 'scale-dependent'):
+    if tc in _BLOCK1_CLUSTERS:
         return 'B1'
     if tc == 'network-topology':
         return 'B2'
-    if tc == 'local-anomaly':
-        return 'B5'
     return 'unknown'
 
 
 # ── WO5: B2 dominant_basin ────────────────────────────────────────────────────
+
+# WO_dominant-basin-scope-fix (2026-09-06): discharge is well-posed for a compact,
+# point-anchored buffer (WO5's own validated case -- Timbuktu/Niger) and for a single basin
+# (n=1, no selection at all), but not for a large, irregular multi-basin polygon/polity --
+# even a correctly-overlap-gated carrier basin only answers "how big is the biggest river
+# touching this boundary," a boundary-membership fact, not a region-characterizing statistic
+# comparable to an area-weighted climate mean. `areal_signature_polygon` tags both bare
+# polygons and named polities as scope['type']=='polity' -- one value to gate on.
+_B2_NOT_AREAL_SCOPES = frozenset({'polity'})
+
+
+def _mark_b2_not_areal(rows):
+    """
+    Suppress B2's headline for polygon/polity scope -- rows stay present (not silently
+    dropped) with status='not_areal' and no numeric value that could be misread as an
+    area-representative percentile or raw discharge. detail['dominant_hybas_id'] is kept
+    for traceability. See _B2_NOT_AREAL_SCOPES for why.
+    """
+    for row in rows:
+        row['status']                = 'not_areal'
+        row['representative_score']  = None
+        row['representative_raw']    = None
+    return rows
 
 
 def aggregate_b2(basin_set, matrix_df, raw_df, meta_df) -> list:
@@ -1564,8 +1593,10 @@ def aggregate_b4(basin_set, raw_df,
 
 # ── WO9: B5 fallback + extreme ────────────────────────────────────────────────
 
-# Only river_area takes the extreme path; river_area_upstream is deferred (register).
-_B5_EXTREME_VARS    = frozenset({'river_area'})
+# river_area moved to B1 (WO_dominant-basin-scope-fix, area-weighted -- see _BLOCK1_CLUSTERS);
+# the extreme path is now empty but left in place -- structurally sound if a future variable
+# ever needs a genuine carrier-basin treatment for something other than river_area.
+_B5_EXTREME_VARS    = frozenset()
 _SPREAD_THRESHOLD   = 20.0  # legacy IQR-based cutoff -- no longer drives coherence (see
                             # classify_dispersion below, WO_dispersion-tag-revision); iqr/p25/p75
                             # are still computed and emitted in detail as secondary diagnostics.
@@ -1680,10 +1711,12 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
                              method='distribution_only', not status; Pin 1
                              vocabulary is {ok, outside_active_domain, no_data}).
 
-    extreme — local-anomaly variable (river_area only; river_area_upstream deferred):
+    extreme — carrier-basin selection for a genuinely non-areal variable (currently unused;
+    river_area moved to the area_weighted branch above, WO_dominant-basin-scope-fix --
+    _B5_EXTREME_VARS is empty but the path is left in place):
       Selects the basin carrying the maximum score (monotone with raw value).
       representative_score = carrier basin's percentile score.
-      representative_raw   = carrier basin's raw value (km²).
+      representative_raw   = carrier basin's raw value (native units).
       coherence            = None.
       detail               = {dominant_hybas_id}.
       status               = 'ok'.
@@ -2049,7 +2082,7 @@ def aggregate_b1(basin_set, matrix_df, meta_df,
         (meta_df['kind'] == 'continuous') &
         (meta_df['typology_cluster'].isin(_BLOCK1_CLUSTERS))
     ]
-    block1_vars = [v for v in b1_meta.index if v in joined.columns]
+    block1_vars = [v for v in b1_meta.index if v in joined.columns and v not in _B1_EXCLUDE]
 
     rows = []
     for api_key in block1_vars:
@@ -2265,6 +2298,8 @@ def _areal_signature_from_basin_set(
     # ── 3. Basin path: B1–B5 ─────────────────────────────────────────────────
     b1_rows = aggregate_b1(basin_set, matrix_df, meta_df, resolver_year=resolver_year)
     b2_rows = aggregate_b2(basin_set, matrix_df, raw_df, meta_df)
+    if scope.get('type') in _B2_NOT_AREAL_SCOPES:
+        _mark_b2_not_areal(b2_rows)
     b3_rows = aggregate_b3(basin_set, matrix_df, class_id_df, meta_df)
     b4_rows = aggregate_b4(basin_set, raw_df)
     b5_rows, _ = aggregate_b5(basin_set, matrix_df, raw_df, meta_df)

@@ -96,12 +96,18 @@ def test_lean_row_envelope(nsong_lean):
 # Dominant basin (B2 — Yangtze should dominate)
 # ---------------------------------------------------------------------------
 
-def test_yangtze_dominant(nsong_lean):
+def test_yangtze_discharge_not_areal(nsong_lean):
+    """WO_dominant-basin-scope-fix (2026-09-06): polygon/polity scope no longer reports a
+    numeric B2 discharge value (the Yangtze main-stem basin doesn't characterize Northern
+    Song as a whole) -- rows stay present with status='not_areal' instead. A prior version
+    of this test asserted representative_score > 95; note that filtering None scores before
+    checking `all()` would silently pass on an empty list once every score is None, which is
+    exactly what happened here -- checking status explicitly instead."""
     b2_rows = [r for r in nsong_lean["rows"] if r["method"] == "dominant_basin"]
     assert b2_rows, "No B2 dominant_basin rows found"
-    # Yangtze main-stem: representative_score ~99.7th pct globally
-    scores = [r["representative_score"] for r in b2_rows if r["representative_score"] is not None]
-    assert all(s > 95 for s in scores), f"B2 scores unexpectedly low: {scores}"
+    for r in b2_rows:
+        assert r["status"] == "not_areal", f'{r["variable"]}: status={r["status"]!r}'
+        assert r["representative_score"] is None
 
 
 # ---------------------------------------------------------------------------
