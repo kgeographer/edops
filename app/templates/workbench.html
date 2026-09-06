@@ -1670,7 +1670,7 @@
       }
       case 'dominant_basin': {
         if (row.status === 'not_areal')
-          return `<span style="font-size:0.85rem;">not meaningful at this scale — a single basin's discharge doesn't characterize a large area</span>`;
+          return `<span style="font-size:0.85rem;">network measure, not meaningful for areas</span>`;
         const r = raw   !== null && raw !== undefined ? `${_afrFmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
         const main = [r, s].filter(Boolean).join(' · ') || '—';

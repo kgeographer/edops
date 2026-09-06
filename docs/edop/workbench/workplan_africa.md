@@ -1823,7 +1823,7 @@ directly, it never runs the multi-basin pipeline — every ring member gets its 
 
 **UI.** Only two real consumers existed: Sandbox's `renderLeaf` and Workbench's `_afrSigLeaf`
 (both already touched this session for the split badge). Added a `not_areal` branch to both:
-"not meaningful at this scale — a single basin's discharge doesn't characterize a large area."
+"network measure, not meaningful for areas."
 WH Cities and Explorer audited and confirmed unaffected — WH Cities uses the separate
 point-based `/api/signature` (never touches the areal engine's B2 output), and Explorer/
 Cliopatria never render discharge rows at all.
