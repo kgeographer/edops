@@ -34,7 +34,9 @@ from scripts.edop.areas.engine import (
     load_catalog,
     dispatch_variable,
     _agg_hyde_b7,
-    _SPREAD_THRESHOLD,
+    _CORE_SHARE_CUTOFF,
+    _SPLIT_TIE_MIN_WEIGHT,
+    _SPLIT_MIN_RESIDUAL,
 )
 from scripts.shared.db_utils import db_connect
 
@@ -58,7 +60,7 @@ VALID_METHODS     = frozenset({
     'grid_areal_distribution', 'global_forcing',
 })
 VALID_MODALITIES  = frozenset({'unimodal', 'two_regime'})
-VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'mixed', 'outside_active_domain'})
+VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'split', 'mixed', 'outside_active_domain'})
 VALID_BANDS       = frozenset({'A', 'B', 'C', 'D', 'E', 'T'})
 VALID_KINDS       = frozenset({'continuous', 'categorical', 'flag'})
 DERIVED_KEYS      = frozenset({
@@ -299,33 +301,52 @@ class TestPayloadEnvelope:
 
 class TestBlockContracts:
     def test_b1_detail_fields(self, buf_rows):
-        """B1 rows carry spread + iqr + the quartiles in detail; coherence in vocabulary."""
+        """B1 rows carry spread + iqr + the quartiles + core_share/window in detail;
+        coherence in vocabulary."""
         b1 = [r for r in buf_rows if r['method'] == 'area_weighted']
         assert b1, 'No B1 rows found'
         for r in b1:
             detail = r.get('detail') or {}
             if r['status'] == 'ok':
-                for k in ('spread', 'iqr', 'p10', 'p25', 'p75', 'p90'):
+                for k in ('spread', 'iqr', 'p10', 'p25', 'p75', 'p90',
+                          'core_share', 'window_lo', 'window_hi'):
                     assert k in detail, f'{r["variable"]}: missing {k}'
             coh = r.get('coherence')
             if coh is not None:
                 assert coh in VALID_COHERENCES, \
                     f'{r["variable"]}: unknown coherence {coh!r}'
 
-    def test_b1_coherence_is_iqr_driven(self, buf_rows):
-        """coherence follows the tail-robust IQR (p75-p25), not the p10-p90 span
-        (2026-09-03: long tails were making concentrated-mass distributions read 'spread')."""
+    def test_b1_coherence_is_core_share_driven(self, buf_rows):
+        """coherence follows core share (WO_dispersion-tag-revision), not IQR: 'split' when
+        a tie holds >= _SPLIT_TIE_MIN_WEIGHT of the weight and a real population sits outside
+        the core window; otherwise 'concentrated' iff core_share >= _CORE_SHARE_CUTOFF."""
         b1 = [r for r in buf_rows
               if r['method'] == 'area_weighted' and r['status'] == 'ok'
-              and r.get('coherence') in ('concentrated', 'spread')]
+              and r.get('coherence') in ('concentrated', 'spread', 'split')]
         assert b1, 'No classified B1 rows found'
         for r in b1:
             d = r['detail']
-            expect = 'concentrated' if d['iqr'] < _SPREAD_THRESHOLD else 'spread'
-            assert r['coherence'] == expect, \
-                f'{r["variable"]}: coherence={r["coherence"]!r} but iqr={d["iqr"]} → {expect}'
+            core_share = d['core_share']
+            assert 0.0 <= core_share <= 1.0, \
+                f'{r["variable"]}: core_share {core_share} out of [0,1]'
+            assert d['window_hi'] - d['window_lo'] == pytest.approx(30.0, abs=1e-6), \
+                f'{r["variable"]}: window width {d["window_hi"] - d["window_lo"]} != 2*delta'
+            if r['coherence'] != 'split':
+                expect = 'concentrated' if core_share >= _CORE_SHARE_CUTOFF else 'spread'
+                assert r['coherence'] == expect, \
+                    f'{r["variable"]}: coherence={r["coherence"]!r} but core_share={core_share} → {expect}'
             assert d['iqr'] <= d['spread'] + 1e-6, \
                 f'{r["variable"]}: iqr {d["iqr"]} > span {d["spread"]}'
+
+    def test_b1_split_requires_tie_and_residual(self, buf_rows):
+        """Every 'split' row must actually satisfy the two-part test the tag promises --
+        not just a high or low core_share, a real tie plus a real residual population."""
+        split_rows = [r for r in buf_rows
+                      if r['method'] == 'area_weighted' and r.get('coherence') == 'split']
+        for r in split_rows:
+            d = r['detail']
+            assert (1.0 - d['core_share']) >= _SPLIT_MIN_RESIDUAL - 1e-9, \
+                f'{r["variable"]}: split but residual {1.0 - d["core_share"]} < {_SPLIT_MIN_RESIDUAL}'
 
     def test_b1_spread_rows_carry_score(self, buf_rows):
         """Spread B1 rows emit the weighted-mean score; coherence='spread' is the flag.
