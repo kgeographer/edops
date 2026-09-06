@@ -24,8 +24,10 @@ execution; we still take them one at a time.
 | WO03 | Environmental variable painting on `#afr-map` (L8 default, L6/L8 pill, 8 vars) | **complete** (`38297c0` `2ec5af5` `e39b777`, + `b10b281` `4999a0d`) |
 | WO04 | Operationalize D-PLACE societies (+ layer control, rivers) | **complete** — c1–c3 + skunkworks UX track (merged `80fec2c` into `wb_africa`) |
 | WO05 | Areal signature per Lovejoy region | **complete** (2026-09-04) — below |
-| WO06 | Core-share exploration (notebook only) | **scoped** (2026-09-04) — below; full spec `docs/design/_workbench/coherence_study_opus.md` |
+| WO06 | Core-share exploration (notebook only) | **complete** (2026-09-05) — below; findings `docs/edop/workbench/wo06_findings.md` |
+| WO_dispersion-tag-revision | Core share replaces IQR in `engine.py`; new `split` tag; core-share window shaded on histograms | **complete** (2026-09-05) — below |
 | WO07 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
+| WO_region-distinctiveness-readout | Position-not-dispersion readout, Workbench-only | not started — draft `docs/design/_workbench/WO_region-distinctiveness-readout.md` |
 
 ---
 
@@ -51,12 +53,29 @@ yet. The `TEMP (dev eyeball)` line in `workbench.html` still forces the African 
 **remove before `wb_africa` merges toward `v04`** (the actual pre-Braga cutover point, not any
 single WO's own merge).
 
-**Next: WO06** — a notebook-only study (no engine/API/UI changes) of an alternative dispersion
-statistic ("core share") against the shipped IQR badge, prompted by a real misclassification
-(`snd_pc_sav`/`snd_pc_uav` reading opposite badges for visually similar skewed distributions).
-Full spec below and in `docs/design/_workbench/coherence_study_opus.md`.
+**WO06 → WO_dispersion-tag-revision, both done.** WO06's notebook confirmed core share tracks
+visual reading better than IQR and surfaced a real third shape (zero-inflated: a large tied
+point-mass plus a genuine scattered minority, which IQR reads as falsely "concentrated" at
+IQR=0.00). `WO_dispersion-tag-revision` shipped that finding into production: `engine.py`'s
+`classify_dispersion()` replaces the old IQR-threshold test with core share (δ=15, cutoff 0.65)
+plus a `split` tag (fires when the largest tie ≥50% of weight — the exact point IQR degenerates
+to 0 — and a residual ≥10% of weight sits outside the core window; the 50% figure is analytically
+exact, not tuned). Both `aggregate_b1` and `aggregate_b5` emit `core_share`/`window_lo`/
+`window_hi` in `detail` (`iqr`/`p25`/`p75` kept as secondary diagnostics). Sandbox and Workbench
+both show a `split` badge alongside `concentrated`/`spread`, and shade the winning core-share
+window on the histogram bars in both places (light tint, mapped from the window's global
+[0,100] axis into each row's local bin range) — Karl: "explains the tag terms a little bit."
+Validated against every WO06 example before touching `engine.py` (throwaway prototype script,
+not committed); split-detection itself needs no further tuning per Karl's review. Branch
+`wb_africa_disptag`, merged `--no-ff` into `wb_africa`. Full engine detail: `wo06_findings.md`
+plus the (gitignored) WO doc `docs/design/_workbench/WO_dispersion-tag-revision.md`.
 
-**Not yet scoped (own WOs, past WO06):** society styling by trait (EA042 colour) over a painted
+**Split off, not started: `WO_region-distinctiveness-readout`** — position-not-dispersion
+readout for the Lovejoy panel (percentile distance from 50, both directions, no aggregate
+score); was drafted conjoined with the above, split into its own doc since the two don't
+actually depend on each other. Draft: `docs/design/_workbench/WO_region-distinctiveness-readout.md`.
+
+**Not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
 variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read); society ↔
 region cross-highlight; a "Society basin signature" link on the society-info header (the natural
 sibling to WO05's "Region signature" link, once a society's own containing-basin lookup exists);
@@ -1549,7 +1568,9 @@ needed. `pytest tests/`: 529 passed, 14 skipped throughout.
 
 ## WO06 — Core-share exploration (notebook only) (2026-09-04)
 
-**State: in progress — A4 passed 2026-09-05.** Notebook: `notebooks/edop/workbench/
+**State: complete (2026-09-05).** Findings written up neutrally for both Karl's own read and
+Opus in `docs/edop/workbench/wo06_findings.md` (committed `d0ba53a`); production follow-through
+is `WO_dispersion-tag-revision`, close-out below. Notebook: `notebooks/edop/workbench/
 wo06_core_share.ipynb`. Full spec: `docs/design/_workbench/coherence_study_opus.md` (Opus
 draft, Karl's WO number confirmed, two technical notes folded in by Claude Code — see below).
 This entry is a pointer + summary per the usual convention; the linked doc is the source of
@@ -1655,3 +1676,43 @@ before anything is built around it.
    family — worth a short literature check in the write-up so the framing uses established
    vocabulary rather than re-deriving it under a new name (this project has done that before with
    similarity work). Doesn't change the math or block starting.
+
+---
+
+## WO_dispersion-tag-revision — Close-out (2026-09-05)
+
+**Done**, branch `wb_africa_disptag` (off `wb_africa`), merged `--no-ff` back. Origin: a combined
+WO draft from Opus arrived numberless, conjoining this with a second, independent piece
+(distinctiveness readout) — split into two files at Karl's direction; only this half was built.
+
+**Engine (`scripts/edop/areas/engine.py`, commit `c402471`).** `classify_dispersion()` replaces
+the old `iqr < _SPREAD_THRESHOLD` test:
+- **core share** (WO06's validated statistic) drives `concentrated`/`spread`: fraction of a
+  region's weighted area inside the densest δ=15 half-width window on the global [0,100] rank
+  axis, cutoff 0.65.
+- **`split`** (new third tag, WO06's zero-inflation finding): fires when the largest exact-tie
+  block holds ≥50% of weight — the point past which IQR degenerates to 0.00 by construction,
+  since a tie that large necessarily straddles both p25 and p75 — **and** ≥10% of weight sits
+  outside the core window. Both cutoffs checked against real WO06 examples (a disposable
+  prototype script, not committed) before touching `engine.py`, given its site-wide scope; two
+  earlier split-detection designs (nearest-point gap distance, quiet-buffer-zone density) were
+  tried and rejected first — see `wo06_findings.md` for why. Both `aggregate_b1` and
+  `aggregate_b5` emit `core_share`/`window_lo`/`window_hi` in `detail`; `iqr`/`p25`/`p75` kept as
+  secondary diagnostics, not removed. Test coverage: `tests/engine/test_engine_contract.py` gained
+  `split` to `VALID_COHERENCES`, a `core_share`/`window_lo`/`window_hi` detail-fields check, and
+  `test_b1_split_requires_tie_and_residual`.
+
+**UI (`sandbox.html` + `workbench.html`, commit `5dc3828`).** Both templates: a `split` badge
+(`bg-info-subtle`) alongside the existing `concentrated`/`spread`; `renderHistogram`/
+`_afrSigHistogram` gained optional `windowLo`/`windowHi` params that shade the winning core-share
+window behind the histogram bars — clipped from the window's global axis into each row's local
+bin range, drawn only on `area_weighted` rows (Band T's histogram calls are unaffected). Karl,
+after browser review: "explains the tag terms a little bit... this is as good as we need right
+now" re: the split-detection logic itself — no further tuning planned.
+
+**Verification.** `pytest tests/`: 530 passed, 14 skipped (up from 529 — the one new split test),
+same pre-existing pandas/SQLAlchemy warnings as always. Both templates syntax-checked
+(`node --check` on the extracted inline script) and render-tested (`/sandbox`, `/workbench` via
+TestClient, 200). Karl reviewed every UI state in the browser before commit.
+
+**Split off, not started:** `WO_region-distinctiveness-readout.md` — see "You are here", above.
