@@ -55,15 +55,16 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | Reorg (housekeeping)        | complete 2026-08-03             | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
 | DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots; merged to `main` locally (not deployed, not pushed) |
 | kgreview                    | complete 2026-08-30             | `docs/TODO_kgreview.md` backlog closed; broadened into a general legibility/UX pass — Cliopatria header/nav parity, `.text-muted` removal, Workbench WH Cities copy + ecoregion→Wiki lookup, explorer histogram fix, Sandbox terrain ramp, Sandbox Polities Cities/Countries layers. Merged to `main` `0fdb283` |
-| **v0.4 deploy**             | **active** — dry run done, cutover deferred ~mid-Sept | blue-green dry run on `edops04` validated; work + fixes on branch `wb_africa` (off `v04`); `logs/session_log_20260830_deploy.md` + `MAINTAIN_DEPLOY.md` |
-| **African Regions tab**     | **active** — for Braga 2026-09-23 | new Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions + variable painting + D-PLACE society layer); draft prospectus `docs/design/_workbench/prospectus_AfricanRegions.md`; on `wb_africa`; ships within v0.4 or not at all |
+| **v0.4 deploy**             | **active** — dry run done, cutover deferred ~mid-Sept | blue-green dry run on `edops04` validated; `wb_africa` merged into `v04` 2026-09-06 (533/533 tests green); `logs/session_log_20260830_deploy.md` + `MAINTAIN_DEPLOY.md` |
+| **African Regions tab**     | **complete** 2026-09-06 (gui tweaks pre-deploy notwithstanding) | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); merged into `wb_africa` then `v04`; `wb_africa` pushed to origin; `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**v0.4 deploy — dry run complete (2026-08-30); cutover deferred a couple days (Karl's tweaking,
+**v0.4 deploy — dry run complete (2026-08-30); African Regions detour on `wb_africa` closed and
+merged into `v04` (2026-09-06); cutover deferred a couple days (Karl's tweaking,
 worth it — already caught an LMR baseline bug).** kgreview and DOCS_v4 are both closed and sit in
 local `main` (never pushed, never deployed). A full blue-green dry run is live and validated on
 `edops04.computingplace.org`:
@@ -80,40 +81,29 @@ local `main` (never pushed, never deployed). A full blue-green dry run is live a
 - nginx `edops04.computingplace.org` → :8004 (Let's Encrypt cert). **Live v0.3 on :8001
   (`edops.service`, commit `e3f7424`) untouched throughout.**
 
-**Branch `wb_africa`** (off `v04`) holds both the pre-cutover fix batch and the African Regions
-build. Already in `v04`: `7d77c30` re-baselines the LMR temperature-anomaly map to its stated
-850–1850 mean (was raw modern-referenced anomalies — every historical map a cold/blue wash).
-**African Regions** — a **detour** on `wb_africa`, ahead of the deploy: a new Workbench tab for
-the Braga talk (2026-09-23), built from a draft prospectus
-(`docs/design/_workbench/prospectus_AfricanRegions.md`, nothing in stone). Work log
-`docs/edop/workbench/workplan_africa.md`; handoff `docs/edop/workbench/handoff_20260831.md`;
-per-WO detail in `docs/edop/workbench/`. Work proceeds from Claude-drafted, Karl-approved WOs
-(no Opus).
+**Branch `wb_africa`** (off `v04`) held both the pre-cutover fix batch and the African Regions
+build; both now **merged into `v04`** (2026-09-06, 533/533 tests green) and `wb_africa` itself
+pushed to `origin` (new branch — `v04` is not yet pushed). Already in `v04` before that: `7d77c30`
+re-baselines the LMR temperature-anomaly map to its stated 850–1850 mean (was raw
+modern-referenced anomalies — every historical map a cold/blue wash).
 
-- **WO01 / WO02 / WO02.5 / WO03 done.** New tab, map-left / info-right in the 6/6 row; `#afr-map` is
-  its own lazy-init MapLibre instance (shared Protomaps light basemap via `app/static/js/pm_basemap.js`;
-  full Leaflet→MapLibre port of the rest of `workbench.html` deferred). 34 Lovejoy pre-colonial
-  African subregions render; a click highlights the outline and writes the **verbatim article
-  rationale + page cite** into `#afr-region` (hiding the intro), above a persistent controls +
-  citation block. Single served source `app/static/workbench/lovejoy_regions.geojson`
-  (`?v=<mtime>` cache-bust), built by `scripts/edop/workbench/build_lovejoy_geojson.py` from
-  `whg_staging.lovejoy.regions` + WHG 1155 LPF + curated master `data/lovejoy/lovejoy_rationales.md`
-  (extractor `build_lovejoy_rationale.py`). `lovejoy_region_notes.json` / `_afrNotes` retired.
-- **WO03** — variable painting: `#afr-var` `<select>` (8 BasinATLAS vars, bands A/B/E/C) + L6/L8
-  pill paint `basin0{6,8}.pmtiles` under the region layers via `/api/explorer/{values,categorical}`
-  feature-state, ramp ported from `explorer.html` `makeColorFn` (terrain = YlOrBr now, both
-  templates). `/explorer/{values,categorical}` gained an optional `bbox=w,s,e,n` that trims the
-  returned `values` payload only — **stats/category ranking stay global** (Explorer parity: "wet
-  in Africa" is read against wetness everywhere). Legend in `#afr-readouts`.
-- **Next — WO04+** (not scoped): D-PLACE society marker layer (`cedop.dplace.*`, local + prod);
-  regions/societies click-mode toggle; discharge log-ramp tweak. Detail: `docs/edop/workbench/workplan_africa.md`.
+**African Regions** — the detour that ran on `wb_africa` ahead of the deploy, now **closed**
+(gui tweaks pre-deploy notwithstanding): a new Workbench tab for the Braga talk (2026-09-23),
+built from a draft prospectus (`docs/design/_workbench/prospectus_AfricanRegions.md`). Full
+WO-by-WO record — Lovejoy regions + rationale (WO01–02.5), variable painting (WO03), D-PLACE
+societies (WO04), areal signature per region + a position-not-dispersion distinctiveness readout
+(WO05, WO_region-distinctiveness-readout), the core-share/`split` dispersion-badge revision
+(WO06, WO_dispersion-tag-revision), and a dominant-basin scope fix found along the way
+(`river_area` → area-weighted, discharge dropped from polygon/polity scope) — is all in
+`docs/edop/workbench/workplan_africa.md`; session-by-session detail in
+`logs/session_log_2026090{1,2,3,6}.md`. Work proceeded from Claude-drafted, Karl-approved WOs.
 
-**Cutover** (deferred, ~mid-Sept): merge `wb_africa` → `v04`, redeploy `edops-v4`, re-verify on
-`edops04`, then flip one nginx `proxy_pass` line `:8001`→`:8004` on the `edops.computingplace.org`
-server block + reload; rollback = flip it back (~5 s). `edops.service` stays up on :8001 as the
-fallback for days after. Per-step record and resume point (**step 13**):
-`logs/session_log_20260830_deploy.md`. Checklist: `MAINTAIN_DEPLOY.md` (repo root, gitignored,
-Karl's personal deploy reference).
+**Cutover** (deferred, ~mid-Sept): `wb_africa` is already merged into `v04`; remaining steps are
+redeploy `edops-v4`, re-verify on `edops04`, then flip one nginx `proxy_pass` line
+`:8001`→`:8004` on the `edops.computingplace.org` server block + reload; rollback = flip it back
+(~5 s). `edops.service` stays up on :8001 as the fallback for days after. Per-step record and
+resume point (**step 13**): `logs/session_log_20260830_deploy.md`. Checklist:
+`MAINTAIN_DEPLOY.md` (repo root, gitignored, Karl's personal deploy reference).
 
 **Milestones:** v0.4 announcements (social + mailing list) ~2026-09-07 — can slip. Braga
 (2026-09-23) — Spatial Humanities conference.
