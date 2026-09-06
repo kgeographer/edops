@@ -415,7 +415,7 @@
      Dual-purpose (WO05): also hosts a region's areal signature (afrOpenProfileModal()),
      swapped in via #afr-profile-body + _afrModalMode() rather than a second modal. -->
 <div class="modal fade" id="afr-dplace-modal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" id="afr-dplace-dialog" style="max-width:90vw;width:90vw;">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" id="afr-dplace-dialog" style="max-width:90vw;width:90vw;">
     <div class="modal-content" style="height:88vh;">
       <div class="modal-header py-2">
         <h6 class="modal-title mb-0" id="afr-dplace-title">D-PLACE society <span class="text-muted small" id="afr-dplace-subtitle">— CC-BY-NC 4.0</span></h6>
@@ -424,7 +424,7 @@
       </div>
       <div class="modal-body p-0">
         <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
-        <div id="afr-profile-body" style="display:none;width:100%;height:100%;overflow-y:auto;padding:1rem 1.25rem;"></div>
+        <div id="afr-profile-body" style="display:none;width:100%;padding:1rem 1.25rem;"></div>
       </div>
     </div>
   </div>
@@ -1372,6 +1372,13 @@
 
   function _afrRenderSigInto(body, payload) {
     body.innerHTML = _afrRenderSigHtml(payload);
+    const toggle = body.querySelector('#afr-sig-showall-toggle');
+    const panel  = body.querySelector('#afr-sig-allvars');
+    if (toggle && panel) toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      panel.hidden = !panel.hidden;
+      toggle.textContent = panel.hidden ? 'Show all variables ▾' : 'Hide all variables ▴';
+    });
     const tRows = (payload.rows || []).filter(r => r.band === 'T');
     if (tRows.length) _afrSigWireTSliders(tRows);
   }
@@ -1703,6 +1710,109 @@
     </tr>`;
   }
 
+  // ── WO_region-distinctiveness-readout: position, not dispersion ────────────────────────────
+  // Rule-based, no API call -- every sentence traces to a field already in the payload. Does NOT
+  // resurrect the retired region-level aggregate coherence count (WO06 Part B): this only orders
+  // individual variables by distance from the world median, never combines them into one score.
+  const _AFR_DISTINCT_BANDS   = new Set(['A', 'B', 'C', 'E']);   // physical geography only -- Band D
+                                                                   // (Anthropocene) and T (time series,
+                                                                   // no single score) are a different question
+  const _AFR_DISTINCT_METHODS = new Set(['area_weighted', 'distribution_only']);
+  // 'extreme' (river_area) and 'dominant_basin' (discharge_yr/max/min) excluded: both are
+  // network-topology/local-anomaly winner-take-all methods answering "does a big river's
+  // network pass through here," not "is this region's own climate/terrain distinctive" -- a
+  // different kind of claim, and one exposed to a real boundary-leverage bug on large/irregular
+  // polygons (see docs/design/_workbench/dominant_basin_boundary_leverage.md; Karl+Opus agreed
+  // 2026-09-06 these don't belong in this readout regardless of that bug's eventual fix).
+  const _AFR_DISTINCT_FLOOR   = 25;   // percentile points from 50 required to count as distinctive
+  const _AFR_SU_THRESHOLD     = 10;   // percentile points of local/upstream divergence to mention --
+                                       // data-derived (2026-09-06): sorted |delta| across all 34
+                                       // Lovejoy regions clusters 0-5.2, then a clean gap to
+                                       // 11.7/16.4/21.6 -- Nile Valley (16.4) sits well inside the
+                                       // upper group, not near a boundary. 10 sits in the gap.
+  const _AFR_SU_MIN_BASINS    = 5;    // below this, engine.py already can't report a coherence
+                                       // badge for the same reason (too few basins) -- mirror that
+                                       // floor here so the s/u line doesn't fire on 1-2 basins
+                                       // either (Canarias, n=2, showed a spurious 21.6-point delta)
+
+  function _afrDistinctName(row) {
+    return row.friendly_name || _afrHumanizeKey(row.variable);
+  }
+  // Aridity index (P/PET) inverts the name's own intuition -- it rises with wetter
+  // conditions, falls with drier ones (BasinATLAS catalog) -- so a low percentile reads as
+  // arid, easy to misread as wet. Flagged by Karl 2026-09-06; scoped to this readout only,
+  // not the shared catalog friendly_name.
+  const _AFR_DISTINCT_DIRECTION_NOTE = {
+    aridity: 'higher = wetter', aridity_upstream: 'higher = wetter',
+  };
+  function _afrOrdinal(n) {
+    const r = Math.round(n), mod100 = r % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${r}th`;
+    switch (r % 10) { case 1: return `${r}st`; case 2: return `${r}nd`; case 3: return `${r}rd`; default: return `${r}th`; }
+  }
+
+  function _afrSigReadout(payload) {
+    const rows = payload.rows || [];
+    const eligible = rows.filter(r =>
+      _AFR_DISTINCT_BANDS.has(r.band) && _AFR_DISTINCT_METHODS.has(r.method) &&
+      r.status === 'ok' && !r.score_suppressed &&
+      r.representative_score !== null && r.representative_score !== undefined);
+
+    const withDist = eligible.map(r => ({ row: r, dist: r.representative_score - 50 }));
+    const low  = withDist.filter(x => x.dist <= -_AFR_DISTINCT_FLOOR).sort((a, b) => a.dist - b.dist).slice(0, 3);
+    const high = withDist.filter(x => x.dist >=  _AFR_DISTINCT_FLOOR).sort((a, b) => b.dist - a.dist).slice(0, 3);
+
+    let distinctHtml;
+    if (!low.length && !high.length) {
+      distinctHtml = `<p class="mb-2" style="font-size:0.85rem;">Nothing about this region's environment
+        stands out against the rest of the world — its variables mostly sit within the middle half
+        of the global range.</p>`;
+    } else {
+      const item = x => {
+        const note = _AFR_DISTINCT_DIRECTION_NOTE[x.row.variable];
+        const noteHtml = note
+          ? ` <span class="text-secondary" style="font-size:0.78rem;">(${_afrEsc(note)})</span>` : '';
+        return `<li>${_afrOrdinal(x.row.representative_score)} percentile
+          — <strong>${_afrEsc(_afrDistinctName(x.row))}</strong>${noteHtml}</li>`;
+      };
+      distinctHtml = `
+        ${low.length ? `<div class="small text-secondary mb-1">Furthest below the world median</div>
+          <ul class="mb-2" style="font-size:0.85rem;">${low.map(item).join('')}</ul>` : ''}
+        ${high.length ? `<div class="small text-secondary mb-1">Furthest above the world median</div>
+          <ul class="mb-2" style="font-size:0.85rem;">${high.map(item).join('')}</ul>` : ''}`;
+    }
+
+    // Local/upstream water-provenance line -- same badge register as Sandbox's single-basin
+    // Analysis panel, re-derived on percentile divergence (the only local/upstream contrast that
+    // generalizes to a 100+ basin region; the point-signature version's raw ratios and
+    // endorheic/coastal fields are basin-specific and don't have a regional equivalent).
+    let suHtml = '';
+    const localRow = eligible.find(r => r.variable === 'precip_yr');
+    const upRow     = eligible.find(r => r.variable === 'precip_yr_upstream');
+    const nUnits    = payload.scope?.n_units;
+    if (localRow && upRow && nUnits != null && nUnits >= _AFR_SU_MIN_BASINS) {
+      const delta = upRow.representative_score - localRow.representative_score;
+      if (Math.abs(delta) >= _AFR_SU_THRESHOLD) {
+        const exo = delta > 0;
+        const badge = exo
+          ? `<span class="badge bg-primary">Exogenous water supply</span>`
+          : `<span class="badge bg-success">Local-dominant</span>`;
+        const note = exo
+          ? `This region generates relatively little of its own precipitation
+             (${_afrOrdinal(localRow.representative_score)} percentile) but sits within a wetter
+             upstream catchment (${_afrOrdinal(upRow.representative_score)} percentile) — much of
+             its water arrives from outside the region.`
+          : `This region generates more of its own precipitation
+             (${_afrOrdinal(localRow.representative_score)} percentile) than its upstream
+             catchment supplies (${_afrOrdinal(upRow.representative_score)} percentile) — water is
+             predominantly generated within the region itself.`;
+        suHtml = `<div class="mb-1">${badge}</div><p class="mb-2" style="font-size:0.85rem;">${note}</p>`;
+      }
+    }
+
+    return `<div class="mb-2">${distinctHtml}${suHtml}</div>`;
+  }
+
   // Entry point -- builds the modal body HTML for one region's payload. No ring/basin/polity
   // heading disambiguation (Sandbox's renderSignature has several); just name + macro, and no
   // "How to read this" doc-modal link (that doc page is written for the Sandbox Polities flow).
@@ -1712,15 +1822,12 @@
     const byBand = {};
     for (const row of payload.rows || []) (byBand[row.band] = byBand[row.band] || []).push(row);
     const defaultOpenBand = byBand['T'] ? 'T' : 'C';
-    let html = `
-      <h6 class="mb-1">${_afrEsc(r.name || 'Region')} <span class="small text-secondary">(${n} L6 basin${n === 1 ? '' : 's'})</span></h6>
-      <div class="small mb-2">${_afrEsc(r.macro || '')}</div>
-      <div class="accordion accordion-flush" id="afr-sig-accordion">`;
+    let accordionHtml = `<div class="accordion accordion-flush" id="afr-sig-accordion">`;
     for (const band of _AFR_SIG_BAND_ORDER) {
       const rows = byBand[band];
       if (!rows) continue;
       const paneId = `afr-sig-acc-${band}`;
-      html += `
+      accordionHtml += `
         <div class="accordion-item">
           <h2 class="accordion-header">
             <button class="accordion-button py-1 px-2 ${band !== defaultOpenBand ? 'collapsed' : ''}" type="button"
@@ -1740,8 +1847,16 @@
           </div>
         </div>`;
     }
-    html += '</div>';
-    return html;
+    accordionHtml += '</div>';
+
+    return `
+      <h6 class="mb-1">${_afrEsc(r.name || 'Region')} <span class="small text-secondary">(${n} L6 basin${n === 1 ? '' : 's'})</span></h6>
+      <div class="small mb-2">${_afrEsc(r.macro || '')}</div>
+      ${_afrSigReadout(payload)}
+      <div class="mb-2">
+        <a href="#" id="afr-sig-showall-toggle" class="small">Show all variables ▾</a>
+      </div>
+      <div id="afr-sig-allvars" hidden>${accordionHtml}</div>`;
   }
 
   // Ring every marker whose `field` == `value`; null/empty clears the highlight.

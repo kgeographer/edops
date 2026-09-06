@@ -27,7 +27,7 @@ execution; we still take them one at a time.
 | WO06 | Core-share exploration (notebook only) | **complete** (2026-09-05) — below; findings `docs/edop/workbench/wo06_findings.md` |
 | WO_dispersion-tag-revision | Core share replaces IQR in `engine.py`; new `split` tag; core-share window shaded on histograms | **complete** (2026-09-05) — below |
 | WO07 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
-| WO_region-distinctiveness-readout | Position-not-dispersion readout, Workbench-only | not started — draft `docs/design/_workbench/WO_region-distinctiveness-readout.md` |
+| WO_region-distinctiveness-readout | Position-not-dispersion readout, Workbench-only | **complete** (2026-09-06) — below |
 
 ---
 
@@ -70,10 +70,15 @@ not committed); split-detection itself needs no further tuning per Karl's review
 `wb_africa_disptag`, merged `--no-ff` into `wb_africa`. Full engine detail: `wo06_findings.md`
 plus the (gitignored) WO doc `docs/design/_workbench/WO_dispersion-tag-revision.md`.
 
-**Split off, not started: `WO_region-distinctiveness-readout`** — position-not-dispersion
-readout for the Lovejoy panel (percentile distance from 50, both directions, no aggregate
-score); was drafted conjoined with the above, split into its own doc since the two don't
-actually depend on each other. Draft: `docs/design/_workbench/WO_region-distinctiveness-readout.md`.
+**`WO_region-distinctiveness-readout` done too (2026-09-06).** Position-not-dispersion readout
+above the band accordions on the Lovejoy region panel — was drafted conjoined with
+`WO_dispersion-tag-revision`, split into its own doc since the two don't actually depend on each
+other. Close-out below; branch `wb_africa_distinct`, merged `--no-ff` into `wb_africa`. Along the
+way, a real pre-existing engine issue surfaced (Central Sahara reporting 96th-percentile
+discharge despite being uniformly one of the driest, lowest-discharge regions on the map) —
+traced to a winner-take-all basin-selection bug unrelated to this WO's own logic, **not fixed
+here**; written up separately in `docs/design/_workbench/dominant_basin_boundary_leverage.md`
+(gitignored) for Karl + Opus to weigh a fix later.
 
 **Not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
 variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read); society ↔
@@ -1715,4 +1720,61 @@ same pre-existing pandas/SQLAlchemy warnings as always. Both templates syntax-ch
 (`node --check` on the extracted inline script) and render-tested (`/sandbox`, `/workbench` via
 TestClient, 200). Karl reviewed every UI state in the browser before commit.
 
-**Split off, not started:** `WO_region-distinctiveness-readout.md` — see "You are here", above.
+**Split off, done too:** `WO_region-distinctiveness-readout` — see its own close-out below.
+
+---
+
+## WO_region-distinctiveness-readout — Close-out (2026-09-06)
+
+**Done**, branch `wb_africa_distinct` (off `wb_africa`), merged `--no-ff` back. Position, not
+dispersion: where a region sits on the world's range per variable, above the band accordions
+(now behind a "Show all variables" toggle, default collapsed).
+
+**Engine (`scripts/edop/areas/engine.py`).** Two small, additive changes:
+- `friendly_name` threaded through the catalog loader (was dropped before; the TSV already
+  carried it) and attached to every output row next to `db_col`, so the readout can say
+  "Precipitation annual" instead of a title-cased variable key.
+- `_MIN_COHERENT_BASINS = 5` + `_suppress_low_n_coherence()`: extends the existing n=1 coherence
+  suppression (`_backfill_single_basin_raw`) to n=2..4, confirmed live via Canarias (n=2) —
+  core_share sat at 0.9999–1.0 and "concentrated" fired on all 22 scored variables before the
+  fix, the same degeneracy as n=1, just empirical rather than mathematically forced. Unit-tested
+  directly (`TestLowBasinCountCoherence`, 3 tests, no DB needed).
+
+**Workbench (`workbench.html`).** `_afrSigReadout()`: top-3 furthest-below/above-median
+variables (bands A/B/C/E only, floor 25 percentile points from 50), an explicit "nothing
+stands out" sentence when none clear the floor, and a local/upstream water-provenance line
+(precip_yr vs precip_yr_upstream, badge register borrowed from Sandbox's single-basin Analysis
+panel) — fires only at ≥10 percentile points divergence *and* n_units≥5. Both numbers are
+data-derived, not guessed: sorted |delta| across all 34 regions clusters 0–5.2 then jumps clean
+to 11.7/16.4/21.6, and Nile Valley (16.4, the WO's own motivating case) sits solidly inside the
+upper group once the low-n floor keeps Canarias/Comoros from contaminating the picture. Also:
+an aridity-index direction note ("higher = wetter" — the index runs opposite to what its own
+name suggests) and a modal scroll fix (`#afr-dplace-dialog` was missing Bootstrap's
+`modal-dialog-scrollable`, so a long expanded "Show all variables" view overflowed the modal
+with no way to scroll it).
+
+**A real detour, not papered over.** Central Sahara (438 basins, one of the driest regions on
+the map) initially showed 96th–97th percentile for discharge and river area — traced all the
+way down to a genuine, pre-existing engine bug: `aggregate_b2`/`aggregate_b5`'s winner-take-all
+basin selection (`idxmax()` with no floor on how much of the winning basin's own area actually
+overlaps the query polygon) can hand the whole region's reported value to a basin that's over
+95% *not actually in the region*. Root-caused to a specific commit (WO5, 2026-06-24, designed
+and validated only for point buffers), and connected to a standing, already-written prediction
+of exactly this failure in `docs/design/deferred_items_register.md`'s "Edge-sensitivity
+diagnostic" entry ("when polygons arrive the same problem appears as the membership rule").
+**Not fixed** — separate from this WO's scope and affects the app more broadly (Sandbox,
+Explorer, any areal query). Written up for Karl + Opus:
+`docs/design/_workbench/dominant_basin_boundary_leverage.md` (gitignored). Practical resolution
+for *this* readout: Opus and Karl agreed network-topology/local-anomaly variables
+(discharge_yr/max/min, river_area) don't belong in a "is this region's own climate distinctive"
+readout regardless of the bug — they're excluded from `_AFR_DISTINCT_METHODS` outright.
+
+**Verification.** `pytest tests/`: 533 passed, 14 skipped (up from 530 — the three new low-n
+coherence tests), same pre-existing pandas/SQLAlchemy warnings as always. Templates
+syntax-checked (`node --check`) and render-tested (`/workbench` via TestClient, 200). Karl
+reviewed every UI state in the browser before commit, including the discharge/river-area
+anomaly (caught via his own visual read of the Explorer choropleth against the Lovejoy region
+boundary) and the modal-scroll nit.
+
+Both WOs of the split original doc are now closed. Next up: whatever comes after WO07
+(`Societies_refine`) or fresh scoping — nothing else queued as of this close-out.
