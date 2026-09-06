@@ -37,6 +37,8 @@ from scripts.edop.areas.engine import (
     _CORE_SHARE_CUTOFF,
     _SPLIT_TIE_MIN_WEIGHT,
     _SPLIT_MIN_RESIDUAL,
+    _MIN_COHERENT_BASINS,
+    _suppress_low_n_coherence,
 )
 from scripts.shared.db_utils import db_connect
 
@@ -492,6 +494,40 @@ class TestSingleBasinDegeneracy:
         # Contract: structural validity only (not specific value)
         assert cf['representative_raw'] is not None
         assert 0.0 <= float(cf['representative_raw']) <= 1.0
+
+
+class TestLowBasinCountCoherence:
+    """WO_region-distinctiveness-readout follow-on (2026-09-06): n=2..4 empirically shows
+    the same core_share~1.0 degeneracy as n=1 (too few basins for a distribution) --
+    confirmed live against Canarias (n=2, a Lovejoy region): core_share 0.9999-1.0 and
+    'concentrated' on all 22 scored variables before this fix. n_units==1 is a stricter,
+    mathematically exact case of the same problem, handled separately by
+    _backfill_single_basin_raw. Pure-function test -- no DB needed, unlike the rest of
+    this file's fixture-based tests."""
+
+    def test_clears_coherence_below_floor(self):
+        rows = [
+            {'method': 'area_weighted', 'coherence': 'concentrated'},
+            {'method': 'distribution_only', 'coherence': 'spread'},
+        ]
+        _suppress_low_n_coherence(rows, n_units=2)
+        assert rows[0]['coherence'] is None
+        assert rows[1]['coherence'] is None
+
+    def test_leaves_coherence_at_or_above_floor(self):
+        rows = [
+            {'method': 'area_weighted', 'coherence': 'concentrated'},
+            {'method': 'distribution_only', 'coherence': 'spread'},
+        ]
+        _suppress_low_n_coherence(rows, n_units=_MIN_COHERENT_BASINS)
+        assert rows[0]['coherence'] == 'concentrated'
+        assert rows[1]['coherence'] == 'spread'
+
+    def test_ignores_methods_without_coherence(self):
+        """dominant_basin/extreme rows never carry coherence -- must not be disturbed."""
+        rows = [{'method': 'extreme', 'coherence': None, 'representative_score': 96.08}]
+        _suppress_low_n_coherence(rows, n_units=2)
+        assert rows[0]['representative_score'] == 96.08
 
 
 # ---------------------------------------------------------------------------

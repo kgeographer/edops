@@ -467,6 +467,7 @@ def load_catalog(level=6, codebook_path=None):
             col_s      = (rec.get('basin08_col_s')     or '').strip() or None
             col_u      = (rec.get('basin08_col_u')     or '').strip() or None
             units      = (rec.get('units')             or '').strip() or None
+            fname      = (rec.get('friendly_name')     or '').strip() or None
 
             def _emit(ak, su, col, zf_raw):
                 if not ak or ak in _SKIP_API_KEYS:
@@ -500,6 +501,7 @@ def load_catalog(level=6, codebook_path=None):
                     'zero_fraction':    _parse_zf(zf_raw),
                     'derived':          is_derived,
                     'units':            units,
+                    'friendly_name':    (fname + ' (upstream)') if (fname and su == 'u') else fname,
                 })
 
             _emit(
@@ -1587,6 +1589,14 @@ _SPLIT_TIE_MIN_WEIGHT = 0.50  # split candidate: a single tied score holds >= ha
 _SPLIT_MIN_RESIDUAL   = 0.10  # ...and a real, separate population sits outside the core window
                               # (a big tie alone is not split -- e.g. Western Sahara/precip_yr,
                               # WO06's control panel: near-total spike, no meaningful residual)
+_MIN_COHERENT_BASINS  = 5     # below this, core_share is empirically pinned near 1.0 regardless
+                              # of the underlying values -- confirmed live (WO_region-distinct-
+                              # iveness-readout, 2026-09-06): Canarias, n=2, shows core_share
+                              # 0.9999-1.0 and 'concentrated' on all 22 scored variables. Same
+                              # WO06 floor already used to exclude low-n regions from the
+                              # core-share validation itself; n_units==1 is a stricter,
+                              # mathematically exact case of the same problem, handled separately
+                              # by _backfill_single_basin_raw (see _suppress_low_n_coherence).
 
 
 def core_share_window(scores, wts_norm, delta=_CORE_SHARE_DELTA, step=1):
@@ -2185,6 +2195,35 @@ def _backfill_single_basin_raw(rows, hybas_id, raw_df, meta_df):
     return rows
 
 
+def _suppress_low_n_coherence(rows, n_units, min_basins=_MIN_COHERENT_BASINS):
+    """
+    Clears the coherence badge ('concentrated'/'spread'/'split') on B1/B5 rows when
+    n_units < min_basins. Below _MIN_COHERENT_BASINS, core_share is empirically pinned near
+    1.0 regardless of the underlying values -- too few points for a δ=15 window to miss --
+    see _MIN_COHERENT_BASINS's own comment for the live confirmation. n_units==1 is a
+    stricter, mathematically exact case of the same problem (core_share is always exactly
+    1.0) and is handled by _backfill_single_basin_raw instead, which also backfills
+    representative_raw for that one basin -- that backfill doesn't generalize past n=1, so
+    this function only clears coherence, nothing else.
+
+    Parameters
+    ----------
+    rows     : list of make_row dicts (B1 + B5 rows; mutated in place)
+    n_units  : int -- basin count for this scope
+    min_basins : int -- floor below which coherence is cleared (default _MIN_COHERENT_BASINS)
+
+    Returns
+    -------
+    The same list, mutated in place (returned for call-site convenience).
+    """
+    if n_units >= min_basins:
+        return rows
+    for row in rows:
+        if row['method'] in ('area_weighted', 'distribution_only'):
+            row['coherence'] = None
+    return rows
+
+
 # ── WO11b: assembly ───────────────────────────────────────────────────────────
 
 def _areal_signature_from_basin_set(
@@ -2236,10 +2275,15 @@ def _areal_signature_from_basin_set(
 
     # Single-basin sets (n_units==1): backfill representative_raw and clear the meaningless
     # coherence badge on B1/B5 rows -- see _backfill_single_basin_raw()'s own docstring.
-    if len(basin_set) == 1:
+    # n_units 2..(_MIN_COHERENT_BASINS-1): same coherence problem, empirically confirmed
+    # rather than mathematically forced -- see _MIN_COHERENT_BASINS's own comment.
+    n_units = len(basin_set)
+    if n_units == 1:
         bs_indexed = basin_set.set_index('hybas_id') if 'hybas_id' in basin_set.columns else basin_set
         hybas_id = int(bs_indexed.index[0])
         _backfill_single_basin_raw(b1_rows + b5_rows, hybas_id, raw_df, meta_df)
+    elif n_units < _MIN_COHERENT_BASINS:
+        _suppress_low_n_coherence(b1_rows + b5_rows, n_units)
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
@@ -2247,6 +2291,8 @@ def _areal_signature_from_basin_set(
     # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
     for row in basin_rows:
         row['db_col'] = meta_df.loc[row['variable'], 'db_col'] \
+            if row['variable'] in meta_df.index else None
+        row['friendly_name'] = meta_df.loc[row['variable'], 'friendly_name'] \
             if row['variable'] in meta_df.index else None
 
     # ── 5. Band T path (gated on span presence) ───────────────────────────────
