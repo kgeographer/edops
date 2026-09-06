@@ -55,7 +55,7 @@ TIM_LEVEL        = 6
 ROME_LAT, ROME_LON = 41.8967, 12.4822
 
 # Valid vocabulary sets
-VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data'})
+VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data', 'not_areal'})
 VALID_METHODS     = frozenset({
     'area_weighted', 'dominant_basin', 'class_mixture', 'flag_fraction',
     'distribution_only', 'extreme',
@@ -280,7 +280,7 @@ class TestPayloadEnvelope:
         missing = set(sourced.index) - emitted
         # B3 internals: ecoregion deduped into eco_id; strata_code excluded by design
         # B4 consumed: endorheic + coast_flag consumed to produce outlet_type/coast_fraction
-        # B5 deferred: river_area_upstream deferred within B5
+        # B1 deferred: river_area_upstream deferred within B1 (_B1_EXCLUDE)
         KNOWN_ABSENT = {'ecoregion', 'strata_code', 'endorheic', 'coast_flag', 'river_area_upstream'}
         unexpected_missing = missing - KNOWN_ABSENT
         assert not unexpected_missing, f'Variables absent from payload: {unexpected_missing}'
@@ -535,18 +535,20 @@ class TestLowBasinCountCoherence:
 # ---------------------------------------------------------------------------
 
 class TestCrossBlockConsistency:
-    def test_b5_vs_b2_carrier_split(self, buf_rows):
-        """river_area carrier ≠ discharge dominant (Inner Niger Delta split)."""
-        b5_ext = next((r for r in buf_rows if r['method'] == 'extreme'), None)
-        b2_dom = next((r for r in buf_rows
-                       if r['method'] == 'dominant_basin'
-                       and r['variable'] == 'discharge_yr'), None)
-        assert b5_ext is not None, 'No extreme row found'
-        assert b2_dom is not None, 'No B2 discharge_yr row found'
-        b5_carrier = b5_ext['detail']['dominant_hybas_id']
-        b2_id      = b2_dom['detail']['dominant_hybas_id']
-        assert b5_carrier != b2_id, \
-            f'Expected distinct carriers; both = {b5_carrier}'
+    def test_river_area_is_area_weighted(self, buf_rows):
+        """WO_dominant-basin-scope-fix (2026-09-06): river_area moved from B5 extreme
+        (single-carrier selection) to B1 area_weighted -- it's a local, non-cumulative
+        spatial-extent measure, no reason it needed winner-take-all selection. Retires the
+        old 'Inner Niger Delta split' carrier-vs-carrier comparison: neither method emits a
+        single carrier basin for this variable anymore, so there's nothing left to compare."""
+        ra = next((r for r in buf_rows if r['variable'] == 'river_area'), None)
+        assert ra is not None, 'river_area row missing'
+        assert ra['method'] == 'area_weighted', \
+            f'river_area method={ra["method"]!r}, expected area_weighted'
+        assert ra['representative_score'] is not None
+        assert ra['coherence'] in ('concentrated', 'spread', 'split')
+        assert not any(r['method'] == 'extreme' for r in buf_rows), \
+            'extreme method is retired (empty _B5_EXTREME_VARS) -- no row should use it'
 
     def test_endorheic_cross_block(self, buf_rows):
         """Endorheic fraction in outlet_type ≈ dist_sink weight_at_zero (±0.01)."""
@@ -734,14 +736,20 @@ class TestArealSignaturePolygon:
         spread = sum(1 for r in nsong_payload['rows'] if r.get('coherence') == 'spread')
         assert spread >= 10, f'Only {spread} spread rows — heterogeneity not surfacing'
 
-    def test_b2_dominant_basin_high_discharge(self, nsong_payload):
-        """Dominant basin for N Song should be in top global decile for discharge."""
+    def test_b2_discharge_not_areal_for_polygon(self, nsong_payload):
+        """WO_dominant-basin-scope-fix (2026-09-06): a single carrier basin's discharge
+        doesn't characterize a large, irregular multi-basin region -- rows stay present
+        (not silently dropped) but carry status='not_areal' and no numeric value that could
+        be misread as an area-representative statistic. Buffer/single-basin scope keep the
+        old dominant-basin behavior unchanged (see TestResolver / single-basin tests)."""
         b2 = [r for r in nsong_payload['rows'] if r.get('method') == 'dominant_basin']
         assert b2, 'No B2 dominant_basin rows'
         discharge = next((r for r in b2 if r['variable'] == 'discharge_yr'), None)
         assert discharge is not None, 'discharge_yr missing from B2'
-        assert discharge['representative_score'] >= 90, \
-            f'discharge_yr score={discharge["representative_score"]} — expected ≥90 for Yangtze-class basin'
+        assert discharge['status'] == 'not_areal', \
+            f'discharge_yr status={discharge["status"]!r}, expected not_areal for polygon scope'
+        assert discharge['representative_score'] is None
+        assert discharge['representative_raw'] is None
 
     def test_payload_bands(self, nsong_payload):
         assert set(nsong_payload['bands']) == set('ABCDE')

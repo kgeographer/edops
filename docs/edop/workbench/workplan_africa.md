@@ -28,6 +28,7 @@ execution; we still take them one at a time.
 | WO_dispersion-tag-revision | Core share replaces IQR in `engine.py`; new `split` tag; core-share window shaded on histograms | **complete** (2026-09-05) — below |
 | WO07 | `Societies_refine` (was seeded as WO5) | seed in `D-PLACE_Markers.md` |
 | WO_region-distinctiveness-readout | Position-not-dispersion readout, Workbench-only | **complete** (2026-09-06) — below |
+| WO_dominant-basin-scope-fix | `river_area` → area-weighted; discharge dropped from polygon/polity scope | **complete** (2026-09-06) — below |
 
 ---
 
@@ -76,9 +77,19 @@ above the band accordions on the Lovejoy region panel — was drafted conjoined 
 other. Close-out below; branch `wb_africa_distinct`, merged `--no-ff` into `wb_africa`. Along the
 way, a real pre-existing engine issue surfaced (Central Sahara reporting 96th-percentile
 discharge despite being uniformly one of the driest, lowest-discharge regions on the map) —
-traced to a winner-take-all basin-selection bug unrelated to this WO's own logic, **not fixed
-here**; written up separately in `docs/design/_workbench/dominant_basin_boundary_leverage.md`
-(gitignored) for Karl + Opus to weigh a fix later.
+traced to a winner-take-all basin-selection bug, written up in
+`docs/design/_workbench/dominant_basin_boundary_leverage.md` (gitignored). Karl + Opus took it
+up the same day; see `WO_dominant-basin-scope-fix` below — now fixed.
+
+**`WO_dominant-basin-scope-fix` done (2026-09-06).** `river_area` (a local, non-cumulative
+spatial-extent measure) moved from B5's winner-take-all carrier-basin selection into B1's
+area-weighted aggregation — Karl: "river area answers how river-y is this area." Discharge
+(`discharge_yr`/`max`/`min`) stays winner-take-all (unfixable at areal scale — even a correctly-
+overlap-gated carrier basin only answers "how big is the biggest river touching this boundary,"
+not something comparable to an area-weighted climate mean) but is now dropped for polygon/polity
+scope entirely (`status: 'not_areal'`, no numeric value) while staying exactly as before for
+buffer and single-basin scope, where it's well-posed. Close-out below; branch
+`wb_africa_domscope`, merged `--no-ff` into `wb_africa`.
 
 **Not yet scoped (own WOs):** society styling by trait (EA042 colour) over a painted
 variable; societies-in-a-region list + environmental spread + n (the "does it cohere" read); society ↔
@@ -1776,5 +1787,67 @@ reviewed every UI state in the browser before commit, including the discharge/ri
 anomaly (caught via his own visual read of the Explorer choropleth against the Lovejoy region
 boundary) and the modal-scroll nit.
 
-Both WOs of the split original doc are now closed. Next up: whatever comes after WO07
-(`Societies_refine`) or fresh scoping — nothing else queued as of this close-out.
+Both WOs of the split original doc are now closed.
+
+---
+
+## WO_dominant-basin-scope-fix — Close-out (2026-09-06)
+
+**Done**, branch `wb_africa_domscope` (off `wb_africa`), merged `--no-ff` back. Follow-on to
+`dominant_basin_boundary_leverage.md`; the conceptual call (river_area is areal, discharge
+isn't) came out of a same-day discussion with Karl + Opus, then scoped and built the same
+session. Draft: `docs/design/_workbench/WO_dominant-basin-scope-fix.md` (gitignored).
+
+**`river_area` reclassification (`scripts/edop/areas/engine.py`).** `local-anomaly` was a real,
+deliberate classification (Opus's own original proposal, per `deferred_items_register.md`) —
+river_area is the only variable that carries it, and the label itself is accurate. It only
+ended up on B5's extreme/carrier path as a stopgap ("folded into Block 5 fallback for now to
+avoid blocking Block 3"), never because the label required winner-take-all treatment. Fix:
+`_BLOCK1_CLUSTERS` now includes `local-anomaly`, so river_area flows through `aggregate_b1`
+unchanged — no catalog edit needed. One real gotcha caught before shipping: `attach_values`
+builds a score column for *every* continuous catalog variable regardless of dispatch block, and
+`river_area_upstream` (same typology_cluster, still deferred/out of scope) is genuinely present
+in the persist view — would have silently ridden along into B1 too without an explicit
+`_B1_EXCLUDE = {'river_area_upstream'}`. `dispatch_variable`'s routing table and the B5
+docstring updated to match; `_B5_EXTREME_VARS` is now empty (path left in place, not deleted).
+
+**Discharge scope gate.** `discharge_yr`/`max`/`min` keep the original WO5 dominant-basin
+behavior for buffer and single-basin scope (unchanged — verified byte-for-byte against the
+original Timbuktu/Niger acceptance values: 567.6/301.8/1089.2 m³/s). For polygon/polity scope
+(`areal_signature_polygon` tags both as `scope['type']=='polity'` — one gate, not two), rows
+stay present (not silently dropped) with a new `status: 'not_areal'` and both
+`representative_score`/`representative_raw` nulled — Karl's standing preference for a real
+reason over a silent disappearance. `basin_ring_signature` needed no change at all: checked
+directly, it never runs the multi-basin pipeline — every ring member gets its own
+`single_basin_signature` call, so it was never exposed to this bug in the first place.
+
+**UI.** Only two real consumers existed: Sandbox's `renderLeaf` and Workbench's `_afrSigLeaf`
+(both already touched this session for the split badge). Added a `not_areal` branch to both:
+"not meaningful at this scale — a single basin's discharge doesn't characterize a large area."
+WH Cities and Explorer audited and confirmed unaffected — WH Cities uses the separate
+point-based `/api/signature` (never touches the areal engine's B2 output), and Explorer/
+Cliopatria never render discharge rows at all.
+
+**Fixture regeneration.** `tests/test_areas.py` carries accept-gate equivalence tests against
+captured live-response snapshots (`output/edop/surface/exemplars/*.json`, gitignored, refreshed
+by `scripts/edop/surface/capture_exemplar_payloads.py`). Re-ran it to refresh all 10 files (5
+scopes × lean/detail) after confirming row counts held steady (52/52/372/52/52 — no variable
+dropped, only method/status/score changed for river_area and discharge). Three existing tests
+were asserting the pre-fix contract and needed real fixes, not just yielding to failure: `test_
+all_methods_present` (dropped the now-retired `extreme` method from its expected set),
+`test_b5_vs_b2_carrier_split`/`test_river_area_is_area_weighted` (the old "Inner Niger Delta
+split" carrier-vs-carrier comparison no longer applies — replaced with a check that river_area
+is now genuinely area-weighted), and `test_b2_dominant_basin_high_discharge`/`test_b2_discharge_
+not_areal_for_polygon` + `test_area.py`'s `test_yangtze_dominant` (both asserted `score > N` for
+Northern Song's polygon-scope discharge — one of them, `test_yangtze_dominant`, would have
+silently *passed* vacuously once every score turned `None`, since `all()` over an empty
+filtered list is `True` in Python — a real near-miss, caught and rewritten to assert the actual
+new contract rather than leave a test that looked green but tested nothing).
+
+**Verification.** `pytest tests/`: 533 passed, 14 skipped, same pre-existing pandas/SQLAlchemy
+warnings as always. Both templates syntax-checked and render-tested via TestClient. Karl
+reviewed the browser behavior for Central Sahara, Northern Song (Sandbox Polities), and
+Timbuktu (unaffected baseline) before commit.
+
+Next up: whatever comes after WO07 (`Societies_refine`) or fresh scoping — nothing else queued
+as of this close-out.
