@@ -63,6 +63,22 @@ EDOPS is part of **Computing Place** (CEDOP), a spatial humanities initiative ex
 
 ---
 
+## What's new in v0.4
+
+**Areal signatures** — signatures now compute over regions, not just points. Circular buffers, basin-ring neighborhoods, and arbitrary polygons (historical polities, custom study areas) all aggregate to the same signature shape, with area-weighted scoring and coherence diagnostics (concentrated/spread/split). New endpoints: `GET /api/area`, `GET /api/areas`.
+
+**Sandbox, rebuilt** — a two-tab interface replaces the original Lookup page: **Settlements** (place search → basin signature) and **Polities** (search → historical boundary with a time-slice slider), both backed by an environmental similarity instrument.
+
+**Workbench** (new) — a page for testing correspondence between environment and culture: 1,291 D-PLACE societies (subsistence, religion, isolates analysis), an OneEarth ecoregion browser, and 258 World Heritage Cities with both environmental and text-based (Wikipedia) similarity search.
+
+**African Regions** (new) — a dedicated map tab for pre-colonial African subregions (Lovejoy et al.), with environmental variable painting, a D-PLACE society overlay, and a per-region signature with an automated environmental-distinctiveness summary.
+
+**Documentation site** — a full MkDocs site at `/docs`, with a variable Codebook and API Guide generated directly from the live catalog and route definitions, plus an interactive API explorer at `/api/schema`.
+
+**Everywhere else** — unified navigation across all pages and a broad legibility/UX pass.
+
+---
+
 ## Author
 
 Karl Grossner · [kgeographer.org](https://kgeographer.org)
