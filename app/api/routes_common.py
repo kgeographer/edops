@@ -7,10 +7,13 @@ split is based on — re-run that audit after adding/removing/renaming any route
 before assuming a helper is still page-scoped.
 """
 import json
+import math
 import ssl
 import urllib.parse
 import urllib.request
+from bisect import bisect_left, bisect_right
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -400,10 +403,28 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
     # bbox trims the returned {hybas_id: value} payload only. Stats (meta) — and so
     # the choropleth ramp domain — are ALWAYS global: "wet in Africa" is read against
     # wetness everywhere, same as Explorer.
-    in_bbox = "geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else "TRUE"
-
     try:
-        conn = db_connect()
+        stats, values = _explorer_values_query(basin_table, val_expr, env)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    meta = {"var": var, "su": su, "level": level,
+            "var_type": row.get("type"), "units": row.get("units") or "",
+            "s_u": row.get("s_u"), **stats}
+    return {"meta": meta, "values": values}
+
+
+# Deterministic on (basin_table, val_expr, env) — that triple fully specifies the SQL
+# and so the result. Cached in-process to spare the ~1.3 s wide-table scan on repeat
+# hits (L8 is 190 k rows). maxsize small: an L8 payload is ~4 MB of dict per entry,
+# and this is per-worker. nginx proxy_cache supersedes this once configured.
+# The returned dict is the cached object itself — callers must not mutate it.
+@lru_cache(maxsize=8)
+def _explorer_values_query(basin_table: str, val_expr: str,
+                           env: Optional[Tuple[float, float, float, float]]):
+    in_bbox = "geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)" if env else "TRUE"
+    conn = db_connect()
+    try:
         with conn.cursor() as cur:
             cur.execute(f"""
                 SELECT hybas_id, {val_expr} AS value, {in_bbox} AS in_bbox
@@ -411,42 +432,32 @@ def explorer_values(var: str, level: int = 6, su: str = "s", month: Optional[int
                 ORDER BY hybas_id
             """, env if env else None)
             rows = cur.fetchall()
-
-        valid_rows = [(r[0], r[1]) for r in rows if r[1] is not None]   # global
-        n_total = len(rows)
-        n_valid = len(valid_rows)
-
-        if valid_rows:
-            import statistics
-            vals = [r[1] for r in valid_rows]
-            sv = sorted(vals)
-            def _pct(p): return round(sv[int(p / 100 * (n_valid - 1))], 5)
-            meta = {
-                "var": var, "su": su, "level": level,
-                "var_type": row.get("type"),
-                "units": row.get("units") or "",
-                "s_u": row.get("s_u"),
-                "n_total": n_total,
-                "n_valid": n_valid,
-                "zero_fraction": round(sum(1 for v in vals if v == 0) / n_valid, 5),
-                "min":    round(min(vals), 5),
-                "max":    round(max(vals), 5),
-                "mean":   round(statistics.mean(vals), 5),
-                "median": round(statistics.median(vals), 5),
-                "p10": _pct(10), "p25": _pct(25),
-                "p75": _pct(75), "p90": _pct(90),
-            }
-        else:
-            meta = {"var": var, "su": su, "level": level, "n_total": n_total, "n_valid": 0}
-
-        values = {int(r[0]): r[1] for r in rows if r[2]}   # bbox-scoped payload
-        return {"meta": meta, "values": values}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if "conn" in locals():
-            conn.close()
+        conn.close()
+
+    valid = sorted(r[1] for r in rows if r[1] is not None)   # global, ascending
+    n_total = len(rows)
+    n_valid = len(valid)
+    if n_valid:
+        def _pct(p): return round(valid[int(p / 100 * (n_valid - 1))], 5)
+        mid = n_valid // 2
+        median = valid[mid] if n_valid % 2 else (valid[mid - 1] + valid[mid]) / 2
+        stats = {
+            "n_total": n_total,
+            "n_valid": n_valid,
+            "zero_fraction": round((bisect_right(valid, 0) - bisect_left(valid, 0)) / n_valid, 5),
+            "min":    round(valid[0], 5),
+            "max":    round(valid[-1], 5),
+            "mean":   round(math.fsum(valid) / n_valid, 5),   # float, not statistics.mean's exact Fraction
+            "median": round(median, 5),
+            "p10": _pct(10), "p25": _pct(25),
+            "p75": _pct(75), "p90": _pct(90),
+        }
+    else:
+        stats = {"n_total": n_total, "n_valid": 0}
+
+    values = {int(r[0]): r[1] for r in rows if r[2]}   # bbox-scoped payload
+    return stats, values
 
 
 # -----------------------

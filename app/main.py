@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
@@ -92,6 +93,11 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+# Fallback compression. nginx gzip is preferred (offloads CPU from the workers) --
+# this covers the gap until that's configured, and any path nginx isn't gzipping.
+# minimum_size skips tiny bodies like /api/health where framing overhead > savings.
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 app.include_router(api_sandbox_router)
 app.include_router(api_common_router)
