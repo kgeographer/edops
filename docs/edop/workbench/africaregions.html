@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>African Regions</title>
+
+    <!-- Bootstrap -->
+    <link href="assets/utilities/bootstrap.min.css" rel="stylesheet">
+    <!-- JQuery -->
+    <script src="assets/utilities/jquery-3.6.1.min.js"></script>
+    <!-- Leaflet's CSS -->
+    <link href="assets/css/leaflet.css" rel="stylesheet">
+    <!-- JS must come after Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ==" crossorigin=""></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Domine&family=Open+Sans:wght@600&display=swap" rel="stylesheet">
+    <!-- Fontawesome -->
+    <link href="assets/utilities/font-awesome-5/css/fontawesome-all.min.css" rel="stylesheet" media="all">
+    <!-- Custom JS -->
+    <script type="text/javascript" src="assets/js/main.js"></script>
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+
+  </head>
+  <body class="mapPages">
+        <!--SVG Blur - For the regions-->
+<svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+  <filter id="myblurfilter" width="120%" height="120%">
+    <feGaussianBlur stdDeviation="3" in="SourceGraphic" result="blur" />
+  </filter>
+</svg>
+    <!-- Find the subregions -->
+        <!-- Find the broad regions -->
+        <div id="sidePanel" class="sidePanel">
+      <a href="javascript:void(0)" class="closebtn" onclick="closeSide()">&times;</a>
+      <!--Content Will Go Here ... Updated with JavaScript-->
+      <div id="rContainer" class="container-fluid">
+        <div class="row justify-content-center">
+          <div class="col-11">
+            <h4 id="rTitle"></h4>
+            <p id="rDesc"></p>
+            <h5 id="geographyHdr">Geography</h5>
+            <p id="rGeography"></p>
+            <h5 id="peoplesHdr">Peoples</h5>
+            <p id="rPeoples"></p>
+            <hr>
+            <p id="rClose">
+              <a class="closebasebtn" href="javascript:void(0)" onclick="closeSide()">close</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="main">
+      <div id="aContainer" class="container-fluid" style="--bs-gutter-x:0;">
+  <div class="row pt-2 justify-content-center" style="--bs-gutter-x:0;margin-right:0;">
+    <div class="col-12 text-end">
+      <nav class="navbar navbar-expand-md">
+  <div class="container-fluid">
+    <div class="navbar-brand">
+      <a class="navbar-brand-mobile" href="index.php">African Regions</a>
+    </div>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a id="brLink" class="nav-link active floatBtn" aria-current="page" href="index.php">Broad Regions</a>
+        </li>
+        <li class="nav-item">
+          <a id="srLink" class="nav-link floatBtn" href="subregions.php">SubRegions</a>
+        </li>
+        <li class="nav-item">
+          <a id="aLink" class="nav-link floatBtn" href="about.php">About</a>
+        </li>
+        <li class="nav-item">
+          <div id="google_translate_element"></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+    </div>
+  </div>
+</div>
+<div id="bContainer" class="container-fluid" style="padding:0;position:absolute;z-index:0;--bs-gutter-x:0;">
+  <div id="bMap" class="row justify-content-center" style="--bs-gutter-x:0;margin-right:0;">
+    <div class="col">
+      <div id="map"></div>
+    </div>
+  </div>
+</div>
+    </div>
+
+    <!-- Leaflet -->
+    <!-- Load the GeoJSON as a javascript variables -->
+    <script src="assets/js/africansubregions.js"></script><!--African Subregions GeoJSON-->
+    <script src="assets/js/modernBaseMap.js"></script><!--Modern World Borders GeoJSON-->
+    <script src="assets/js/colonialBaseMap.js"></script>
+    <script src="assets/js/colonialAfrica.js"></script><!--Colonial Borders GeoJSON-->
+    <script src="assets/js/mapExtras.js"></script><!--Additional Data-->
+    <script src="assets/js/waters.js"></script> <!--Waters GeoJSON-->
+    <script type="text/javascript">
+      let isSidePanelOpen = false;
+      let isLayerPreloaded = false;
+      // Set-up data
+      var broadregions = {"1":{"ID":1,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"East Africa","ShortDesc":"This broad region has ten subregions, which includes Madagascar and clusters of southwest Indian Ocean islands. ","LongDesc":"The coastline includes the Zambezi River in the south to the Horn of Africa in the Gulf of Aden. It extends inland to the Great Lakes and eastern parts of the Sahel and the upper basins of the Nile River. In terms of language families, the region is dominated by people who speak one of the Bantu languages, which are a major branch of the Niger-Congo language cluster. In the north, the primary language families are Nilo-Sahara, while Madagascar is Austronesian. The coastal belt is interconnected with the cyclical monsoons of the Indian Ocean. From c. 1500 to c. 1900, over two million people were enslaved in this region. Almost half remained in East Africa along the coast, just under a million people were dispersed into the Indian Ocean, and another 300,000 people went into Atlantic networks. This region relates to modern Eritrea, Djibouti, Ethiopia, Somalia, Kenya, Uganda, Rwanda, Burundi, Tanzania, Malawi, as well as parts of Mozambique, Democratic Republic of Congo, South Sudan, Sudan, and Tchad.","HexCode":"9056a3","Geography":"","Peoples":""},"2":{"ID":2,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"North Africa","ShortDesc":"This broad region contains three subregions, including the Canary Islands.","LongDesc":"The coastline stretches along the northwestern Atlantic and southern shores of the Mediterranean as far as the Sinai Peninsula. The region incorporates the Nile Valley and the Atlas Mountains, after which it extends only a few hundred kilometers inland to include more temperate zones along the Mediterranean coast before the Sahara desert begins. The predominant language family is Afroasiatic. The slave trade to North Africa involved as many as three million people after 1500. Approximately half of this slave trade came from areas to the south of the Sahara in West Africa, another third came from the Upper Nile valley and Ethiopian highlands, and the remainder from areas in East Africa. Approximately one million people departed North Africa via ports in the Mediterranean and Red Sea primarily for destinations in Asia Minor and the Middle East. This region relates to parts of modern Morocco, Algeria, Tunisia, Libya, Egypt and Sudan, as well as the Spanish territories of the Canarias, Ceuta, and Melilla.","HexCode":"f85033","Geography":"","Peoples":""},"3":{"ID":3,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"Saharan Africa","ShortDesc":"This broad region splits the world\u2019s largest desert into western and central subregions.","LongDesc":"The coastline lies between the Senegal River and foothills of the Atlas Mountains. The region extends to areas before the Nile Valley and bounded on the north with more temperate climate zones of the Sahel in the south and coastal areas near the Mediterranean in the north. In terms of language families, areas in the central desert are mostly Nilo-Saharan, and predominantly Afroasiatic elsewhere. Between circa 1500 and 1900, the trans-Saharan trade involved as many as three million people who were brought across the desert to North Africa from areas in the south. This region includes parts of modern Mauritania, Mali, Algeria, Niger, Lybia, Tchad, Egypt, and Sudan.","HexCode":"ffff01","Geography":"","Peoples":""},"4":{"ID":4,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"Southern Africa","ShortDesc":"This broad region has four subregions to form the southern cone of the continent.","LongDesc":"The coastline borders the Kalahari and Namib deserts in the west inland to the headwaters of the Zambezi River in the east. The west coast is uninhabitable desert transitioning gradually inland to fertile grasslands. In terms of language families, the region is mostly Khoisan in the west, with people speaking Bantu languages in the east, and European around the Cape. Except for settlements at the Cape of Good Hope and around Maputo Bay, most of the coast was sparsely populated and not engaged in maritime trade. Although it is difficult to estimate the number of enslaved people who remained in this region, tens of thousands of people were absorbed into the Atlantic and Indian Ocean slave trade via routes and ports in West Central and East Africa. This region includes modern Namibia, Botswana, Zimbabwe, South Africa, Eswatini, and Lesotho, as well as parts of Angola, Zambia, and Mozambique.","HexCode":"6fa952","Geography":"","Peoples":""},"5":{"ID":5,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"West Africa","ShortDesc":"This broad region has nine subregions and includes Cabo Verde as well as other islands off the mainland in the Atlantic.","LongDesc":"The coastline stretches from the Senegal River in the northwest to the southern bend in the African continent north of the equator. This region extends inland from the coast to the Lake Chad basin and along the southern fringes of the Sahara westward to the Atlantic. In terms of language families, the region has a great variety that are identified as Niger-Congo, but which are grouped into language clusters, such as Atlantic (Wolof, Fulfulde), Mande (Malinke, Bambara), Kru, Kwa (Baule, Akan, Ewe), Gur, and Benue-Congo (Yoruba, Igbo, Fon). There are also pockets of Nilo-Saharan languages (Songhay) and Afro-Asiatic languages (Hausa, Kanuri). Between 1500 and the 1860s, an estimated 6.3 million people boarded slave ships at the Atlantic coast and another million were transported across the Sahara. Due to maritime commercial activities, sections of this coast and their immediate hinterlands were commonly referred to as Senegambia, Upper Guinea Coast, Windward Coast, Gold Coast, Bight of Benin, and Bight of Biafra. This region includes modern Senegal, The Gambia, Guinea-Bissau, Guinea, Sierra Leone, Liberia, C\u00f4te d\u2019Ivoire, Ghana, Burkina Faso, Togo, Benin, Nigeria, as well as parts of Mali, Niger, Tchad, and Cameroon.","HexCode":"ffa640","Geography":"","Peoples":""},"6":{"ID":6,"listorder":0,"Status":"1","Message":"","Submitby":"Maria Yala","Name":"West Central Africa","ShortDesc":"This region contains five subregions, including the isolated island of St. Helena in the South Atlantic.","LongDesc":"The coastline is between the northern edge of the Namib Desert to around the Gabon estuary, north of the equator. It includes the Congo River basin almost to the Great Lakes in the east. In terms of language families, almost all the people in this region speak a Bantu language, which is a major branch of Niger-Congo. Between 1500 and the 1860s, an estimated 5.7 million people boarded slave ships at the Atlantic coast. This region includes modern Angola, Central African Republic, Democratic Republic of the Congo, Equatorial Guinea, Republic of Congo, as well as parts of Cameroon, Gabon, and Zambia.","HexCode":"4c6cb9","Geography":"","Peoples":""}};
+      var subregions = {"Cabo Verde":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":1,"UI":"AR000001","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Cabo Verde","Field1":"5","Field2":"The Cape Verdean archipelago is in the Atlantic off the westernmost coast of Africa.\r\n","Field3":"The Portuguese discovered Cabo Verde in 1456, after which enslaved people were brought to the islands to support the plantation economies and supply the Americas, especially during the sixteenth and seventeenth centuries. These islands went into decline following the abolition of the slave trade in the nineteenth century.","Field4":"These volcanic islands are divided into two groups: the Barlavento islands of Boa Vista, Santo Ant\u00e3o, Santa Luzia, S\u00e3o Vicente, S\u00e3o Nicolau, and Sal; and the Sotavento islands of Brava, Fogo, Maio, and Santiago. They were linked to Portuguese ports on the mainland, especially at Bissau, Cacheu, and other places in West and West Central Africa.","Field5":"Since early Portuguese settlement, people were often referred to as Mesti\u00e7o or Crioulo."},"Canarias":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":2,"UI":"AR000002","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Canarias","Field1":"2","Field2":"The Canary Islands are an archipelago in the Atlantic off the northwest coast of Africa.","Field3":"Indigenous people, known as Guanches, inhabited these islands before the arrival of Portuguese navigators in 1335. After Spain conquered them in 1402, the islands became a destination and departure zone for enslaved people.","Field4":"The eight main islands include Fuerteventura, Hierro, Gran Canaria, Graciosa, Gomera, Lanzarote, Palma, and the largest, Tenerife. The archipelago includes many smaller islands and islets.","Field5":"Guanches share a common ancestry with Amazigh and other Berber groups from northwest Africa, and later, with Portuguese and Spanish settlers."},"Central Sahara":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":3,"UI":"AR000003","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Central Sahara","Field1":"3","Field2":"The Central Sahara forms the middle section of the desert from the Ahaggar Mountains to the Nile Valley, as well as between the Sahel and more temperate areas closer to the Mediterranean coast. ","Field3":"From Arabic, \u1e63a\u1e25\u0101r\u0101 is the plural word for multiple deserts, while \u1e63a\u1e25ra&#039; is the singular. The Tuareg heartland extended from the Fezzan region in the north to the desert edge in the south. Well-established routes existed from the Mediterranean to the Sahel. There are widely scattered oases that facilitate long distance trade, nomadic livestock management, date palm cultivation, salt production, and transit points for people crossing the desert.","Field4":"The northeastern border extends from the oasis of Siwa, an ancient gateway bordering Egypt, to Ghat, Khufra, Murzuk, Ubari, Zawila, Ghadames, Kawar, and the A\u00efr Massif. To the south, key centers of trade were Agadez, Takedda, Timbuktu, and the salt mines of Bilma and Fachi. Mountain ranges include Ahaggar, A\u00efr, and Tibesti, which extends westward to the Gilf Kebir plateau.","Field5":"The major ethnolinguistic groups were Tuareg, but there were also Berbers, Arabs, and Tubu."},"Central Savanna":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":4,"UI":"AR000004","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Central Savanna","Field1":"5","Field2":"The Central Savanna refers to areas south of the Sahara sometimes known as the Central Sudan.","Field3":"In Arabic, the term \u201cSudan\u201d derives from bil\u0101d al-s\u016bd\u0101n meaning \u201cland of the Blacks.\u201d In medieval times, the Songhay empire extended from the Atlantic to the Hausa cities, while Kanem-Borno controlled the Lake Chad basin. Much of the region was consolidated into the Sokoto Caliphate through jih\u0101d after 1804. The region included Nupe and Borgu. In addition, Fulbe pastoralists, also known as Fulani or Fellata, herded cattle and settled at various locations. People from this subregion went across the Sahara, as well as to the Americas via ports mostly in the Bight of Benin but also in the Bight of Biafra and the area west of the Volta River.","Field4":"This subregion is mostly Sahel, savanna grasslands, and scattered forests which extend across the continent from the Red Sea to the Atlantic Ocean. The term s\u0101\u1e25il means \u201ccoast or shore\u201d in Arabic whereby the Sahara is figuratively an ocean of sand transitioning into a more habitable savanna. The region stretches from the great inland bend of the Niger River eastward to Lake Chad. Other geographical features include the Benue River, the Mandara Mountains, the Jos plateau, and northern sections of the Adamawa plateau.","Field5":"The major ethnolinguistic groups were Songhay, Hausa, Fulbe, Kanuri, Nupe, Bariba, and many others."},"Comoros":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":5,"UI":"AR000005","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Comoros","Field1":"1","Field2":"The Comoro Islands are an archipelago at the northern end of the Mozambique Channel.","Field3":"They are inhabited by people speaking a Bantu language that is closely related to Swahili, although there are pockets of Malagasy speakers on Mayotte. They have been connected to East Africa and Madagascar both as a destination and departure point for people in the southwest Indian Ocean world. ","Field4":"The main volcanic islands are Grande Comore (Ngazidja), Anjouan (Ndzuwani or Nzwani), Moh\u00e9li (Mwali), and Mayotte (Maore or Mahori).","Field5":"People on these islands are of mixed ancestry. Most are Muslims."},"East Central":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":6,"UI":"AR000006","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"East Central","Field1":"1","Field2":"East Central Africa refers to an area from Lake Malawi between the Rufiji and Zambezi rivers.","Field3":"Settled by people who spoke Bantu languages, Makua were primarily concentrated to the north of the Zambezi River inland from the coast. To their immediate northwest, Yao, who also speak a Bantu language, formed various kingdoms in the nineteenth century. Makua and Yao fought over control of the slave trade to the coast. Enslaved people from this subregion were sent across the Indian Ocean, as well as to Brazil and Cuba especially in the early nineteenth century. Otherwise, Portuguese land grants, called prazos, were common in the Zambezi valley since the mid- seventeenth century.","Field4":"The inland boundary runs along the Rufiji River to the Luwegu confluence, after which it extends westward along the southern shores of Lake Tanganyika to the Luapula River southward until Zumbo. It includes Lake Nyasa (Malawi) and the Zambezi River valley. Major ports were Angoche, Kilwa Kivinje, Mozambique Island, and Quelimane. ","Field5":"Besides Makua and Yao, the major ethnolinguistic groups were Chewa, Makonde, Manganja,  Ngindo, Nyasa, and Sena."},"East Coast":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":7,"UI":"AR000007","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"East Coast","Field1":"1","Field2":"The East Coast is a narrow strip along the Indian Ocean commonly known as the Swahili Coast.","Field3":"From Arabic, saw\u0101\u1e25il\u012b means \u201cof the coast.\u201d People here did not develop strong territorial states. Rather ports and places emerged. After 1500, Hiraab, Geledi, and Omani vied over control of Mogadishu. Both Mombasa, Zanzibar, and Bagamoyo fell under Omani rule from the late-seventeenth century onward. Kilwa Kisimani was a major center of Indian Ocean trade that was occupied and abandoned at various points in time by Portuguese, Omani and French traders, until it became a part of German East Africa.","Field4":"The main stretch of coast is between the Shabelle and Rufiji rivers. It includes the Zanzibar archipelago, the islands of Pemba and Zanzibar, also known as Unguja. This subregion extends 150-200 kilometers inland to less populated areas before the foothills of the interior highlands.","Field5":"Swahili refers to both a people and a Bantu language which contains many Arabic, Portuguese, English, and other Indian Ocean loan words."},"Eastern Bight":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":8,"UI":"AR000008","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Eastern Bight","Field1":"5","Field2":"The Eastern Bight refers to the hinterland in the eastern Niger Delta commonly known as the Bight of Biafra.","Field3":"Early navigators used variations of &quot;Biafra&quot; to describe the coast from Cape Formoso in the Niger Delta to what was known as the Rio dos Camar\u00f5es, meaning \u201cPrawn River,\u201d but which was adapted in English as the Cameroons River, which is the estuary of the Wouri River. \u201cBiafra\u201d should also not be confused with the Nigerian civil war from 1967 to 1970. Igbo and Ibibio, who did not form centralized states, were major sources for the Atlantic trade since the seventeenth century, especially via Aro commercial networks.","Field4":"In the Niger Delta, major ports were Bonny and Elem Kalabari, which Europeans called New Calabar. Otherwise, Calabar, also known as Old Calabar to distinguish it from Elem Kalabari with which there was no relationship, is at the juncture where the Calabar River merges with the Cross River. Areas to the south of the Cameroons include people who speak Bantu languages. The inland border of this subregion extends roughly from the Niger Delta up the Niger River and along the Benue into the grasslands north of Mount Cameroon and the southern Adamawa plateau.","Field5":"Other ethnolinguistic groups are Efik, Fang, Ibibio, Ijaw, Tiv, and Igala. In the Americas, people from the eastern bight were often designated as Carabali, a term derived from Calabar."},"Eastern Interior":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":9,"UI":"AR000009","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Eastern Interior","Field1":"1","Field2":"The Eastern Interior includes the plains around some of the tallest mountains in Africa.","Field3":"In this region, there were several decentralized societies of Bantu-speaking groups. Chaga settled on Mount Kilimanjaro, Kikuyu on Mount Kenya, and Kamba in the Mbooni Hills. Maasai, who are a Nilotic speaking group, are in the plains closer to the Great Lakes. Nyamwezi and related people of central Tanzania dominated the plains to the south. As Indian Ocean trade increased, this subregion became a source of enslaved people for markets along the Swahili Coast.","Field4":"The region is part of the East African Rift System, which abuts the Ethiopian highlands north of the Great Lakes. After which, the terrain blends into the semi-desert plains.","Field5":"In addition to Chaga, Luo, Kikuyu,  Kamba, and Nyamwezi, different agro-pastoral societies populated the subregion\u2019s drier regions."},"Eastern Savanna":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":10,"UI":"AR000010","assignedby":"","assignedto":"","message":"","assigneddate":"","online":1,"Name":"Eastern Savanna","Field1":"1","Field2":"The Eastern Savanna refers to areas south of the Sahara to the east of the Lake Chad basin as far as the Nile River.","Field3":"In Arabic, the term Sudan derives from bil\u0101d al-s\u016bd\u0101n, meaning \u201cland of the Blacks.\u201d This subregion included the Wadai state and Darfur Sultanate. It was connected to commercial networks stretching from Lake Chad to the Red Sea, including the pilgrimage route to Mecca in the Arabian Peninsula. ","Field4":"This subregion is mostly Sahel, savanna grasslands, and scattered forests, which runs across the continent from the Atlantic to the Ethiopian Highlands. From Arabic, s\u0101\u1e25il means \u201ccoast or shore,\u201d whereby the Sahara is figuratively an ocean transitioning into a more habitable coastal savanna. This subregion included Kordofan between the Nile and Darfur and the swampy areas of the upper Nile basin known as Sudd which was also a source of the Congo River.\r\n","Field5":"The major ethnolinguistic groups were Arabs, Fur, Fulbe, as well as Sara, Dinka, Nuer, Shilluk, as well as Arabs from the east, Fulbe pastoralists from the west, and Tubu nomads from the Sahara."},"Forests of West Africa":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":11,"UI":"AR000011","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Forests of West Africa","Field1":"5","Field2":"The Forests of West Africa refers to an ecological zone of seasonal tropical forests in the hinterland of what is sometimes known as the Windward Coast.","Field3":"Maritime slave traders referred to this coastline as the Windward Coast because it was windward, that to the west of the Gold Coast and Bight of Benin. This coast was also known by many other names, such as Grain, Ivory, Kru, and Quaqua. This large, tropical forest was largely composed of decentralized societies and was distinguished as a principal source of kola nuts, which were traded into the savanna to the north. Kru was the dominant language along the coast, of which there are several dialects, including Bete, Dida, Grebo, Kru, and Wobe. In 1847, it became the site of Liberia, which began as a couple of small settlements of people who were formerly enslaved in the United States. ","Field4":"The coastal boundaries stretch from Cape Mesurado to the Bandama River, and beyond Cape Lahou toward Grand Bassam. They extend inland to the savanna.","Field5":"Beyond Kru, major ethnolinguistic groups were Bassa, Dan, Vai, Kpelle, Kisi, Mano, and Vai. In the Americas, some people from this subregion were classified as Mandingo, but in Cuba as Gang\u00e1."},"Great Lakes":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":12,"UI":"AR000012","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Great Lakes","Field1":"1","Field2":"The Great Lakes include Albert, Edward, Kivu, Kyoga, Rukwa, Tanganyika, Turkana, and the largest, Victoria.","Field3":"With its capital at Kampala, the major kingdom of Buganda was on the northwest side of Lake Victoria, while Bunyoro was farther inland to the west. This subregion traded north into the Nile Valley and south to the East Coast, and to a lesser extent into the equatorial rainforest.","Field4":"Part of the East African Rift System, Victoria, Albert, and Edward are sources of the White Nile, while Kivu and Tanganyika of the Congo River. This subregion includes the Bushi region along the Mitumba Mountains. It does not include the more southern lakes of Bangwela, Kisale, Mweru, and Malawi.","Field5":"The major ethnolinguistic groups were Baganda of Buganda and Banyoro or Nyoro of Bunyoro."},"Gulf Islands":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":13,"UI":"AR000013","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Gulf Islands","Field1":"5","Field2":"The Gulf Islands are four volcanic islands offshore from the Cameroons into the Gulf of Guinea.","Field3":"Bubi people who speak a Bantu language inhabited the closest island, Bioko, which was renamed Fernando Po. Otherwise, Portuguese navigators found the other three islands uninhabited, which they named Annob\u00f3n, Pr\u00edncipe, and S\u00e3o Tom\u00e9. These islands were maritime trade bases and transit points for slave traders. They also developed plantation economies using enslaved people.\r\n","Field4":"These four volcanic islands are mountainous and mostly covered in tropical rainforest.","Field5":"Beyond Bubi, the island populations were mostly of mixed ancestry, and often referred to as Creole. "},"Horn":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":14,"UI":"AR000014","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Horn","Field1":"1","Field2":"The Horn of Africa is named after its distinct geographic shape sticking out into the Indian Ocean. It is sometimes known as the Somali Peninsula.","Field3":"Following the decline of medieval sultanates, successor states formed in the seventeenth century, such as Geledi, Hiraab, Hobyo, and Majeerteen. In the Gulf of Aden, Berbera was the central port, which traded extensively throughout the Arabian peninsula and Indian Ocean world. ","Field4":"Mostly desert, the Horn borders the Ethiopian highlands and East Rift Valley System in the interior.  It is connected to the Red Sea through the Gulf of Aden. The Guardafui Channel is between the tip of the Horn and the island of Socotra.\r\n","Field5":"The major ethnolinguistic group was Somali, although Arabs settled in this area since before the middle ages."},"Kalahari":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":15,"UI":"AR000015","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Kalahari","Field1":"4","Field2":"The Kalahari subregion refers to both the Namib and Kalahari deserts.","Field3":"Hunter-gatherer communities lived in this difficult environment. Due to a coastal desert barrier, little maritime trade occurred in this subregion. The people spoke Khosian languages which are distinctive for heavy clicking consonants.","Field4":"In Khoekhoe, Namib means \u201cvast space\u201d and this uninhabitable coastal desert is mostly sand and gravel. The Kalahari supports a variety of grazing animals and plants. Although semi-arid and sandy, it receives small amounts of rainfall. ","Field5":"Ethnolinguistic groups were G\u01c1ana, Hai\u01c1om, Himba, \u01c3Kung, Khoekhoe, Naro, and Tshu\u2013Khwe. In the north, there were also small numbers of Bantu speaking groups, such as Herero."},"Madagascar":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":16,"UI":"AR000016","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Madagascar","Field1":"1","Field2":"Madagascar is the largest island off the coast of Africa in the southwest Indian Ocean.","Field3":"From the mid-sixteenth century, Imerina, with its capital at Antananarivo, controlled the central highlands. Madagascar was both a source of and destination for enslaved people in Indian Ocean networks.","Field4":"The eastern coast is a steep escarpment containing tropical forest. The central highlands have terraced, rice-growing valleys, grassy hills, and forests. The west coast is mostly mangrove swamps. The island forms the eastern side of the Mozambique Channel.","Field5":"Malagasy are an ethnolinguistic group consisting of various sub-groups with Merina being among the largest. Enslaved people from Madagascar were also called Hova. The former referred to a Malagasy caste below nobles."},"Mascarenes and Seychelles":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":17,"UI":"AR000017","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Mascarenes and Seychelles","Field1":"1","Field2":"The Mascarenes and Seychelles are two groups of islands to the east of Madagascar in the southwest Indian Ocean.","Field3":"Named after a Portuguese navigator, the uninhabited Mascarenes centered around the islands of Mauritius and R\u00e9union, and to a lesser extent Rodrigues. By the early nineteenth century, the British took control of Mauritius, Rodrigues, and the Seychelles, while the French held R\u00e9union. As both a landing and departure point, many of these islands developed plantation economies involving enslaved people.","Field4":"Volcanic in origin, the Mascarene Islands fall along a submarine ridge called the Seychelles-Mauritius plateau. The Seychelles are an archipelago of over one hundred small islands, many of which remain uninhabited.","Field5":"These island cultures and languages are commonly referred to as Creole, which was comparable to slave societies in the Atlantic world."},"Nile Valley":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":18,"UI":"AR000018","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Nile Valley","Field1":"2","Field2":"The Nile Valley runs alongside the Red Sea to a delta which empties into the Mediterranean Sea.","Field3":"Most of the Nile Valley was a part of the Ottoman Empire from the sixteenth to the nineteenth century, when it was known as the Eyalet of Egypt. Lower Egypt included areas around Lake Moeris, Wadi Natrun and into the delta, where the Nile splits into seven main branches. Upper Egypt extended just beyond the strategic town Aswan. Some of the oldest trans-Saharan trade routes traverse this subregion, including a well-known trail, called darb al-arba\u02bf\u012bn, meaning \u201cthe forty-day road,\u201d which went to Darfur.","Field4":"The Nile River flows from Lake Tana in the Ethiopian highlands (Blue Nile) and from the Great Lakes (White Nile). The valley&#039;s annual floods have been a natural cycle for centuries. At the delta, Alexandria is the main port. This subregion includes six cataracts below the Mero\u00eb area, as well as various ports along the Red Sea, including Suakin which is across the Red Sea from Jeddah, Mecca\u2019s main port. Otherwise, this subregion is mostly desert with the oases of Bayhariya, Dakhla, Dunqul, and Kharga. It includes the Sinai Peninsula at the Gulf of Suez, which is the continent\u2019s only land boundary to Asia. ","Field5":"The major ethnolinguistic groups were Egyptians, who spoke Arabic, but also Nubians and Berbers."},"North Coast":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":19,"UI":"AR000019","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"North Coast","Field1":"2","Field2":"The North Coast is a narrow strip along the Mediterranean between the Nile Delta and Atlas Mountains. It forms part of what is commonly known as the Maghreb.","Field3":"In Arabic, al-Maghrib means \u201cwest\u201d and generally in reference to the west of Egypt. Various Muslim states occupied this region until it was absorbed into the Ottoman Empire as the vilayet of Tripoli, which included Benghazi. These ports received caravans of enslaved people originating from places to the south of the Sahara for shipment throughout the Ottoman empire.","Field4":"The coastal border extends from the Island of Djerba to before the Nile Delta. It extends a few hundred kilometers inland and includes the town of Wazzin at the foothills of the Nafusa Mountains, as well as the Sirte Basin, Black Mountains, Green Mountains, Great Sand Sea, and Qattara Depression.","Field5":"The major ethnolinguistic groups were Berbers and Arabs."},"Northeast":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":20,"UI":"AR000020","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Northeast","Field1":"1","Field2":"The Northeast encompasses the Ethiopian Highlands and areas around the confluence of the Blue and White Nile. ","Field3":"Predominantly Christian, the Ethiopian empire controlled most of the highlands until the late nineteenth century. There were several other kingdoms, especially in the Gibe region, as well as Kaffa and Aussa Sultanate. To the south of the highlands toward the White and Blue Nile confluence at Omdurman (now Khartoum), the Funj sultanate reached its peak in the seventeenth century but went into decline until it surrendered to the Ottomans in 1821. After which, the Shilluk kingdom reached its height in the late eighteenth and early nineteenth centuries but was ultimately destroyed by the Ottomans in the 1860s.","Field4":"Part of the East African Rift System, the highlands are a rugged mass of mountains which are a source of the Blue Nile at Lake Tana. The Sahel extends from the Red Sea beyond the Nile. Major commercial hubs were Adulis, Berbera, Dahlak al-Kab\u012br, Massawa, Tajura, and Zeila.","Field5":"Other ethnolinguistic groups were Amhara, Fulbe, Gimira, Konta, Kullo, Majangir, Oromo, Sidama, Somali, and Tigray. Enslaved people were collectively labeled habasha."},"Northwest":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":21,"UI":"AR000021","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Northwest","Field1":"2","Field2":"The Northwest centers on the Atlas Mountains and forms part of what is commonly known as the Maghreb.","Field3":"In Arabic, al-Maghrib means \u201cwest\u201d and generally in reference to the west of Egypt. After the Romans, there were Almoravids, Almohads, and several other Muslim states. By the seventeenth century, the kingdom of Morocco consolidated through the &#039;Alawi dynasty. In the east, Tunisia became part of the Ottoman empire and was known as the Eyalet of Tunis.","Field4":"The Atlas mountain range, which characterizes the region, can be divided into sections consisting of the Anti-Atlas, High Atlas, Middle Atlas, Tell Atlas, Aur\u00e8s Mountains, and Saharan Atlas. In the desert, Sijilmasa in the Tafilalt oasis was a thriving hub of Saharan trade. On the Atlantic coast, major ports include Agadir, Essaouira, Sal\u00e9, and Tangiers. Beyond the Strait of Gibraltar in the Mediterranean, major ports are Terouan, Nador, Oran, Algiers, Tunis, and Carthage.","Field5":"Berbers and Arabs were the dominant ethnolinguistic groups in this subregion."},"Equatorial Rainforest":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":22,"UI":"AR000022","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Equatorial Rainforest","Field1":"6","Field2":"The Equatorial Rainforest comprises the watershed of the Congo River Basin.","Field3":"The northwestern section of this jungle was likely the linguistic core of Bantu languages, which spread throughout most of the southern half of the continent. By the sixteenth century, enslaved people began arriving to the coast from as far as the middle Congo River by Tio middlemen through the Kongo kingdom. By the eighteenth century, Bobangi merchants brought more people, some from as far as the upper Congo bend.","Field4":"The coastal forests were dense, thinly populated, and maritime trade occurred sporadically. The coastal border is from south of the Cameroons to the north of Cape Lopez. The Ubangi and Uele Rivers roughly frame the northern boundaries, while the Kasai River is the border in the south. It extends inland right before the Great Lakes.","Field5":"Other ethnolinguistic groups include Aduma, Bambenga, Bambuti, Batwa, Nunu, Okande, and Mondongo."},"Rivers of West Africa":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":23,"UI":"AR000023","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Rivers of West Africa","Field1":"5","Field2":"The Rivers of West Africa refers to a stretch of coast which has a distinct riverine system and is commonly known as the Upper Guinea Coast.","Field3":"Derivative words for the term \u201cGuinea\u201d generally meant \u201cland of the blacks\u201d in a variety of languages, such as Amazigh, Serer, and Wolof. From the fourteenth century onward, this term was mapped pervasively to refer to the continent. In addition, \u201cGuinea\u201d can be confused with three modern countries that still use the term. Before the era of the Atlantic slave trade, Mali incorporated sections of this subregion into its empire. Otherwise, decentralized ethnolinguistic groups engaged in internal and Atlantic slave markets, either as suppliers or victims. In the late eighteenth century, the British colonized the Sierra Leone peninsula beginning with former enslaved people from the United States. After, over 100,000 enslaved people began arriving in Freetown from all over West and West Central Africa.","Field4":"This subregion is centered on a series of rivers that come from the Futa Jallon highlands in the interior, which is also the source of the Senegal, Gambia, and Niger rivers, which flow north and northeast. The area includes mangrove swamps along the coast, which connect to a riverine system with rapids that descend from a plateau rising a few hundred kilometers inlands, but before the Futa Jallon highlands. Heavy rains occur in lower elevation areas, which support rice cultivation. The coastal border runs from the Casamance River to Cape Mesurado. The main ports were Bissau, Bunce Island, Cacheu, Gallinhas, \u00celes de Los, Rio Nu\u00f1ez, Rio Pongo, and Sherbro Island.\r\n","Field5":"The major ethnolinguistic groups were Baga, Balanta, Biafada, Bijago, Brame, Bullom, Diola, Mende, Nalu, Papel, Susu, Temne, and Vai."},"South Central":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":24,"UI":"AR000024","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"South Central","Field1":"4","Field2":"South Central refers to the wide-open grasslands around the Zimbabwe plateau.\r\n","Field3":"Following the decline of the Mutapa kingdom, the Rozvi state was established and controlled most of the area between the Zambezi and Limpopo rivers from the mid-eighteenth century onward. It was heavily engaged in the production of gold and connected to the Indian Ocean through Sofala. The northern border is around the so-called copper belt.","Field4":"This subregion is connected to the Okavango Delta inland and borders the southern lakes Bangwela, Kisale, and Mweru. Mostly grasslands, the Highveld extends to include parts of the Drakensberg Mountains in the southeast. On modern maps it includes the lakes Kariba and Cabora Bassa, which were man-made in the twentieth century. ","Field5":"Shona was the major ethnolinguistic group, but which included various subgroups, such as Karanga, Korekore, Manyika, Ndau, and Zezuru. Venda inhabited both sides of the Limpopo River, while Tonga resided on both sides of the Zambezi. This sub-region was also an area with pockets of Nguni speakers, including Ndebele who moved from the Highveld northward after the 1830s, whereafter this subregion was a destination of Boers, and other peoples from the Cape."},"Southeast":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":25,"UI":"AR000025","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Southeast","Field1":"4","Field2":"The Southeast refers to a stretch of coast in the southwest Indian Ocean.","Field3":"By the eighteenth century, the Swazi kingdom of Eswatini formed, which had ties to the Sotho and Tswana areas. After 1816, the expansion of the Zulu kingdom led to a period of heightened warfare and the displacement of people, which is known as the Mfecane, after which new kingdoms formed, such as Ghaza and Xhosa. By the 1840s, the British formed the colony of Natal, after overthrowing the Boer republic of Natalia.","Field4":"The coastline is roughly from the north of Inhambane and includes Maputo Bay, which was formerly known as Delagoa Bay at Louren\u00e7o Marques. It extends inland to include the coastal side of the Drakensberg Mountains.","Field5":"Major ethnolinguistic groups were Bhaca, Bhele, Fengu, Mpondo, Sotho, Swazi, Tswana, Xhosa, as well as Boer and Zulu."},"Southern Grasslands":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":26,"UI":"AR000026","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Southern Grasslands","Field1":"4","Field2":"The Southern Grasslands sub-region refers to an area at the southernmost tip of the continent.","Field3":"Mostly hunter-gatherer and pastoralist, indigenous Khoisian peoples occupied this region. In 1488, Portuguese navigators circumnavigated the southern tip en route to Asia, which they renamed the Cape of Good Hope. In 1652, the Dutch East India Company formed the Cape Colony, which led to conflict and the displacement of indigenous people inland. Between 1795 and 1814, the British forced the Dutch out of the colony, which resulted in the further displacement of indigenous peoples inland due to the so-called Great Trek migration involving the descendants of Dutch settlers, known as Boers or Afrikaners.","Field4":"Cape Town is on coastal plains before a large escarpment rises to the Karoo, which is a semi-arid desert leading toward the Kalahari, Highveld, and grasslands. The waters around the southern cone are known for stormy weather and rough seas.","Field5":"Khoisan is a generalized term for indigenous peoples of Southern Africa who do not speak one of the Bantu languages. This term combines Khoekhoe, which refers to pastoralists who speak Khoe languages, and S\u0101n which literally means \u201cforager\u201d in the N\u01c1ng language. Dutch settlers labeled Khoekhoe people as Hottentots and San as Boesman, lit. Bushman. "},"Southern Savanna":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":27,"UI":"AR000027","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Southern Savanna","Field1":"6","Field2":"Southern Savanna refers to the fertile grasslands in West Central Africa.\r\n","Field3":"Bantu-speaking groups founded the kingdoms of Kazembe, Luba, Lunda, and Luyana\/Lozi, which formed various alliances and acquired captives in war or tribute. Enslaved people from this sub-region were sold to Imbangala and Yaka intermediaries supplying enslaved people toward ports located on the Atlantic and Indian oceans.","Field4":"The northern edges extend from the edge of the equatorial rainforest to the Great Lakes. The Kwango and upper Kwanza rivers form its western border, as well as most of the Zambezi River in the south.","Field5":"The major ethnolinguistic groups were Bisa, Bemba, Chokwe, Imbangala, Soso, Vili, and Zombo."},"St. Helena":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":28,"UI":"AR000028","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"St. Helena","Field1":"6","Field2":"St. Helena is a small island in the South Atlantic.","Field3":"Portuguese ships began arriving in this uninhabited place in the early sixteenth century, but the British colonized it from the mid-seventeenth century onward. Known as the place of Napoleon Bonaparte\u2019s exile, it is a stopping place for South Atlantic and Indian Ocean voyages. During British efforts to abolish the slave trade after 1842, the island had a court to prosecute illegal slave voyages captured by the British navy under the terms of international treaties.\r\n \r\n \r\n","Field4":"It is an island of volcanic origin with rugged terrain.","Field5":"People on these islands were of mixed ancestry."},"Voltaic":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":29,"UI":"AR000029","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Voltaic","Field1":"5","Field2":"The Voltaic subregion refers to the basin of the Volta rivers and refers to the hinterland of what is commonly known as the Gold Coast.","Field3":"The Gold Coast was a term given to this area because of alluvial gold deposits in the interior. Believed to have migrated from the medieval kingdom of Ghana, after which several Akan kingdoms formed such as Denkyira, Akwamu, and Akyem. During the nineteenth century, the Asante kingdom dominated the region and the supply of enslaved people, whereby a confederacy of Fanter states acted as intermediaries in maritime relations. The coastline is dominated by over 40 fortified commercial outposts that were built from imported stone to serve as warehouses for gold, but which became prisons for enslaved people sent to the Americas. The most important forts were Elmina, Cape Coast, Anomabu, Koromantse, and Christiansborg.","Field4":"Beside the Volta River Basin (which is now mostly a manmade lake), this area includes the Como\u00e9 River valley, which flows into the Atlantic at Grand Bassam through a lagoon system near Abidjan. ","Field5":"The major ethnolinguistic groups were Akan, whose language is Twi, but which included various sub-groups such as Akan, Akwamu, Akyem, and Fante. Slave traders classified people leaving the many slave forts as Cormanti or Mina, which derived from the names of two early slave forts, Koromantse and Elmina."},"West Central North":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":30,"UI":"AR000030","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"West Central North","Field1":"6","Field2":"West Central North refers to areas of the hinterland to the north of the Kwanza River in West Central Africa.","Field3":"People in this region spoke one of many Bantu languages. This subregion is centered in the Kongo kingdom and Mayombe area, and included Bengo, Bolia, Kasanje, Loango, Loge, Matamba, Ngoyo, and Ndongo. It also includes the flat highlands of the Songo and Kuba regions. The southern Kwanza border is fuzzy because Kisama resided on both sides of the river since the seventeenth century. Likewise, the eastern border is shaky because Lunda expanded westward to incorporate the Yaka kingdom. ","Field4":"The coastline extends from Cape Lopez to around the Kwanza River. The main Atlantic ports centered at Luanda, as well as Ambriz, Cabinda, Cape Lopez, Congo River, Loango, and Mayumba. The area is mostly dense rainforest around the northern tributaries of the Congo River. It includes the Malebo Pool and extends as far east as Lake Mai Ndombe, which was the Lunda border and a major commercial zone to the lower reaches of the Kasai River. The eastern border falls along the Kwango River and extends southward to the northern edge of the central Angolan highlands.","Field5":"Major ethnolinguistic groups were Hako, Kakongo, Kalandula, Libolo, Mboma, Muburi, Ndembu, Njinga, Songo, Dongo, Teke, Vungu, and Yaka. Congo or Angola were common classifiers, but these designations suggest nothing more than an individual originating from anywhere in West Central Africa. "},"West Central South":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":31,"UI":"AR000031","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"West Central South","Field1":"6","Field2":"West Central South refers to areas of the hinterland to the south of the Kwanza River in West Central Africa.","Field3":"People speak one of the Bantu languages, although Khosian peoples were present in southern areas. Since the seventeenth century, Bembe and Mujumbo controlled most of this subregion. By the early eighteenth century, centralized and militarized states formed, such as Bihe, Kakonda, Mbailundu, and Wambu. Otherwise, Ovimbundu emerged toward the end of the nineteenth century. The northern Kwanza border is fuzzy because Kisama resided on both sides of the river since the seventeenth century.","Field4":"A geographic distinction to the south of the Kwanza are the rough highlands closer to the coast and flat highlands on the broad plains further east. It includes the Bi\u00e9 plateau which is the source of many rivers, including the Kwanza. The main port was Benguela, but there were other ports at Mo\u00e7\u00e2medes, Novo Redondo, Quicombo, and Salinas.","Field5":"The major ethnolinguistic groups were Benguela, Ndombe, Kakonda, Kilengues, Nano, Hanya, Kingolo, Kitata, Fende, Nganguela, Ciyaka, and Sokoval. Congo or Angola were common classifiers, but these designations suggest nothing more than an individual originating somewhere in West Central Africa."},"Western Bight":{"doctype":"AR_Person_V1","Complete":88,"project":"AR","personID":32,"UI":"AR000032","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Western Bight","Field1":"5","Field2":"The Western Bight refers to the hinterland in the western Niger Delta known as the Bight of Benin.","Field3":"Benin is a kingdom in the western end of the Niger Delta, which went into decline in the sixteenth century. It is often confused with Benin, which is a modern country with roots in the kingdoms of Allada, Whydah, and from 1700 onward, Dahomey. This area centers on Yoruba kingdoms and confederations, such as Anago, Awori, Egba, Egabado, Ife, Ijebu, Ijesa, and Owu. In the eighteenth century, Oyo controlled most of the interior until 1836, after which collapsed largely due to jih\u0101d emanating from the Sokoto Caliphate. ","Field4":"The Western Bight conflates onto the \u201cSlave Coast,\u201d which centered at the port of Ouidah, but also included Badagry, Jakin, Lagos, Little Popo, and Porto Novo. The coast of this region extends from the Volta River eastward to Cape Formosa in the Niger Delta. Inland borders include the Atakora Mountains and along the Niger River to the Atlantic Ocean.","Field5":"The major ethnolinguistic groups to the north of Yoruba-speaking regions were Bariba of Borgu, Mahi and Nupe. Ewe were to the west of the Fon-speaking people of Dahomey between Little Popo and the Volta River. In the Americas, these people were classified as Arar\u00e1, Lucum\u00ed, and Mina."},"Western Sahara":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":33,"UI":"AR000033","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Western Sahara","Field1":"3","Field2":"The Western Sahara extends from the Atlantic to the Ahaggar Mountains. It is bound in the north by the southern extension of the Atlas Mountains and Sahel in the south. ","Field3":"From Arabic, \u1e63a\u1e25\u0101r\u0101 is the plural word for multiple deserts, while \u1e63a\u1e25ra&#039; is the singular. Oases at scattered spots in the desert were centers of date palm cultivation and transit points for people crossing the desert. ","Field4":"The coastal stretch extends from the Senegal River to the Atlas Mountains. This subregion includes the western and eastern Grand Erg and near the Oued Noun with its market of Guelmim, which is known as the westernmost \u201cdoor of the Sahara.\u201d Key oases are Gharda\u00efa, Gourara, Ouargla, Touat, and Tidikelt. Its eastern border lies just to the west of the Ahaggar Mountain range. The southeastern limits include the city of Kidal and nearby ruins of Essouk-Tadmekka, as well as the salt mines of Idjil, Taodenni, and Teghazza.","Field5":"The major ethnolinguistic groups were Arabs, Berber, and Tuareg. "},"Western Savanna":{"doctype":"AR_Person_V1","Complete":75,"project":"AR","personID":34,"UI":"AR000034","assignedby":"","assignedto":"","message":"","assigneddate":"","online":0,"Name":"Western Savanna","Field1":"5","Field2":"The Western Savanna refers to areas south of the Sahara that encompasses the Senegal and Gambia river basins, as well as the Niger Bend. It is sometimes known as the Western Sudan or Senegambia.","Field3":"In Arabic, the term Sudan derives from bil\u0101d al-s\u016bd\u0101n meaning \u201cland of the Blacks.\u201d Senegambia refers to areas around the Senegal and Gambia rivers. Following the decline of the medieval states of Ghana, Mali, and Songhay, the kingdoms of Segu and Kaarta emerged in the Fuuta Jalon highlands. Cayor, Baol, Tekrur, Serer, and Wolof were located between the Senegal and Gambia rivers. In addition, Fulbe pastoralists, known also as Ful, Fula, or Peul, herded cattle or settled at various locations. Once slave traders began arriving to the coast, they built forts in the island of Gor\u00e9e, St. Louis, and in the Gambia. By the seventeenth century, jih\u0101d spread throughout the area resulting in the foundation of Fuuta Toro, Fuuta Bundu, Futa Jalon, and Umarian State.","Field4":"This subregion is mostly Sahel, savanna grasslands, and scattered forests which extend across the continent from the Red Sea to the Atlantic Ocean. It includes the Fuuta Jalon highlands, which are the source of the Niger, Senegal, Gambia, and the many other rivers flowing into the Atlantic along the coast. \r\n","Field5":"Beyond Fulbe, Wolof, Serer, and Songhay, other ethnolinguistic groups were Bambara, Mandinka, Mossi, Soninke, and Susu. In the Americas enslaved people from this subregion were generally identified as Mandingo."}};
+
+      // Open the side panel - accepts an id
+      function openSide(d){
+        document.getElementById("sidePanel").style.width = "350px";
+        document.getElementById("main").style.marginRight = "350px";
+        isSidePanelOpen = true;
+
+        var rid = d.getAttribute("data-rid"); // To link to broad region
+        var rtitle = d.getAttribute("data-rtitle"); // Our title / array key
+        var desc = subregions[rtitle]['Field3']; // To get longer description
+        var geog = subregions[rtitle]['Field4']; // Geography
+        var peop = subregions[rtitle]['Field5']; // Peoples
+        var missingInfoStmt = "Section Under Development";
+        document.getElementById("rTitle").innerHTML = rtitle;
+
+        if(desc == null || desc == ''){
+          document.getElementById("rDesc").innerHTML = missingInfoStmt;
+        } else {
+          document.getElementById("rDesc").innerHTML = desc;
+        }
+
+        if(geog == null || geog == ''){
+          document.getElementById("rGeography").innerHTML = missingInfoStmt;
+        } else {
+          document.getElementById("rGeography").innerHTML = geog;
+        }
+
+        if(peop == null || peop == ''){
+          document.getElementById("rPeoples").innerHTML = missingInfoStmt;
+        } else {
+          document.getElementById("rPeoples").innerHTML = peop;
+        }
+      }
+
+      // Close the side panel
+      function closeSide(){
+        document.getElementById("sidePanel").style.width = "0";
+        document.getElementById("main").style.marginRight = "0";
+        isSidePanelOpen = false;
+      }
+
+      // Add tile layers - https://leaflet-extras.github.io/leaflet-providers/preview/
+      var esriWorldShadedRelief = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
+        maxZoom: 13
+      });
+
+      var Esri_WorldPhysical = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+      	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+      	maxZoom: 8
+      });
+
+      let rlayerGroup = L.layerGroup(); // Container for the african regions
+      let colonialOverlay = L.layerGroup(); // Colonial borders
+      let watersOverlay = L.layerGroup(); // Lakes and rivers
+      let landformsOverlay = L.layerGroup(); // Landforms toponymns
+      let worldBaseMap = L.layerGroup(); // Modern borders
+      let colonialBaseMap = L.layerGroup(); // Colonial borders
+      let tropicsOverlay = L.layerGroup(); // Tropics & Equator
+
+      var map = L.map('map', {
+        minZoom:3,
+        maxZoom:13,
+        zoomSnap: 0.25
+      }).setView([10, 0], 3.5);
+
+      map.addLayer(tropicsOverlay);
+
+      map.createPane("pane250").style.zIndex = 250; // Between tiles and overlays
+      map.createPane("pane400").style.zIndex = 400; // For the colonial to keep it under waters
+      map.createPane("pane450").style.zIndex = 450; // Between overlays and shadows
+      map.createPane("pane620").style.zIndex = 620; // Between markers and tooltips
+
+      // Add the geoJSON to the map and attach popups
+      var myAfricaStyle = {
+        stroke: false,
+        weight: 1,
+        opacity: 1,
+        fill: true,
+        fillColor: '#DED2D1',
+        fillOpacity: 1
+      }
+
+      var justAfrica = L.geoJSON(modernBaseMap, {
+        pane: "pane250",
+        style: myAfricaStyle,
+        clickable: false,
+        onEachFeature: prepModernWorld
+      });
+
+      function prepModernWorld(feature,layer){
+        if((feature.properties && feature.properties.CONTINENT != "Africa") || (feature.properties && feature.properties.CONTINENT == "Africa" && !feature.properties.COUNTRY)){
+          worldBaseMap.addLayer(layer);
+        } else if(feature.properties && feature.properties.CONTINENT == "Africa" && feature.properties.COUNTRY){
+          var country = feature.properties.COUNTRY;
+          var inColor = "#DED2D1";
+          layer.setStyle({
+            'stroke': true,
+            'color': "#B5715C",
+            'opacity': 1,
+            'fillColor': inColor,
+            'fillOpacity': 1
+          });
+          layer.bindTooltip(country, {
+            permanent: true,
+            direction:"center",
+            className: 'modernLabel'
+          }).openTooltip();
+          worldBaseMap.addLayer(layer);
+        }
+      }
+
+      esriWorldShadedRelief.addTo(map);
+
+      var colonialRegions = {
+        'stroke': false,
+        'color': '#B5715C',
+        'weight': 1,
+        'opacity': 1,
+        'fill': true,
+        'fillColor': "#c4b442",
+        'fillOpacity': 1,
+        'className': "regs"
+      };
+
+      let addedExtraLabels = false;
+      var colonialAfrica = L.geoJSON(colonialBaseData, {
+        pane: "pane250",
+        style: myAfricaStyle,
+        clickable: false,
+        onEachFeature: prepColonialWorld
+      });
+
+      function prepColonialWorld(feature,layer){
+        if(feature.properties && feature.properties.CONTINENT){
+          worldBaseMap.addLayer(layer);
+        } else if(feature.properties && feature.properties.Name1914){
+          var cName = feature.properties.Colonizer;
+          var inColor = colonialColors[cName];
+          let hasTooltipCoords = false;
+          if(feature.properties.TLat && feature.properties.TLng){
+            hasTooltipCoords = true;
+            var tLat = feature.properties.TLat;
+            var tLng = feature.properties.TLng;
+            var latlng = L.latLng(tLat,tLng);
+
+            var tt = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'colonialLabel'
+            },layer);
+            tt.setLatLng(latlng).setContent(feature.properties.Name1914).openTooltip();
+            tt.addTo(map);
+          }
+          layer.setStyle({
+            'stroke': true,
+            'color': "#B5715C",
+            'opacity': 1,
+            'fillColor': inColor,
+            'fillOpacity': 1,
+            'className': "regs"
+          });
+          colonialBaseMap.addLayer(layer);
+          if(!addedExtraLabels){
+            var ttFWestAfrica = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'colonialLabel'
+            }).setLatLng([16.9849,4.2014]).setContent("French West Africa").openTooltip();
+            var ttNamibia = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'colonialLabel'
+            }).setLatLng([-21.2187,17.4456]).setContent("German SouthWest Africa").openTooltip();
+            var ttSeguia = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'colonialLabel'
+            }).setLatLng([26.7532,-11.5563]).setContent("Seguia el Mamra").openTooltip();
+            var ttIfni = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'colonialLabel'
+            }).setLatLng([29.3796,-10.1709]).setContent("IFNI").openTooltip();
+            ttFWestAfrica.addTo(map);
+            ttNamibia.addTo(map);
+            ttSeguia.addTo(map);
+            ttIfni.addTo(map);
+            addedExtraLabels = true;
+          }
+        }
+      }
+
+      var baseMaps = {
+        "Elevation": esriWorldShadedRelief,
+        "Vegetation": Esri_WorldPhysical,
+        "Colonial": colonialAfrica,
+        "Modern": justAfrica
+      };
+
+      let overMaps = {
+        "Lakes and Rivers" : watersOverlay,
+        "Landforms": landformsOverlay,
+        "Tropics": tropicsOverlay
+      }
+
+      // Legend
+      var layerControl = L.control.layers(baseMaps,overMaps,{collapsed:false, position:'bottomleft'});
+      layerControl.addTo(map);
+      // Add a title for basemaps section
+      $(".leaflet-control-layers-base").prepend("<h1 id=\"Ltitle\">African Regions</h1><hr class=\"divider\" ><img id=\"legendMap\" src=\"assets/img/Legend_map.png\"><hr class=\"divider\" ><p id=\"infoTxt\">Base Maps:</p>");
+      // Add a title for overlays section
+      $(".leaflet-control-layers-overlays").prepend("<p id=\"infoTxt2\">Toponymns:</p>");
+
+      // Collect unique leaflet ID layers
+      var rstamps = new Map();
+      var preOpened = 0;
+
+      // Handle the color switching
+      function getBackground(title){
+        var c = "#";
+        var id = subregions[title]['Field1'];
+        var bc = broadregions[id]['HexCode'];
+        c = c + bc;
+        return c;
+      }
+
+      // Handle the highlights
+      function unsetHighlight(e){
+        var layer = e.target;
+        layer.setStyle({
+          'opacity': 0,
+          'fillOpacity': 0
+        });
+      }
+
+      function setHighlight(e){
+        var layer = e.target;
+        var bg = getBackground(layer.properties.title);
+        var tooltip = this.getTooltip();
+
+        if(this.isPopupOpen()){
+          // Pop-up open, show highlight color and hide Tooltip
+          tooltip.setOpacity(0.0);
+        } else {
+          // Pop-up not open - show base color and Tooltip
+          tooltip.setOpacity(1.0);
+        }
+        layer.setStyle({
+          'color': bg,
+          'opacity': 0,
+          'fillColor': bg,
+          'fillOpacity': 0.6
+        });
+      }
+
+      // Open the more info sidebar when region is clicked
+      function showMoreInfo(e){
+        var layer = e.target;
+        var title = layer.properties.title;
+        var sid = subregions[title]['Field1'];
+        var srgDesc = subregions[title]['Field2'];
+        var srgMore = subregions[title]['Field3'];
+
+        var content="<h5><strong>" + title + "</strong></h5>" + "<p style=margin:0;margin-bottom:15px;>" + srgDesc + "</p>" +'<a style=font-size:18px; class=btnNext href="#" onclick="openSide(this)" data-rid="' + sid + '" data-rtitle="' + title + '" "id=readmore>Read More</a>';
+
+        // Popup open - show base color
+        layer.openPopup();
+        var bg = getBackground(layer.properties.title);
+        layer.setStyle({
+          'color': bg,
+          'weight': 1,
+          'fillColor': bg,
+          'fillOpacity': 0.6
+        });
+
+        layer.getPopup().on('remove',function(){
+          if(isSidePanelOpen){
+            closeSide();
+          }
+          // Remove the color since popup is closed
+          layer.setStyle({
+            'opacity': 0,
+            'fillOpacity': 0
+          });
+        });
+        var tooltip = this.getTooltip();
+        if(this.isPopupOpen()){
+          tooltip.setOpacity(0.0);
+        }
+      }
+
+      // Fetch data for the geojson polygons
+      function onEachFeature(feature,layer){
+        if(feature.properties && feature.properties.title){
+          // Show a tooltip when mouseover a region - shows title/name
+          var title = feature.properties.title;
+          if(title=="Mascarenes and Seychelles"){
+            layer.bindTooltip(feature.properties.title,{
+              closeButton:false,
+              offset:L.point(0,-20),
+              sticky:true,
+              className: 'arTooltip'
+            });
+          } else {
+            layer.bindTooltip(feature.properties.title,{
+              closeButton:false,
+              offset:L.point(0,-20),
+              className: 'arTooltip'
+            });
+          }
+          layer.on({
+            mouseover: setHighlight,
+            mouseout: unsetHighlight,
+            click: showMoreInfo
+          });
+
+          // Handle Popup Content
+          var sid = subregions[title]['Field1'];
+          var srgDesc = subregions[title]['Field2'];
+          var srgMore = subregions[title]['Field3'];
+
+          var content="<h5><strong>" + title + "</strong></h5>" + "<p style=margin:0;margin-bottom:15px;>" + srgDesc + "</p>" +'<a style=font-size:18px; class=btnNext href="#" onclick="openSide(this)" data-rid="' + sid + '" data-rtitle="' + title + '" "id=readmore>Read More</a>';
+
+          layer.bindPopup(content, {
+            'maxWidth': '330',
+            'maxHeight':'250',
+            'minWidth': '250',
+            'minHeight':'250'
+          });
+
+          layer.properties = feature.properties; // Bind feature's properties to the layer
+          var rkey = feature.properties.title; // Title that matches person Table
+          var rID = layer._leaflet_id; // ID created by leaflet
+          rstamps.set(rkey,rID);
+          rlayerGroup.addLayer(layer);
+        }
+      }
+
+      // Handle style for geojson polygons - opacity (the border), fillOpacity (the shape)
+      var styleRegions = {
+        'stroke': true,
+        'color': "#DED2D1",
+        'weight': 1,
+        'opacity': 0,
+        'fill': true,
+        'fillColor': "#DED2D1",
+        'fillOpacity': 0,
+        'className': "blurme"
+      };
+
+      var modernRegions = {
+        'stroke': true,
+        'color': '#c4b442',
+        'weight': 1,
+        'opacity': 0,
+        'fill': true,
+        'fillColor': "#c4b442",
+        'fillOpacity': 0,
+        'className': "regs"
+      };
+
+      var watersRegions = {
+        'stroke': true,
+        'color': '#79B6DC',
+        'weight': 1,
+        'opacity': 1,
+        'fill': true,
+        'fillColor': "#79B6DC",
+        'fillOpacity': 1,
+        'className': "waters"
+      }
+
+      let addedToponymns = false;
+      L.geoJSON(watersJson, {
+        pane: "pane450",
+        style: watersRegions,
+        onEachFeature: prepwatersOverlay
+      });
+
+      function prepwatersOverlay(feature,layer){
+        if(!addedToponymns){
+          addToponymns();
+        }
+        if(feature.geometry.type == "Polygon" || feature.geometry.type == "MultiPolygon"){
+          layer.setStyle({
+            'color': "#79B6DC",
+            'opacity': 1,
+            'fillColor': "#79B6DC",
+            'fillOpacity': 1
+          });
+          watersOverlay.addLayer(layer);
+        } else {
+          if(feature.geometry.type == "LineString" || feature.geometry.type == "MultiLineString"){
+            layer.setStyle({
+              'color': "#79B6DC",
+              'weight': 1.5,
+              'opacity': 1,
+              'fill':false
+            });
+            watersOverlay.addLayer(layer);
+          }
+        }
+      }
+
+      function addToponymns(){
+        // Add the Large Water Bodies - Rivers
+        for(var i=0; i<rivers.length; i++){
+          var obj = rivers[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            // Add the tooltips/labels
+            if(tName=="Zambezi"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'zambezi'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Limpopo"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'limpopo'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Volta"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'volta'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Senegal"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'senegal'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Niger"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'niger'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else {
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'riversLabel'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            }
+            watersOverlay.addLayer(tt);
+          }
+        }
+        // Add the Large Water Bodies - Lakes
+        for(var i=0; i<lakes.length; i++){
+          var obj = lakes[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            var tDir = tVal['Dir'];
+            // Add the tooltips/labels
+            var tt = L.tooltip({
+              permanent: true,
+              direction: tDir,
+              className: 'riversLabel'
+            }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            watersOverlay.addLayer(tt);
+          }
+        }
+        // Add the Large Water Bodies - Oceans
+        for(var i=0; i<oceans.length; i++){
+          var obj = oceans[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            // Add the tooltips/labels
+            var tt = L.tooltip({
+              permanent:true,
+              direction:"center",
+              className: 'oceansLabel'
+            }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            tt.addTo(map);
+          }
+        }
+        // Add the Large Water Bodies - Seas
+        for(var i=0; i<seas.length; i++){
+          var obj = seas[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            // Add the tooltips/labels
+            if(tName=="RED SEA"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'redSea'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="GULF OF ADEN"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'adenGulf'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else {
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'seasLabel'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            }
+            tt.addTo(map);
+          }
+        }
+        // Add the Landforms - Mts, Plateau, Cape
+        for(var i=0; i<landforms.length; i++){
+          var obj = landforms[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            // Add the tooltips/labels
+            if(tName=="Rift Valley"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'riftValley'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Drakensberg Mts"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'drakensberg'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else if(tName=="Atlas Mts"){
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'atlas'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            } else {
+              var tt = L.tooltip({
+                permanent:true,
+                direction:"center",
+                className: 'landformsLabel'
+              }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            }
+            landformsOverlay.addLayer(tt);
+          }
+        }
+        // Add the Equator, Tropic of Cancer, and Tropic of Capricorn
+        for(var i = 0; i<tropics.length; i++){
+          var obj = tropics[i];
+          for(var key in obj){
+            var tName = key;
+            var tVal = obj[key];
+            var tLat = tVal['Lat'];
+            var tLng = tVal['Lng'];
+            // Add the tooltips/labels
+            var tt = L.tooltip({
+              permanent:true,
+              direction:"right",
+              className: 'tropicsLabel'
+            }).setLatLng([tLat,tLng]).setContent(tName).openTooltip();
+            tropicsOverlay.addLayer(tt);
+          }
+        }
+        var latlngsEq = [[0,-180],[0,180]];
+        var latlngsCap = [[-23.4394,-180],[-23.4394,180]];
+        var latlngsCan = [[23.4394,-180],[23.4394,180]];
+        var equator = L.polyline(latlngsEq,{
+          color: 'red',
+          weight: 1,
+          opacity: 0.5,
+          smoothFactor: 1,
+          dashArray: 5,
+          className: "tropics"
+        });
+        var cancer = L.polyline(latlngsCan,{
+          color: 'red',
+          weight: 1,
+          opacity: 0.5,
+          smoothFactor: 1,
+          dashArray: 5,
+          className: "tropics"
+        });
+        var capricorn = L.polyline(latlngsCap,{
+          color: 'red',
+          weight: 1,
+          opacity: 0.5,
+          smoothFactor: 1,
+          dashArray: 5,
+          className: "tropics"
+        });
+        tropicsOverlay.addLayer(equator);
+        tropicsOverlay.addLayer(cancer);
+        tropicsOverlay.addLayer(capricorn);
+        addedToponymns = true;
+      }
+
+      // Add subregions after the modern and colonial borders
+      L.geoJSON(africansubregions, {
+        pane: "pane620",
+        style: styleRegions,
+        onEachFeature: onEachFeature
+      }).addTo(map);
+
+      // Handle pre-loaded regions
+
+      // Pre-open a region
+      function preloadRegion(pid){
+        // Use get variable key to fetch leaflet layer ID - get title to match person table
+        var words = pid.split(" ");
+        for(let i=0; i<words.length; i++){
+          if(words[i].toLowerCase() == "of" || words[i].toLowerCase() == "and"){
+            words[i] = words[i][0] + words[i].substr(1);
+          } else {
+            words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+          }
+        }
+        var sTitle = words.join(" ");
+        var t = subregions[sTitle]['Name']; // check if that key exists there...
+        var lID = rstamps.get(t); // Use the title to get the leaflet layer ID
+        var layer = rlayerGroup.getLayer(lID);
+        var title = layer.properties.title;
+
+        preOpened = lID;
+
+        // Pop-up open - show base color and Tooltip
+        layer.openPopup();
+        var bg = getBackground(layer.properties.title);
+
+        layer.setStyle({
+          'color': bg,
+          'opacity': 1,
+          'fillColor': bg,
+          'fillOpacity': 1
+        });
+
+        layer.getPopup().on('remove',function(){
+          if(isSidePanelOpen){
+            closeSide();
+          }
+          // Remove the color since popup is closed
+          layer.setStyle({
+            'opacity': 0,
+            'fillOpacity': 0
+          });
+        });
+      }
+
+      // Toggle Map labels
+      let isColonialOverlayOn = false;
+      colonialAfrica.on('add', (e)=>{
+        // Show the basemap labels
+        const tTips = document.querySelectorAll('.colonialLabel');
+        tTips.forEach(tip => {
+          tip.style.visibility = 'visible';
+        });
+        isColonialOverlayOn = true;
+      });
+
+      colonialAfrica.on('remove', (e)=>{
+        // Hide the basemap labels
+        const tTips = document.querySelectorAll('.colonialLabel');
+        tTips.forEach(tip => {
+          tip.style.visibility = 'hidden';
+        });
+        isColonialOverlayOn = false;
+      });
+
+      // Handle rotations
+      map.on("zoomstart", function(e){
+        let labels = document.getElementsByClassName("redSea");
+        let glabels = document.getElementsByClassName("adenGulf");
+        let rlabels = document.getElementsByClassName("riftValley");
+        let dlabels = document.getElementsByClassName("drakensberg");
+        let alabels = document.getElementsByClassName("atlas");
+        let wlabels = document.getElementsByClassName("zambezi");
+        let llabels = document.getElementsByClassName("limpopo");
+        let vlabels = document.getElementsByClassName("volta");
+        let slabels = document.getElementsByClassName("senegal");
+        let nlabels = document.getElementsByClassName("niger");
+        for(let lbl of labels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of glabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of rlabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of dlabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of alabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of wlabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of llabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of vlabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of slabels) {
+          lbl.style.visibility = "hidden";
+        }
+        for(let lbl of nlabels) {
+          lbl.style.visibility = "hidden";
+        }
+      });
+
+      map.on("zoomend", function(ev){
+        let labels = document.getElementsByClassName("redSea");
+        let glabels = document.getElementsByClassName("adenGulf");
+        let rlabels = document.getElementsByClassName("riftValley");
+        let dlabels = document.getElementsByClassName("drakensberg");
+        let alabels = document.getElementsByClassName("atlas");
+        let wlabels = document.getElementsByClassName("zambezi");
+        let llabels = document.getElementsByClassName("limpopo");
+        let vlabels = document.getElementsByClassName("volta");
+        let slabels = document.getElementsByClassName("senegal");
+        let nlabels = document.getElementsByClassName("niger");
+        for(let lbl of labels) {
+          lbl.style.transform += " rotate(60deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of glabels) {
+          lbl.style.transform += " rotate(-20deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of rlabels) {
+          lbl.style.transform += " rotate(-90deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of dlabels) {
+          lbl.style.transform += " rotate(-55deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of alabels) {
+          lbl.style.transform += " rotate(-25deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of wlabels) {
+          lbl.style.transform += " rotate(20deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of llabels) {
+          lbl.style.transform += " rotate(20deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of vlabels) {
+          lbl.style.transform += " rotate(45deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of slabels) {
+          lbl.style.transform += " rotate(33deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of nlabels) {
+          lbl.style.transform += " rotate(40deg)";
+          lbl.style.visibility = "visible";
+        }
+      });
+
+      // Trigger for first load
+      map.fire("zoomend");
+
+      watersOverlay.on('add', (e)=>{
+        // Handle initial label rotations
+        let wlabels = document.getElementsByClassName("zambezi");
+        let llabels = document.getElementsByClassName("limpopo");
+        let vlabels = document.getElementsByClassName("volta");
+        let slabels = document.getElementsByClassName("senegal");
+        let nlabels = document.getElementsByClassName("niger");
+        for(let lbl of wlabels) {
+          lbl.style.transform += " rotate(20deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of llabels) {
+          lbl.style.transform += " rotate(20deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of vlabels) {
+          lbl.style.transform += " rotate(45deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of slabels) {
+          lbl.style.transform += " rotate(33deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of nlabels) {
+          lbl.style.transform += " rotate(40deg)";
+          lbl.style.visibility = "visible";
+        }
+      });
+
+      landformsOverlay.on('add', (e)=>{
+        // Handle initial label rotations
+        let rlabels = document.getElementsByClassName("riftValley");
+        let dlabels = document.getElementsByClassName("drakensberg");
+        let alabels = document.getElementsByClassName("atlas");
+        for(let lbl of rlabels) {
+          lbl.style.transform += " rotate(-90deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of dlabels) {
+          lbl.style.transform += " rotate(-55deg)";
+          lbl.style.visibility = "visible";
+        }
+        for(let lbl of alabels) {
+          lbl.style.transform += " rotate(-25deg)";
+          lbl.style.visibility = "visible";
+        }
+      });
+
+      landformsOverlay.on('remove', (e)=>{
+
+      });
+
+
+
+    </script>
+    <!-- Required Scripts-->
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="assets/utilities/bootstrap.min.js"></script>
+    <!-- Google Translate Javascript -->
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+      }
+    </script>
+    <!-- Google Translate API -->
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  </body>
+</html>
