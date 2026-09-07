@@ -29,7 +29,7 @@ from app.settings import settings
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-@router.get("/health")
+@router.get("/health", summary="Liveness check")
 def health():
     """Confirm the service is running.
 
@@ -139,7 +139,7 @@ def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
     return None
 
 
-@router.get("/signature")
+@router.get("/signature", summary="Environmental signature for a coordinate")
 def signature(
     lat: float = Query(..., ge=-90, le=90, description="Latitude, decimal degrees, in [-90, 90]."),
     lon: float = Query(..., ge=-180, le=180, description="Longitude, decimal degrees, in [-180, 180]."),
