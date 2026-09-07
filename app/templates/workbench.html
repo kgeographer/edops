@@ -540,7 +540,7 @@
   let _afrBasinLevel = null;  // pmtiles level currently sourced on _afrMap
   let _afrPaintSeq = 0;       // stale-fetch guard
   const AFR_BBOX = '-20,-36,55,38';
-  const AFR_WASH = 0.10;      // lovejoy-fill opacity when no variable is painted
+  const AFR_WASH = 0.16;      // lovejoy-fill opacity when no variable is painted
   const AFR_VAR_LABEL = {
     elevation_max: 'Elevation maximum', slope_deg: 'Slope',
     discharge_annual: 'Discharge, annual mean', pnv_majority_name: 'Potential natural vegetation',
@@ -1114,7 +1114,7 @@
       });
       _afrMap.addLayer({
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
-        paint: { 'fill-color': '#6a51a3', 'fill-opacity': 0.10 },
+        paint: { 'fill-color': '#f2c94c', 'fill-opacity': AFR_WASH },
       });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
@@ -1127,6 +1127,48 @@
           // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
         },
       });
+      // Region name, one label per region -- styled after the Sandbox>Polities city
+      // labels. Its own point source (centroid of each region's largest polygon part):
+      // a symbol layer on the polygon source drops a label on every island of a
+      // multipart region (Canarias, Cabo Verde). Hidden while a variable choropleth
+      // is painted (see _afrSyncRegionLabels).
+      _afrMap.addSource('lovejoy-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _afrMap.addLayer({
+        id: 'lovejoy-label', type: 'symbol', source: 'lovejoy-labels',
+        layout: {
+          'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'],
+          'text-size': 11, 'text-max-width': 8, 'text-anchor': 'center',
+          // show every region name at the page-load zoom -- MapLibre would otherwise
+          // collision-cull the crowded ones until you zoom in
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': '#1a3a52', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.2,
+        },
+      });
+      fetch('/static/workbench/lovejoy_regions.geojson?v={{ lovejoy_v | default("") }}')
+        .then(r => r.json())
+        .then(fc => {
+          const ringArea = r => { let a = 0; for (let i = 0, n = r.length - 1; i < n; i++) a += r[i][0] * r[i+1][1] - r[i+1][0] * r[i][1]; return Math.abs(a) / 2; };
+          const ringCentroid = r => {
+            let x = 0, y = 0, a = 0;
+            for (let i = 0, n = r.length - 1; i < n; i++) {
+              const c = r[i][0] * r[i+1][1] - r[i+1][0] * r[i][1];
+              a += c; x += (r[i][0] + r[i+1][0]) * c; y += (r[i][1] + r[i+1][1]) * c;
+            }
+            if (!a) { const b = r.reduce((m, p) => [m[0] + p[0], m[1] + p[1]], [0, 0]); return [b[0] / r.length, b[1] / r.length]; }
+            return [x / (3 * a), y / (3 * a)];
+          };
+          const feats = fc.features.map(f => {
+            const g = f.geometry;
+            const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+            let best = polys[0][0], bestA = -1;
+            for (const poly of polys) { const A = ringArea(poly[0]); if (A > bestA) { bestA = A; best = poly[0]; } }
+            return { type: 'Feature', properties: { name: f.properties.name }, geometry: { type: 'Point', coordinates: ringCentroid(best) } };
+          });
+          _afrMap.getSource('lovejoy-labels').setData({ type: 'FeatureCollection', features: feats });
+        })
+        .catch(e => console.warn('lovejoy label points:', e));
 
 
       // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
@@ -1212,6 +1254,7 @@
       lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
         const vis = this.checked ? 'visible' : 'none';
         ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+        _afrSyncRegionLabels();
       });
       lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
         _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
@@ -1255,6 +1298,30 @@
     document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
   }
 
+  // Long article rationales get an inline more/less toggle inside #afr-rationale-text
+  // (separate from the whole-block caret above). Cut at ~650 chars, backing up to the
+  // previous word space so no word is split.
+  const AFR_RATIONALE_MAX = 650;
+  function _afrFillRationale(el, raw) {
+    const full = (raw || '').trim();
+    if (full.length <= AFR_RATIONALE_MAX) {
+      el.innerHTML = `<p class="mb-0">“${_afrEsc(full)}”</p>`;
+      return;
+    }
+    let cut = full.slice(0, AFR_RATIONALE_MAX);
+    const sp = cut.lastIndexOf(' ');
+    if (sp > 0) cut = cut.slice(0, sp);
+    cut = cut.replace(/[\s.,;:—-]+$/, '');
+    const btn = label => ` <button type="button" class="btn btn-link btn-sm p-0 afr-rat-more" style="vertical-align:baseline;">${label}</button>`;
+    const render = expanded => {
+      el.innerHTML = expanded
+        ? `<p class="mb-0">“${_afrEsc(full)}”${btn('less')}</p>`
+        : `<p class="mb-0">“${_afrEsc(cut)}…”${btn('more')}</p>`;
+      el.querySelector('.afr-rat-more').addEventListener('click', () => render(!expanded));
+    };
+    render(false);
+  }
+
   // Fill the collapsible rationale block from a Lovejoy region's feature props. The rationale
   // toggle and the "Signature" profile-modal link (WO05) share one visibility gate -- #afr-
   // (WO05: the "Region signature" link used to share this gate, but Karl moved it to the
@@ -1271,7 +1338,7 @@
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
     document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
-    text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
+    _afrFillRationale(text, p.rationale);
     toggle.hidden = false;
     hr.hidden = false;
     _afrRationaleExpand(expanded);
@@ -1908,6 +1975,14 @@
     }
   }
 
+  // Region labels show only when the plain region wash is up: hidden under a variable
+  // choropleth (like the fill) and when the Regions layer is toggled off.
+  function _afrSyncRegionLabels() {
+    if (!_afrMap || !_afrMap.getLayer('lovejoy-label')) return;
+    const on = !!document.getElementById('afr-lyr-regions')?.checked && !_afrVarKey;
+    _afrMap.setLayoutProperty('lovejoy-label', 'visibility', on ? 'visible' : 'none');
+  }
+
   async function _afrPaint() {
     if (!_afrMap || !_afrMap.getLayer('lovejoy-fill')) return;   // map/tab not ready — user re-picks
     const seq = ++_afrPaintSeq;
@@ -1917,10 +1992,12 @@
     if (!key) {
       _afrClearPaint();
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+      _afrSyncRegionLabels();
       readouts.innerHTML = '<span class="text-secondary">Pick a variable to paint the basins.</span>';
       return;
     }
     _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', 0);
+    _afrSyncRegionLabels();
     readouts.innerHTML = '<span class="text-secondary">Loading…</span>';
 
     const isCat = key === 'pnv_majority_name';
@@ -1954,6 +2031,7 @@
       if (seq !== _afrPaintSeq) return;
       readouts.innerHTML = `<span class="text-danger">Could not paint: ${String(err.message || err)}</span>`;
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+      _afrSyncRegionLabels();
     }
   }
 
