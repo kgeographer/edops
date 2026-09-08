@@ -208,9 +208,8 @@
         <!-- AFRICAN REGIONS TAB — layout attempt #1 -->
         <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
           <div id="afr-map" style="height:460px;border:1px solid #ddd;"></div>
-          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;">
-            <span class="text-secondary">Pick a variable to paint the basins.</span>
-          </div>
+          <!-- hidden until a variable is painting; shown by _afrPaint (loading / legend / error) -->
+          <div id="afr-readouts" style="display:none;margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;"></div>
         </div>
 
       </div>
@@ -276,12 +275,8 @@
               <h6 class="mb-1">African Regions in Historical Perspective</h6>
               <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
             </div>
-            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions proposed by
-              Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
-              historical data. Select a region to read the article's rationale for its extent and
-              the peoples associated with it. The regions were drawn for organising data rather than
-              for environmental analysis; the Workbench places them over EDOPS basin signatures to
-              ask how far each one holds together as an environmental unit.</p>
+            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions of Lovejoy et al. (2021), a controlled vocabulary for linking open-source historical data, drawn on historical, cultural, and environmental grounds. Select a region for the article's rationale for its extent and the peoples associated with it.</p>
+            <p>Paint a variable to see a single measured dimension across the full set of regions — one illustration of what EDOPS can contribute to regionalization work. The colors are basin values rather than regional summaries, and L6/L8 shifts basin grain. The Societies layer adds D-PLACE points, a prompt for thinking about how cultural and environmental data might be read together.</p>
           </div>
           <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
             <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
@@ -1096,7 +1091,7 @@
     _afrMap = new maplibregl.Map({
       container: 'afr-map',
       style: pmLightStyle(),
-      attributionControl: true,
+      attributionControl: { compact: true },   // collapsed to the (i) button on load, click to toggle
       bounds: [[-20, -36], [52, 38]],      // Africa
       fitBoundsOptions: { padding: 10 },
     });
@@ -1104,6 +1099,10 @@
 
     _afrMap.on('load', () => {
       _afrMap.resize();
+
+      // compact:true gives the (i) toggle but MapLibre v4 opens it on init -- collapse it
+      _afrMap.getContainer().querySelector('.maplibregl-ctrl-attrib')
+        ?.classList.remove('maplibregl-compact-show');
 
       // Lovejoy pre-colonial African subregions (34). rationale/page/ethnonyms
       // ride in feature properties. Built by scripts/edop/workbench/build_lovejoy_geojson.py.
@@ -1941,7 +1940,12 @@
     _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'visible');
     if (status) {
       const n = new Set(_afrMap.querySourceFeatures('afr-societies', { filter: filt }).map(f => f.id)).size;
-      status.innerHTML = `${n} societ${n === 1 ? 'y' : 'ies'} share “${_afrEsc(value)}” `
+      // n counts the selected society too; the readout is about the *others* that share its value
+      const others = Math.max(n - 1, 0);
+      const phrase = others === 0 ? 'No other society shares'
+                   : others === 1 ? '1 other society shares'
+                   : `${others} other societies share`;
+      status.innerHTML = `${phrase} “${_afrEsc(value)}” `
         + `· <a href="#" id="afr-hl-clear">clear</a>`;
       status.style.display = '';
     }
@@ -1993,11 +1997,13 @@
       _afrClearPaint();
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
       _afrSyncRegionLabels();
-      readouts.innerHTML = '<span class="text-secondary">Pick a variable to paint the basins.</span>';
+      readouts.innerHTML = '';
+      readouts.style.display = 'none';   // idle text was redundant with the intro
       return;
     }
     _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', 0);
     _afrSyncRegionLabels();
+    readouts.style.display = '';
     readouts.innerHTML = '<span class="text-secondary">Loading…</span>';
 
     const isCat = key === 'pnv_majority_name';
@@ -2052,7 +2058,7 @@
   }
 
   function _afrLegendCategorical(key, categories, values, n) {
-    // categories carry global colours/ids; recompute counts over the painted (Africa) basins
+    // categories carry global colors/ids; recompute counts over the painted (Africa) basins
     const afr = {};
     for (const cat of Object.values(values)) afr[cat] = (afr[cat] || 0) + 1;
     const rows = categories
