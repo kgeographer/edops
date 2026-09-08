@@ -28,7 +28,7 @@
 <body>
 
 {% set active_page = "workbench" %}
-{% set page_title = "EDOP <> CDOP workbench" %}
+{% set page_title = "EDOPS Workbench" %}
 {% include "_edops_header.html" %}
 
 {% include "_edops_modals.html" %}
@@ -41,13 +41,13 @@
       <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
     </li>
   </ul>
 
@@ -528,6 +528,7 @@
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
   let _afrSocTip = null;    // hover-name Popup for society markers
+  let _afrRegionTip = null; // hover-name Popup for regions, active only while a variable is painted
 
   // ── Basin variable painting (WO03) ──
   let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
@@ -1115,6 +1116,13 @@
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
         paint: { 'fill-color': '#f2c94c', 'fill-opacity': AFR_WASH },
       });
+      // Light casing under the region border so it stays legible over any variable
+      // choropleth -- notably discharge, whose viridis low end is the same purple as
+      // the border and swallows it whole.
+      _afrMap.addLayer({
+        id: 'lovejoy-line-casing', type: 'line', source: 'lovejoy',
+        paint: { 'line-color': 'rgba(255,255,255,0.7)', 'line-width': 3 },
+      });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: {
@@ -1213,6 +1221,9 @@
       // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
       const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
       _afrSocTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
+      // Region-name tip: only while a variable is painted (region labels are hidden then).
+      // Cursor-following, and yields to the marker tip when the cursor is over a society.
+      _afrRegionTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
       _afrMap.on('click', (e) => {
         const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
@@ -1236,8 +1247,11 @@
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
         if (soc) _afrSocTip.setLngLat(soc.geometry.coordinates).setText(soc.properties.name || '').addTo(_afrMap);
         else _afrSocTip.remove();
+        const region = !soc && hits.find(h => h.layer.id === 'lovejoy-fill');
+        if (region && _afrVarKey) _afrRegionTip.setLngLat(e.lngLat).setText(region.properties.name || '').addTo(_afrMap);
+        else _afrRegionTip.remove();
       });
-      _afrMap.on('mouseout', () => _afrSocTip.remove());
+      _afrMap.on('mouseout', () => { _afrSocTip.remove(); _afrRegionTip.remove(); });
 
       // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
       const lc = document.createElement('div');
@@ -1252,7 +1266,7 @@
       document.getElementById('afr-map').appendChild(lc);
       lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
         const vis = this.checked ? 'visible' : 'none';
-        ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+        ['lovejoy-fill', 'lovejoy-line-casing', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
         _afrSyncRegionLabels();
       });
       lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
@@ -1963,7 +1977,7 @@
     _afrMap.addSource('afr-basins', { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` });
     _afrMap.addLayer({
       id: 'afr-basin-fill', type: 'fill', source: 'afr-basins', 'source-layer': sl,
-      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.82 },
+      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.6 },
     }, 'lovejoy-fill');
     _afrMap.addLayer({
       id: 'afr-basin-line', type: 'line', source: 'afr-basins', 'source-layer': sl,
@@ -1997,6 +2011,7 @@
       _afrClearPaint();
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
       _afrSyncRegionLabels();
+      _afrRegionTip?.remove();   // region-name hover tip is variable-painted-only
       readouts.innerHTML = '';
       readouts.style.display = 'none';   // idle text was redundant with the intro
       return;
@@ -2507,9 +2522,6 @@
     // their temporal dead zone. Deferring to the next tick runs it only after this callback's
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
-
-    // TEMP (dev eyeball): open on the African Regions tab. Delete this line to restore Societies.
-    setTimeout(() => bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-afr')).show(), 0);
 
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');

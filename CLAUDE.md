@@ -440,8 +440,10 @@ EDOPS_LIVE_URL=https://edops.computingplace.org python -m pytest tests/test_live
 ---
 
 ## Key design documents
-documentation/ folder holds current master versions of project docs (public on repo)
-docs/ hold old drafts and works-in-progress (gitignored)
+documentation/ folder holds current master versions of public project docs (public on repo)
+docs/ holds work orders (WOs) and related findings in phase subdirs, misc TODOs to date (gitignored)
+docsite/ is the mkdocs content source
+site/ holds mkdocs generated/published markup
 
 | Doc                                             | Purpose                                                                                                          |
 |-------------------------------------------------|------------------------------------------------------------------------------------------------------------------|

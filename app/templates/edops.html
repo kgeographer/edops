@@ -14,8 +14,6 @@
 {% endblock %}
 
 {% block modals %}
-<!-- About the project modal (2026-08-04, DOCSv4 plumbing): describes the project, not page
-     functionality (that's Docs). Placeholder -- prose content TBD. -->
 <div class="modal fade" id="about-project-modal" tabindex="-1" aria-labelledby="about-project-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 75%;">
     <div class="modal-content">
@@ -24,11 +22,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body-project">
-        <p>The <b>Environmental Dimensions of Place Service (EDOPS)</b> project assembles and delivers environmental data profiles ("signatures") for any terrestrial Earth location via an Application Programming Interface (API) <i class="bi bi-question-circle edops-help" data-help-text="An API is a machine-accessible service that returns data in response to a request."></i> and in the three pages of this web platform developed so far: Sandbox, Data Explorer, and Workbench. The features and functionality of these are described in the <a href="/docs" target="_blank">project documentation</a>. </p>
+        <p>The <b>Environmental Dimensions of Place Service (EDOPS)</b> project assembles and delivers environmental data profiles ("signatures") for any terrestrial Earth location via an Application Programming Interface (API) <i class="bi bi-question-circle edops-help" data-help-text="An API is a machine-accessible service that returns data in response to a request."></i> and in the three pages of this web platform developed so far: Sandbox, Workbench, and Data Explorer. The features and functionality of these are described in the <a href="/docs" target="_blank">project documentation</a>. </p>
 
-        <p>EDOPS is one component of <b>Computing Place</b>, a broader independent research program undertaken in 2026 by geographer <a href="https://kgeographer.org" target="_blank">Karl Grossner, PhD.</a> EDOPS is a work-in-progress (now at v0.4). It was conceived as a data instrument supporting the work of its nascent sister component, <b>Cultural Dimensions of Place (CDOP)</b>: investigating correspondences between cultural practices and environmental settings. It has became evident as the project has progressd that EDOPS could made be more broadly useful by extending its initial cultural geography remit to historical and social science research more generally, and to teaching.</p>
+        <p>EDOPS is one component of <b>Computing Place</b>, a broader independent research program undertaken in 2026 by geographer <a href="https://kgeographer.org/" target="_blank">Karl Grossner, PhD. <i class="bi bi-box-arrow-up-right small"></i></a> EDOPS is a work-in-progress (now at v0.4). It was conceived as a data instrument supporting the work of a nascent sister component, <b>Cultural Dimensions of Place (CDOP)</b>: investigating correspondences between cultural practices and environmental settings. As the project has progressed it has become evident that EDOPS could made be more broadly useful by extending its initial cultural geography remit to historical and social science research more generally, and to teaching.</p>
 
-        <p>While Computing Place is a long-standing personal research initiative, EDOPS is no longer a strictly independent project—the <a href="https://ishi.pitt.edu/" target="_blank">Institute for Spatial History Innovation (ISHI)</a> at the University of Pittsburgh is now a welcome development partner.</p>
+        <p>While Computing Place is a long-standing personal research initiative, EDOPS is no longer a strictly independent project—the <a href="https://ishi.pitt.edu/" target="_blank" >Institute for Spatial History Innovation (ISHI) <i class="bi bi-box-arrow-up-right small"></i></a> at the University of Pittsburgh is now a welcome development partner.</p>
 
         </p>
       </div>
@@ -45,31 +43,37 @@
 
   <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Environmental Dimensions of Place Service (EDOPS)</h2>
 
-  <p class="fs-5">EDOPS generates structured environmental signatures for any location on Earth. Signatures are derived from global datasets aggregated at the hydrological sub-basin level — capturing physiography, hydrology, climate, and coastality — with optional historical climate enrichment from paleoclimate reconstructions. EDOPS is the environmental component of a broader
-    <a href="/">Computing Place</a>
-<!--    <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a>-->
-    research initiative.</p>
+  <p class="fs-6">EDOPS generates structured environmental profiles ("signatures") for any location on Earth, derived from global datasets aggregated to hydrological basins at multiple scales.</p>
+
+  <p>Signature composition is spatially and thematically flexible. A request can name <i>a settlement</i> — resolved to its containing basin or to a multi-basin neighborhood — or <i>a polity or regional boundary</i> at a given date, resolved to the set of basins it encloses.</p>
+
+  <p>Signatures can include any combination of variables, grouped as bands: physiography, hydrology, climate, coastality, with optional historical enrichment from paleoclimate and land-use reconstructions.
+  </p>
 
   <div class="cp-tiles mt-4">
     <div class="cp-tile-col">
       <a href="/sandbox" class="cp-tile cp-tile-active" style="height:200px;">
         <img src="/static/images/tile_sandbox_800.jpg" alt="EDOPS Sandbox" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Generate environmental signatures for settlements and polities</div>
+      <div class="cp-tile-blurb">Look up the environmental signature of any place</div>
     </div>
     <div class="cp-tile-col">
       <a href="/workbench" class="cp-tile cp-tile-active" style="height:200px;">
         <img src="/static/images/tile_workbench_800.jpg" alt="EDOPS<>CDOP Workbench" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Pilot tests, including correspondences between environment and culture</div>
+      <div class="cp-tile-blurb">Pilot studies of environment <> culture relations</div>
     </div>
     <div class="cp-tile-col">
       <a href="/explorer" class="cp-tile cp-tile-active" style="height:200px;">
         <img src="/static/images/tile_explorer_800.jpg" alt="EDOPS Data Explorer" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Browse EDOPS source global datasets in an interactive map</div>
+      <div class="cp-tile-blurb">Browse the underlying global datasets on a map</div>
     </div>
   </div>
+
+  <hr/>
+  <p class="small">EDOPS is the environmental component of a broader <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.</p>
+
 
 </div>
 {% endblock %}

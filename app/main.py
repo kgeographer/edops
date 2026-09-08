@@ -55,7 +55,8 @@ app = FastAPI(
 
 SWAGGER_LOGO_HEADER = (
     '<div class="edops-swagger-header">'
-    '<a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS"></a>'
+    # no link -- this page opens in its own tab; there is nowhere to navigate to
+    '<img src="/static/images/edops_header_400.jpg" alt="EDOPS">'
     '<p>Environmental Dimensions of Place Service (EDOPS)</p>'
     '</div>'
 )
