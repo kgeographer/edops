@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 deploy + African Regions Workbench tab** — active. Blue-green dry run complete and validated on `edops04.computingplace.org`; cutover deferred ~mid-Sept. Work now on branch **`wb_africa`** (off `v04`): the LMR fix already in `v04`, plus a new Workbench tab built for a Braga talk — `docs/design/_workbench/prospectus_AfricanRegions.md` (draft, nothing in stone). Deploy record: `logs/session_log_20260830_deploy.md`; checklist: `MAINTAIN_DEPLOY.md`. kgreview and DOCS_v4 are closed, in local `main`. Most recent `logs/session_log_*.md` has latest work
+- **v0.4 is LIVE in production** (cutover 2026-09-08). `edops.computingplace.org` + `computingplace.org` now serve v0.4 from `:8004` (`edops-v4.service`, tree `/var/www/edops-v4`, branch `v04`). v0.3 (`edops.service`, `:8001`) still running as rollback — retire only after a soak (`MAINTAIN_DEPLOY.md` steps 15–17). Includes the African Regions Workbench tab (built for Braga 2026-09-23). Deploy record: `logs/session_log_20260830_deploy.md` + `logs/session_log_2026090{7,8}.md`; checklist: `MAINTAIN_DEPLOY.md`. `origin/main` is still v0.3 — not yet fast-forwarded. Most recent `logs/session_log_*.md` has latest work
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -52,61 +52,65 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | Demo                        | complete 2026-07-18             | `sandbox_v3.html` polish; similarity instrument; see `DEMO_tracker.md` (frozen ref) |
 | CDOP1 — pilot               | complete 2026-07-27             | `cdop_pilot.html`; L08 lens index; WO1–WO8d environment↔culture arc; frozen ref, see `CDOP_PILOT_tracker.md` |
 | CDOP2 — CITYKIN             | complete 2026-07-30             | WH Cities retrieval head (3 lenses: precip/temp/terrain regime), a 4th sandbox Similarity-panel lens (basin-scale Terrain regime), and the Societies-tab PCA-cluster replacement (meter-bar + donut environment display, WO4); frozen ref, see `CITYKIN_tracker.md` |
-| Reorg (housekeeping)        | complete 2026-08-03             | CDOP merged to `main` for the first time (local only, not deployed); new canonical routes (`/sandbox`, `/explorer`, `/cdop_tests`); unified EDOPS header; `sandbox.html` retired |
-| DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots; merged to `main` locally (not deployed, not pushed) |
+| Reorg (housekeeping)        | complete 2026-08-03             | new canonical routes (`/sandbox`, `/explorer`, `/workbench`); unified EDOPS header; `sandbox.html` retired. **Live since the 2026-09-08 v0.4 cutover** |
+| DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots. **Live since the 2026-09-08 v0.4 cutover** |
 | kgreview                    | complete 2026-08-30             | `docs/TODO_kgreview.md` backlog closed; broadened into a general legibility/UX pass — Cliopatria header/nav parity, `.text-muted` removal, Workbench WH Cities copy + ecoregion→Wiki lookup, explorer histogram fix, Sandbox terrain ramp, Sandbox Polities Cities/Countries layers. Merged to `main` `0fdb283` |
-| **v0.4 deploy**             | **active** — dry run done, cutover deferred ~mid-Sept | blue-green dry run on `edops04` validated; `wb_africa` merged into `v04` 2026-09-06 (533/533 tests green); `logs/session_log_20260830_deploy.md` + `MAINTAIN_DEPLOY.md` |
-| **African Regions tab**     | **complete** 2026-09-06 (gui tweaks pre-deploy notwithstanding) | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); merged into `wb_africa` then `v04`; `wb_africa` pushed to origin; `docs/edop/workbench/workplan_africa.md` (full record) |
+| **v0.4 deploy**             | **LIVE 2026-09-08** — cutover done; v0.3 kept on :8001 for rollback (soak) | blue-green: `edops-v4.service` on :8004; `edops.computingplace.org` + `computingplace.org` nginx blocks flipped `:8001`→`:8004`; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
+| **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 
 ---
 
 ## Current work
 
-**v0.4 deploy — dry run complete (2026-08-30); African Regions detour on `wb_africa` closed and
-merged into `v04` (2026-09-06); cutover deferred a couple days (Karl's tweaking,
-worth it — already caught an LMR baseline bug).** kgreview and DOCS_v4 are both closed and sit in
-local `main` (never pushed, never deployed). A full blue-green dry run is live and validated on
-`edops04.computingplace.org`:
+**v0.4 went LIVE 2026-09-08.** Cutover done: the `edops.computingplace.org` **and**
+`computingplace.org` (bare + `www`) nginx blocks both flipped `proxy_pass :8001` → `:8004`,
+`nginx -t` clean, reloaded. Verified live — `edops.computingplace.org/api/signature` returns
+`signature_version: "0.4"`, `computingplace.org/` serves the new CP splash. Nothing was
+started/stopped — the flip is pure nginx routing.
 
-- branch **`v04`** — cut from `main` = `main` + four deploy-surfaced fixes: `engine.py` /
-  `signature.py` persist-view lookup `_rev1`→`_rev2` (`f386ff1`); `_gaz_join` fail-soft +
-  `gunicorn` pin (`b4f8bc3`); self-hosted Protomaps basemap on sandbox's 3 panel maps (`117a5ee`).
-  Pushed to `origin/v04`; `origin/main` deliberately still v0.3.
-- service **`edops-v4`** on **:8004**, working dir `/var/www/edops-v4`, fresh venv
-  `/home/karlg/envs/cedop-v4` (the shared `cedop` venv had drifted to pandas 3.0 — untested).
-- shared **live `cedop` DB**, with every v0.4 object added additively (`v_basin0{6,8}_persist_rev2`,
-  `gaz.{geonames_cities,admin0,wh_cities_terrain,ccodes}`, `public.basin08_scores`,
-  `temporal.polity_basin08_crosswalk`, `gaz."Ecoregions2017".oneearth_slug` column).
-- nginx `edops04.computingplace.org` → :8004 (Let's Encrypt cert). **Live v0.3 on :8001
-  (`edops.service`, commit `e3f7424`) untouched throughout.**
+**Production topology now:**
+- **v0.4** — `edops-v4.service` on **:8004**, tree `/var/www/edops-v4` (branch `v04`, at
+  `b3a9d66`), venv `/home/karlg/envs/cedop-v4` (fresh py3.12 — the shared `cedop` venv had
+  drifted to pandas 3.0). Serves `edops.computingplace.org`, `computingplace.org`,
+  `edops04.computingplace.org`.
+- **v0.3** — `edops.service` on **:8001**, tree `/var/www/edops` (commit `e3f7424`), venv
+  `cedop`. **Still running, no traffic routed to it — the rollback.** Retire only after a soak
+  (`MAINTAIN_DEPLOY.md` steps 15–17). Rollback = restore the `.bak-cutover` nginx files +
+  reload (~5 s).
+- **DB** — shared live `cedop` (PostgreSQL 17). Every v0.4 object was added *additively*
+  (`v_basin0{6,8}_persist_rev2`, `gaz.{geonames_cities,admin0,wh_cities_terrain,ccodes}`,
+  `public.basin08_scores`, `temporal.polity_basin08_crosswalk`,
+  `gaz."Ecoregions2017".oneearth_slug`), so v0.3 on :8001 still works against it.
+- **nginx/perf on prod** — HTTP/2; `gzip` (json) + `proxy_cache_path` in `nginx.conf` `http{}`;
+  a `location /api/ { proxy_cache edops_cache; proxy_cache_valid 200 6h; … }` block on both the
+  `edops.computingplace.org` and `computingplace.org` vhosts (`X-Cache-Status` header); Postgres
+  tuned off defaults. Full record: `MAINTAIN_DEPLOY.md` §F.
+- `origin/main` is **still v0.3** — deliberately not fast-forwarded to `v04` yet (`MAINTAIN_DEPLOY.md` step 16).
 
-**Branch `wb_africa`** (off `v04`) held both the pre-cutover fix batch and the African Regions
-build; both now **merged into `v04`** (2026-09-06, 533/533 tests green) and `wb_africa` itself
-pushed to `origin` (new branch — `v04` is not yet pushed). Already in `v04` before that: `7d77c30`
-re-baselines the LMR temperature-anomaly map to its stated 850–1850 mean (was raw
-modern-referenced anomalies — every historical map a cold/blue wash).
+**`v04` branch content** = `main` (kgreview + DOCS_v4) + deploy-surfaced fixes (`f386ff1`
+`_rev1`→`_rev2`; `b4f8bc3` `_gaz_join` fail-soft + gunicorn pin; `117a5ee` self-hosted Protomaps
+basemap; `7d77c30` LMR temp-anomaly re-baselined to its 850–1850 mean) + the `wb_africa` merge
+(African Regions tab + pre-cutover fixes, `4a037f3`) + the 2026-09-07/08 pre-release nit pass
+(`nits_7sep`, merged) + perf work (GZipMiddleware, `/explorer/values` lru_cache).
 
-**African Regions** — the detour that ran on `wb_africa` ahead of the deploy, now **closed**
-(gui tweaks pre-deploy notwithstanding): a new Workbench tab for the Braga talk (2026-09-23),
-built from a draft prospectus (`docs/design/_workbench/prospectus_AfricanRegions.md`). Full
-WO-by-WO record — Lovejoy regions + rationale (WO01–02.5), variable painting (WO03), D-PLACE
-societies (WO04), areal signature per region + a position-not-dispersion distinctiveness readout
-(WO05, WO_region-distinctiveness-readout), the core-share/`split` dispersion-badge revision
-(WO06, WO_dispersion-tag-revision), and a dominant-basin scope fix found along the way
-(`river_area` → area-weighted, discharge dropped from polygon/polity scope) — is all in
-`docs/edop/workbench/workplan_africa.md`; session-by-session detail in
-`logs/session_log_2026090{1,2,3,6}.md`. Work proceeded from Claude-drafted, Karl-approved WOs.
+**African Regions** — Workbench tab, **complete** (built for Braga 2026-09-23). Own MapLibre map;
+Lovejoy pre-colonial African subregions + article rationale, variable painting, D-PLACE
+societies, areal signature per region + a position-not-dispersion distinctiveness readout, a
+core-share/`split` dispersion badge. Full WO-by-WO record: `docs/edop/workbench/workplan_africa.md`;
+session detail `logs/session_log_2026090{1,2,3,6}.md`.
 
-**Cutover** (deferred, ~mid-Sept): `wb_africa` is already merged into `v04`; remaining steps are
-redeploy `edops-v4`, re-verify on `edops04`, then flip one nginx `proxy_pass` line
-`:8001`→`:8004` on the `edops.computingplace.org` server block + reload; rollback = flip it back
-(~5 s). `edops.service` stays up on :8001 as the fallback for days after. Per-step record and
-resume point (**step 13**): `logs/session_log_20260830_deploy.md`. Checklist:
-`MAINTAIN_DEPLOY.md` (repo root, gitignored, Karl's personal deploy reference).
+**Open post-cutover:** Karl's full production walkthrough → v0.4 announcement (social + list);
+`./smoke_test.sh` against prod (`MAINTAIN_DEPLOY.md` step 14); cache-bust the tracked CSS/JS (`?v=<mtime>`, `pages.py`
+already has `_static_mtime()`) so returning v0.3 visitors don't get one stale-`site.css` render;
+retire v0.3 + zap the Hetzner snapshot after the soak; `MAINTAIN_DEPLOY.md` §E server-hardening
+backlog. **Repo-org direction settled** (not acted on): extract the CP entry
+point (`index.html`, `about.html`) to a small static site of its own so CP-level content stops
+riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
+`logs/session_log_20260908.md`.
 
-**Milestones:** v0.4 announcements (social + mailing list) ~2026-09-07 — can slip. Braga
-(2026-09-23) — Spatial Humanities conference.
+**Milestones:** v0.4 live 2026-09-08; announcement (social + mailing list) pending Karl's
+walkthrough. Braga (2026-09-23) — Spatial Humanities conference.
 
 **Branching, current shape:** `cdop` and `edop` are the two component trunks off `main`; real
 coding work is cut as phase-trunk branches off one of those (`cdop_citykin` was the last one, now
@@ -250,20 +254,16 @@ metadata/                # gitignored
 
 ## The sandbox pages
 
-**Routing note (in `main`/`v04`, not yet cut over to production — see Current work above; the
-2026-08-31 cutover flips this):** as of the
-2026-08-03 reorg, `/sandbox` is the new canonical route for `sandbox.html` (old
-`/sandbox/lookup3` still works too); `/explorer` is the new canonical route for `explorer.html`
+**Routing note (live in production as of the 2026-09-08 cutover):** as of the
+2026-08-03 reorg, `/sandbox` is the canonical route for `sandbox.html` (old
+`/sandbox/lookup3` still works too); `/explorer` is the canonical route for `explorer.html`
 (old `/sandbox/explorer` still works too); `/sandbox/lookup` now 301-redirects to `/sandbox`, and
 the old Phase 1 Lookup page (renamed `sandbox_v03.html` on 2026-08-15, described below) is fully
-retired — no route renders it on `main`. `/workbench` is the third canonical route
-(`workbench.html`, formerly `cdop_pilot.html` — renamed 2026-08-05, see Open/deferred items below);
-`/cdop` and `/cdop_tests`, which used to serve it, were dropped outright rather than redirected,
-since nothing's deployed yet. **In production today (still v0.3, `e3f7424`) none of this has
-happened:** `/sandbox/lookup` still serves the old Lookup page live (under its old production
-filename, `sandbox.html` — the rename only exists on `main`/`v04`), and the old
-`cdop_pilot.html`/`/cdop`/`/cdop_tests` naming is still what's actually deployed, until the
-2026-08-31 cutover.
+retired — no route renders it. `/workbench` is the third canonical route (`workbench.html`,
+formerly `cdop_pilot.html` — renamed 2026-08-05); `/cdop` and `/cdop_tests`, which used to serve
+it, were dropped outright rather than redirected. (v0.3 on :8001 still has the old
+`/sandbox/lookup` Lookup page + `cdop_pilot.html`/`/cdop` naming, but it's the idle rollback —
+nothing routes to it.)
 
 ### `/sandbox` (canonical) / `/sandbox/lookup3` — Demo surface (active)
 `app/templates/sandbox.html` — Demo phase product; current focus. (Renamed from
