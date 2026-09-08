@@ -525,10 +525,10 @@
               <label class="d-flex align-items-center gap-2 mb-0" style="cursor:pointer;">
                 <input type="checkbox" id="v3-layer-rivers" checked> Rivers
               </label>
-              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-cities-wrap" style="cursor:pointer; display:none;">
+              <label class="align-items-center gap-2 mb-0" id="v3-layer-cities-wrap" style="cursor:pointer; display:none;">
                 <input type="checkbox" id="v3-layer-cities"> Cities (modern)
               </label>
-              <label class="d-flex align-items-center gap-2 mb-0" id="v3-layer-countries-wrap" style="cursor:pointer; display:none;">
+              <label class="align-items-center gap-2 mb-0" id="v3-layer-countries-wrap" style="cursor:pointer; display:none;">
                 <input type="checkbox" id="v3-layer-countries"> Countries
               </label>
             </div>
@@ -726,7 +726,7 @@
           </div>
           <div id="v3-atlas-legend" class="d-flex align-items-center gap-3 px-1 pb-2 flex-wrap" style="font-size:0.78rem;"></div>
           <div id="v3-atlas-map" style="height:460px; border-radius:6px;"></div>
-          <p id="v3-atlas-note" class="text-muted px-1 pt-2 mb-0" style="font-size:0.85rem;">A global view — no place is queried. Colours are declared climate classes.</p>
+          <p id="v3-atlas-note" class="text-muted px-1 pt-2 mb-0" style="font-size:0.85rem;">A global view — no place is queried. Colors are declared climate classes.</p>
         </div>
 
       </div>
@@ -3888,8 +3888,8 @@
       .forEach(id => document.getElementById(id)?.classList.toggle('d-none', onPolities));
     // Cities/Countries are Polities-only for now (no comparable boundary to filter cities
     // against on Settlements' single basin/buffer/ring) -- shown here, not on Settlements.
-    document.getElementById('v3-layer-cities-wrap').style.display    = onPolities ? '' : 'none';
-    document.getElementById('v3-layer-countries-wrap').style.display = onPolities ? '' : 'none';
+    document.getElementById('v3-layer-cities-wrap').style.display    = onPolities ? 'flex' : 'none';
+    document.getElementById('v3-layer-countries-wrap').style.display = onPolities ? 'flex' : 'none';
   }
 
   // ── Tab-switch hard reset ─────────────────────────────────────────────────
@@ -3902,6 +3902,10 @@
     resetPolities();
     _setPolitiesTabVisibility(false);
   });
+  // Authoritative: set Cities/Countries wrap visibility once the fork switch has completed,
+  // so a throw mid-hide can't leave the Polities-only controls stranded on Settlements.
+  document.getElementById('v3-tab-settlements-btn').addEventListener('shown.bs.tab', () => _setPolitiesTabVisibility(false));
+  document.getElementById('v3-tab-polities-btn').addEventListener('shown.bs.tab', () => _setPolitiesTabVisibility(true));
 
   // Reset button: delegates to whichever tab is active
   document.getElementById('v3-reset-btn').addEventListener('click', () => {
@@ -3978,8 +3982,10 @@
   function loadBasinLayer() {
     const level = _activeLevel();
     if (_basinLayerLoaded && _basinLayerLevel === level) return;
+    // insert beneath every overlay incl. rivers -- the basin architecture is river-centric,
+    // so rivers must read through the variable fill
     const before = Object.entries(_layers)
-      .filter(([n]) => n !== 'basin-choropleth' && n !== 'rivers')
+      .filter(([n]) => n !== 'basin-choropleth')
       .flatMap(([,e]) => e.layerIds)[0];
     shell.remove('basin-choropleth');
     const sl = `basin0${level}`;
@@ -3987,7 +3993,7 @@
       { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` },
       [
         { type: 'fill', 'source-layer': sl,
-          paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], 'transparent'], 'fill-opacity': 0.72 } },
+          paint: { 'fill-color': ['coalesce', ['feature-state', 'fc'], 'transparent'], 'fill-opacity': 0.6 } },
         { type: 'line', 'source-layer': sl,
           paint: { 'line-color': 'rgba(80,80,80,0.2)', 'line-width': 0.5 } },
       ],
@@ -4371,8 +4377,22 @@
         { type: 'line', 'source-layer': 'rivers',
           paint: {
             'line-color': '#6baed6',
-            'line-width': ['case', ['==', ['to-number', ['get', 'ord_clas']], 1], 1.5, 1.0],
-            'line-opacity': 0.85,
+            // zoom x river-order surface. ord_clas 1 = largest, ascending = smaller.
+            // step buckets: 1 | 2-3 | 4 | >=5
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              3,  ['step', ['to-number', ['get', 'ord_clas']], 0.55, 2, 0.4, 4, 0.3, 5, 0.22],
+              6,  ['step', ['to-number', ['get', 'ord_clas']], 1.4,  2, 1.0, 4, 0.7, 5, 0.5],
+              10, ['step', ['to-number', ['get', 'ord_clas']], 2.6,  2, 1.9, 4, 1.3, 5, 0.9],
+            ],
+            // minor channels (ord_clas >= 5) are hidden below ~z6, faded in by ~z7 --
+            // declutters arid regions where HydroRIVERS models dense ephemeral drainage
+            'line-opacity': [
+              'interpolate', ['linear'], ['zoom'],
+              5.5, ['step', ['to-number', ['get', 'ord_clas']], 0.82, 5, 0.0],
+              7,   ['step', ['to-number', ['get', 'ord_clas']], 0.85, 5, 0.7],
+              9,   0.85,
+            ],
           }
         },
       ]
@@ -4413,7 +4433,12 @@
       const geojson = await r.json();
       shell.add('countries',
         { type: 'geojson', data: geojson },
-        [{ type: 'line', paint: { 'line-color': 'rgba(90,90,90,0.55)', 'line-width': 0.8 } }]
+        [
+          // opt-in layer -- if someone reaches for it they want to read it clearly, so
+          // give it a light casing + solid dark line to hold up over hillshaded terrain
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,1.0)', 'line-width': 3.0 } },
+          { type: 'line', paint: { 'line-color': '#3a3a3a', 'line-width': 1.5 } },
+        ]
       );
       _countriesLoaded = true;
     } else {

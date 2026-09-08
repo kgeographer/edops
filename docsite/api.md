@@ -90,12 +90,17 @@ Return an areal environmental signature for a named Cliopatria polity.
 **Response**
 
 ```text
-Same profile_groups envelope as GET /api/signature, but each value is a distribution across
-the polity's member basins, not an average (see engine.py). Adds:
-  "resolver": {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
+Not the GET /api/signature shape. The areal envelope is a flat "rows" list — one
+object per variable, each carrying a representative score across the polity's member
+basins (a distribution summary, not an average — see engine.py) plus coherence /
+coverage / modality metadata. Alongside "rows":
+  "bands":      ["A", ...]   -- echoes the requested bands
+  "resolver":   {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
+  "scope":      {"type": "polity", "level", "n_units", "unit_type", ...}
   "member_ids": [hybas_id, ...]
+  "caveats", "shortfall", "temporal", "modality_post_pass"
   "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
-detail=true adds a per-variable "distribution" histogram object.
+detail=true adds a per-variable "distribution" histogram object to each row.
 
 Full variable inventory: see the Codebook (/docs/codebook/).
 ```
@@ -121,9 +126,11 @@ Areal signature dispatcher — resolves to a set of member basins by scope, then
 **Response**
 
 ```text
-Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-basins, not averages), plus a `scope` block whose shape depends on `scope`. detail=true adds
-per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
+Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
+scores across the resolved member basins — not the GET /api/signature profile_groups
+shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
+per-variable "distribution" histogram object to each row. Full variable inventory: see
+the Codebook (/docs/codebook/).
 ```
 
 ### `GET /api/health`

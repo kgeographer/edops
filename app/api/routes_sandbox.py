@@ -1031,7 +1031,7 @@ def lmr_values(var: str, from_year: int, to_year: int):
 # /area endpoint — areal signature for a named polity
 # -----------------------
 
-@router.get("/area")
+@router.get("/area", summary="Areal signature for a named historical polity")
 def area(
     polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
     year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
@@ -1048,12 +1048,17 @@ def area(
 
     Response
     --------
-    Same profile_groups envelope as GET /api/signature, but each value is a distribution across
-    the polity's member basins, not an average (see engine.py). Adds:
-      "resolver": {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
+    Not the GET /api/signature shape. The areal envelope is a flat "rows" list — one
+    object per variable, each carrying a representative score across the polity's member
+    basins (a distribution summary, not an average — see engine.py) plus coherence /
+    coverage / modality metadata. Alongside "rows":
+      "bands":      ["A", ...]   -- echoes the requested bands
+      "resolver":   {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
+      "scope":      {"type": "polity", "level", "n_units", "unit_type", ...}
       "member_ids": [hybas_id, ...]
+      "caveats", "shortfall", "temporal", "modality_post_pass"
       "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
-    detail=true adds a per-variable "distribution" histogram object.
+    detail=true adds a per-variable "distribution" histogram object to each row.
 
     Full variable inventory: see the Codebook (/docs/codebook/).
     """
@@ -1147,7 +1152,7 @@ def area(
 # /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
-@router.get("/areas")
+@router.get("/areas", summary="Areal signature by scope — buffer, single basin, polity, or basin ring")
 def areas(
     scope: str = Query(..., description=(
         "Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. "
@@ -1184,9 +1189,11 @@ def areas(
 
     Response
     --------
-    Same areal-signature envelope as GET /api/area (profile_groups as distributions across member
-    basins, not averages), plus a `scope` block whose shape depends on `scope`. detail=true adds
-    per-variable histogram objects. Full variable inventory: see the Codebook (/docs/codebook/).
+    Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
+    scores across the resolved member basins — not the GET /api/signature profile_groups
+    shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
+    per-variable "distribution" histogram object to each row. Full variable inventory: see
+    the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")

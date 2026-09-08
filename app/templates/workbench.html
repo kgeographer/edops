@@ -28,7 +28,7 @@
 <body>
 
 {% set active_page = "workbench" %}
-{% set page_title = "EDOP <> CDOP workbench" %}
+{% set page_title = "EDOPS Workbench" %}
 {% include "_edops_header.html" %}
 
 {% include "_edops_modals.html" %}
@@ -41,13 +41,13 @@
       <button class="nav-link active" id="tab-soc" data-bs-toggle="tab" data-bs-target="#panel-soc" type="button" role="tab" aria-controls="panel-soc" aria-selected="true">Societies</button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="tab-whc" data-bs-toggle="tab" data-bs-target="#panel-whc" type="button" role="tab" aria-controls="panel-whc" aria-selected="false">WH Cities</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="tab-eco" data-bs-toggle="tab" data-bs-target="#panel-eco" type="button" role="tab" aria-controls="panel-eco" aria-selected="false">Ecoregions</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-afr" data-bs-toggle="tab" data-bs-target="#panel-afr" type="button" role="tab" aria-controls="panel-afr" aria-selected="false">African Regions</button>
     </li>
   </ul>
 
@@ -208,9 +208,8 @@
         <!-- AFRICAN REGIONS TAB — layout attempt #1 -->
         <div class="tab-pane fade" id="panel-afr" role="tabpanel" aria-labelledby="tab-afr">
           <div id="afr-map" style="height:460px;border:1px solid #ddd;"></div>
-          <div id="afr-readouts" style="margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;">
-            <span class="text-secondary">Pick a variable to paint the basins.</span>
-          </div>
+          <!-- hidden until a variable is painting; shown by _afrPaint (loading / legend / error) -->
+          <div id="afr-readouts" style="display:none;margin-top:.5rem;padding:.5rem .75rem;background:#f6f4ee;border:1px solid #ddd;font-size:.8rem;min-height:2.6rem;"></div>
         </div>
 
       </div>
@@ -276,12 +275,8 @@
               <h6 class="mb-1">African Regions in Historical Perspective</h6>
               <a href="https://africanregions.org/about.php" target="_blank" rel="noopener" class="small">web site</a>
             </div>
-            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions proposed by
-              Lovejoy et&nbsp;al. (2021) as a controlled vocabulary for linking open-source
-              historical data. Select a region to read the article's rationale for its extent and
-              the peoples associated with it. The regions were drawn for organising data rather than
-              for environmental analysis; the Workbench places them over EDOPS basin signatures to
-              ask how far each one holds together as an environmental unit.</p>
+            <p class="mb-2">This panel overlays the 34 pre-colonial African subregions of Lovejoy et al. (2021), a controlled vocabulary for linking open-source historical data, drawn on historical, cultural, and environmental grounds. Select a region for the article's rationale for its extent and the peoples associated with it.</p>
+            <p>Paint a variable to see a single measured dimension across the full set of regions — one illustration of what EDOPS can contribute to regionalization work. The colors are basin values rather than regional summaries, and L6/L8 shifts basin grain. The Societies layer adds D-PLACE points, a prompt for thinking about how cultural and environmental data might be read together.</p>
           </div>
           <div id="afr-controls" class="d-flex align-items-center gap-2 mt-2 mb-1 flex-wrap">
             <select id="afr-var" class="form-select form-select-sm" style="width:auto;">
@@ -533,6 +528,7 @@
   let _afrMap = null;    // MapLibre map for the African Regions tab (own instance, lazy-init)
   let _afrSelected = null;  // src_id of the highlighted Lovejoy region, or null
   let _afrSocTip = null;    // hover-name Popup for society markers
+  let _afrRegionTip = null; // hover-name Popup for regions, active only while a variable is painted
 
   // ── Basin variable painting (WO03) ──
   let _afrVarKey = '';        // selected schema_key ('' = nothing painted)
@@ -540,7 +536,7 @@
   let _afrBasinLevel = null;  // pmtiles level currently sourced on _afrMap
   let _afrPaintSeq = 0;       // stale-fetch guard
   const AFR_BBOX = '-20,-36,55,38';
-  const AFR_WASH = 0.10;      // lovejoy-fill opacity when no variable is painted
+  const AFR_WASH = 0.16;      // lovejoy-fill opacity when no variable is painted
   const AFR_VAR_LABEL = {
     elevation_max: 'Elevation maximum', slope_deg: 'Slope',
     discharge_annual: 'Discharge, annual mean', pnv_majority_name: 'Potential natural vegetation',
@@ -1096,7 +1092,7 @@
     _afrMap = new maplibregl.Map({
       container: 'afr-map',
       style: pmLightStyle(),
-      attributionControl: true,
+      attributionControl: { compact: true },   // collapsed to the (i) button on load, click to toggle
       bounds: [[-20, -36], [52, 38]],      // Africa
       fitBoundsOptions: { padding: 10 },
     });
@@ -1104,6 +1100,10 @@
 
     _afrMap.on('load', () => {
       _afrMap.resize();
+
+      // compact:true gives the (i) toggle but MapLibre v4 opens it on init -- collapse it
+      _afrMap.getContainer().querySelector('.maplibregl-ctrl-attrib')
+        ?.classList.remove('maplibregl-compact-show');
 
       // Lovejoy pre-colonial African subregions (34). rationale/page/ethnonyms
       // ride in feature properties. Built by scripts/edop/workbench/build_lovejoy_geojson.py.
@@ -1114,7 +1114,14 @@
       });
       _afrMap.addLayer({
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
-        paint: { 'fill-color': '#6a51a3', 'fill-opacity': 0.10 },
+        paint: { 'fill-color': '#f2c94c', 'fill-opacity': AFR_WASH },
+      });
+      // Light casing under the region border so it stays legible over any variable
+      // choropleth -- notably discharge, whose viridis low end is the same purple as
+      // the border and swallows it whole.
+      _afrMap.addLayer({
+        id: 'lovejoy-line-casing', type: 'line', source: 'lovejoy',
+        paint: { 'line-color': 'rgba(255,255,255,0.7)', 'line-width': 3 },
       });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
@@ -1127,6 +1134,48 @@
           // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
         },
       });
+      // Region name, one label per region -- styled after the Sandbox>Polities city
+      // labels. Its own point source (centroid of each region's largest polygon part):
+      // a symbol layer on the polygon source drops a label on every island of a
+      // multipart region (Canarias, Cabo Verde). Hidden while a variable choropleth
+      // is painted (see _afrSyncRegionLabels).
+      _afrMap.addSource('lovejoy-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      _afrMap.addLayer({
+        id: 'lovejoy-label', type: 'symbol', source: 'lovejoy-labels',
+        layout: {
+          'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'],
+          'text-size': 11, 'text-max-width': 8, 'text-anchor': 'center',
+          // show every region name at the page-load zoom -- MapLibre would otherwise
+          // collision-cull the crowded ones until you zoom in
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': '#1a3a52', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.2,
+        },
+      });
+      fetch('/static/workbench/lovejoy_regions.geojson?v={{ lovejoy_v | default("") }}')
+        .then(r => r.json())
+        .then(fc => {
+          const ringArea = r => { let a = 0; for (let i = 0, n = r.length - 1; i < n; i++) a += r[i][0] * r[i+1][1] - r[i+1][0] * r[i][1]; return Math.abs(a) / 2; };
+          const ringCentroid = r => {
+            let x = 0, y = 0, a = 0;
+            for (let i = 0, n = r.length - 1; i < n; i++) {
+              const c = r[i][0] * r[i+1][1] - r[i+1][0] * r[i][1];
+              a += c; x += (r[i][0] + r[i+1][0]) * c; y += (r[i][1] + r[i+1][1]) * c;
+            }
+            if (!a) { const b = r.reduce((m, p) => [m[0] + p[0], m[1] + p[1]], [0, 0]); return [b[0] / r.length, b[1] / r.length]; }
+            return [x / (3 * a), y / (3 * a)];
+          };
+          const feats = fc.features.map(f => {
+            const g = f.geometry;
+            const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates];
+            let best = polys[0][0], bestA = -1;
+            for (const poly of polys) { const A = ringArea(poly[0]); if (A > bestA) { bestA = A; best = poly[0]; } }
+            return { type: 'Feature', properties: { name: f.properties.name }, geometry: { type: 'Point', coordinates: ringCentroid(best) } };
+          });
+          _afrMap.getSource('lovejoy-labels').setData({ type: 'FeatureCollection', features: feats });
+        })
+        .catch(e => console.warn('lovejoy label points:', e));
 
 
       // Optional overlays — off by default, toggled from the on-map Layers box (WO04).
@@ -1172,6 +1221,9 @@
       // A hidden (toggled-off) layer renders nothing, so it drops out of the query.
       const AFR_HIT_LAYERS = ['afr-soc-dots', 'lovejoy-fill'];
       _afrSocTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
+      // Region-name tip: only while a variable is painted (region labels are hidden then).
+      // Cursor-following, and yields to the marker tip when the cursor is over a society.
+      _afrRegionTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, className: 'afr-soc-tip' });
       _afrMap.on('click', (e) => {
         const hits = _afrMap.queryRenderedFeatures(e.point, { layers: AFR_HIT_LAYERS });
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
@@ -1195,8 +1247,11 @@
         const soc = hits.find(h => h.layer.id === 'afr-soc-dots');
         if (soc) _afrSocTip.setLngLat(soc.geometry.coordinates).setText(soc.properties.name || '').addTo(_afrMap);
         else _afrSocTip.remove();
+        const region = !soc && hits.find(h => h.layer.id === 'lovejoy-fill');
+        if (region && _afrVarKey) _afrRegionTip.setLngLat(e.lngLat).setText(region.properties.name || '').addTo(_afrMap);
+        else _afrRegionTip.remove();
       });
-      _afrMap.on('mouseout', () => _afrSocTip.remove());
+      _afrMap.on('mouseout', () => { _afrSocTip.remove(); _afrRegionTip.remove(); });
 
       // Layers box — top-right (nav control is top-left). Styling from sandbox #v3-layer-control.
       const lc = document.createElement('div');
@@ -1211,7 +1266,8 @@
       document.getElementById('afr-map').appendChild(lc);
       lc.querySelector('#afr-lyr-regions').addEventListener('change', function () {
         const vis = this.checked ? 'visible' : 'none';
-        ['lovejoy-fill', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+        ['lovejoy-fill', 'lovejoy-line-casing', 'lovejoy-line'].forEach(id => _afrMap.setLayoutProperty(id, 'visibility', vis));
+        _afrSyncRegionLabels();
       });
       lc.querySelector('#afr-lyr-societies').addEventListener('change', function () {
         _afrMap.setLayoutProperty('afr-soc-dots', 'visibility', this.checked ? 'visible' : 'none');
@@ -1255,6 +1311,30 @@
     document.getElementById('afr-rationale-caret').textContent = expanded ? '▾' : '▸';
   }
 
+  // Long article rationales get an inline more/less toggle inside #afr-rationale-text
+  // (separate from the whole-block caret above). Cut at ~650 chars, backing up to the
+  // previous word space so no word is split.
+  const AFR_RATIONALE_MAX = 650;
+  function _afrFillRationale(el, raw) {
+    const full = (raw || '').trim();
+    if (full.length <= AFR_RATIONALE_MAX) {
+      el.innerHTML = `<p class="mb-0">“${_afrEsc(full)}”</p>`;
+      return;
+    }
+    let cut = full.slice(0, AFR_RATIONALE_MAX);
+    const sp = cut.lastIndexOf(' ');
+    if (sp > 0) cut = cut.slice(0, sp);
+    cut = cut.replace(/[\s.,;:—-]+$/, '');
+    const btn = label => ` <button type="button" class="btn btn-link btn-sm p-0 afr-rat-more" style="vertical-align:baseline;">${label}</button>`;
+    const render = expanded => {
+      el.innerHTML = expanded
+        ? `<p class="mb-0">“${_afrEsc(full)}”${btn('less')}</p>`
+        : `<p class="mb-0">“${_afrEsc(cut)}…”${btn('more')}</p>`;
+      el.querySelector('.afr-rat-more').addEventListener('click', () => render(!expanded));
+    };
+    render(false);
+  }
+
   // Fill the collapsible rationale block from a Lovejoy region's feature props. The rationale
   // toggle and the "Signature" profile-modal link (WO05) share one visibility gate -- #afr-
   // (WO05: the "Region signature" link used to share this gate, but Karl moved it to the
@@ -1271,7 +1351,7 @@
     const pg = (p.page || '').trim();
     const pgLabel = pg ? ` (${/[–-]/.test(pg) ? 'pp.' : 'p.'} ${pg})` : '';
     document.getElementById('afr-rationale-label').textContent = 'From the article' + pgLabel;
-    text.innerHTML = `<p class="mb-0">“${_afrEsc(p.rationale)}”</p>`;
+    _afrFillRationale(text, p.rationale);
     toggle.hidden = false;
     hr.hidden = false;
     _afrRationaleExpand(expanded);
@@ -1874,7 +1954,12 @@
     _afrMap.setLayoutProperty('afr-soc-match', 'visibility', 'visible');
     if (status) {
       const n = new Set(_afrMap.querySourceFeatures('afr-societies', { filter: filt }).map(f => f.id)).size;
-      status.innerHTML = `${n} societ${n === 1 ? 'y' : 'ies'} share “${_afrEsc(value)}” `
+      // n counts the selected society too; the readout is about the *others* that share its value
+      const others = Math.max(n - 1, 0);
+      const phrase = others === 0 ? 'No other society shares'
+                   : others === 1 ? '1 other society shares'
+                   : `${others} other societies share`;
+      status.innerHTML = `${phrase} “${_afrEsc(value)}” `
         + `· <a href="#" id="afr-hl-clear">clear</a>`;
       status.style.display = '';
     }
@@ -1892,7 +1977,7 @@
     _afrMap.addSource('afr-basins', { type: 'vector', url: `pmtiles:///static/explorer/${sl}.pmtiles` });
     _afrMap.addLayer({
       id: 'afr-basin-fill', type: 'fill', source: 'afr-basins', 'source-layer': sl,
-      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.82 },
+      paint: { 'fill-color': ['coalesce', ['feature-state','fc'], 'transparent'], 'fill-opacity': 0.6 },
     }, 'lovejoy-fill');
     _afrMap.addLayer({
       id: 'afr-basin-line', type: 'line', source: 'afr-basins', 'source-layer': sl,
@@ -1908,6 +1993,14 @@
     }
   }
 
+  // Region labels show only when the plain region wash is up: hidden under a variable
+  // choropleth (like the fill) and when the Regions layer is toggled off.
+  function _afrSyncRegionLabels() {
+    if (!_afrMap || !_afrMap.getLayer('lovejoy-label')) return;
+    const on = !!document.getElementById('afr-lyr-regions')?.checked && !_afrVarKey;
+    _afrMap.setLayoutProperty('lovejoy-label', 'visibility', on ? 'visible' : 'none');
+  }
+
   async function _afrPaint() {
     if (!_afrMap || !_afrMap.getLayer('lovejoy-fill')) return;   // map/tab not ready — user re-picks
     const seq = ++_afrPaintSeq;
@@ -1917,10 +2010,15 @@
     if (!key) {
       _afrClearPaint();
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
-      readouts.innerHTML = '<span class="text-secondary">Pick a variable to paint the basins.</span>';
+      _afrSyncRegionLabels();
+      _afrRegionTip?.remove();   // region-name hover tip is variable-painted-only
+      readouts.innerHTML = '';
+      readouts.style.display = 'none';   // idle text was redundant with the intro
       return;
     }
     _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', 0);
+    _afrSyncRegionLabels();
+    readouts.style.display = '';
     readouts.innerHTML = '<span class="text-secondary">Loading…</span>';
 
     const isCat = key === 'pnv_majority_name';
@@ -1954,6 +2052,7 @@
       if (seq !== _afrPaintSeq) return;
       readouts.innerHTML = `<span class="text-danger">Could not paint: ${String(err.message || err)}</span>`;
       _afrMap.setPaintProperty('lovejoy-fill', 'fill-opacity', AFR_WASH);
+      _afrSyncRegionLabels();
     }
   }
 
@@ -1974,7 +2073,7 @@
   }
 
   function _afrLegendCategorical(key, categories, values, n) {
-    // categories carry global colours/ids; recompute counts over the painted (Africa) basins
+    // categories carry global colors/ids; recompute counts over the painted (Africa) basins
     const afr = {};
     for (const cat of Object.values(values)) afr[cat] = (afr[cat] || 0) + 1;
     const rows = categories
@@ -2423,9 +2522,6 @@
     // their temporal dead zone. Deferring to the next tick runs it only after this callback's
     // full synchronous body -- every `let` in it -- has already executed.
     setTimeout(loadSocieties, 0);
-
-    // TEMP (dev eyeball): open on the African Regions tab. Delete this line to restore Societies.
-    setTimeout(() => bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-afr')).show(), 0);
 
     // WH Cities: selection handler
     const whcSel = document.getElementById('whc-select');
