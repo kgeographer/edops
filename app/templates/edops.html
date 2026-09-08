@@ -72,8 +72,18 @@
   </div>
 
   <hr/>
-  <p class="small">EDOPS is the environmental component of a broader <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.</p>
+  <p class="small text-center">EDOPS v0.4 is a research prototype, the environmental component of a broader <a href="https://kgeographer.org/computing-place-june2026.html" target="_blank">Computing Place</a> research initiative.<br/>Comments and use cases welcome &mdash; <a id="edops-contact" href="#">contact</a>.</p>
 
+  <script>
+    // Assemble the address at runtime so it never appears as text in the served markup.
+    (function () {
+      var a = document.getElementById('edops-contact');
+      if (!a) return;
+      var addr = 'karl' + '@' + 'kgeographer.org';
+      a.href = 'mailto:' + addr + '?subject=' + encodeURIComponent('EDOPS');
+      a.textContent = addr;   // drop this line to keep the label reading "contact"
+    })();
+  </script>
 
 </div>
 {% endblock %}
