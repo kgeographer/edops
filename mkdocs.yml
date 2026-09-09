@@ -23,6 +23,7 @@ extra_css:
 extra_javascript:
   - javascripts/embed.js
   - javascripts/external-links.js
+  - javascripts/logo-inert.js
 
 nav:
   - Introduction: index.md

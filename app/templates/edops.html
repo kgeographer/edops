@@ -1,4 +1,5 @@
 {% extends "base_cedop.html" %}
+{% set active_page = "edops" %}   {# selects _guide_edops.html in the shared Documentation modal #}
 
 {% block header %}
 <header>
@@ -6,7 +7,7 @@
     <a href="https://computingplace.org/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height: 80px;"></a>
     <span class="d-flex align-items-center gap-2">
       <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About EDOPS</a> |
-      <a href="/docs" class="fs-6 fw-normal text-decoration-none">Documentation</a>
+      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">Documentation</a>
       <span class="badge rounded-pill bg-secondary fw-normal fs-6 ms-4">v0.4 Sep 2026</span>
     </span>
   </div>
@@ -14,6 +15,7 @@
 {% endblock %}
 
 {% block modals %}
+{% include "_edops_modals.html" %}   {# shared #documentation-modal (+ #api-guide-modal) #}
 <div class="modal fade" id="about-project-modal" tabindex="-1" aria-labelledby="about-project-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 75%;">
     <div class="modal-content">
