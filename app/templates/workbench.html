@@ -417,7 +417,11 @@
         <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-0">
+      <div class="modal-body p-0" style="position:relative;">
+        <div id="afr-dplace-spinner" style="display:none; position:absolute; inset:0; z-index:5;
+             align-items:center; justify-content:center; background:rgba(255,255,255,0.9);">
+          <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading…</span></div>
+        </div>
         <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
         <div id="afr-profile-body" style="display:none;width:100%;padding:1rem 1.25rem;"></div>
       </div>
@@ -1405,6 +1409,7 @@
     document.getElementById('afr-profile-body').style.display = isDplace ? 'none' : '';
     document.getElementById('afr-dplace-subtitle').style.display = isDplace ? '' : 'none';
     document.getElementById('afr-dplace-ext').style.display = isDplace ? '' : 'none';
+    if (!isDplace) document.getElementById('afr-dplace-spinner').style.display = 'none';
     const dlg = document.getElementById('afr-dplace-dialog');
     dlg.style.width = isDplace ? '90vw' : '640px';
     dlg.style.maxWidth = isDplace ? '90vw' : '92vw';   // narrower -- a signature reads tall, not wide
@@ -1413,6 +1418,7 @@
   // SKUNKWORKS: open the D-PLACE society page in a 90vw modal iframe.
   function afrOpenDplaceModal(sid) {
     const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
+    document.getElementById('afr-dplace-spinner').style.display = 'flex';   // cleared on the iframe's load event
     document.getElementById('afr-dplace-frame').src = url;
     document.getElementById('afr-dplace-ext').href = url;
     document.getElementById('afr-dplace-title').firstChild.textContent = 'D-PLACE society ';
@@ -2610,6 +2616,12 @@
     const dpModal = document.getElementById('afr-dplace-modal');
     if (dpModal) dpModal.addEventListener('hidden.bs.modal', () => {
       document.getElementById('afr-dplace-frame').src = 'about:blank';
+      document.getElementById('afr-dplace-spinner').style.display = 'none';
+    });
+    // clear the loading spinner once d-place.org renders in the frame
+    const dpFrame = document.getElementById('afr-dplace-frame');
+    if (dpFrame) dpFrame.addEventListener('load', () => {
+      document.getElementById('afr-dplace-spinner').style.display = 'none';
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.
