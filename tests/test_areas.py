@@ -683,112 +683,108 @@ class TestWhgSuggestRouteValidation:
         assert r.status_code == 200
         assert r.json()["results"] == []
 
+
+    def test_no_country_no_bbox_returns_400(self, client):
+        """With neither a resolvable country nor a bbox, the route can't build a
+        spatial constraint -- 400 rather than an unbounded global search."""
+        r = client.get("/api/whg/suggest?q=Venice")
+        assert r.status_code == 400
+        assert "bounding box" in r.json()["detail"].lower()
+
+    def test_country_path_batch(self, client, monkeypatch):
+        """A resolved country -> countries=[code] + fclasses=[P,S], exact + fuzzy, no bounds."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_resolve_place_hint",
+                            lambda h: {"kind": "country", "ccode": "ML"})
+        monkeypatch.setattr(rm, "_whg_reconcile",
+                            lambda batch: captured.setdefault("batch", batch) or {})
+        client.get("/api/whg/suggest?q=Timbuktu&country=Mali")
+        b = captured["batch"]
+        assert set(b) == {"exact", "fuzzy"}
+        for k in ("exact", "fuzzy"):
+            assert b[k]["countries"] == ["ML"]
+            assert b[k]["fclasses"] == ["P", "S"]
+            assert "bounds" not in b[k]
+            assert b[k]["namespaces"] == ["whg", "gn"]
+        assert b["exact"]["mode"] == "exact" and b["fuzzy"]["mode"] == "fuzzy"
+
+    def test_admin1_path_batch(self, client, monkeypatch):
+        """A resolved admin1 -> countries=[code] + a bounds polygon, NO fclasses
+        (fclasses + bounds zero out at WHG)."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_resolve_place_hint", lambda h: {
+            "kind": "admin1", "ccode": "US", "label": "Pennsylvania",
+            "bbox": (-80.52, 39.72, -74.70, 42.54),
+        })
+        monkeypatch.setattr(rm, "_whg_reconcile",
+                            lambda batch: captured.setdefault("batch", batch) or {})
+        client.get("/api/whg/suggest?q=Pittsburgh&country=PA")
+        b = captured["batch"]
+        for k in ("exact", "fuzzy"):
+            assert b[k]["countries"] == ["US"]
+            assert b[k]["bounds"]["type"] == "Polygon"
+            assert "fclasses" not in b[k]
+            assert b[k]["namespaces"] == ["whg", "gn"]
+
+    def test_bbox_path_batch(self, client, monkeypatch):
+        """No country -> the request bbox becomes a bounds polygon, NO fclasses."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_whg_reconcile",
+                            lambda batch: captured.setdefault("batch", batch) or {})
+        client.get("/api/whg/suggest?q=Venice&bbox=7,44,14,47")
+        b = captured["batch"]
+        for k in ("exact", "fuzzy"):
+            assert b[k]["bounds"]["type"] == "Polygon"
+            assert b[k]["bounds"]["coordinates"][0][0] == [7.0, 44.0]
+            assert "fclasses" not in b[k]
+            assert "countries" not in b[k]
+            assert b[k]["namespaces"] == ["whg", "gn"]
+
     def test_response_shape(self, client, monkeypatch):
-        """Route returns {results: [{id, name, lat, lon, ccodes, alt_names, cname}]}."""
-        fake_suggest = [
-            {
-                "id": "place:5424806",
-                "name": "Tombouctou",
-                "repr_point": [-2.9833, 16.8167],
-                "ccodes": ["ML"],
-                "alt_names": ["Timbuktu", "Timbuctoo"],
-            },
-            {
-                "id": "place:9999999",
-                "name": "No coords place",
-                "repr_point": None,
-                "ccodes": [],
-                "alt_names": [],
-            },
-        ]
-
-        import app.api.routes_sandbox as routes_mod
-        monkeypatch.setattr(routes_mod, "_whg_suggest", lambda *a, **kw: fake_suggest)
-
-        r = client.get("/api/whg/suggest?q=Timbuktu")
+        """reconcile result -> {results: [{id, name, lat, lon, ccodes, alt_names, cname, ...}]};
+        rows with no repr_point are dropped; exact wins outright when non-empty."""
+        import app.api.routes_sandbox as rm
+        monkeypatch.setattr(rm, "_resolve_place_hint",
+                            lambda h: {"kind": "country", "ccode": "ML"})
+        monkeypatch.setattr(rm, "_whg_reconcile", lambda batch: {
+            "exact": {"result": [
+                {"id": "place:whg:1", "name": "Tombouctou", "score": 100,
+                 "repr_point": [-2.9833, 16.8167], "ccodes": ["ML"],
+                 "alt_names": ["Timbuktu", "Timbuctoo"],
+                 "place_types": [{"label": "cities"}, {"label": "inhabited places"}]},
+                {"id": "place:whg:2", "name": "No coords", "repr_point": None,
+                 "ccodes": [], "alt_names": []},
+            ]},
+            "fuzzy": {"result": [{"id": "place:whg:9", "name": "Should not appear",
+                                  "repr_point": [0, 0]}]},
+        })
+        r = client.get("/api/whg/suggest?q=Timbuktu&country=Mali")
         assert r.status_code == 200
-        data = r.json()
-        assert "results" in data
-        # Only result with repr_point should appear
-        assert len(data["results"]) == 1
-        res = data["results"][0]
-        assert res["id"]     == "place:5424806"
-        assert res["name"]   == "Tombouctou"
-        assert res["lat"]    == pytest.approx(16.8167)
-        assert res["lon"]    == pytest.approx(-2.9833)
+        results = r.json()["results"]
+        assert len(results) == 1               # repr_point-less dropped; fuzzy ignored (exact non-empty)
+        res = results[0]
+        assert res["id"] == "place:whg:1"
+        assert res["name"] == "Tombouctou"
+        assert res["lat"] == pytest.approx(16.8167)
+        assert res["lon"] == pytest.approx(-2.9833)
         assert res["ccodes"] == ["ML"]
         assert "Timbuktu" in res["alt_names"]
-        assert res["cname"]  == "Mali"   # resolved from _CCODES static dict
+        assert res["cname"] == "Mali"          # from _CCODES static dict
+        assert res["place_type"] == "cities"   # settlement label preferred
 
-    def test_no_repr_point_filtered_out(self, client, monkeypatch):
-        """Results without repr_point are excluded from the response."""
-        import app.api.routes_sandbox as routes_mod
-        monkeypatch.setattr(routes_mod, "_whg_suggest",
-                            lambda *a, **kw: [{"id": "x", "name": "X", "repr_point": None}])
-        r = client.get("/api/whg/suggest?q=test")
-        assert r.status_code == 200
-        assert r.json()["results"] == []
-
-    def test_fclasses_passed_to_suggest(self, client, monkeypatch):
-        """Route always passes fclasses='P,S' to _whg_suggest."""
-        import app.api.routes_sandbox as routes_mod
-        captured = {}
-
-        def fake(prefix, limit=8, fclasses=None, countries=None):
-            captured["fclasses"] = fclasses
-            return []
-
-        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
-        client.get("/api/whg/suggest?q=Rome")
-        assert captured.get("fclasses") == "P,S"
-
-    def test_country_hint_resolves_to_ccode(self, client, monkeypatch):
-        """A country= param is resolved via gaz.ccodes ILIKE and passed as countries= to WHG."""
-        import app.api.routes_sandbox as routes_mod
-        captured = {}
-
-        def fake(prefix, limit=8, fclasses=None, countries=None):
-            captured["countries"] = countries
-            return []
-
-        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
-
-        # Patch db_connect so we don't need a live DB
-        class FakeCur:
-            def __enter__(self): return self
-            def __exit__(self, *a): pass
-            def execute(self, sql, params): self._params = params
-            def fetchone(self): return ("ML",)
-
-        class FakeConn:
-            def cursor(self): return FakeCur()
-            def close(self): pass
-
-        monkeypatch.setattr(routes_mod, "db_connect", lambda: FakeConn())
-        client.get("/api/whg/suggest?q=Timbuktu&country=Mali")
-        assert captured.get("countries") == "ML"
-
-    def test_country_no_match_proceeds_without_filter(self, client, monkeypatch):
-        """Unrecognised country hint does not block the search (countries=None)."""
-        import app.api.routes_sandbox as routes_mod
-        captured = {}
-
-        def fake(prefix, limit=8, fclasses=None, countries=None):
-            captured["countries"] = countries
-            return []
-
-        monkeypatch.setattr(routes_mod, "_whg_suggest", fake)
-
-        class FakeCur:
-            def __enter__(self): return self
-            def __exit__(self, *a): pass
-            def execute(self, *a): pass
-            def fetchone(self): return None
-
-        class FakeConn:
-            def cursor(self): return FakeCur()
-            def close(self): pass
-
-        monkeypatch.setattr(routes_mod, "db_connect", lambda: FakeConn())
-        client.get("/api/whg/suggest?q=Timbuktu&country=xyzzy")
-        assert captured.get("countries") is None
+    def test_bbox_path_unions_exact_and_fuzzy(self, client, monkeypatch):
+        """On the bbox path there's no 'exact wins' -- both sub-queries are merged, deduped by id."""
+        import app.api.routes_sandbox as rm
+        monkeypatch.setattr(rm, "_whg_reconcile", lambda batch: {
+            "exact": {"result": [{"id": "a", "name": "A", "repr_point": [1, 1]}]},
+            "fuzzy": {"result": [
+                {"id": "a", "name": "A", "repr_point": [1, 1]},        # dup
+                {"id": "b", "name": "B", "repr_point": [2, 2]},
+            ]},
+        })
+        r = client.get("/api/whg/suggest?q=Venice&bbox=0,0,10,10")
+        names = [x["name"] for x in r.json()["results"]]
+        assert names == ["A", "B"]

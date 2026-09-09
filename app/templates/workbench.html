@@ -138,7 +138,8 @@
         <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5 mb-1">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
-          <p class="soc-blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb" id="soc-blurb-intro"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <a href="#" id="soc-blurb-restore" class="soc-blurb text-decoration-none" style="display:none;">▸ About the D-PLACE dataset</a>
           <p class="soc-blurb">Dominant Subsistence (EA042) and High Gods (EA034) below are two exemplar traits from the Ethnographic Atlas dataset, chosen for their differing <i>potential</i> association with environmental settings.</p>
           <!-- Loading spinner -->
           <div id="soc-loading" class="text-center py-3" style="display:none;">
@@ -242,7 +243,7 @@
     <!-- RIGHT: map (always visible) -->
     <div class="col-12 col-lg-6">
 <!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
-      <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
+      <div id="map" style="height: 280px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
       <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
@@ -417,7 +418,11 @@
         <a id="afr-dplace-ext" href="#" target="_blank" rel="noopener" class="small ms-auto me-3">open on d-place.org ↗</a>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-0">
+      <div class="modal-body p-0" style="position:relative;">
+        <div id="afr-dplace-spinner" style="display:none; position:absolute; inset:0; z-index:5;
+             align-items:center; justify-content:center; background:rgba(255,255,255,0.9);">
+          <div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading…</span></div>
+        </div>
         <iframe id="afr-dplace-frame" src="" style="width:100%;height:100%;border:0;" loading="lazy"></iframe>
         <div id="afr-profile-body" style="display:none;width:100%;padding:1rem 1.25rem;"></div>
       </div>
@@ -1405,6 +1410,7 @@
     document.getElementById('afr-profile-body').style.display = isDplace ? 'none' : '';
     document.getElementById('afr-dplace-subtitle').style.display = isDplace ? '' : 'none';
     document.getElementById('afr-dplace-ext').style.display = isDplace ? '' : 'none';
+    if (!isDplace) document.getElementById('afr-dplace-spinner').style.display = 'none';
     const dlg = document.getElementById('afr-dplace-dialog');
     dlg.style.width = isDplace ? '90vw' : '640px';
     dlg.style.maxWidth = isDplace ? '90vw' : '92vw';   // narrower -- a signature reads tall, not wide
@@ -1413,6 +1419,7 @@
   // SKUNKWORKS: open the D-PLACE society page in a 90vw modal iframe.
   function afrOpenDplaceModal(sid) {
     const url = `https://d-place.org/society/${encodeURIComponent(sid)}`;
+    document.getElementById('afr-dplace-spinner').style.display = 'flex';   // cleared on the iframe's load event
     document.getElementById('afr-dplace-frame').src = url;
     document.getElementById('afr-dplace-ext').href = url;
     document.getElementById('afr-dplace-title').firstChild.textContent = 'D-PLACE society ';
@@ -2610,6 +2617,12 @@
     const dpModal = document.getElementById('afr-dplace-modal');
     if (dpModal) dpModal.addEventListener('hidden.bs.modal', () => {
       document.getElementById('afr-dplace-frame').src = 'about:blank';
+      document.getElementById('afr-dplace-spinner').style.display = 'none';
+    });
+    // clear the loading spinner once d-place.org renders in the frame
+    const dpFrame = document.getElementById('afr-dplace-frame');
+    if (dpFrame) dpFrame.addEventListener('load', () => {
+      document.getElementById('afr-dplace-spinner').style.display = 'none';
     });
 
     // Leaflet often needs an explicit size recalculation when switching tabs.
@@ -3546,6 +3559,21 @@
       }
     }
 
+    // Reclaim vertical space: the long D-PLACE intro paragraph collapses the first
+    // time a trait accordion opens; a small "About the D-PLACE dataset" link brings
+    // it back. Idempotent -- safe to call on every accordion open.
+    function _socCollapseIntro() {
+      const intro = document.getElementById('soc-blurb-intro');
+      const restore = document.getElementById('soc-blurb-restore');
+      if (intro) intro.style.display = 'none';
+      if (restore) restore.style.display = '';
+    }
+    document.getElementById('soc-blurb-restore')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('soc-blurb-intro').style.display = '';
+      e.target.style.display = 'none';
+    });
+
     function wireSubsistenceAccordion() {
       const toggle = document.getElementById('soc-query-subsistence');
       const panel = document.getElementById('soc-subsistence-panel');
@@ -3558,6 +3586,7 @@
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
         if (!isOpen) {
+          _socCollapseIntro();
           _closeSocAccordion('soc-religion-panel', 'soc-query-religion');
           if (socReligionFilter !== 'all') {
             resetReligionSelection();
@@ -3613,6 +3642,7 @@
       // Wire up change handlers
       container.querySelectorAll('input[name="soc-subsistence"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+          _socCollapseIntro();   // subsistence panel is open on load -> collapse on first value pick
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
           resetReligionSelection(false);
@@ -3637,6 +3667,7 @@
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
         if (!isOpen) {
+          _socCollapseIntro();
           _closeSocAccordion('soc-subsistence-panel', 'soc-query-subsistence');
           if (socSubsistenceFilter !== 'all') {
             resetSubsistenceSelection();
@@ -3692,6 +3723,7 @@
       // Wire up change handlers
       container.querySelectorAll('input[name="soc-religion"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+          _socCollapseIntro();
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
           resetSubsistenceSelection(false);
@@ -4080,7 +4112,7 @@
         { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
       ]));
 
-      const width = 480, height = 300;
+      const width = 480, height = 210;   // shorter -- vertical-space pressure in the Societies panel
       const margin = { top: 10, right: 16, bottom: 25, left:36 };
       // const margin = { top: 10, right: 16, bottom: 40, left: 56 };
       const plotW = width - margin.left - margin.right;
@@ -4168,7 +4200,7 @@
     // computed once per trait-value selection (the fetch in renderEnvScan()) and never
     // recomputed on hover; family hover only changes which ticks are emphasized via
     // wo4HighlightMarkers()/socStripIndex, same linkage the map markers and scatter dots use.
-    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 15, WO4_STRIP_MARGIN = 4;
+    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 12, WO4_STRIP_MARGIN = 4;
     const WO4_THIN_FAMILY_FLOOR = 20;   // matches the notebooks' own n-floor convention
 
     function wo4StripX(pct) {

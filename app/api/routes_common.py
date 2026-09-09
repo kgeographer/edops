@@ -111,6 +111,42 @@ def _whg_entity(place_id: str) -> Dict[str, Any]:
     return _http_get_json(url)
 
 
+def _http_post_json(url: str, payload: Dict[str, Any], headers: Dict[str, str] = None,
+                    timeout_sec: int = 25) -> Dict[str, Any]:
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    data = json.dumps(payload).encode("utf-8")
+    hdr = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "EDOPS/0.4 (+https://edops.computingplace.org)",
+        "Referer": "https://whgazetteer.org/",
+    }
+    if headers:
+        hdr.update(headers)
+    req = urllib.request.Request(url, data=data, headers=hdr, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout_sec, context=ctx) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _whg_reconcile(queries: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """POST a batch of WHG /reconcile queries. `queries` maps arbitrary ids -> query
+    objects (query, mode, countries, fclasses, bounds, limit, ...). Returns the raw
+    response keyed by the same ids, each `{ "result": [ {id, name, score, alt_names,
+    ccodes, repr_point [lon,lat], place_types, ...}, ... ] }`.
+
+    NB (probed 2026-09-09): `fclasses` and `bounds` do not compose at WHG -- sending
+    both yields zero results. Country queries use fclasses; bbox queries must not.
+    """
+    if not settings.WHG_API_TOKEN:
+        raise HTTPException(status_code=500, detail="WHG_API_TOKEN not configured on server")
+    data = _http_post_json(
+        "https://whgazetteer.org/reconcile",
+        {"queries": queries},
+        headers={"Authorization": f"Bearer {settings.WHG_API_TOKEN}"},
+    )
+    return data if isinstance(data, dict) else {}
+
+
 def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
     """Extract (lon, lat) from a WHG entity response."""
     # Current format: GeoJSON Feature with geometry.coordinates

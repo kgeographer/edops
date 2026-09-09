@@ -124,8 +124,9 @@
                 <div id="v3-buffer-extra" class="mt-1 align-items-center gap-2"
                      style="display:none;">
                   <label class="text-muted small" style="white-space:nowrap;">Radius (km)</label>
-                  <input type="number" id="v3-radius" class="form-control form-control-sm"
-                         style="width:90px;" value="100" min="1" max="2000">
+                  <input type="text" inputmode="decimal" id="v3-radius" class="form-control form-control-sm"
+                         style="width:90px;" value="100" aria-label="Buffer radius in kilometres, 1 to 2000">
+                  <span class="text-muted" style="font-size:0.72rem;white-space:nowrap;">↵ to apply</span>
                 </div>
               </div>
 
@@ -1000,7 +1001,11 @@
       const circle   = geodesicCircle(currentLat, currentLon, radiusKm);
       shell.add('buffer-circle',
         { type: 'geojson', data: circle },
-        [{ type: 'line', paint: { 'line-color': '#888', 'line-width': 1.2, 'line-dasharray': [4,3] } }]
+        [
+          // white casing + dark dashed line -- the thin grey line was invisible over hillshade
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.9)', 'line-width': 4 } },
+          { type: 'line', paint: { 'line-color': '#1a3a52', 'line-width': 2, 'line-dasharray': [3, 2] } },
+        ]
       );
       _fitMap(geojsonBbox(circle));
       const br = await fetch(
@@ -1041,6 +1046,24 @@
     // scope.
     if (currentLat !== null) _resetRightColumn({ keepPlace: true });
     if (currentLat !== null) _drawScopePreview(this.value);
+  });
+
+  // Buffer radius: apply on Enter or blur (no live listener before -- typing did nothing).
+  // Changing the radius changes the basin set, so reset stale right-column content too.
+  function _applyRadius() {
+    const el = document.getElementById('v3-radius');
+    let km = parseFloat(el.value);
+    if (!isFinite(km)) km = 100;
+    km = Math.min(2000, Math.max(1, Math.round(km)));
+    el.value = km;
+    if (currentLat === null) return;
+    if (document.getElementById('v3-scope-select').value !== 'buffer') return;
+    _resetRightColumn({ keepPlace: true });
+    _drawScopePreview('buffer');
+  }
+  document.getElementById('v3-radius').addEventListener('change', _applyRadius);
+  document.getElementById('v3-radius').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }  // blur fires 'change'
   });
 
   // ── Get Signature enablement ──────────────────────────────────────────────
@@ -1139,16 +1162,19 @@
       return;
     }
 
-    if (!map || map.getZoom() < 3) {
-      _whgSetStatus('Zoom map to your study region first, then search.');
-      return;
-    }
-
+    // "Name, Country" -> q + country hint (server resolves the country to a 2-letter code)
     let q = raw, countryParam = '';
     const commaIdx = raw.indexOf(',');
     if (commaIdx > 0) {
       q            = raw.slice(0, commaIdx).trim();
       countryParam = raw.slice(commaIdx + 1).trim();
+    }
+
+    // No country -> the map viewport is the hard spatial constraint (WHG bounds filter),
+    // so a study-region zoom is required. With a country, no zoom needed.
+    if (!countryParam && (!map || map.getZoom() < 4)) {
+      _whgSetStatus('Add a country ("Venice, Italy") or zoom the map to your study region, then search.');
+      return;
     }
 
     _whgHideCandidates();
@@ -1158,19 +1184,24 @@
     try {
       let url = `/api/whg/suggest?q=${encodeURIComponent(q)}&limit=8`;
       if (countryParam) url += `&country=${encodeURIComponent(countryParam)}`;
+      // Always send the viewport too: the server uses `country` when it resolves to a
+      // 2-letter code, otherwise falls back to this bbox (mistyped/unknown country).
+      if (map) {
+        const b = map.getBounds();
+        url += `&bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+      }
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`WHG search failed (${res.status})`);
+      if (!res.ok) {
+        let msg = `WHG search failed (${res.status})`;
+        try { const j = await res.json(); if (j.detail) msg = j.detail; } catch (_) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       _whgResults = data.results || [];
 
-      if (map && _whgResults.length) {
-        const mb = map.getBounds();
-        const inView = _whgResults.filter(r => mb.contains([r.lon, r.lat]));
-        if (inView.length) _whgResults = inView;
-      }
-
       if (!_whgResults.length) {
-        _whgSetStatus(`No results for "${escapeHtml(q)}".`);
+        const where = countryParam ? ` in ${escapeHtml(countryParam)}` : ' in the current map view';
+        _whgSetStatus(`No results for "${escapeHtml(q)}"${where}.`);
         document.getElementById('v3-example-select').disabled = false;
         return;
       }
