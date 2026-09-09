@@ -124,8 +124,9 @@
                 <div id="v3-buffer-extra" class="mt-1 align-items-center gap-2"
                      style="display:none;">
                   <label class="text-muted small" style="white-space:nowrap;">Radius (km)</label>
-                  <input type="number" id="v3-radius" class="form-control form-control-sm"
-                         style="width:90px;" value="100" min="1" max="2000">
+                  <input type="text" inputmode="decimal" id="v3-radius" class="form-control form-control-sm"
+                         style="width:90px;" value="100" aria-label="Buffer radius in kilometres, 1 to 2000">
+                  <span class="text-muted" style="font-size:0.72rem;white-space:nowrap;">↵ to apply</span>
                 </div>
               </div>
 
@@ -1000,7 +1001,11 @@
       const circle   = geodesicCircle(currentLat, currentLon, radiusKm);
       shell.add('buffer-circle',
         { type: 'geojson', data: circle },
-        [{ type: 'line', paint: { 'line-color': '#888', 'line-width': 1.2, 'line-dasharray': [4,3] } }]
+        [
+          // white casing + dark dashed line -- the thin grey line was invisible over hillshade
+          { type: 'line', paint: { 'line-color': 'rgba(255,255,255,0.9)', 'line-width': 4 } },
+          { type: 'line', paint: { 'line-color': '#1a3a52', 'line-width': 2, 'line-dasharray': [3, 2] } },
+        ]
       );
       _fitMap(geojsonBbox(circle));
       const br = await fetch(
@@ -1041,6 +1046,24 @@
     // scope.
     if (currentLat !== null) _resetRightColumn({ keepPlace: true });
     if (currentLat !== null) _drawScopePreview(this.value);
+  });
+
+  // Buffer radius: apply on Enter or blur (no live listener before -- typing did nothing).
+  // Changing the radius changes the basin set, so reset stale right-column content too.
+  function _applyRadius() {
+    const el = document.getElementById('v3-radius');
+    let km = parseFloat(el.value);
+    if (!isFinite(km)) km = 100;
+    km = Math.min(2000, Math.max(1, Math.round(km)));
+    el.value = km;
+    if (currentLat === null) return;
+    if (document.getElementById('v3-scope-select').value !== 'buffer') return;
+    _resetRightColumn({ keepPlace: true });
+    _drawScopePreview('buffer');
+  }
+  document.getElementById('v3-radius').addEventListener('change', _applyRadius);
+  document.getElementById('v3-radius').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }  // blur fires 'change'
   });
 
   // ── Get Signature enablement ──────────────────────────────────────────────
