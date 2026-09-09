@@ -588,8 +588,13 @@ def _whg_place_type(place_types: List[Dict]) -> Optional[str]:
     return labels[0] if labels else None
 
 
+def _ring(w: float, s: float, e: float, n: float) -> Dict:
+    """A GeoJSON Polygon ring from a bbox, for a WHG /reconcile `bounds` filter."""
+    return {"type": "Polygon", "coordinates": [[[w, s], [e, s], [e, n], [w, n], [w, s]]]}
+
+
 def _bbox_polygon(bbox: str) -> Dict:
-    """'w,s,e,n' -> a GeoJSON Polygon ring for a WHG /reconcile `bounds` filter."""
+    """'w,s,e,n' string -> a GeoJSON Polygon ring."""
     parts = [p.strip() for p in (bbox or "").split(",")]
     if len(parts) != 4:
         raise HTTPException(
@@ -603,7 +608,124 @@ def _bbox_polygon(bbox: str) -> Dict:
         raise HTTPException(status_code=400, detail="bbox must be four numbers: w,s,e,n")
     if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
         raise HTTPException(status_code=400, detail="bbox out of range or degenerate")
-    return {"type": "Polygon", "coordinates": [[[w, s], [e, s], [e, n], [w, n], [w, s]]]}
+    return _ring(w, s, e, n)
+
+
+# Common-name -> ISO alpha-2 for hints Natural Earth's own columns don't carry.
+_COUNTRY_ALIASES = {
+    "uk": "GB", "uae": "AE", "drc": "CD", "roc": "CG", "holland": "NL",
+    "burma": "MM", "czechia": "CZ", "ivory coast": "CI", "east timor": "TL",
+    "south korea": "KR", "north korea": "KP", "cape verde": "CV",
+}
+
+
+def _resolve_place_hint(hint: str) -> Optional[Dict]:
+    """Resolve the free text after the comma in a Sandbox place query.
+
+    Tiered, most-specific first:
+      Tier 1 -- country: {"kind": "country", "ccode": "US"}  (ISO a2/a3, postal,
+               alias map, exact name, then a >=4-char starts-with on the name)
+      Tier 2 -- admin1:  {"kind": "admin1", "ccode": "US", "bbox": (w,s,e,n),
+               "label": "Pennsylvania"}  (postal like "PA", iso_3166_2, or an
+               exact name in gaz.admin1)
+      else -> None; the caller falls back to the map viewport bbox.
+
+    2-letter tokens that are both a country code and a US state postal (CA, GA,
+    IN, LA, MO, MS, ...) currently resolve as the country (Tier 3, deferred).
+    """
+    h = (hint or "").strip().lower()
+    if not h:
+        return None
+    tok = h.replace(".", "").replace(" ", "")   # "u.s.a." -> "usa"
+
+    if h in _COUNTRY_ALIASES or tok in _COUNTRY_ALIASES:
+        return {"kind": "country", "ccode": _COUNTRY_ALIASES.get(h) or _COUNTRY_ALIASES[tok]}
+
+    try:
+        conn = db_connect()
+        try:
+            with conn.cursor() as cur:
+                # A 2-letter token that's a US state postal ("PA", "GA", "ME", ...)
+                # wins over the same-letter ISO country code (Panama, Gabon,
+                # Montenegro). The general country-vs-state collision (Tier 3) is
+                # still deferred.
+                if len(tok) == 2 and tok.isalpha():
+                    cur.execute(
+                        """
+                        SELECT name, ST_XMin(geom), ST_YMin(geom),
+                               ST_XMax(geom), ST_YMax(geom)
+                        FROM gaz.admin1
+                        WHERE iso_a2 = 'US' AND lower(postal) = %(tok)s
+                              AND geom IS NOT NULL
+                        LIMIT 1
+                        """,
+                        {"tok": tok},
+                    )
+                    row = cur.fetchone()
+                    if row and all(v is not None for v in row[1:5]):
+                        return {
+                            "kind": "admin1", "ccode": "US", "label": row[0],
+                            "bbox": (float(row[1]), float(row[2]),
+                                     float(row[3]), float(row[4])),
+                        }
+
+                cur.execute(
+                    """
+                    SELECT iso_a2 FROM (
+                      SELECT iso_a2, 1 AS pri FROM gaz.admin0
+                        WHERE lower(iso_a2)=%(tok)s OR lower(iso_a3)=%(tok)s OR lower(postal)=%(tok)s
+                      UNION ALL
+                      SELECT iso_a2, 2 FROM gaz.admin0
+                        WHERE lower(name)=%(h)s OR lower(name_long)=%(h)s
+                              OR lower(formal_en)=%(h)s OR lower(brk_name)=%(h)s
+                              OR replace(lower(abbrev),'.','')=%(tok)s
+                      UNION ALL
+                      SELECT iso_a2, 3 FROM gaz.admin0
+                        WHERE length(%(h)s) >= 4 AND lower(name) LIKE %(h)s || '%%'
+                    ) m
+                    WHERE iso_a2 IS NOT NULL AND iso_a2 <> '-99'
+                    ORDER BY pri LIMIT 1
+                    """,
+                    {"tok": tok, "h": h},
+                )
+                row = cur.fetchone()
+                if row:
+                    return {"kind": "country", "ccode": row[0]}
+
+                cur.execute(
+                    """
+                    SELECT iso_a2, name,
+                           ST_XMin(geom), ST_YMin(geom), ST_XMax(geom), ST_YMax(geom)
+                    FROM gaz.admin1
+                    WHERE iso_a2 IS NOT NULL AND iso_a2 <> '-99' AND geom IS NOT NULL
+                      AND ( lower(postal) = %(tok)s
+                            OR replace(lower(abbrev), '.', '') = %(tok)s
+                            OR lower(iso_3166_2) = %(h)s
+                            OR lower(iso_3166_2) LIKE '%%-' || %(tok)s
+                            OR lower(name) = %(h)s OR lower(name_alt) = %(h)s
+                            OR lower(name_local) = %(h)s OR lower(woe_name) = %(h)s )
+                    -- 2-letter postals collide across countries (PA = Pennsylvania /
+                    -- Pará / Papua); bias to the US, then to an exact name match.
+                    ORDER BY (iso_a2 = 'US') DESC,
+                             (lower(name) = %(h)s) DESC,
+                             (lower(postal) = %(tok)s
+                              OR replace(lower(abbrev), '.', '') = %(tok)s) DESC,
+                             ST_Area(geom) DESC
+                    LIMIT 1
+                    """,
+                    {"tok": tok, "h": h},
+                )
+                row = cur.fetchone()
+                if row and all(v is not None for v in row[2:6]):
+                    return {
+                        "kind": "admin1", "ccode": row[0], "label": row[1],
+                        "bbox": (float(row[2]), float(row[3]), float(row[4]), float(row[5])),
+                    }
+        finally:
+            conn.close()
+    except Exception:
+        return None  # never block the search on a hint-resolution failure
+    return None
 
 
 def _reconcile_hits(data: Dict, keys) -> List[Dict]:
@@ -624,46 +746,44 @@ def _reconcile_hits(data: Dict, keys) -> List[Dict]:
 def whg_suggest_places(q: str, limit: int = 8, country: str = "", bbox: str = ""):
     """Settlement/site lookup via WHG /reconcile (2026-09-09; replaced /suggest/entity).
 
-    Two mutually exclusive modes, matching the Sandbox resolve rules:
+    The text after the comma ("Venice, Italy", "Pittsburgh, PA", "Pittsburgh, US")
+    goes through `_resolve_place_hint`, which yields one of:
 
-    - **country given** — `country` free text ("Italy", "ital") is resolved to an
-      ISO 3166-1 alpha-2 code via gaz.ccodes; the search is `countries=[code]` +
-      `fclasses=P,S`, `mode=exact` with a `mode=fuzzy` fallback only if exact
-      returns nothing. No bbox, no zoom required.
-    - **no country** — `bbox` ("w,s,e,n", the map viewport) is required and passed
-      to WHG as a `bounds` polygon; WHG enforces the spatial filter server-side, so
-      results never fall outside the box. `fclasses` is omitted (probed 2026-09-09:
-      `fclasses` + `bounds` zero out a query at WHG); exact + fuzzy hits are unioned.
-
-    The frontend comma-splits the input: "Venice, Italy" → q="Venice", country="Italy".
+    - **country** — `countries=[code]` + `fclasses=P,S`, `mode=exact` with a
+      `mode=fuzzy` fallback only if exact is empty. No bbox, no zoom.
+    - **admin1** (state/province) — `countries=[code]` + `bounds=<admin1 bbox>`
+      (they compose; `fclasses` does not compose with `bounds`), exact ∪ fuzzy.
+      Pins e.g. "Pittsburgh, PA" to Pennsylvania.
+    - **nothing** — the request `bbox` (map viewport) is used as the `bounds`
+      polygon; WHG enforces it server-side so results never fall outside. `bbox`
+      is required in this case (400 otherwise). exact ∪ fuzzy.
     """
     q = (q or "").strip()
     if not q or len(q) < 2:
         return {"results": []}
     limit = max(1, min(limit, 20))
 
-    country = (country or "").strip()
-    ccode = None
-    if country:
-        try:
-            conn = db_connect()
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT iso_a2 FROM gaz.ccodes WHERE name ILIKE %s LIMIT 1",
-                    (f"%{country}%",),
-                )
-                row = cur.fetchone()
-                if row:
-                    ccode = row[0]
-            conn.close()
-        except Exception:
-            pass  # country hint is optional; a miss falls through to the bbox path
+    hint = (country or "").strip()
+    resolved = _resolve_place_hint(hint) if hint else None
 
-    if ccode:
-        base = {"query": q, "countries": [ccode], "fclasses": ["P", "S"], "limit": max(limit, 10)}
+    # whg + gn are the namespaces that carry GeoNames feature classes and the bulk
+    # of the records (~15M); restricting to them drops OSM/Wikidata/TGN/Pleiades
+    # cross-gazetteer noise. NB: `fclasses` still cannot compose with `bounds` at
+    # WHG (probed 2026-09-09), so the bbox paths can't actually filter to P/S and
+    # may surface admin areas / physical features. See the WHG issue.
+    NS = ["whg", "gn"]
+
+    if resolved and resolved["kind"] == "country":
+        base = {"query": q, "countries": [resolved["ccode"]],
+                "fclasses": ["P", "S"], "namespaces": NS, "limit": max(limit, 10)}
         exact_wins = True
+    elif resolved and resolved["kind"] == "admin1":
+        base = {"query": q, "countries": [resolved["ccode"]],
+                "bounds": _ring(*resolved["bbox"]), "namespaces": NS, "limit": max(limit, 15)}
+        exact_wins = False   # union exact+fuzzy; the state bbox already scopes it
     else:
-        base = {"query": q, "bounds": _bbox_polygon(bbox), "limit": max(limit, 15)}
+        base = {"query": q, "bounds": _bbox_polygon(bbox),
+                "namespaces": NS, "limit": max(limit, 15)}
         exact_wins = False
 
     batch = {"exact": {**base, "mode": "exact"}, "fuzzy": {**base, "mode": "fuzzy"}}
