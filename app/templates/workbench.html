@@ -243,7 +243,7 @@
     <!-- RIGHT: map (always visible) -->
     <div class="col-12 col-lg-6">
 <!--      <div id="map-title" class="small text-muted mb-1">Zoom to study area</div>-->
-      <div id="map" style="height: 340px; border: 1px solid #ddd;"></div>
+      <div id="map" style="height: 280px; border: 1px solid #ddd;"></div>
 <!--      <div class="form-text mt-2">Map plumbing is wired for a marker now; polygon overlay can be added once <code>/api/signature</code> returns GeoJSON geometry.</div>-->
 
       <!-- African Regions info panel — swaps in for #map when the African Regions tab is active. -->
@@ -4112,7 +4112,7 @@
         { color: 'var(--wo4-focus)', label: `${scan.value} (n=${sc.focus.length})` },
       ]));
 
-      const width = 480, height = 300;
+      const width = 480, height = 210;   // shorter -- vertical-space pressure in the Societies panel
       const margin = { top: 10, right: 16, bottom: 25, left:36 };
       // const margin = { top: 10, right: 16, bottom: 40, left: 56 };
       const plotW = width - margin.left - margin.right;
@@ -4200,7 +4200,7 @@
     // computed once per trait-value selection (the fetch in renderEnvScan()) and never
     // recomputed on hover; family hover only changes which ticks are emphasized via
     // wo4HighlightMarkers()/socStripIndex, same linkage the map markers and scatter dots use.
-    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 15, WO4_STRIP_MARGIN = 4;
+    const WO4_STRIP_WIDTH = 300, WO4_STRIP_HEIGHT = 12, WO4_STRIP_MARGIN = 4;
     const WO4_THIN_FAMILY_FLOOR = 20;   // matches the notebooks' own n-floor convention
 
     function wo4StripX(pct) {
