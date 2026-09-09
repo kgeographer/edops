@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <title>EDOPS Sandbox</title>
-  <link rel="stylesheet" href="/static/css/site.css">
+  <link rel="stylesheet" href="/static/css/site.css?v={{ static_v('css/site.css') }}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" crossorigin="">
-  <link rel="stylesheet" href="/static/css/sandbox.css">
+  <link rel="stylesheet" href="/static/css/sandbox.css?v={{ static_v('css/sandbox.css') }}">
 </head>
 <body>
 
@@ -741,7 +741,7 @@
         crossorigin="anonymous"></script>
 <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js" crossorigin=""></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
-<script src="/static/js/pm_basemap.js"></script>
+<script src="/static/js/pm_basemap.js?v={{ static_v('js/pm_basemap.js') }}"></script>
 <script>
 (() => {
   // ── Shared doc modal ──────────────────────────────────────────────────────

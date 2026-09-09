@@ -18,6 +18,11 @@ def _static_mtime(relpath: str) -> int:
         return 0
 
 
+# Available in every template as static_v('css/site.css') -> mtime int, for
+# ?v= cache-busting on tracked CSS/JS (StaticFiles sends no Cache-Control).
+templates.env.globals["static_v"] = _static_mtime
+
+
 def _render(request: Request, name: str, **context):
     return templates.TemplateResponse(request, name, context)
 
