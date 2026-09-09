@@ -1,51 +1,49 @@
 # EDOPS — Environmental Dimensions of Place Service
 
-**EDOPS** is a FastAPI service that delivers structured environmental *signatures* for any terrestrial location on Earth. A signature summarizes the environmental character of the drainage basin containing a given point, drawing on HydroATLAS (16,000+ Level 6 sub-basins), climate baselines, terrain, and ecoregion data — plus temporal layers for paleoclimate, land-use history, and volcanic forcing reaching back two millennia.
+**EDOPS** is a FastAPI service that delivers structured environmental *signatures* for any terrestrial location on Earth. A signature summarizes the environmental character of one or more drainage basins — those containing a given point, or those falling within a given area (polity, region, neighborhood). Signature variables are drawn from the [HydroATLAS datasets](https://www.hydrosheds.org/hydroatlas), together with temporal layers for paleoclimate, land-use history, and volcanic forcing.
 
-The service is designed for spatial humanities research: signature-based comparisons across historical places, environmental context for gazetteers, and exploratory analysis of environment–culture relationships.
+The service is designed to be generally useful for spatial humanities research: signature-based comparisons across historical places, environmental context for gazetteers, and exploratory analysis of environment–culture relationships.
 
-Live at [edops.computingplace.org](https://edops.computingplace.org)
-
----
-
-## What a signature contains
-
-| Band | Content |
-|------|---------|
-| A | Basin geometry and topology (area, perimeter, elevation range, order) |
-| B | Hydrological regime (discharge, runoff, soil moisture, water table) |
-| C | Climate baselines (temperature, precipitation, aridity, PET) |
-| D | Terrain (slope, aspect, roughness) |
-| E | Land cover and soil properties |
-| T | Temporal: LMR v2.1 paleoclimate · HYDE 3.4 land-use · eVolv2k v4 volcanic forcing |
+EDOPS is a work in progress. A preliminary v0.4 of the platform is live at **[edops.computingplace.org](https://edops.computingplace.org)**.
 
 ---
 
-## Tools
+## What a signature may contain
 
-### Lookup (`/sandbox/lookup`)
-Place-name search via World Historical Gazetteer → basin assignment → full Band A–T signature with neighborhood map. Band T delivers 200-year temporal charts for PDSI, temperature, precipitation anomalies, and volcanic sulfur injection. Supports L6 and L8 basin resolution.
+Signatures can include variables from any requested combination of *persistence bands* — groupings that give some temporal scoping apart from the explicitly temporal reconstructions in Band T.
 
-### Explorer (`/sandbox/explorer`)
-MapLibre GL JS choropleth across all 16,397 Level-6 sub-basins worldwide. Three tabs:
-- **Global** — single-variable choropleth with histogram and LISA cluster map
-- **Regions** — six synchronized regional panels (East Asia, South Asia, Southwest Asia, Mediterranean, Mesoamerica, Pacific Northwest)
-- **Compare** — bivariate scatter with OLS fit, regional Spearman correlations, and region-highlight interaction
+| Band | Content                                                                                                                                                |
+|------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A | **Physiographic bedrock**: elevation, slope, relief, lithology, karst. Stable over geological time.                                                    |
+| B | **Hydro-climatic baselines**: river discharge, runoff, groundwater, soils, wetlands (full upstream catchment).                                         |
+| C | **Bioclimatic proxies**: temperature, precipitation, aridity, biome, ecoregion (contemporary baseline; Band T supersedes for period-specific queries). |
+| D | **Anthropocene markers**: population density, cropland, human footprint, GDP (present-day only — exclude for pre-modern analyses).                     |
+| E | **Coastality**: distance to marine outlet, endorheic flag, outlet type.                                                                                |
+| T | **Temporal**: LMR v2.1 paleoclimate · HYDE 3.4 land-use · eVolv2k v4 volcanic forcing.                                                                 |
 
 ---
 
-## API
+## Using it
 
-The core endpoint:
+- **Web** — [edops.computingplace.org](https://edops.computingplace.org): three interactive pages — Sandbox, Workbench, Data Explorer.
+- **Documentation** — [edops.computingplace.org/docs](https://edops.computingplace.org/docs): page guides, a generated variable Codebook, the API Guide, and data-source notes. The single source of truth for what the pages and variables do — not duplicated here.
+- **API** — `GET /api/signature?lat=…&lon=…` with optional `bands=ABCDET`, `from_year`/`to_year` (0–1998 CE, required with Band T), `level=6|8`. Areal queries at `GET /api/area` and `GET /api/areas`. Interactive schema at `/api/schema`; full reference at [/docs/api](https://edops.computingplace.org/docs/api/).
 
-```
-GET /api/signature?lat=LATITUDE&lon=LONGITUDE
-    [&bands=ABCDET] [&from_year=N] [&to_year=N] [&level=6|8]
-```
+---
 
-Returns `profile_groups` for each requested band. Band T requires `from_year` and `to_year` (0–1998 CE).
+## What's new in v0.4
 
-See `documentation/` for schema details and use cases.
+**Areal signatures** — signatures now compute over regions, not just points. Circular buffers, basin-ring neighborhoods, and arbitrary polygons (historical polities, custom study areas) all aggregate to the same signature shape, with area-weighted scoring and coherence diagnostics (concentrated/spread/split). New endpoints: `GET /api/area`, `GET /api/areas`.
+
+**Sandbox, rebuilt** — a two-tab interface replaces the original Lookup page: **Settlements** (place search → basin signature) and **Polities** (search → historical boundary with a time-slice slider), both backed by an environmental similarity instrument.
+
+**Workbench** (new) — a page for testing correspondence between environment and culture: 1,291 D-PLACE societies (subsistence, religion, isolates analysis), an exploration of one regionalization (see African Regions below), 258 World Heritage Cities with both environmental and text-based (Wikipedia) similarity search, and an OneEarth ecoregion browser.
+
+**African Regions** (new) — a dedicated map tab for pre-colonial African subregions (Lovejoy et al. 2021), with environmental variable painting, a D-PLACE society overlay, and a per-region signature with an automated environmental-distinctiveness summary.
+
+**Documentation site** — a full MkDocs site at `/docs`, with a variable Codebook and API Guide generated directly from the live catalog and route definitions, plus an interactive API explorer at `/api/schema`.
+
+**Everywhere else** — unified navigation across all pages and a broad legibility/UX pass.
 
 ---
 
@@ -59,23 +57,7 @@ See `documentation/` for schema details and use cases.
 
 ## Research context
 
-EDOPS is part of **Computing Place** (CEDOP), a spatial humanities initiative exploring environmental and cultural dimensions of place. Phase 3 will add signature aggregation for areal study regions (historical polities, ecoregion zones). Phase 4 will test correspondence between environmental signatures and cultural patterns using D-PLACE, Seshat, and Cliopatria.
-
----
-
-## What's new in v0.4
-
-**Areal signatures** — signatures now compute over regions, not just points. Circular buffers, basin-ring neighborhoods, and arbitrary polygons (historical polities, custom study areas) all aggregate to the same signature shape, with area-weighted scoring and coherence diagnostics (concentrated/spread/split). New endpoints: `GET /api/area`, `GET /api/areas`.
-
-**Sandbox, rebuilt** — a two-tab interface replaces the original Lookup page: **Settlements** (place search → basin signature) and **Polities** (search → historical boundary with a time-slice slider), both backed by an environmental similarity instrument.
-
-**Workbench** (new) — a page for testing correspondence between environment and culture: 1,291 D-PLACE societies (subsistence, religion, isolates analysis), an OneEarth ecoregion browser, and 258 World Heritage Cities with both environmental and text-based (Wikipedia) similarity search.
-
-**African Regions** (new) — a dedicated map tab for pre-colonial African subregions (Lovejoy et al.), with environmental variable painting, a D-PLACE society overlay, and a per-region signature with an automated environmental-distinctiveness summary.
-
-**Documentation site** — a full MkDocs site at `/docs`, with a variable Codebook and API Guide generated directly from the live catalog and route definitions, plus an interactive API explorer at `/api/schema`.
-
-**Everywhere else** — unified navigation across all pages and a broad legibility/UX pass.
+EDOPS is the environmental component of **Computing Place** (CEDOP), a spatial-humanities initiative exploring the environmental and cultural dimensions of place. v0.4 completes the areal-signature work — points, buffers, basin rings, and polity/region boundaries all resolve to the same signature. Current work explores correspondence between environmental signatures and cultural patterns (D-PLACE, Seshat, Cliopatria), a pilot feature on the Workbench page.
 
 ---
 
