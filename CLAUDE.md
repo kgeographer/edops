@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 is LIVE in production** (cutover 2026-09-08). `edops.computingplace.org` + `computingplace.org` now serve v0.4 from `:8004` (`edops-v4.service`, tree `/var/www/edops-v4`, branch `v04`). v0.3 (`edops.service`, `:8001`) still running as rollback — retire only after a soak (`MAINTAIN_DEPLOY.md` steps 15–17). Includes the African Regions Workbench tab (built for Braga 2026-09-23). Deploy record: `logs/session_log_20260830_deploy.md` + `logs/session_log_2026090{7,8}.md`; checklist: `MAINTAIN_DEPLOY.md`. `origin/main` is still v0.3 — not yet fast-forwarded. Most recent `logs/session_log_*.md` has latest work
+- **v0.4 is LIVE in production** (cutover 2026-09-08). `edops.computingplace.org` + `computingplace.org` now serve v0.4 from `:8004` (`edops-v4.service`, tree `/var/www/edops-v4`, **branch `main`** since 2026-09-09 — blue-green retired in all but the service name). v0.3 (`edops.service`, `:8001`) still running as rollback — retire only after a soak (`MAINTAIN_DEPLOY.md` steps 15–17). Includes the African Regions Workbench tab (built for Braga 2026-09-23). Deploy record: `logs/session_log_20260830_deploy.md` + `logs/session_log_2026090{7,8,9}.md`; checklist: `MAINTAIN_DEPLOY.md`. `origin/main` fast-forwarded to `241185c` 2026-09-09. Most recent `logs/session_log_*.md` has latest work
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -70,10 +70,11 @@ Research framing: `documentation/EDOP_summary_v04.md`
 started/stopped — the flip is pure nginx routing.
 
 **Production topology now:**
-- **v0.4** — `edops-v4.service` on **:8004**, tree `/var/www/edops-v4` (branch `v04`, at
-  `b3a9d66`), venv `/home/karlg/envs/cedop-v4` (fresh py3.12 — the shared `cedop` venv had
-  drifted to pandas 3.0). Serves `edops.computingplace.org`, `computingplace.org`,
-  `edops04.computingplace.org`.
+- **v0.4** — `edops-v4.service` on **:8004**, tree `/var/www/edops-v4` (**branch `main`, at
+  `241185c`** since 2026-09-09), venv `/home/karlg/envs/cedop-v4` (fresh py3.12 — the shared
+  `cedop` venv had drifted to pandas 3.0). Serves `edops.computingplace.org`,
+  `computingplace.org`, `edops04.computingplace.org`. Prod now tracks `main` like local dev —
+  redeploy is `git pull` + `systemctl restart edops-v4`.
 - **v0.3** — `edops.service` on **:8001**, tree `/var/www/edops` (commit `e3f7424`), venv
   `cedop`. **Still running, no traffic routed to it — the rollback.** Retire only after a soak
   (`MAINTAIN_DEPLOY.md` steps 15–17). Rollback = restore the `.bak-cutover` nginx files +
@@ -86,7 +87,7 @@ started/stopped — the flip is pure nginx routing.
   a `location /api/ { proxy_cache edops_cache; proxy_cache_valid 200 6h; … }` block on both the
   `edops.computingplace.org` and `computingplace.org` vhosts (`X-Cache-Status` header); Postgres
   tuned off defaults. Full record: `MAINTAIN_DEPLOY.md` §F.
-- `origin/main` is **still v0.3** — deliberately not fast-forwarded to `v04` yet (`MAINTAIN_DEPLOY.md` step 16).
+- `origin/main` fast-forwarded to `241185c` 2026-09-09; prod `/var/www/edops-v4` now serves from `main` (blue-green retired in all but the service name). Branches `v04`, `v04_review`, `nits_7sep`, `origin/wb_africa` deleted.
 
 **`v04` branch content** = `main` (kgreview + DOCS_v4) + deploy-surfaced fixes (`f386ff1`
 `_rev1`→`_rev2`; `b4f8bc3` `_gaz_join` fail-soft + gunicorn pin; `117a5ee` self-hosted Protomaps
