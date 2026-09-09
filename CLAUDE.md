@@ -380,6 +380,7 @@ there from `/docs` on 2026-08-04 to free that route for MkDocs).
 - `gaz.admin0`: Natural Earth country polygons, 242 rows; backs Sandbox Polities map's Countries layer (`/api/sandbox/countries`)
 - `temporal.hyde_cells`: 2,215,829 HYDE 3.4 grid cells (~5 arc-min); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
 - `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
+- `temporal.hyde_basin0{6,8}_steps`: precomputed per-basin HYDE fractions by `step_idx` (`hybas_id`, `step_idx`, `{cropland,grazing,pasture,rangeland}_frac`; L6 ~2.1M rows, L8 ~24.3M / 2.3 GB). Built in notebooks (wo18/wo22), **not** a script. The **only** backing for the HYDE basin choropleth (`/api/hyde/values`) — `hyde_cells`/`hyde_times` are the point-lookup path. (Missed in the v0.4 migration; loaded to prod 2026-09-09.) `_weights` sibling tables are notebook build artifacts, no app consumer.
 - `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
 - `temporal.evolv2k_v4`: eVolv2k v4 volcanic forcing rows by `year_ad`; columns `vssi_tg`, `so4_grl`, `so4_ant`, `lat`, `location`
 - Temperature fields (`tmp_dc_*`): stored as °C × 10 — always divide by 10 for display
