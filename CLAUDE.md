@@ -89,11 +89,14 @@ started/stopped — the flip is pure nginx routing.
   tuned off defaults. Full record: `MAINTAIN_DEPLOY.md` §F.
 - `origin/main` fast-forwarded to `241185c` 2026-09-09; prod `/var/www/edops-v4` now serves from `main` (blue-green retired in all but the service name). Branches `v04`, `v04_review`, `nits_7sep`, `origin/wb_africa` deleted.
 
-**`v04` branch content** = `main` (kgreview + DOCS_v4) + deploy-surfaced fixes (`f386ff1`
-`_rev1`→`_rev2`; `b4f8bc3` `_gaz_join` fail-soft + gunicorn pin; `117a5ee` self-hosted Protomaps
-basemap; `7d77c30` LMR temp-anomaly re-baselined to its 850–1850 mean) + the `wb_africa` merge
-(African Regions tab + pre-cutover fixes, `4a037f3`) + the 2026-09-07/08 pre-release nit pass
-(`nits_7sep`, merged) + perf work (GZipMiddleware, `/explorer/values` lru_cache).
+**How `main` got here** (all merged, `241185c`) = kgreview + DOCS_v4 + deploy-surfaced fixes
+(`f386ff1` `_rev1`→`_rev2`; `b4f8bc3` `_gaz_join` fail-soft + gunicorn pin; `117a5ee` self-hosted
+Protomaps basemap; `7d77c30` LMR temp-anomaly re-baselined to its 850–1850 mean) + the African
+Regions tab + pre-cutover fixes (`4a037f3`) + the 2026-09-07/08 pre-release nit pass + perf work
+(GZipMiddleware, `/explorer/values` lru_cache) + the 2026-09-09 post-deploy batch (`v04_review`
+→ `241185c`: WHG resolve on `/reconcile` + tiered country/admin1 hints, buffer radius control,
+Workbench Societies vertical tightening, README trim). Branches `v04`/`v04_review`/`nits_7sep`
+all deleted.
 
 **African Regions** — Workbench tab, **complete** (built for Braga 2026-09-23). Own MapLibre map;
 Lovejoy pre-colonial African subregions + article rationale, variable painting, D-PLACE
@@ -102,10 +105,10 @@ core-share/`split` dispersion badge. Full WO-by-WO record: `docs/edop/workbench/
 session detail `logs/session_log_2026090{1,2,3,6}.md`.
 
 **Open post-cutover:** Karl's full production walkthrough → v0.4 announcement (social + list);
-`./smoke_test.sh` against prod (`MAINTAIN_DEPLOY.md` step 14); cache-bust the tracked CSS/JS (`?v=<mtime>`, `pages.py`
-already has `_static_mtime()`) so returning v0.3 visitors don't get one stale-`site.css` render;
-retire v0.3 + zap the Hetzner snapshot after the soak; `MAINTAIN_DEPLOY.md` §E server-hardening
-backlog. **Repo-org direction settled** (not acted on): extract the CP entry
+cache-bust the tracked CSS/JS (`?v=<mtime>`, `pages.py` already has `_static_mtime()`) so
+returning v0.3 visitors don't get one stale-`site.css` render — do before the announcement;
+retire v0.3 + zap the Hetzner snapshot after the soak (`MAINTAIN_DEPLOY.md` steps 17–18);
+`MAINTAIN_DEPLOY.md` §E server-hardening backlog. **Repo-org direction settled** (not acted on): extract the CP entry
 point (`index.html`, `about.html`) to a small static site of its own so CP-level content stops
 riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
 `logs/session_log_20260908.md`.
@@ -404,8 +407,13 @@ there from `/docs` on 2026-08-04 to free that route for MkDocs).
 
 ## Deployment
 
-Deploy runbook (local dev command, server topology, deploy sequence) is now a skill —
+Deploy runbook (local dev command, server topology, deploy sequence) is a skill —
 `.claude/skills/deploy/SKILL.md` — loaded on invocation rather than every session.
+Canonical detail (rsync asset list, DB-change pattern, perf config, v0.3 retirement steps)
+is `MAINTAIN_DEPLOY.md` (gitignored). Short version: prod tracks `main` since 2026-09-09 —
+deploy is `git pull --ff-only origin main` + `sudo systemctl restart edops-v4` on the box
+(service `edops-v4` :8004, tree `/var/www/edops-v4`, venv `cedop-v4`), then purge the `/api/`
+nginx cache and run `./smoke_test.sh`. `edops.service` :8001 is the idle v0.3 rollback.
 
 ---
 
