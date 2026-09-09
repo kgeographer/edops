@@ -138,7 +138,8 @@
         <div class="tab-pane fade show active" id="panel-soc" role="tabpanel" aria-labelledby="tab-soc">
           <h4 class="mb-1">D-PLACE Societies</h4>
           <p class="subhead5 mb-1">1,291 ethnographically documented societies from <a href="https://d-place.org/" target="_blank">D-PLACE</a></p>
-          <p class="soc-blurb"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <p class="soc-blurb" id="soc-blurb-intro"><b>D-PLACE</b> (Database of Places, Language, Culture, and Environment) provides coded observations for 94 anthropological variables across subsistence strategies, settlement patterns, kinship systems, and social organization. Focal years are typically 1850–1940, representing the "ethnographic present." Of these societies, 87% have been spatially joined to EDOP's environmental signatures, enabling exploration of environment-culture relationships. 158 (13%) lack basin assignments (islands, coastal locations). Initial marker colors differentiate <a href="https://www.oneearth.org/bioregions/" target="_blank"> OneEarth Bioregions</a>.</p>
+          <a href="#" id="soc-blurb-restore" class="soc-blurb text-decoration-none" style="display:none;">▸ About the D-PLACE dataset</a>
           <p class="soc-blurb">Dominant Subsistence (EA042) and High Gods (EA034) below are two exemplar traits from the Ethnographic Atlas dataset, chosen for their differing <i>potential</i> association with environmental settings.</p>
           <!-- Loading spinner -->
           <div id="soc-loading" class="text-center py-3" style="display:none;">
@@ -3558,6 +3559,21 @@
       }
     }
 
+    // Reclaim vertical space: the long D-PLACE intro paragraph collapses the first
+    // time a trait accordion opens; a small "About the D-PLACE dataset" link brings
+    // it back. Idempotent -- safe to call on every accordion open.
+    function _socCollapseIntro() {
+      const intro = document.getElementById('soc-blurb-intro');
+      const restore = document.getElementById('soc-blurb-restore');
+      if (intro) intro.style.display = 'none';
+      if (restore) restore.style.display = '';
+    }
+    document.getElementById('soc-blurb-restore')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('soc-blurb-intro').style.display = '';
+      e.target.style.display = 'none';
+    });
+
     function wireSubsistenceAccordion() {
       const toggle = document.getElementById('soc-query-subsistence');
       const panel = document.getElementById('soc-subsistence-panel');
@@ -3570,6 +3586,7 @@
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
         if (!isOpen) {
+          _socCollapseIntro();
           _closeSocAccordion('soc-religion-panel', 'soc-query-religion');
           if (socReligionFilter !== 'all') {
             resetReligionSelection();
@@ -3625,6 +3642,7 @@
       // Wire up change handlers
       container.querySelectorAll('input[name="soc-subsistence"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+          _socCollapseIntro();   // subsistence panel is open on load -> collapse on first value pick
           socSubsistenceFilter = e.target.value;
           socActiveQuery = 'subsistence';
           resetReligionSelection(false);
@@ -3649,6 +3667,7 @@
         e.preventDefault();
         const isOpen = panel.style.display !== 'none';
         if (!isOpen) {
+          _socCollapseIntro();
           _closeSocAccordion('soc-subsistence-panel', 'soc-query-subsistence');
           if (socSubsistenceFilter !== 'all') {
             resetSubsistenceSelection();
@@ -3704,6 +3723,7 @@
       // Wire up change handlers
       container.querySelectorAll('input[name="soc-religion"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+          _socCollapseIntro();
           socReligionFilter = e.target.value;
           socActiveQuery = 'religion';
           resetSubsistenceSelection(false);
