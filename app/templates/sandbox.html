@@ -1139,16 +1139,19 @@
       return;
     }
 
-    if (!map || map.getZoom() < 3) {
-      _whgSetStatus('Zoom map to your study region first, then search.');
-      return;
-    }
-
+    // "Name, Country" -> q + country hint (server resolves the country to a 2-letter code)
     let q = raw, countryParam = '';
     const commaIdx = raw.indexOf(',');
     if (commaIdx > 0) {
       q            = raw.slice(0, commaIdx).trim();
       countryParam = raw.slice(commaIdx + 1).trim();
+    }
+
+    // No country -> the map viewport is the hard spatial constraint (WHG bounds filter),
+    // so a study-region zoom is required. With a country, no zoom needed.
+    if (!countryParam && (!map || map.getZoom() < 4)) {
+      _whgSetStatus('Add a country ("Venice, Italy") or zoom the map to your study region, then search.');
+      return;
     }
 
     _whgHideCandidates();
@@ -1158,19 +1161,24 @@
     try {
       let url = `/api/whg/suggest?q=${encodeURIComponent(q)}&limit=8`;
       if (countryParam) url += `&country=${encodeURIComponent(countryParam)}`;
+      // Always send the viewport too: the server uses `country` when it resolves to a
+      // 2-letter code, otherwise falls back to this bbox (mistyped/unknown country).
+      if (map) {
+        const b = map.getBounds();
+        url += `&bbox=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+      }
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`WHG search failed (${res.status})`);
+      if (!res.ok) {
+        let msg = `WHG search failed (${res.status})`;
+        try { const j = await res.json(); if (j.detail) msg = j.detail; } catch (_) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       _whgResults = data.results || [];
 
-      if (map && _whgResults.length) {
-        const mb = map.getBounds();
-        const inView = _whgResults.filter(r => mb.contains([r.lon, r.lat]));
-        if (inView.length) _whgResults = inView;
-      }
-
       if (!_whgResults.length) {
-        _whgSetStatus(`No results for "${escapeHtml(q)}".`);
+        const where = countryParam ? ` in ${escapeHtml(countryParam)}` : ' in the current map view';
+        _whgSetStatus(`No results for "${escapeHtml(q)}"${where}.`);
         document.getElementById('v3-example-select').disabled = false;
         return;
       }

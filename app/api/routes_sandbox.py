@@ -27,7 +27,7 @@ from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
-from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity
+from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile
 
 from pathlib import Path
 import re
@@ -573,15 +573,69 @@ def whg_suggest(q: str, limit: int = 5):
 # /whg-reconcile moved to routes_workbench.py (2026-08-16, routes split).
 
 
+# WHG returns several AAT place types per entity; "World Heritage Sites" is often
+# first and reads oddly as the primary label. Prefer a settlement-ish one.
+_PLACE_TYPE_PREF = ("cities", "towns", "villages", "inhabited places",
+                    "capitals (seats of government)", "archaeological sites",
+                    "deserted settlements", "ancient sites")
+
+
+def _whg_place_type(place_types: List[Dict]) -> Optional[str]:
+    labels = [p.get("label") for p in (place_types or []) if p.get("label")]
+    for pref in _PLACE_TYPE_PREF:
+        if pref in labels:
+            return pref
+    return labels[0] if labels else None
+
+
+def _bbox_polygon(bbox: str) -> Dict:
+    """'w,s,e,n' -> a GeoJSON Polygon ring for a WHG /reconcile `bounds` filter."""
+    parts = [p.strip() for p in (bbox or "").split(",")]
+    if len(parts) != 4:
+        raise HTTPException(
+            status_code=400,
+            detail="Zoom the map to your study region first — a bounding box is "
+                   "required when no country is given.",
+        )
+    try:
+        w, s, e, n = (float(x) for x in parts)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bbox must be four numbers: w,s,e,n")
+    if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
+        raise HTTPException(status_code=400, detail="bbox out of range or degenerate")
+    return {"type": "Polygon", "coordinates": [[[w, s], [e, s], [e, n], [w, n], [w, s]]]}
+
+
+def _reconcile_hits(data: Dict, keys) -> List[Dict]:
+    """Flatten reconcile sub-query results in `keys` order, deduped by id."""
+    out, seen = [], set()
+    for k in keys:
+        for r in (data.get(k, {}).get("result") or []):
+            rid = r.get("id")
+            if rid and rid in seen:
+                continue
+            if rid:
+                seen.add(rid)
+            out.append(r)
+    return out
+
+
 @router.get("/whg/suggest", include_in_schema=False)
-def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
-    """Settlement/site lookup via WHG suggest, filtered to fclasses P (populated) and S (site).
+def whg_suggest_places(q: str, limit: int = 8, country: str = "", bbox: str = ""):
+    """Settlement/site lookup via WHG /reconcile (2026-09-09; replaced /suggest/entity).
 
-    Accepts an optional `country` free-text string (e.g. "Mali", "ital") which is resolved
-    to an ISO-3166-1 alpha-2 code via ILIKE against gaz.ccodes, then passed to WHG as a
-    countries filter. If the country hint doesn't match, the search proceeds without it.
+    Two mutually exclusive modes, matching the Sandbox resolve rules:
 
-    The frontend passes a comma-parsed country hint: "Timbuktu, Mali" → q="Timbuktu", country="Mali".
+    - **country given** — `country` free text ("Italy", "ital") is resolved to an
+      ISO 3166-1 alpha-2 code via gaz.ccodes; the search is `countries=[code]` +
+      `fclasses=P,S`, `mode=exact` with a `mode=fuzzy` fallback only if exact
+      returns nothing. No bbox, no zoom required.
+    - **no country** — `bbox` ("w,s,e,n", the map viewport) is required and passed
+      to WHG as a `bounds` polygon; WHG enforces the spatial filter server-side, so
+      results never fall outside the box. `fclasses` is omitted (probed 2026-09-09:
+      `fclasses` + `bounds` zero out a query at WHG); exact + fuzzy hits are unioned.
+
+    The frontend comma-splits the input: "Venice, Italy" → q="Venice", country="Italy".
     """
     q = (q or "").strip()
     if not q or len(q) < 2:
@@ -603,33 +657,52 @@ def whg_suggest_places(q: str, limit: int = 8, country: str = ""):
                     ccode = row[0]
             conn.close()
         except Exception:
-            pass  # country hint is optional; never blocks search
+            pass  # country hint is optional; a miss falls through to the bbox path
+
+    if ccode:
+        base = {"query": q, "countries": [ccode], "fclasses": ["P", "S"], "limit": max(limit, 10)}
+        exact_wins = True
+    else:
+        base = {"query": q, "bounds": _bbox_polygon(bbox), "limit": max(limit, 15)}
+        exact_wins = False
+
+    batch = {"exact": {**base, "mode": "exact"}, "fuzzy": {**base, "mode": "fuzzy"}}
 
     try:
-        raw = _whg_suggest(q, limit=limit, fclasses="P,S", countries=ccode)
+        data = _whg_reconcile(batch)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"WHG suggest failed: {e}")
+        raise HTTPException(status_code=502, detail=f"WHG reconcile failed: {e}")
+
+    if exact_wins and (data.get("exact", {}).get("result") or []):
+        raw = _reconcile_hits(data, ("exact",))
+    else:
+        raw = _reconcile_hits(data, ("exact", "fuzzy"))
 
     results = []
     for r in raw:
         pt = r.get("repr_point")
         if not pt or len(pt) < 2:
             continue
+        try:
+            lon, lat = float(pt[0]), float(pt[1])
+        except (TypeError, ValueError):
+            continue
         ccs = r.get("ccodes") or []
-        place_types = r.get("place_types") or []
         results.append({
             "id": r.get("id"),
             "name": r.get("name"),
-            "lon": float(pt[0]),
-            "lat": float(pt[1]),
+            "lon": lon,
+            "lat": lat,
             "ccodes": ccs,
             "alt_names": (r.get("alt_names") or [])[:10],
             "cname": _CCODES.get(ccs[0], "") if ccs else "",
             "score": r.get("score"),
-            "place_type": place_types[0].get("label") if place_types else None,
+            "place_type": _whg_place_type(r.get("place_types")),
         })
+        if len(results) >= limit:
+            break
 
     return {"results": results}
 
