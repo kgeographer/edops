@@ -458,7 +458,7 @@ site/ holds mkdocs generated/published markup
 | Doc                                             | Purpose                                                                                                          |
 |-------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `documentation/EDOP_summary_v04.md`             | Current project summary (v0.4, September 2026)                                                                   |
-| `documentation/EDOPS_variable_catalog_v0.4.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth. `EDOPS_variable_catalog_v0.3.tsv` is a frozen snapshot of what's actually deployed in production (recovered from the live server 2026-08-06); not read by any code. |
+| `documentation/EDOPS_variable_catalog_v0.4.tsv` | Variable reference; loaded at startup by `signature.py` and `routes.py` — canonical copy, single source of truth. The v0.3 frozen snapshot (what's actually deployed in production, recovered from the live server 2026-08-06; not read by any code) moved to `documentation/drafts/EDOPS_variable_catalog_v0.3.tsv` (gitignored) 2026-09-09. |
 | `documentation/EDOPS_esda_findings.md`          | ESDA findings (BV.1–BVR.7, CAT.1–8, etc.)                                                                        |
 | `documentation/EDOPS_eda_findings.md`           | EDA findings (F1.1–F11.6)                                                                                        |
 | `docs/edop/prospectus_20260505.md`              | Initial research direction doc (superseded by project summary)                                                   |
