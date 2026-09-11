@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 import ssl
@@ -27,7 +28,7 @@ from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
 from app.settings import settings
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
-from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile
+from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile, _extract_lonlat
 
 from pathlib import Path
 import re
@@ -825,6 +826,75 @@ def whg_suggest_places(q: str, limit: int = 8, country: str = "", bbox: str = ""
             break
 
     return {"results": results}
+
+
+_ID_NS_PATTERN = re.compile(r"^(whg|wd|pl|gn|tgn):(\S+)$", re.IGNORECASE)
+
+
+@router.get("/whg/entity", include_in_schema=False)
+def whg_entity_lookup(id: str = Query(..., description="Namespaced gazetteer identifier, e.g. wd:Q220")):
+    """Resolve a pasted gazetteer identifier to a point via WHG's Entity API.
+
+    Backs the Settlements resolve field's identifier-paste path (2026-09-11).
+    Accepted namespaces: whg, wd (Wikidata), pl (Pleiades), gn (GeoNames),
+    tgn (Getty TGN) -- matches the resolve field's help tooltip exactly.
+    Response shape matches the WHG-candidate path ({lat, lon, name, ...}) so
+    the frontend can feed it straight into setResolvedPoint().
+    """
+    raw = (id or "").strip()
+    m = _ID_NS_PATTERN.match(raw)
+    if not m:
+        raise HTTPException(
+            status_code=400,
+            detail="Expected a namespaced identifier like wd:Q220 (whg, wd, pl, gn, or tgn).",
+        )
+    ns, ident = m.group(1).lower(), m.group(2)
+
+    # WHG's own native namespace has no "whg:" segment in its entity id -- e.g.
+    # "place:5424806", not "place:whg:5424806" (see _whg_entity docstring).
+    whg_place_id = f"place:{ident}" if ns == "whg" else f"place:{ns}:{ident}"
+
+    try:
+        entity = _whg_entity(whg_place_id)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise HTTPException(status_code=404, detail=f"No WHG record found for '{raw}'.")
+        raise HTTPException(status_code=502, detail=f"WHG entity lookup failed: {e}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"WHG entity lookup failed: {e}")
+
+    lonlat = _extract_lonlat(entity)
+    if not lonlat:
+        raise HTTPException(status_code=404, detail=f"No resolvable location for '{raw}'.")
+    lon, lat = lonlat
+
+    # names has been seen both under properties.names (wd-sourced records) and
+    # top-level names (pl-sourced records) in probing -- check both rather than
+    # assume one. types is top-level in every record seen (matches the existing
+    # _whg_search_candidates convention above).
+    props = entity.get("properties") or {}
+    names = props.get("names") or entity.get("names") or []
+    name = next(
+        (n.get("toponym") for n in names
+         if isinstance(n, dict) and str(n.get("lang", "")).lower() == "en" and n.get("toponym")),
+        None,
+    )
+    if not name and names and isinstance(names[0], dict):
+        name = names[0].get("toponym")
+    name = name or raw
+
+    types = [{"label": t.get("label", "")} for t in (entity.get("types") or []) if isinstance(t, dict)]
+
+    return {
+        "id": whg_place_id,
+        "source_id": raw,
+        "name": name,
+        "lat": lat,
+        "lon": lon,
+        "types": types,
+    }
 
 
 @router.get("/similar", include_in_schema=False)

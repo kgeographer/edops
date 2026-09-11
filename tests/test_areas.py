@@ -10,6 +10,7 @@ matches the exemplar at output/edop/surface/exemplars/02_buffer_detail.json.
 """
 
 import json
+import urllib.error
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
@@ -788,3 +789,101 @@ class TestWhgSuggestRouteValidation:
         r = client.get("/api/whg/suggest?q=Venice&bbox=0,0,10,10")
         names = [x["name"] for x in r.json()["results"]]
         assert names == ["A", "B"]
+
+
+class TestWhgEntityRouteValidation:
+    """Tests for GET /api/whg/entity -- resolve-by-identifier path behind the
+    Settlements resolve field's identifier-paste affordance. Mocked; no DB or
+    live WHG connection.
+    """
+
+    _ROME_ENTITY = {
+        "geometry": {"type": "Point", "coordinates": [12.482778, 41.893056]},
+        "properties": {"names": [
+            {"toponym": "Roma", "lang": "it"},
+            {"toponym": "Rome", "lang": "en"},
+        ]},
+        "types": [{"label": "city"}, {"identifier": "Q3685476", "label": "city"}],
+    }
+
+    def test_unrecognized_prefix_returns_400(self, client):
+        r = client.get("/api/whg/entity?id=xx:12345")
+        assert r.status_code == 400, r.text
+        assert "namespaced identifier" in r.json()["detail"].lower()
+
+    def test_bare_id_no_prefix_returns_400(self, client):
+        r = client.get("/api/whg/entity?id=Q220")
+        assert r.status_code == 400, r.text
+
+    def test_missing_id_returns_422(self, client):
+        r = client.get("/api/whg/entity")
+        assert r.status_code == 422, r.text
+
+    def test_wikidata_id_maps_to_place_ns_id(self, client, monkeypatch):
+        """wd:Q220 -> WHG entity id 'place:wd:Q220' (namespace segment kept)."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_whg_entity",
+                             lambda pid: captured.update(place_id=pid) or self._ROME_ENTITY)
+        r = client.get("/api/whg/entity?id=wd:Q220")
+        assert r.status_code == 200, r.text
+        assert captured["place_id"] == "place:wd:Q220"
+        data = r.json()
+        assert data["id"] == "place:wd:Q220"
+        assert data["source_id"] == "wd:Q220"
+        assert data["lat"] == pytest.approx(41.893056)
+        assert data["lon"] == pytest.approx(12.482778)
+        assert data["name"] == "Rome"   # lang=en preferred over the first (it) entry
+        assert data["types"][0]["label"] == "city"
+
+    def test_whg_native_id_drops_ns_segment(self, client, monkeypatch):
+        """whg:5424806 -> WHG entity id 'place:5424806', no 'whg:' segment."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_whg_entity",
+                             lambda pid: captured.update(place_id=pid) or self._ROME_ENTITY)
+        client.get("/api/whg/entity?id=whg:5424806")
+        assert captured["place_id"] == "place:5424806"
+
+    def test_case_insensitive_prefix_id_part_preserved(self, client, monkeypatch):
+        """WD:Q220 -> namespace lowercased, id part case preserved."""
+        import app.api.routes_sandbox as rm
+        captured = {}
+        monkeypatch.setattr(rm, "_whg_entity",
+                             lambda pid: captured.update(place_id=pid) or self._ROME_ENTITY)
+        client.get("/api/whg/entity?id=WD:Q220")
+        assert captured["place_id"] == "place:wd:Q220"
+
+    def test_no_geometry_returns_404(self, client, monkeypatch):
+        import app.api.routes_sandbox as rm
+        monkeypatch.setattr(rm, "_whg_entity", lambda pid: {"properties": {}, "types": []})
+        r = client.get("/api/whg/entity?id=pl:999999999")
+        assert r.status_code == 404, r.text
+
+    def test_whg_http_404_propagates_as_404(self, client, monkeypatch):
+        import app.api.routes_sandbox as rm
+        def _raise(pid):
+            raise urllib.error.HTTPError("url", 404, "Not Found", {}, None)
+        monkeypatch.setattr(rm, "_whg_entity", _raise)
+        r = client.get("/api/whg/entity?id=pl:999999999")
+        assert r.status_code == 404, r.text
+
+    def test_other_whg_failure_returns_502(self, client, monkeypatch):
+        import app.api.routes_sandbox as rm
+        monkeypatch.setattr(rm, "_whg_entity",
+                             lambda pid: (_ for _ in ()).throw(RuntimeError("connection reset")))
+        r = client.get("/api/whg/entity?id=gn:2988507")
+        assert r.status_code == 502, r.text
+
+    def test_names_fallback_to_top_level(self, client, monkeypatch):
+        """Some entity records carry names top-level rather than under properties."""
+        import app.api.routes_sandbox as rm
+        entity = {
+            "geometry": {"type": "Point", "coordinates": [12.492138, 41.889787]},
+            "names": [{"toponym": "Roma", "lang": "it"}],
+            "types": [],
+        }
+        monkeypatch.setattr(rm, "_whg_entity", lambda pid: entity)
+        r = client.get("/api/whg/entity?id=pl:423025")
+        assert r.status_code == 200, r.text
+        assert r.json()["name"] == "Roma"   # no lang=en entry -- falls back to the first

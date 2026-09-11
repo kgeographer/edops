@@ -1167,6 +1167,30 @@
     const raw = document.getElementById('v3-place-input').value.trim();
     if (!raw) return;
 
+    // Namespaced gazetteer identifier, e.g. wd:Q220, pl:423025 -- matches the
+    // resolve field's help tooltip exactly.
+    const idMatch = raw.match(/^(whg|wd|pl|gn|tgn):(\S+)$/i);
+    if (idMatch) {
+      _whgHideCandidates();
+      _whgSetStatus('Resolving identifier…');
+      document.getElementById('v3-example-select').disabled = true;
+      try {
+        const res = await fetch(`/api/whg/entity?id=${encodeURIComponent(raw)}`);
+        if (!res.ok) {
+          let msg = `Identifier lookup failed (${res.status})`;
+          try { const j = await res.json(); if (j.detail) msg = j.detail; } catch (_) {}
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        _whgSetStatus('', false);
+        setResolvedPoint(data.lat, data.lon, data.name || raw);
+      } catch (err) {
+        _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
+        document.getElementById('v3-example-select').disabled = false;
+      }
+      return;
+    }
+
     const coordMatch = raw.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
     if (coordMatch) {
       const parsedLat = parseFloat(coordMatch[1]);
