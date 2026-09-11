@@ -74,10 +74,27 @@
                  aria-labelledby="v3-tab-settlements-btn">
 
               <!-- WHG resolve field -->
-              <div class="input-group input-group-sm mb-1">
-                <input type="text" id="v3-place-input" class="form-control"
-                       placeholder="Enter name (+ optional ', Country') or Lat,Lon">
-                <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
+              <div class="d-flex align-items-center gap-1 mb-1">
+                <div class="input-group input-group-sm">
+                  <input type="text" id="v3-place-input" class="form-control"
+                         placeholder="Enter name, identifier or lat/lon">
+                  <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
+                </div>
+                <i class="bi bi-question-circle edops-help" data-help-html="#v3-place-help-content"></i>
+                <template id="v3-place-help-content">
+                  <p class="help-accepts-lead">Accepts:</p>
+                  <ul>
+                    <li>Place name + optional ", Country"</li>
+                    <li>Gazetteer ID with prefix
+                      <span class="help-ns-line"><code>whg:</code> (World Historical Gazetteer),</span>
+                      <span class="help-ns-line"><code>wd:</code> (Wikidata),</span>
+                      <span class="help-ns-line"><code>pl:</code> (Pleiades),</span>
+                      <span class="help-ns-line"><code>gn:</code> (GeoNames),</span>
+                      <span class="help-ns-line"><code>tgn:</code> (Getty TGN)</span>
+                    </li>
+                    <li>Lat, Lon coordinates</li>
+                  </ul>
+                </template>
               </div>
               <!-- WHG status line (hidden at cold start) -->
               <div id="v3-whg-status" class="mb-1"

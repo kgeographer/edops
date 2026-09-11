@@ -6,6 +6,11 @@
 //   - Hover tooltip:   <i class="bi bi-question-circle edops-help" data-help-text="..."></i>
 //                       Optional: data-help-placement="top|right|bottom|left" (defaults "right").
 //                       No decorator -- this is the baseline affordance.
+//   - Rich tooltip:    <i class="bi bi-question-circle edops-help" data-help-html="#some-template"></i>
+//                       Selector must point to a <template> (or hidden element) holding the
+//                       tooltip's markup -- multi-line lists, <code> spans, etc. Rendered in the
+//                       "edops-help-rich" tooltip theme (white/left-aligned; see site.css) rather
+//                       than Bootstrap's default dark/centered box used by data-help-text.
 //   - Toggle a panel:  <i class="bi bi-question-circle edops-help" data-help-toggle="#some-id"></i>
 //                       Click shows/hides the element matching the selector; the target starts
 //                       hidden via its own style="display:none". Gets a chevron decorator that
@@ -34,10 +39,15 @@
   }
 
   function initEdopsHelpTooltips() {
-    document.querySelectorAll('.edops-help[data-help-text]').forEach(function (el) {
+    document.querySelectorAll('.edops-help[data-help-text], .edops-help[data-help-html]').forEach(function (el) {
       if (bootstrap.Tooltip.getInstance(el)) return; // don't double-init if called more than once
+      var isRich = !!el.dataset.helpHtml;
+      var source = isRich ? document.querySelector(el.dataset.helpHtml) : null;
+      if (isRich && !source) return; // template not in the DOM yet -- MutationObserver will retry
       new bootstrap.Tooltip(el, {
-        title: el.dataset.helpText,
+        title: isRich ? source.innerHTML : el.dataset.helpText,
+        html: isRich,
+        customClass: isRich ? 'edops-help-rich' : '',
         placement: el.dataset.helpPlacement || 'right',
         trigger: 'hover',
       });
@@ -100,7 +110,7 @@
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['data-help-text', 'data-help-toggle', 'data-help-modal'],
+    attributeFilter: ['data-help-text', 'data-help-html', 'data-help-toggle', 'data-help-modal'],
   });
 
   // Exposed as a manual fallback; nothing needs to call this anymore under normal use.
