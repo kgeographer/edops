@@ -74,10 +74,27 @@
                  aria-labelledby="v3-tab-settlements-btn">
 
               <!-- WHG resolve field -->
-              <div class="input-group input-group-sm mb-1">
-                <input type="text" id="v3-place-input" class="form-control"
-                       placeholder="Enter name (+ optional ', Country') or Lat,Lon">
-                <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
+              <div class="d-flex align-items-center gap-1 mb-1">
+                <div class="input-group input-group-sm">
+                  <input type="text" id="v3-place-input" class="form-control"
+                         placeholder="Enter name, identifier or lat/lon">
+                  <button class="btn btn-outline-primary" id="v3-resolve-btn">Resolve</button>
+                </div>
+                <i class="bi bi-question-circle edops-help" data-help-html="#v3-place-help-content"></i>
+                <template id="v3-place-help-content">
+                  <p class="help-accepts-lead">Accepts:</p>
+                  <ul>
+                    <li>Place name + optional ", Country"</li>
+                    <li>Gazetteer ID with prefix
+                      <span class="help-ns-line"><code>wd:</code> (Wikidata),</span>
+                      <span class="help-ns-line"><code>pl:</code> (Pleiades),</span>
+                      <span class="help-ns-line"><code>gn:</code> (GeoNames),</span>
+                      <span class="help-ns-line"><code>tgn:</code> (Getty TGN),</span>
+                      <span class="help-ns-line"><code>whg:</code> (World Historical Gazetteer)</span>
+                    </li>
+                    <li>Lat, Lon coordinates</li>
+                  </ul>
+                </template>
               </div>
               <!-- WHG status line (hidden at cold start) -->
               <div id="v3-whg-status" class="mb-1"
@@ -1149,6 +1166,30 @@
   async function resolveSettlement() {
     const raw = document.getElementById('v3-place-input').value.trim();
     if (!raw) return;
+
+    // Namespaced gazetteer identifier, e.g. wd:Q220, pl:423025 -- matches the
+    // resolve field's help tooltip exactly.
+    const idMatch = raw.match(/^(whg|wd|pl|gn|tgn):(\S+)$/i);
+    if (idMatch) {
+      _whgHideCandidates();
+      _whgSetStatus('Resolving identifier…');
+      document.getElementById('v3-example-select').disabled = true;
+      try {
+        const res = await fetch(`/api/whg/entity?id=${encodeURIComponent(raw)}`);
+        if (!res.ok) {
+          let msg = `Identifier lookup failed (${res.status})`;
+          try { const j = await res.json(); if (j.detail) msg = j.detail; } catch (_) {}
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        _whgSetStatus('', false);
+        setResolvedPoint(data.lat, data.lon, data.name || raw);
+      } catch (err) {
+        _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
+        document.getElementById('v3-example-select').disabled = false;
+      }
+      return;
+    }
 
     const coordMatch = raw.match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
     if (coordMatch) {

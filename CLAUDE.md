@@ -274,8 +274,10 @@ nothing routes to it.)
 `sandbox_v3.html` on 2026-08-15 — the `_v3` distinction stopped meaning anything once the old
 Phase 1 page was renamed out of the way; see the Lookup entry below.)
 
-Two-tab surface: **Settlements** (WHG place lookup → scope → BasinATLAS/LMR/HYDE choropleth + signature)
-and **Polities** (search → slice slider + VCR → choropleth + signature).
+Two-tab surface: **Settlements** (WHG place lookup, or a pasted gazetteer identifier
+[`whg:`/`wd:`/`pl:`/`gn:`/`tgn:`] — see `logs/session_log_2026091{0,1}.md` — → scope →
+BasinATLAS/LMR/HYDE choropleth + signature) and **Polities** (search → slice slider + VCR →
+choropleth + signature).
 
 - AWMC historical terrain basemap; HydroRIVERS PMTiles base layer (`app/static/sandbox/`; gitignored)
 - Layer control (top-right over map); rivers toggleable

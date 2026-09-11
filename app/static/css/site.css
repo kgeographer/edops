@@ -192,6 +192,45 @@ pre {
   cursor: pointer;
 }
 
+/* Rich tooltip theme (data-help-html mode) -- white/left-aligned box for multi-line content,
+   vs. Bootstrap's default dark/centered box used by plain data-help-text. Overrides Bootstrap
+   5.3's tooltip CSS variables rather than .tooltip-inner directly, so the arrow picks it up too. */
+.tooltip.edops-help-rich {
+  --bs-tooltip-bg: #fff;
+  --bs-tooltip-color: #1a1712;
+  --bs-tooltip-max-width: 300px;
+  --bs-tooltip-opacity: 1;
+}
+.tooltip.edops-help-rich .tooltip-inner {
+  text-align: left;
+  border: 1px solid #d9d1c4;
+  box-shadow: 0 6px 18px rgba(36, 31, 28, 0.18);
+  padding: 10px 12px;
+}
+.tooltip.edops-help-rich .help-accepts-lead {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+.tooltip.edops-help-rich ul {
+  margin: 0;
+  padding-left: 1.1em;
+}
+.tooltip.edops-help-rich li {
+  margin-bottom: 4px;
+}
+.tooltip.edops-help-rich li:last-child {
+  margin-bottom: 0;
+}
+.tooltip.edops-help-rich .help-ns-line {
+  display: block;
+  margin-left: 1.1em;
+  white-space: nowrap;
+}
+.tooltip.edops-help-rich code {
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
 /* Soft light-blue button, black text -- bare .btn has no hover state of its own (Bootstrap's
    hover rules live on the .btn-* variant classes), so this needs an explicit :hover rather than
    relying on Bootstrap. Used by the API Guide modal's Swagger link (_edops_modals.html).
