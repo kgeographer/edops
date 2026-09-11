@@ -837,13 +837,20 @@ class TestWhgEntityRouteValidation:
         assert data["types"][0]["label"] == "city"
 
     def test_whg_native_id_drops_ns_segment(self, client, monkeypatch):
-        """whg:5424806 -> WHG entity id 'place:5424806', no 'whg:' segment."""
+        """whg:5456866 -> WHG entity id 'place:5456866', no 'whg:' segment.
+
+        5456866 is a real pid (verified live against whgazetteer.org 2026-09-11 --
+        resolves to "Guansuo"), not a placeholder -- bare place_id addressing is a
+        legitimate, stable identifier for a dataset owner who has one, even though
+        WHG doesn't currently surface it anywhere in the UI (see
+        docs/whg_place_id_exposure_github_issue.md).
+        """
         import app.api.routes_sandbox as rm
         captured = {}
         monkeypatch.setattr(rm, "_whg_entity",
                              lambda pid: captured.update(place_id=pid) or self._ROME_ENTITY)
-        client.get("/api/whg/entity?id=whg:5424806")
-        assert captured["place_id"] == "place:5424806"
+        client.get("/api/whg/entity?id=whg:5456866")
+        assert captured["place_id"] == "place:5456866"
 
     def test_case_insensitive_prefix_id_part_preserved(self, client, monkeypatch):
         """WD:Q220 -> namespace lowercased, id part case preserved."""
