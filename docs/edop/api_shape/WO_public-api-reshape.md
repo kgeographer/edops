@@ -9,7 +9,48 @@ Grew out of `docs/edop/lod/note_to_opus_lod_compatibility.md` and
 `/api/signature`, `/api/areas`, and `/api/area` have three different, undocumented response
 shapes. This WO is the resulting reshape, not itself an LOD deliverable.
 
-## Destination shape (context for every section below — not built yet, most of it)
+## Destination shape — locked 2026-09-14 (superseded the 2026-09-13 version below it verbatim;
+kept for the record, not deleted)
+
+Locked in direct conversation with Karl, point by point, 2026-09-14. This is the model now —
+not a proposal.
+
+- **"Areas" (plural) does not exist, internal or external, anywhere.** Not a route, not a
+  function name, not a concept. Every request resolves to exactly **one** signature — whether
+  it aggregates over one basin or many. This is the starting assumption everything else follows
+  from, not a naming preference.
+- **One public endpoint: `/api/signature`.** One parameter, `scope`, flat, four values, no
+  nesting: `basin` | `basin-ring` | `buffer` | `area`.
+- **Input shape per scope:**
+  - `basin`, `basin-ring` — a point (`lat`/`lon`).
+  - `buffer` — a point + `radius_km`.
+  - `area` — a WKT geometry string. First build target: a **bbox-constructed** example
+    (short, trivial to round-trip) — not arbitrary or large WKT, kept simple deliberately.
+- **Two response shapes — not one uniform shape — and both already built and working today:**
+  - `basin` (one basin) → raw values + a few derived values. Existing machinery:
+    `get_signature()` — today's `/api/signature`, unchanged, reused directly.
+  - `basin-ring` / `buffer` / `area` (many basins) → distribution constructs driving
+    histograms. Existing machinery: `basin_ring_signature()`, `areal_signature()`,
+    `areal_signature_polygon()` respectively (the areas engine).
+  - **Correction to this doc's own earlier framing (2026-09-13 version, below):** that version
+    treated `single_basin_signature()` (the areas engine's n=1 case of its general aggregator,
+    WO14) as the ancestor for the single-basin public product. Wrong — Karl: treating
+    single-basin as a degenerate case of the multi-basin aggregator "was always a mistake I
+    should have halted way back." `scope=basin` reuses `get_signature()`, full stop;
+    `single_basin_signature()` is not part of this endpoint's story.
+- **Cliopatria polities are not a `scope` of their own.** A polity's signature is `scope=area`
+  once its geometry is in hand. How that geometry gets resolved server-side (Section 1's
+  `/clio` work) is a separate, internal concern Karl is explicitly not prescribing: "whatever
+  it takes to fetch geometries and basins for clio polities, I don't care."
+- A bbox-constructed WKT is just the **test input** for building/proving the generic
+  `scope=area` case — short, simple, trivial to round-trip. Cliopatria's own geometry (which
+  can be much larger) is handled by whatever `/clio` needs to do server-side; that's a
+  separate concern from the generic case's test input, not a design fork to reconcile.
+- `basin-ring`'s current response shape (`/api/areas?scope=basin_ring` today: `type`/`lat`/
+  `lon`/`center`/`ring`) doesn't match its sibling scopes — a real fix, due whenever
+  `scope=basin-ring` gets wired onto `/api/signature`.
+
+### 2026-09-13 version (superseded by the above — kept for the record)
 
 - Two request cases, matching how a user actually supplies a location: **point** (single
   basin / buffer / basin-touching-ring) and **geometry** (a set of basins within a region).
@@ -30,9 +71,6 @@ shapes. This WO is the resulting reshape, not itself an LOD deliverable.
 - `basin_ring`'s response shape gets brought in line with its `single_basin`/`buffer`/`polity`
   siblings (`scope`/`rows`/`bands`/`caveats`/`shortfall`/`temporal`) — currently the one
   outlier (`type`/`lat`/`lon`/`center`/`ring`).
-
-None of the above is scoped as an implementation yet except Section 1. Recorded here so the
-destination doesn't get lost across sections, not as a commitment to build it in this order.
 
 ---
 
@@ -102,13 +140,71 @@ already correct and doesn't need to change; this section doesn't touch it.
 
 ---
 
-## Section 2 — calve the polity signature path off `/api/areas` entirely
+## Section 2 — build `/api/signature` for `scope=basin | basin-ring | buffer`
 
-**Status: written, not built.** Written 2026-09-14 (revised same day — first draft kept a
-`scope=polity`/`scope=area` value inside `areas()`'s dispatch; Karl's call: go further,
-`/api/areas` should end up with no Cliopatria-awareness at all, not even a generic
-geometry-accepting scope value it delegates to). Still its own explicit go/no-go before
-building.
+**Status: written, not built.** Written 2026-09-14, following the locked destination shape
+above. Supersedes the ordering (not the content) of what was Section 2 — Cliopatria/`/clio`
+now comes *after* the generic scopes exist, renumbered to Section 4 below.
+
+### Goal
+
+Extend the **existing** `/api/signature` route (`routes_common.py`, `signature()`) with an
+optional `scope` param, default `basin` — today's only behavior, so every existing caller
+(`narrative.py`, `workbench.html`, `sandbox.html`'s Analysis-tab parallel fetch, the research
+script) keeps working with zero code changes on their end, since none of them pass `scope`.
+`scope=basin-ring`/`scope=buffer` dispatch to `basin_ring_signature()`/`areal_signature()` —
+the same engine calls `/api/areas` already makes today, just reached from `/api/signature`
+instead.
+
+This is almost entirely re-routing already-correct, already-tested machinery under one name.
+The one substantive new work: `basin-ring`'s response shape doesn't match `buffer`'s today
+(`type`/`lat`/`lon`/`center`/`ring` vs. `bands`/`caveats`/`rows`/`scope`/`shortfall`/
+`temporal`) — fixed here, since it's being freshly wired in anyway.
+
+### What gets built
+
+- `signature()` gains `scope` (default `basin`) and `radius_km` (required only when
+  `scope=buffer`). `scope=basin` — unchanged, calls `get_signature()` exactly as today.
+  `scope=buffer` — calls `areal_signature()`, reuses its existing (already-correct) shape
+  directly. `scope=basin-ring` — calls `basin_ring_signature()`, reshapes its output to match
+  `buffer`'s envelope instead of its current one.
+- `/api/areas`'s `scope=buffer`/`scope=single_basin`/`scope=basin_ring` branches — untouched
+  in this section, stay live in case anything still calls them directly. Retiring `/api/areas`
+  itself is a later, separate step, once nothing calls it.
+- Sandbox frontend not touched — build + test only, same discipline as Section 1.
+
+### Acceptance criteria
+
+- `scope=basin-ring`/`scope=buffer` on `/api/signature` return equivalent payloads (same
+  `rows`, modulo the basin-ring shape fix) to today's `/api/areas?scope=basin_ring`/
+  `scope=buffer` for the same real query.
+- Every existing `/api/signature` caller (no `scope` param) verified byte-identical —
+  full backward compatibility, tested explicitly, not assumed.
+- Full suite green.
+
+### Explicitly not in this section
+
+`scope=area` (Section 3). Retiring `/api/areas`. Cliopatria/`/clio` wiring (Section 4, feeds
+`scope=area` once it exists).
+
+---
+
+## Section 3 — `scope=area`, generic case (bbox-WKT test input)
+
+**Status: not written yet.** Builds on Section 2's now-unified `/api/signature`. First cut per
+Karl 2026-09-14: accepts a WKT geometry (a `bbox` param converted to a rectangle, via a helper
+in the same spirit as the existing `_bbox_polygon()` used for WHG's `/reconcile` bounds, is the
+simple test input — not arbitrary or large WKT yet), calls `areal_signature_polygon()` — the
+same engine primitive Cliopatria polities already use today. Kept deliberately simple.
+
+---
+
+## Section 4 — Cliopatria via `/clio`, feeding `scope=area` (deferred; was Section 2)
+
+**Status: written 2026-09-14, deferred — not superseded, just reordered.** Everything below is
+the plan as drafted before the destination shape was locked; still the right shape, just comes
+after Section 3 now, since Cliopatria's job is producing a WKT for `scope=area` to consume, not
+a `scope` of its own. Revisit for exact wiring once Section 3 exists.
 
 ### Goal
 
@@ -116,8 +212,8 @@ A new, fully self-contained endpoint, `GET /api/clio/signature`, owns the whole 
 signature computation — resolve a slice, compute over its geometry, return the result.
 `/api/areas`'s `scope=polity` branch keeps running exactly as it does today, untouched, for
 the duration of this section — it becomes deletable only once nothing calls it anymore
-(Section 3, after 2b is confirmed working). End state this section moves toward: no
-`scope=polity` on `/api/areas` at all.
+(Section 5, after this section's frontend wiring is confirmed working). End state this
+section moves toward: no `scope=polity` on `/api/areas` at all.
 
 ### Why a full endpoint, not a scope value
 
@@ -149,30 +245,31 @@ endpoint means `/api/areas` genuinely never has to know Cliopatria exists.
 
 ### Build order
 
-- **2a — backend only.** Build `_clio_resolve_slice` + `/api/clio/signature`. Verify
+- **4a — backend only.** Build `_clio_resolve_slice` + `/api/clio/signature`. Verify
   standalone: for a real slice, its payload matches `areas()?scope=polity&polity=...&year=...`
   for the same slice's own fromyear (equivalence test, same pattern as Section 1's). Existing
   `TestPolityPayload`/`TestPolityFixtureEquivalence` (11 tests, exercise `areas()`'s untouched
   polity branch) must stay green, unmodified — proves nothing existing moved. Frontend not
   touched at this point.
-- **2b — frontend wiring.** Switch `_silentResig()` and the click handler to
+- **4b — frontend wiring.** Switch `_silentResig()` and the click handler to
   `/api/clio/signature`. The one step that changes what a real click does — browser-verified,
   not just green tests, per Karl's standing habit.
 
 ### Acceptance criteria
 
-- 2a: new equivalence test passes; existing 11 polity tests on `areas()` unaffected; full
+- 4a: new equivalence test passes; existing 11 polity tests on `areas()` unaffected; full
   suite green; `/api/clio/signature` confirmed live via direct curl against a real polity.
-- 2b: live-verified in browser (Northern Song or similar) — signature content identical
+- 4b: live-verified in browser (Northern Song or similar) — signature content identical
   before/after, across a slider move and a `[Get Signature]` click.
 
 ### Explicitly not in this section
 
 Removing `scope=polity` from `areas()` — stays live as-is throughout this section, deletable
-only in a later section once 2b is confirmed and nothing calls it. Retiring `/api/polity/*` or
-`/api/area`. Any part of the destination shape beyond this one path (the `/signature` rename,
-`scope=area` generalization for non-Cliopatria geometry sources, `basin_ring`'s shape fix).
+only in a later section once this section's frontend wiring is confirmed and nothing calls it.
+Retiring `/api/polity/*` or `/api/area`. Any part of the destination shape beyond this one
+path (`basin-ring`'s shape fix is Section 2's job, not this one).
 
----
+## Section 5 — not written yet
 
-## Section 3 — not written yet
+Retiring `/api/areas`, `/api/area`, and `/api/polity/*` once nothing live calls any of them.
+To be written only after Sections 2–4 are built, tested, and confirmed — not before.
