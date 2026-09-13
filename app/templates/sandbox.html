@@ -797,6 +797,9 @@
                                   // gets overwritten by commitRingMember, so returning to center
                                   // needs its own cached copy, same idea as _centerPayload
   let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
+  let _currentPlaceLinks = [];  // gazetteer identifiers ({ns}:{id}) from an identifier-paste
+                                 // resolve, e.g. ["gn:3169070","tgn:7003138"] — empty for
+                                 // coords/name-search, which have no such provenance to carry
 
   // WO6c conjunction panel — paint the non-compensatory set. The validated instrument; the old
   // composite-distance panel it replaced was retired outright in CITYKIN WO1.
@@ -1183,7 +1186,7 @@
         }
         const data = await res.json();
         _whgSetStatus('', false);
-        setResolvedPoint(data.lat, data.lon, data.name || raw);
+        setResolvedPoint(data.lat, data.lon, data.name || raw, data.links);
       } catch (err) {
         _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
         document.getElementById('v3-example-select').disabled = false;
@@ -1339,10 +1342,11 @@
     }
   }
 
-  function setResolvedPoint(lat, lon, name) {
+  function setResolvedPoint(lat, lon, name, links) {
     currentLat = lat;
     currentLon = lon;
     _currentPlaceName = name || '';
+    _currentPlaceLinks = links || [];
 
     _whgHideCandidates();
     _whgSetStatus('', false);
@@ -1377,6 +1381,7 @@
   function clearResolvedPoint() {
     currentLat = null;
     currentLon = null;
+    _currentPlaceLinks = [];
 
     document.getElementById('v3-place-input').value  = '';
     document.getElementById('v3-whg-chip').classList.replace('d-flex', 'd-none');
@@ -2909,6 +2914,10 @@
       if (fy) params.set('from_year', fy);
       if (ty) params.set('to_year',   ty);
     }
+    // Carry forward gazetteer provenance from an identifier-paste resolve, if any (this
+    // covers both the 'single' and 'ring' UI scopes -- ring reuses this builder for the
+    // center-point signature). See docs/edop/lod/.
+    if (_currentPlaceLinks.length) params.set('place_links', _currentPlaceLinks.join(','));
     return `/api/areas?${params}`;
   }
 
@@ -2966,8 +2975,9 @@
 
       const lv = _activeLevel();
       // Kick off /api/signature in parallel for Analysis tab (raw values; /api/areas returns scores only)
+      const _plQS = _currentPlaceLinks.length ? `&place_links=${encodeURIComponent(_currentPlaceLinks.join(','))}` : '';
       const _sigFetch = (currentLat != null)
-        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE`)
+        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE${_plQS}`)
         : null;
 
       if (scope === 'single') {

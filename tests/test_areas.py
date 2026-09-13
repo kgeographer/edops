@@ -774,7 +774,8 @@ class TestWhgSuggestRouteValidation:
         assert res["ccodes"] == ["ML"]
         assert "Timbuktu" in res["alt_names"]
         assert res["cname"] == "Mali"          # from _CCODES static dict
-        assert res["place_type"] == "cities"   # settlement label preferred
+        # settlement label preferred, second distinct label appended for disambiguation (2026-09-13)
+        assert res["place_type"] == "cities · inhabited places"
 
     def test_bbox_path_unions_exact_and_fuzzy(self, client, monkeypatch):
         """On the bbox path there's no 'exact wins' -- both sub-queries are merged, deduped by id."""
@@ -804,6 +805,12 @@ class TestWhgEntityRouteValidation:
             {"toponym": "Rome", "lang": "en"},
         ]},
         "types": [{"label": "city"}, {"identifier": "Q3685476", "label": "city"}],
+        "links": [
+            {"type": "closeMatch", "identifier": "gn:3169070"},
+            {"type": "exactMatch", "identifier": "tgn:7003138"},
+            {"type": "seeAlso", "identifier": "https://en.wikipedia.org/wiki/Rome"},
+            {"type": "closeMatch"},  # no identifier -- must not produce a bare None entry
+        ],
     }
 
     def test_unrecognized_prefix_returns_400(self, client):
@@ -835,6 +842,9 @@ class TestWhgEntityRouteValidation:
         assert data["lon"] == pytest.approx(12.482778)
         assert data["name"] == "Rome"   # lang=en preferred over the first (it) entry
         assert data["types"][0]["label"] == "city"
+        # closeMatch/exactMatch CURIEs only -- seeAlso (a URL, not a CURIE) and the
+        # identifier-less entry are both dropped (2026-09-13 LOD passthrough)
+        assert data["links"] == ["gn:3169070", "tgn:7003138"]
 
     def test_whg_native_id_drops_ns_segment(self, client, monkeypatch):
         """whg:5456866 -> WHG entity id 'place:5456866', no 'whg:' segment.
@@ -894,3 +904,50 @@ class TestWhgEntityRouteValidation:
         r = client.get("/api/whg/entity?id=pl:423025")
         assert r.status_code == 200, r.text
         assert r.json()["name"] == "Roma"   # no lang=en entry -- falls back to the first
+
+
+class TestPlaceLinksPassthrough:
+    """place_links echo -- carries a gazetteer-resolved point's identifiers into the
+    response, unvalidated, for scope=single_basin/basin_ring on /api/areas and for
+    /api/signature. DB-backed (real basin lookup at Timbuktu's coordinates); skipped
+    with the rest of this file's DB-dependent tests if no DB is available.
+    """
+
+    _LINKS = "gn:3169070,tgn:7003138"
+
+    def test_single_basin_echoes_place_links(self, buf_client):
+        r = buf_client.get(
+            f"/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_single_basin_omits_key_without_param(self, buf_client):
+        r = buf_client.get("/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833")
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()
+
+    def test_basin_ring_echoes_place_links(self, buf_client):
+        r = buf_client.get(
+            f"/api/areas?scope=basin_ring&lat=16.8167&lon=-2.9833&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_buffer_ignores_place_links(self, buf_client):
+        """Deliberately not wired for buffer -- see the route's place_links docstring."""
+        r = buf_client.get(
+            f"/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()
+
+    def test_signature_echoes_into_meta_query(self, buf_client):
+        r = buf_client.get(f"/api/signature?lat=16.8167&lon=-2.9833&place_links={self._LINKS}")
+        assert r.status_code == 200, r.text
+        assert r.json()["meta"]["query"]["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_signature_omits_key_without_param(self, buf_client):
+        r = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833")
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()["meta"]["query"]

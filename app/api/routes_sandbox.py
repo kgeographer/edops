@@ -582,11 +582,17 @@ _PLACE_TYPE_PREF = ("cities", "towns", "villages", "inhabited places",
 
 
 def _whg_place_type(place_types: List[Dict]) -> Optional[str]:
+    """Candidate-list display label(s) -- helps a user tell apart same-named results
+    (e.g. a city vs. the World Heritage Site of the same name). Display only: no AAT
+    identifiers surface here, just human-readable labels. Leads with the settlement-ish
+    preferred label (existing behavior); appends one more distinct label, if any, rather
+    than collapsing to a single pick and discarding the rest."""
     labels = [p.get("label") for p in (place_types or []) if p.get("label")]
-    for pref in _PLACE_TYPE_PREF:
-        if pref in labels:
-            return pref
-    return labels[0] if labels else None
+    if not labels:
+        return None
+    primary = next((pref for pref in _PLACE_TYPE_PREF if pref in labels), labels[0])
+    extra = next((l for l in labels if l != primary), None)
+    return f"{primary} · {extra}" if extra else primary
 
 
 def _ring(w: float, s: float, e: float, n: float) -> Dict:
@@ -887,12 +893,22 @@ def whg_entity_lookup(id: str = Query(..., description="Namespaced gazetteer ide
 
     types = [{"label": t.get("label", "")} for t in (entity.get("types") or []) if isinstance(t, dict)]
 
+    # Cross-gazetteer identifiers WHG already asserts for this record (closeMatch/
+    # exactMatch only -- these are the ones shaped as {ns}:{id} CURIEs; seeAlso entries
+    # are plain URLs, not identifiers). Not the pasted id itself (that's source_id above) --
+    # the *other* gazetteers' names for the same place. See docs/edop/lod/.
+    links = [
+        l.get("identifier") for l in (entity.get("links") or [])
+        if isinstance(l, dict) and l.get("type") in ("closeMatch", "exactMatch") and l.get("identifier")
+    ]
+
     return {
         "id": whg_place_id,
         "source_id": raw,
         "name": name,
         "lat": lat,
         "lon": lon,
+        "links": links,
         "types": types,
     }
 
@@ -1443,6 +1459,12 @@ def areas(
     from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
     to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
+    place_links: Optional[str] = Query(None, description=(
+        "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
+        "the response's place_links. Not validated or re-resolved. Only applied for "
+        "scope=single_basin or scope=basin_ring -- a single resolved point is the only "
+        "case with one place's provenance to carry forward; ignored for buffer and polity."
+    )),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by scope, then
     aggregates their signature as a distribution (not an average). `scope` is confusingly
@@ -1606,6 +1628,13 @@ def areas(
             }
             if "T" in requested and band_t_from is not None:
                 payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+        # A single resolved point (single_basin/basin_ring) is the only case with one
+        # place's gazetteer provenance to carry forward -- echoed, not re-validated. See
+        # docs/edop/lod/. Deliberately not buffer/polity: polity's identity shape (a set
+        # of hybas_ids, not one) is a separate, not-yet-resolved question.
+        if place_links and scope in ("single_basin", "basin_ring"):
+            payload["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
     except HTTPException:
         raise
