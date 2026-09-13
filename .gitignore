@@ -64,6 +64,8 @@ docs/edop/*
 !docs/edop/demo/**
 !docs/edop/workbench/
 !docs/edop/workbench/**
+!docs/edop/api_shape/
+!docs/edop/api_shape/**
 !docs/cdop/
 docs/cdop/*
 !docs/cdop/pilot/
