@@ -189,6 +189,12 @@ def signature(
         "If true, return flat field values instead of nested profile_groups; Band T "
         "temporal data appears at key \"temporal\" rather than in profile_groups."
     )),
+    place_links: Optional[str] = Query(None, description=(
+        "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
+        "meta.query.place_links. Not validated or re-resolved -- a caller who already "
+        "resolved this point via a gazetteer identifier can carry that provenance forward "
+        "into the response. Omit if the point wasn't resolved that way."
+    )),
 ):
     """Return environmental signature for a coordinate.
 
@@ -266,6 +272,8 @@ def signature(
         query["from_year"] = from_year
     if to_year is not None:
         query["to_year"] = to_year
+    if place_links:
+        query["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
     sig["meta"] = {
         "signature_version": "0.4",
@@ -656,3 +664,46 @@ def polity_geom(id: int):
         },
         "geometry": r[7],
     }
+
+
+# -----------------------
+# /clio -- Cliopatria-polity consolidation, Section 1 (WO_public-api-reshape.md).
+# Additive only: the three routes below delegate to the existing /polity/* functions
+# above (byte-identical behavior, zero duplication, zero risk of drift) plus one new
+# helper for the WKT form nothing live calls yet. Nothing existing is modified. Wiring
+# these into the signature-fetch path (replacing areas()'s independent name+year lookup)
+# is Section 2 -- not started.
+# -----------------------
+
+def _clio_resolve_geom_wkt(slice_id: int) -> Optional[str]:
+    """A polity slice's geometry as WKT, by its own row id -- for feeding an engine call
+    (areal_signature_polygon) once Section 2 wires this in. Not called by anything yet.
+    Returns None if the id doesn't exist (caller's job to 404)."""
+    sql = "SELECT ST_AsText(geom) FROM gaz.clio_polities WHERE id = %(id)s"
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(sql, {"id": slice_id})
+            r = cur.fetchone()
+    finally:
+        if "conn" in locals():
+            conn.close()
+    return r[0] if r else None
+
+
+@router.get("/clio/search", include_in_schema=False)
+def clio_search(q: str = "", year: Optional[int] = None):
+    """Same as /polity/search -- delegates directly, not a reimplementation."""
+    return polity_search(q=q, year=year)
+
+
+@router.get("/clio/slices", include_in_schema=False)
+def clio_slices(name: str):
+    """Same as /polity/slices -- delegates directly, not a reimplementation."""
+    return polity_slices(name=name)
+
+
+@router.get("/clio/geom", include_in_schema=False)
+def clio_geom(id: int):
+    """Same as /polity/geom -- delegates directly, not a reimplementation."""
+    return polity_geom(id=id)
