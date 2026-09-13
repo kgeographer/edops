@@ -26,18 +26,28 @@ not a proposal.
   - `buffer` — a point + `radius_km`.
   - `area` — a WKT geometry string. First build target: a **bbox-constructed** example
     (short, trivial to round-trip) — not arbitrary or large WKT, kept simple deliberately.
-- **Two response shapes — not one uniform shape — and both already built and working today:**
+- **Three response shapes, not two — corrected 2026-09-14, mid-Section-2 — all three already
+  built and working today, none of them need reshaping into each other:**
   - `basin` (one basin) → raw values + a few derived values. Existing machinery:
     `get_signature()` — today's `/api/signature`, unchanged, reused directly.
-  - `basin-ring` / `buffer` / `area` (many basins) → distribution constructs driving
-    histograms. Existing machinery: `basin_ring_signature()`, `areal_signature()`,
-    `areal_signature_polygon()` respectively (the areas engine).
+  - `buffer` / `area` (many basins, aggregated) → distribution constructs driving histograms.
+    Existing machinery: `areal_signature()`, `areal_signature_polygon()` respectively.
+  - `basin-ring` (many basins, **not** aggregated — deliberately, per its own docstring: "there
+    is no meaningful aggregate across the ring — the per-neighbour comparison is the payload")
+    → center's full raw-value signature + one raw-value signature per adjacent basin + topology
+    metadata (bearing, shared border length). Existing machinery: `basin_ring_signature()`,
+    unchanged, returned as-is — **not** reshaped to match `buffer`/`area`'s envelope; there's no
+    aggregate in it to reshape. Karl's call once this was found: keep it exactly as it already
+    is, own shape, third kind, not a `buffer`/`area` sibling despite sitting on the same `scope`
+    param.
   - **Correction to this doc's own earlier framing (2026-09-13 version, below):** that version
     treated `single_basin_signature()` (the areas engine's n=1 case of its general aggregator,
     WO14) as the ancestor for the single-basin public product. Wrong — Karl: treating
     single-basin as a degenerate case of the multi-basin aggregator "was always a mistake I
     should have halted way back." `scope=basin` reuses `get_signature()`, full stop;
-    `single_basin_signature()` is not part of this endpoint's story.
+    `single_basin_signature()` is not part of this endpoint's story (though `basin_ring_signature()`
+    still calls it internally, once per ring member — that's `basin_ring_signature()`'s own
+    business, not something `/api/signature`'s dispatch needs to know about).
 - **Cliopatria polities are not a `scope` of their own.** A polity's signature is `scope=area`
   once its geometry is in hand. How that geometry gets resolved server-side (Section 1's
   `/clio` work) is a separate, internal concern Karl is explicitly not prescribing: "whatever
@@ -46,9 +56,6 @@ not a proposal.
   `scope=area` case — short, simple, trivial to round-trip. Cliopatria's own geometry (which
   can be much larger) is handled by whatever `/clio` needs to do server-side; that's a
   separate concern from the generic case's test input, not a design fork to reconcile.
-- `basin-ring`'s current response shape (`/api/areas?scope=basin_ring` today: `type`/`lat`/
-  `lon`/`center`/`ring`) doesn't match its sibling scopes — a real fix, due whenever
-  `scope=basin-ring` gets wired onto `/api/signature`.
 
 ### 2026-09-13 version (superseded by the above — kept for the record)
 
@@ -156,18 +163,22 @@ script) keeps working with zero code changes on their end, since none of them pa
 the same engine calls `/api/areas` already makes today, just reached from `/api/signature`
 instead.
 
-This is almost entirely re-routing already-correct, already-tested machinery under one name.
-The one substantive new work: `basin-ring`'s response shape doesn't match `buffer`'s today
-(`type`/`lat`/`lon`/`center`/`ring` vs. `bands`/`caveats`/`rows`/`scope`/`shortfall`/
-`temporal`) — fixed here, since it's being freshly wired in anyway.
+This is pure re-routing of already-correct, already-tested machinery under one name — no
+reshaping. **Correction found mid-build, 2026-09-14:** `basin_ring_signature()`'s own docstring
+is explicit that it has no aggregate to begin with ("there is no meaningful aggregate across
+the ring — the per-neighbour comparison is the payload") — it returns the center's full
+raw-value signature plus one raw-value signature per adjacent basin, not a `rows`-shaped
+distribution. Karl's call: keep it exactly as `basin_ring_signature()` already returns it, own
+shape, not reshaped toward `buffer`'s envelope. So all three scopes in this section are pure
+re-routes, zero new aggregation or reshaping logic anywhere.
 
 ### What gets built
 
 - `signature()` gains `scope` (default `basin`) and `radius_km` (required only when
   `scope=buffer`). `scope=basin` — unchanged, calls `get_signature()` exactly as today.
-  `scope=buffer` — calls `areal_signature()`, reuses its existing (already-correct) shape
-  directly. `scope=basin-ring` — calls `basin_ring_signature()`, reshapes its output to match
-  `buffer`'s envelope instead of its current one.
+  `scope=buffer` — calls `areal_signature()`, returns its existing shape unchanged.
+  `scope=basin-ring` — calls `basin_ring_signature()`, returns its existing shape unchanged
+  (`type`/`lat`/`lon`/`level`/`center`/`ring` — its own, not `buffer`'s).
 - `/api/areas`'s `scope=buffer`/`scope=single_basin`/`scope=basin_ring` branches — untouched
   in this section, stay live in case anything still calls them directly. Retiring `/api/areas`
   itself is a later, separate step, once nothing calls it.
@@ -175,9 +186,9 @@ The one substantive new work: `basin-ring`'s response shape doesn't match `buffe
 
 ### Acceptance criteria
 
-- `scope=basin-ring`/`scope=buffer` on `/api/signature` return equivalent payloads (same
-  `rows`, modulo the basin-ring shape fix) to today's `/api/areas?scope=basin_ring`/
-  `scope=buffer` for the same real query.
+- `scope=basin-ring`/`scope=buffer` on `/api/signature` return byte-identical payloads to
+  today's `/api/areas?scope=basin_ring`/`scope=buffer` for the same real query — true
+  equivalence, not "equivalent modulo a reshape," since nothing is reshaped.
 - Every existing `/api/signature` caller (no `scope` param) verified byte-identical —
   full backward compatibility, tested explicitly, not assumed.
 - Full suite green.
