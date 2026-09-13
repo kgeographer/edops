@@ -102,8 +102,76 @@ already correct and doesn't need to change; this section doesn't touch it.
 
 ---
 
-## Section 2 — not written yet
+## Section 2 — wire the polity signature-fetch path to `/clio`
 
-Wiring the signature-fetch side (`_silentResig()`'s polity branch, the `[Get Signature]` click
-handler) to resolve geometry via `/clio` instead of `areas()`'s independent name+year lookup.
-To be written after Section 1 ships and its acceptance criteria are verified, not before.
+**Status: written, not built.** Written 2026-09-14 now that Section 1's acceptance criteria
+are verified (see above) — per Karl, still its own explicit go/no-go before building, not an
+automatic continuation of Section 1's "auto mode."
+
+### Goal
+
+Replace `areas()`'s independent name+year `gaz.clio_polities` lookup, for the polity scope,
+with the same by-`id` resolution the map-drawing path (`/api/polity/geom?id=`, and now
+`/clio`) already uses correctly — using the slice's own `id`
+(`_politySlices[_polityCurrentIdx].id`), already known client-side, no new fetch required to
+get it.
+
+### The one real design gap Section 1 left open
+
+`_clio_resolve_geom_wkt(slice_id)` (Section 1) returns **only** a WKT string. `areas()`'s
+polity branch needs more than geometry — it builds a `resolver` block
+(`polity`/`polity_id`/`fromyear`/`toyear`/`year`) from the same SQL row it looks up today.
+Using the WKT-only helper alone would lose those fields and force a second query anyway,
+which only half-solves the "two independent lookups" problem this WO exists to fix.
+
+**Resolution:** add a new helper, `_clio_resolve_slice(slice_id)`, returning the full row (id,
+name, fromyear, toyear, seshatid, geom_wkt) in one query — everything `areas()`'s polity
+branch needs, derived from a single lookup by id. `_clio_resolve_geom_wkt` (Section 1) stays
+as-is for callers that only need the WKT.
+
+### What changes
+
+- **`routes_common.py`** — new `_clio_resolve_slice(slice_id)` helper (id/name/fromyear/toyear/
+  seshatid/geom_wkt, one query). Additive; `_clio_resolve_geom_wkt` untouched.
+- **`areas()`'s polity branch (`routes_sandbox.py`)** — gains a new optional `slice_id` param.
+  When present: resolve via `_clio_resolve_slice(slice_id)`, build the `resolver` block from
+  its fields. When absent: **exactly today's behavior, untouched** — the existing name+year
+  SQL lookup stays the fallback, so every other caller (anything not yet sending `slice_id`,
+  and `/api/area`, which is being retired separately and isn't worth touching here) keeps
+  working with zero behavior change.
+- **`sandbox.html`** — `_silentResig()`'s polity branch and the `[Get Signature]` click
+  handler add `slice_id: _politySlices[_polityCurrentIdx].id` to their existing params
+  (`polity`/`year` stay too — harmless once `slice_id` takes precedence server-side, and
+  keeps the request self-describing). This is the only change that touches live user-facing
+  behavior in this whole WO so far.
+
+### Build order (same incremental discipline as Section 1 vs. this section)
+
+- **2a — backend only.** Add the helper + the optional `slice_id` param. Verify standalone:
+  a request with `slice_id` returns the identical `rows`/`scope`/`resolver` payload as the
+  equivalent name+year request for the same slice (new equivalence test, same pattern as
+  Section 1's). Existing `TestPolityPayload`/`TestPolityFixtureEquivalence` (11 tests, exercise
+  the unchanged name+year path) must stay green untouched — proves backward compatibility.
+  Frontend not touched yet at this point.
+- **2b — frontend wiring.** Switch `_silentResig()` and the click handler to send `slice_id`.
+  This is the step that changes what a real user's click actually does — per Karl's standing
+  habit, wants a browser look before commit, not just green tests.
+
+### Acceptance criteria
+
+- 2a: new equivalence test passes (slice_id-resolved payload == name+year-resolved payload
+  for the same real slice); existing 11 polity tests unaffected; full suite green.
+- 2b: live-verified in browser against a real polity (Northern Song or similar) — signature
+  content identical before/after the frontend change, across at least one slider move and one
+  `[Get Signature]` click.
+
+### Explicitly not in this section
+
+Retiring the name+year path itself (kept as the fallback/default — `/api/area` and any other
+caller not yet sending `slice_id` still needs it). Retiring `/api/polity/*` or `/api/area`.
+Any part of the destination shape beyond this one path (the `/signature` rename, `scope=area`
+generalization, `basin_ring`'s shape fix) — separate, later sections.
+
+---
+
+## Section 3 — not written yet
