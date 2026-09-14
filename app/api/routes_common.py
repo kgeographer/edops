@@ -31,6 +31,19 @@ from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
 router = APIRouter(prefix="/api", tags=["api"])
 
 
+def _data_sources_block(level: int) -> Dict[str, str]:
+    """Shared meta.data_sources content for every /api/signature scope -- level-dependent
+    only in the basin line. Factored out 2026-09-14 so basin/buffer/area's meta blocks
+    can't silently drift apart."""
+    return {
+        "basin": f"HydroATLAS v1.0 / BasinATLAS Level 0{level}",
+        "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
+        "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+        "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
+        "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
+    }
+
+
 @router.get("/health", summary="Liveness check")
 def health():
     """Confirm the service is running.
@@ -233,6 +246,12 @@ def signature(
     here explodes into one row per HYDE-epoch/LMR-year per member basin, so a real multi-year
     range is a genuine large-payload risk at this scope.
 
+    All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
+    (the request echoed back), "data_sources"} block. scope=basin's meta also nests a "scope"
+    sub-object ({"type": "containing_basin", "basin_level"}); buffer/area instead have their
+    own richer top-level "scope" result object (n_units, member_ids, ...) alongside meta, left
+    where it already was rather than folded in.
+
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
@@ -263,7 +282,7 @@ def signature(
         band_t_to = to_year if "T" in requested_bands else None
         conn = db_connect()
         try:
-            return areal_signature(
+            result = areal_signature(
                 lat, lon, radius_km, conn,
                 level=level, bands=sorted(requested_bands),
                 from_year=band_t_from, to_year=band_t_to,
@@ -271,6 +290,22 @@ def signature(
             )
         finally:
             conn.close()
+
+        query: Dict[str, Any] = {
+            "lat": lat, "lon": lon, "radius_km": radius_km,
+            "bands": bands.upper(), "level": level,
+        }
+        if from_year is not None:
+            query["from_year"] = from_year
+        if to_year is not None:
+            query["to_year"] = to_year
+        result["meta"] = {
+            "signature_version": "0.4",
+            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "query": query,
+            "data_sources": _data_sources_block(level),
+        }
+        return result
 
     if scope == "area":
         if geom_wkt is None:
@@ -284,7 +319,7 @@ def signature(
         band_t_to = to_year if "T" in requested_bands else None
         conn = db_connect()
         try:
-            return areal_signature_polygon(
+            result = areal_signature_polygon(
                 geom_wkt, conn,
                 level=level, bands=sorted(requested_bands),
                 from_year=band_t_from, to_year=band_t_to,
@@ -293,6 +328,19 @@ def signature(
             )
         finally:
             conn.close()
+
+        query = {"geom_wkt": geom_wkt, "bands": bands.upper(), "level": level}
+        if from_year is not None:
+            query["from_year"] = from_year
+        if to_year is not None:
+            query["to_year"] = to_year
+        result["meta"] = {
+            "signature_version": "0.4",
+            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "query": query,
+            "data_sources": _data_sources_block(level),
+        }
+        return result
 
     if scope != "basin":
         raise HTTPException(
@@ -369,13 +417,7 @@ def signature(
             "type": "containing_basin",
             "basin_level": level,
         },
-        "data_sources": {
-            "basin": f"HydroATLAS v1.0 / BasinATLAS Level 0{level}",
-            "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
-            "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
-            "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-            "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
-        },
+        "data_sources": _data_sources_block(level),
     }
 
     return sig

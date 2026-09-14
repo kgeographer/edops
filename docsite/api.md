@@ -81,6 +81,12 @@ requires from_year == to_year (a single year, not a range) -- unlike scope=basin
 here explodes into one row per HYDE-epoch/LMR-year per member basin, so a real multi-year
 range is a genuine large-payload risk at this scope.
 
+All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
+(the request echoed back), "data_sources"} block. scope=basin's meta also nests a "scope"
+sub-object ({"type": "containing_basin", "basin_level"}); buffer/area instead have their
+own richer top-level "scope" result object (n_units, member_ids, ...) alongside meta, left
+where it already was rather than folded in.
+
 Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
 ```
 

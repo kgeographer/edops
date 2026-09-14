@@ -979,12 +979,15 @@ class TestSignatureScopeDispatch:
         assert a == b
 
     def test_scope_buffer_matches_areas_buffer(self, buf_client):
+        """/api/areas stays untouched (no meta block); /api/signature adds one
+        (2026-09-14) -- strip it before comparing, the rest must be identical."""
         a = buf_client.get(
             "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
         b = buf_client.get(
             "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
+        b.pop("meta")
         assert a == b
 
     def test_scope_buffer_requires_radius(self, client):
@@ -1055,7 +1058,8 @@ class TestSignatureScopeDispatch:
 
     def test_scope_area_matches_areal_signature_polygon_directly(self, buf_client):
         """Same WKT, same params, straight through the route vs. calling the engine
-        function directly -- proves the route isn't silently transforming anything."""
+        function directly -- proves the route isn't silently transforming anything
+        beyond the meta block it now injects (2026-09-14), stripped before comparing."""
         from app.db.connection import db_connect
         from scripts.edop.areas.engine import areal_signature_polygon
 
@@ -1068,7 +1072,53 @@ class TestSignatureScopeDispatch:
             conn.close()
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
         assert r.status_code == 200, r.text
-        assert r.json() == expected
+        actual = r.json()
+        actual.pop("meta")
+        assert actual == expected
+
+    # -- meta block on buffer/area (2026-09-14) --------------------------------
+    # Karl, eyeballing three real payloads: "those two should get a meta: with
+    # the appropriate fields now elsewhere pulled into it." Matches basin's meta
+    # shape (signature_version/generated/query/data_sources) but omits meta.scope
+    # -- the existing top-level scope object (n_units, member_ids, ...) stays put,
+    # it's real result data, not a request echo, and already richer than basin's.
+
+    def test_scope_buffer_has_meta(self, buf_client):
+        r = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        )
+        meta = r.json()["meta"]
+        assert meta["signature_version"] == "0.4"
+        assert "generated" in meta
+        assert meta["query"] == {
+            "lat": 16.8167, "lon": -2.9833, "radius_km": 50.0,
+            "bands": "A", "level": 6,
+        }
+        assert "basin" in meta["data_sources"]
+        assert "scope" not in meta
+
+    def test_scope_area_has_meta(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        meta = r.json()["meta"]
+        assert meta["signature_version"] == "0.4"
+        assert "generated" in meta
+        assert meta["query"] == {"geom_wkt": self._AREA_WKT, "bands": "A", "level": 6}
+        assert "basin" in meta["data_sources"]
+        assert "scope" not in meta
+
+    def test_meta_data_sources_identical_across_scopes(self, buf_client):
+        """The three scopes must never drift on what data_sources says -- they
+        share one helper (_data_sources_block) precisely to guarantee this."""
+        basin = buf_client.get(
+            "/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=A"
+        ).json()
+        buffer_ = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        area = buf_client.get(
+            f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A"
+        ).json()
+        assert basin["meta"]["data_sources"] == buffer_["meta"]["data_sources"] == area["meta"]["data_sources"]
 
     def test_band_t_missing_span_rejected_for_buffer(self, client):
         r = client.get(
