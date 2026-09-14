@@ -222,6 +222,9 @@ PROFILE_GROUPS: Dict[str, Dict[str, Any]] = {
         "fields": [
             "elev_min",
             "elev_max",
+            "elev_point",
+            "relief_range_m",
+            "relief_position",
             "slope_avg",
             "slope_upstream",
             "stream_gradient",
@@ -264,11 +267,20 @@ PROFILE_GROUPS: Dict[str, Dict[str, Any]] = {
             "temp_yr_upstream",
             "precip_yr",
             "precip_yr_upstream",
+            "pre_mm_monthly",
+            "tmp_dc_monthly",
+            "pre_concentration",
+            "pre_peak_month",
+            "tmp_concentration",
+            "tmp_peak_month",
+            "seas_phase_offset",
+            "tmp_seas_amp",
             "aridity",
             "aridity_upstream",
             "permafrost_extent",
             "biome",
             "ecoregion",
+            "eco_id",
             "freshwater_ecoregion_class",
             "freshwater_ecoregion_name",
         ],
@@ -587,26 +599,19 @@ def get_signature(
                 }
 
             out: Dict[str, Any] = {
-                # Seasonality arrays + derived scalar indices (Band C; top-level only)
-                "pre_mm_monthly":    pre_monthly,
-                "tmp_dc_monthly":    tmp_monthly,
-                "pre_concentration": seas.get("pre_concentration"),
-                "pre_peak_month":    seas.get("pre_peak_month"),
-                "tmp_concentration": seas.get("tmp_concentration"),
-                "tmp_peak_month":    seas.get("tmp_peak_month"),
-                "seas_phase_offset": seas.get("seas_phase_offset"),
-                "tmp_seas_amp":      seas.get("tmp_seas_amp"),
-                # Core fields
+                # Identity/geometry + provenance fields -- not in the variable catalog,
+                # so they stay top-level rather than nest in a band (2026-09-14: the 12
+                # catalog-matched fields that used to sit here too -- pre_mm_monthly,
+                # tmp_dc_monthly, pre_concentration, pre_peak_month, tmp_concentration,
+                # tmp_peak_month, seas_phase_offset, tmp_seas_amp, eco_id, elev_point,
+                # relief_range_m, relief_position -- moved into profile_groups A/C,
+                # their actual catalog bands; see PROFILE_GROUPS above).
                 "id":           sig.get("id"),
-                "eco_id":       sig.get("eco_id"),
                 "up_area":      sig.get("up_area"),
                 "geom_geojson": sig.get("geom_geojson"),
-                "elev_point":        sig.get("elev_point"),
                 "elev_source":       sig.get("elev_source"),
                 "elev_dataset":      sig.get("elev_dataset"),
                 "elev_resolution_m": sig.get("elev_resolution_m"),
-                "relief_range_m":  sig.get("relief_range_m"),
-                "relief_position": sig.get("relief_position"),
                 "profile_summary": summary_items,
             }
             if "elev_error" in sig:

@@ -1404,20 +1404,28 @@
 
   // ── Seasonality tab ──────────────────────────────────────────────────────
 
+  // profile_groups["C"] item lookup -- seasonality's fields all live in Band C
+  // (2026-09-14: moved off the top level into their catalog-declared band).
+  function _bandC(sig, key) {
+    const items = sig.profile_groups?.C?.items || [];
+    const item = items.find(i => i.key === key);
+    return item ? item.value : undefined;
+  }
+
   function renderSeasonality(sig) {
-    const pre = sig.pre_mm_monthly;
-    const tmp = sig.tmp_dc_monthly;
+    const pre = _bandC(sig, 'pre_mm_monthly');
+    const tmp = _bandC(sig, 'tmp_dc_monthly');
     if (!pre || !tmp || pre.length !== 12 || tmp.length !== 12) return;
 
     const level  = sig.meta?.query?.level ?? '?';
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-    const preConc  = sig.pre_concentration;
-    const prePeak  = sig.pre_peak_month;
-    const tmpConc  = sig.tmp_concentration;
-    const tmpPeak  = sig.tmp_peak_month;
-    const offset   = sig.seas_phase_offset;
-    const tmpAmp   = sig.tmp_seas_amp;
+    const preConc  = _bandC(sig, 'pre_concentration');
+    const prePeak  = _bandC(sig, 'pre_peak_month');
+    const tmpConc  = _bandC(sig, 'tmp_concentration');
+    const tmpPeak  = _bandC(sig, 'tmp_peak_month');
+    const offset   = _bandC(sig, 'seas_phase_offset');
+    const tmpAmp   = _bandC(sig, 'tmp_seas_amp');
 
     // ── Walter-Lieth dual-axis SVG ────────────────────────────────────────
     const WL_W = 460, WL_H = 240, PAD = {t:16, r:50, b:36, l:50};
@@ -1514,8 +1522,8 @@
     else if (preConc < 0.60)  preDesc = `clearly seasonal precipitation (concentration ${preConc.toFixed(2)})`;
     else                      preDesc = `strongly concentrated precipitation (concentration ${preConc.toFixed(2)})`;
 
-    const prePeakN = peakMonthName(sig.pre_peak_month ?? 0);
-    const tmpPeakN = peakMonthName(sig.tmp_peak_month ?? 0);
+    const prePeakN = peakMonthName(prePeak ?? 0);
+    const tmpPeakN = peakMonthName(tmpPeak ?? 0);
 
     if (offset > 3.5)         offsetDesc = `Precipitation peaks in ${prePeakN} while temperature peaks in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — a Mediterranean-type anti-phase pattern where the wet season is the cool season.`;
     else if (offset < 1.5)    offsetDesc = `Precipitation peaks in ${prePeakN}, nearly co-incident with the temperature peak in ${tmpPeakN} (offset ${offset.toFixed(1)} months) — characteristic of monsoon and continental climates.`;
@@ -1539,7 +1547,7 @@
       { label: 'Temp seasonal amplitude',   key: 'tmp_seas_amp',       fmt: fmt2,     gloss: 'max−min °C' },
     ];
     const tableRows = scalars.map(s =>
-      `<tr><td class="pe-3 text-nowrap">${s.label}</td><td class="pe-2 text-end fw-semibold">${s.fmt(sig[s.key])}</td><td class="text-muted" style="font-size:0.8rem;">${s.gloss}</td></tr>`
+      `<tr><td class="pe-3 text-nowrap">${s.label}</td><td class="pe-2 text-end fw-semibold">${s.fmt(_bandC(sig, s.key))}</td><td class="text-muted" style="font-size:0.8rem;">${s.gloss}</td></tr>`
     ).join('');
     const scalarHtml = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">${tableRows}</table>`;
 

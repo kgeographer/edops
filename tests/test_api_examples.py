@@ -34,6 +34,16 @@ def client(db_available):
         yield client
 
 
+def _band_value(sig, band, key):
+    """Look up a profile_groups item's value by key. 2026-09-14: seasonality fields
+    (pre_concentration, seas_phase_offset, ...) moved off the top level into their
+    catalog-declared band (Band C) -- see PROFILE_GROUPS in app/db/signature.py."""
+    for item in sig.get("profile_groups", {}).get(band, {}).get("items", []):
+        if item["key"] == key:
+            return item["value"]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # 1. Athens — bands=AB
 # ---------------------------------------------------------------------------
@@ -157,14 +167,18 @@ def test_kaifeng_level6(client):
 # ---------------------------------------------------------------------------
 
 def test_seasonality_arrays_rome(client):
-    """Monthly arrays present and length-12 for Rome (L08 default)."""
+    """Monthly arrays present and length-12 for Rome (L08 default). Nested under
+    profile_groups["C"] (2026-09-14) -- the monthly arrays are catalog Band C
+    variables, not identity/provenance fields, so they no longer sit top-level."""
     r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C"})
     assert r.status_code == 200
     data = r.json()
-    assert isinstance(data.get("pre_mm_monthly"), list), "pre_mm_monthly missing"
-    assert len(data["pre_mm_monthly"]) == 12
-    assert isinstance(data.get("tmp_dc_monthly"), list), "tmp_dc_monthly missing"
-    assert len(data["tmp_dc_monthly"]) == 12
+    pre = _band_value(data, "C", "pre_mm_monthly")
+    tmp = _band_value(data, "C", "tmp_dc_monthly")
+    assert isinstance(pre, list), "pre_mm_monthly missing"
+    assert len(pre) == 12
+    assert isinstance(tmp, list), "tmp_dc_monthly missing"
+    assert len(tmp) == 12
 
 
 def test_seasonality_scalars_rome(client):
@@ -172,9 +186,9 @@ def test_seasonality_scalars_rome(client):
     r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C", "level": 8})
     assert r.status_code == 200
     data = r.json()
-    pre_conc   = data["pre_concentration"]
-    phase_off  = data["seas_phase_offset"]
-    tmp_amp    = data["tmp_seas_amp"]
+    pre_conc   = _band_value(data, "C", "pre_concentration")
+    phase_off  = _band_value(data, "C", "seas_phase_offset")
+    tmp_amp    = _band_value(data, "C", "tmp_seas_amp")
     assert pre_conc  is not None
     assert phase_off is not None
     assert tmp_amp   is not None
@@ -190,9 +204,9 @@ def test_seasonality_discrimination(client):
     delhi  = client.get("/api/signature", params={"scope": "basin", "lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
     london = client.get("/api/signature", params={"scope": "basin", "lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
 
-    rome_offset   = rome["seas_phase_offset"]
-    delhi_offset  = delhi["seas_phase_offset"]
-    london_conc   = london["pre_concentration"]
+    rome_offset   = _band_value(rome, "C", "seas_phase_offset")
+    delhi_offset  = _band_value(delhi, "C", "seas_phase_offset")
+    london_conc   = _band_value(london, "C", "pre_concentration")
 
     # Mediterranean (Rome) has large precip–temp phase offset; monsoon (Delhi) small
     assert rome_offset  is not None

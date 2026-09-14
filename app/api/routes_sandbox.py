@@ -511,7 +511,11 @@ def narrative(
     year_start : if provided with year_end, includes LMR PDSI temporal context
     year_end   : end year for temporal context
     """
-    sig = get_signature(lat=lat, lon=lon)
+    # flat=True: flatten_signature() reads fields (elev_min, slope_avg, discharge_yr,
+    # temp_yr, ...) off the top level, not nested under profile_groups -- without this
+    # every Band A-E field silently read as "n/a" (found 2026-09-14, unrelated to this
+    # route's own dormancy: no GUI button currently calls /narrative).
+    sig = get_signature(lat=lat, lon=lon, flat=True)
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
