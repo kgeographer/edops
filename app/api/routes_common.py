@@ -31,6 +31,16 @@ from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
 router = APIRouter(prefix="/api", tags=["api"])
 
 
+def _fold_scope_into_meta(scope_obj: Dict[str, Any], query: Dict[str, Any]) -> Dict[str, Any]:
+    """engine.py's assemble_payload() returns a 'scope' dict that mixes request-echo
+    fields (lat/lon/radius_km/level for buffer, level for area -- already in meta.query)
+    with genuine result data (n_units, unit_type, member_ids / marginal_exposure). Drop
+    whatever's already in query so meta.scope carries only the non-duplicated part.
+    Route-level only -- engine.py's own return shape (and /api/areas, which returns it
+    unmodified) is untouched."""
+    return {k: v for k, v in scope_obj.items() if k not in query}
+
+
 def _data_sources_block(level: int) -> Dict[str, str]:
     """Shared meta.data_sources content for every /api/signature scope -- level-dependent
     only in the basin line. Factored out 2026-09-14 so basin/buffer/area's meta blocks
@@ -247,10 +257,13 @@ def signature(
     range is a genuine large-payload risk at this scope.
 
     All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
-    (the request echoed back), "data_sources"} block. scope=basin's meta also nests a "scope"
-    sub-object ({"type": "containing_basin", "basin_level"}); buffer/area instead have their
-    own richer top-level "scope" result object (n_units, member_ids, ...) alongside meta, left
-    where it already was rather than folded in.
+    (the request echoed back), "scope", "data_sources"} block. meta["scope"] is
+    {"type": "containing_basin", "basin_level"} for basin; for buffer/area it's whatever
+    the engine's own scope object contributes beyond what "query" already says (buffer:
+    "type", "n_units", "unit_type", "member_ids"; area: "type", "n_units", "unit_type",
+    "marginal_exposure"). buffer/area's engine payload also has "bands" and "temporal"
+    keys that just restate meta["query"]["bands"]/from_year/to_year in another form --
+    the route drops both rather than ship the same information twice.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
@@ -299,10 +312,17 @@ def signature(
             query["from_year"] = from_year
         if to_year is not None:
             query["to_year"] = to_year
+        # scope/bands/temporal are engine-payload fields that duplicate meta.query in
+        # another form (Karl, 2026-09-14: "duplicated at top level... scope should be in
+        # meta"); fold scope's non-duplicated remainder into meta.scope, drop the rest.
+        meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
+        result.pop("bands", None)
+        result.pop("temporal", None)
         result["meta"] = {
             "signature_version": "0.4",
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "query": query,
+            "scope": meta_scope,
             "data_sources": _data_sources_block(level),
         }
         return result
@@ -334,10 +354,14 @@ def signature(
             query["from_year"] = from_year
         if to_year is not None:
             query["to_year"] = to_year
+        meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
+        result.pop("bands", None)
+        result.pop("temporal", None)
         result["meta"] = {
             "signature_version": "0.4",
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "query": query,
+            "scope": meta_scope,
             "data_sources": _data_sources_block(level),
         }
         return result

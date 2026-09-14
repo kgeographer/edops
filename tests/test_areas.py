@@ -979,16 +979,30 @@ class TestSignatureScopeDispatch:
         assert a == b
 
     def test_scope_buffer_matches_areas_buffer(self, buf_client):
-        """/api/areas stays untouched (no meta block); /api/signature adds one
-        (2026-09-14) -- strip it before comparing, the rest must be identical."""
+        """/api/areas stays untouched (scope/bands/temporal all top-level, no meta);
+        /api/signature (2026-09-14) drops the top-level duplicates of meta.query and
+        folds scope's non-echoed remainder into meta.scope -- reconstruct /api/areas's
+        shape from /api/signature's meta and compare, since the raw dicts now differ
+        on purpose."""
         a = buf_client.get(
             "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
         b = buf_client.get(
             "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
-        b.pop("meta")
-        assert a == b
+        assert a["rows"] == b["rows"]
+        assert a["shortfall"] == b["shortfall"]
+        assert a["caveats"] == b["caveats"]
+        assert a["bands"] == sorted(b["meta"]["query"]["bands"])
+        assert a["temporal"] is None  # Band T not requested
+        query, meta_scope = b["meta"]["query"], b["meta"]["scope"]
+        assert a["scope"] == {
+            "type": meta_scope["type"],
+            "lat": query["lat"], "lon": query["lon"], "radius_km": query["radius_km"],
+            "level": query["level"],
+            "n_units": meta_scope["n_units"], "unit_type": meta_scope["unit_type"],
+            "member_ids": meta_scope["member_ids"],
+        }
 
     def test_scope_buffer_requires_radius(self, client):
         r = client.get("/api/signature?scope=buffer&lat=16.8&lon=-2.9")
@@ -1034,7 +1048,7 @@ class TestSignatureScopeDispatch:
         assert r.status_code == 200, r.text
         data = r.json()
         assert "rows" in data
-        assert data["scope"]["n_units"] > 1
+        assert data["meta"]["scope"]["n_units"] > 1
         assert len(data["rows"]) > 0
 
     def test_scope_area_labels_itself_area_not_polity(self, buf_client):
@@ -1042,9 +1056,10 @@ class TestSignatureScopeDispatch:
         scope['type']='polity' unconditionally -- 2026-09-14, Karl: 'a generic area
         call should not hard-code the term polity.' Fixed with an optional
         scope_type kwarg, default 'polity' (preserves the existing polity caller
-        untouched -- see the safety-net test below), 'area' passed explicitly here."""
+        untouched -- see the safety-net test below), 'area' passed explicitly here.
+        scope moved under meta (2026-09-14, dedup pass) -- see meta.scope, not top-level."""
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
-        assert r.json()["scope"]["type"] == "area"
+        assert r.json()["meta"]["scope"]["type"] == "area"
 
     def test_polity_scope_type_unaffected_by_the_area_fix(self, buf_client):
         """Safety net for the scope_type change: the pre-existing polity caller
@@ -1059,7 +1074,8 @@ class TestSignatureScopeDispatch:
     def test_scope_area_matches_areal_signature_polygon_directly(self, buf_client):
         """Same WKT, same params, straight through the route vs. calling the engine
         function directly -- proves the route isn't silently transforming anything
-        beyond the meta block it now injects (2026-09-14), stripped before comparing."""
+        beyond the meta block it injects and the top-level scope/bands/temporal dedup
+        (2026-09-14) -- reconstruct the engine's raw shape from meta and compare."""
         from app.db.connection import db_connect
         from scripts.edop.areas.engine import areal_signature_polygon
 
@@ -1073,7 +1089,17 @@ class TestSignatureScopeDispatch:
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
         assert r.status_code == 200, r.text
         actual = r.json()
-        actual.pop("meta")
+        meta = actual.pop("meta")
+        query, meta_scope = meta["query"], meta["scope"]
+        actual["scope"] = {
+            "type": meta_scope["type"],
+            "level": query["level"],
+            "n_units": meta_scope["n_units"],
+            "unit_type": meta_scope["unit_type"],
+            "marginal_exposure": meta_scope["marginal_exposure"],
+        }
+        actual["bands"] = sorted(query["bands"])
+        actual["temporal"] = None  # Band T not requested
         assert actual == expected
 
     # -- meta block on buffer/area (2026-09-14) --------------------------------
@@ -1084,10 +1110,14 @@ class TestSignatureScopeDispatch:
     # it's real result data, not a request echo, and already richer than basin's.
 
     def test_scope_buffer_has_meta(self, buf_client):
+        """meta.scope carries only what meta.query doesn't already say (2026-09-14
+        dedup pass) -- no lat/lon/radius_km/level in there, just the engine's actual
+        result data (n_units, unit_type, member_ids)."""
         r = buf_client.get(
             "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         )
-        meta = r.json()["meta"]
+        data = r.json()
+        meta = data["meta"]
         assert meta["signature_version"] == "0.4"
         assert "generated" in meta
         assert meta["query"] == {
@@ -1095,16 +1125,21 @@ class TestSignatureScopeDispatch:
             "bands": "A", "level": 6,
         }
         assert "basin" in meta["data_sources"]
-        assert "scope" not in meta
+        assert meta["scope"]["type"] == "buffer"
+        assert set(meta["scope"]) == {"type", "n_units", "unit_type", "member_ids"}
+        assert "bands" not in data and "temporal" not in data and "scope" not in data
 
     def test_scope_area_has_meta(self, buf_client):
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
-        meta = r.json()["meta"]
+        data = r.json()
+        meta = data["meta"]
         assert meta["signature_version"] == "0.4"
         assert "generated" in meta
         assert meta["query"] == {"geom_wkt": self._AREA_WKT, "bands": "A", "level": 6}
         assert "basin" in meta["data_sources"]
-        assert "scope" not in meta
+        assert meta["scope"]["type"] == "area"
+        assert set(meta["scope"]) == {"type", "n_units", "unit_type", "marginal_exposure"}
+        assert "bands" not in data and "temporal" not in data and "scope" not in data
 
     def test_meta_data_sources_identical_across_scopes(self, buf_client):
         """The three scopes must never drift on what data_sources says -- they
