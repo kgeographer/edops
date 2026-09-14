@@ -234,7 +234,12 @@ re-routes, zero new aggregation or reshaping logic anywhere.
 Karl 2026-09-14: accepts a WKT geometry (a `bbox` param converted to a rectangle, via a helper
 in the same spirit as the existing `_bbox_polygon()` used for WHG's `/reconcile` bounds, is the
 simple test input — not arbitrary or large WKT yet), calls `areal_signature_polygon()` — the
-same engine primitive Cliopatria polities already use today. Kept deliberately simple.
+same engine primitive Cliopatria polities already use today. Kept deliberately simple. Only
+accepts `POLYGON`/`MULTIPOLYGON` geometry types (Karl, 2026-09-14) — reject others explicitly.
+
+**Prerequisite done (`f69fcfc`):** `lat`/`lon` were hard-required at the param level for every
+scope; `scope=area` won't need them at all. Now `Optional`, checked per-scope like `radius_km`
+already was — `basin`/`buffer` both still require them, `area` (once built) won't ask for them.
 
 ---
 
