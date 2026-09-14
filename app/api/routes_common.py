@@ -8,6 +8,7 @@ before assuming a helper is still page-scoped.
 """
 import json
 import math
+import re
 import ssl
 import urllib.parse
 import urllib.request
@@ -25,8 +26,32 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+
+def _fold_scope_into_meta(scope_obj: Dict[str, Any], query: Dict[str, Any]) -> Dict[str, Any]:
+    """engine.py's assemble_payload() returns a 'scope' dict that mixes request-echo
+    fields (lat/lon/radius_km/level for buffer, level for area -- already in meta.query)
+    with genuine result data (n_units, unit_type, member_ids / marginal_exposure). Drop
+    whatever's already in query so meta.scope carries only the non-duplicated part.
+    Route-level only -- engine.py's own return shape (and /api/areas, which returns it
+    unmodified) is untouched."""
+    return {k: v for k, v in scope_obj.items() if k not in query}
+
+
+def _data_sources_block(level: int) -> Dict[str, str]:
+    """Shared meta.data_sources content for every /api/signature scope -- level-dependent
+    only in the basin line. Factored out 2026-09-14 so basin/buffer/area's meta blocks
+    can't silently drift apart."""
+    return {
+        "basin": f"HydroATLAS v1.0 / BasinATLAS Level 0{level}",
+        "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
+        "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+        "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
+        "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
+    }
 
 
 @router.get("/health", summary="Liveness check")
@@ -177,66 +202,204 @@ def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
 
 @router.get("/signature", summary="Environmental signature for a coordinate")
 def signature(
-    lat: float = Query(..., ge=-90, le=90, description="Latitude, decimal degrees, in [-90, 90]."),
-    lon: float = Query(..., ge=-180, le=180, description="Longitude, decimal degrees, in [-180, 180]."),
-    bands: str = Query("ABCDE", description=(
-        "Which profile groups to include, e.g. \"ABCDE\" or \"ABCDET\"."
+    lat: Optional[float] = Query(None, ge=-90, le=90, description=(
+        "Latitude, decimal degrees, in [-90, 90]. Required for scope=basin/buffer."
     )),
-    level: int = Query(8, description="Basin hierarchy level: 8 or 6."),
+    lon: Optional[float] = Query(None, ge=-180, le=180, description=(
+        "Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer."
+    )),
+    bands: str = Query("ABCDE", description=(
+        "Which signature bands to include, e.g. \"ABCDE\" or \"ABCDET\"."
+    )),
+    level: int = Query(6, description="Basin hierarchy level: 8 or 6."),
     from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),
     to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–1998)."),
     flat: bool = Query(False, description=(
-        "If true, return flat field values instead of nested profile_groups; Band T "
-        "temporal data appears at key \"temporal\" rather than in profile_groups."
+        "If true, return flat field values instead of nested signature_bands; Band T "
+        "temporal data appears at key \"temporal\" rather than in signature_bands."
     )),
+    place_links: Optional[str] = Query(None, description=(
+        "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
+        "meta.query.place_links."
+    )),
+    scope: str = Query(..., description=(
+        "'basin': raw values for the one basin containing this point -- the shape documented "
+        "below. 'buffer': aggregate distribution over the basins within radius_km of this "
+        "point -- a different shape (variables/shortfall/caveats/meta). 'area': same shape as "
+        "buffer, aggregated over the basins within an arbitrary polygon instead of a radius -- "
+        "see geom_wkt."
+    )),
+    radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
+    geom_wkt: Optional[str] = Query(None, description=(
+        "WKT geometry (SRID 4326), POLYGON or MULTIPOLYGON only. Required for scope=area."
+    )),
+    detail: bool = Query(False, description="scope=buffer/area only: include per-variable histogram/detail objects."),
 ):
-    """Return environmental signature for a coordinate.
+    """Return an environmental signature.
 
     Response
     --------
-    Default (flat=False): basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
-    "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
-    for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
-    its own "_status" ("ok" | "not_requested" | "error").
+    scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
+    "signature_bands": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
+    for each requested band. Band T requires from_year and to_year (422 without them); when
+    requested it nests under signature_bands["T"] instead, with its own "_status" ("ok" |
+    "error"). flat=True: the same identity/geometry
+    fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
+    top-level key "temporal" instead.
 
-    flat=True: the same identity/geometry fields plus every variable as a top-level key (no
-    profile_groups nesting); Band T appears at top-level key "temporal" instead.
+    scope=buffer / area: an entirely different shape -- a flat "variables" list (one object
+    per requested variable, a distribution summary aggregated across the scope's member
+    basins, not an average) plus "shortfall" and "caveats". See edops_schema_area.json for
+    a full worked example. flat, place_links are basin-only; ignored for buffer/area. Band T
+    on these two scopes requires from_year == to_year (a single year, not a range) -- unlike
+    scope=basin, Band T here explodes into one row per HYDE-epoch/LMR-year per member basin,
+    so a real multi-year range is a genuine large-payload risk at this scope.
+
+    All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
+    (the request echoed back), "scope", "data_sources"}. meta["scope"] is
+    {"type": "containing_basin", "basin_level"} for basin; {"type", "n_units", "unit_type",
+    "member_ids"} for buffer; {"type", "n_units", "unit_type", "marginal_exposure"} for area.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Basin level {level} not available; supported levels: 6, 8")
+
+    requested_bands = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    if "T" in requested_bands and (from_year is None or to_year is None):
+        raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
+
+    # v0.4: buffer/area's Band T explodes into one row per HYDE-epoch/LMR-year per member
+    # basin -- a genuine multi-year range is a real DoS-scale payload for these scopes (a
+    # 250-year span on a 5-basin buffer alone produced 792 rows, 66k+ lines), unlike
+    # scope=basin, whose Band T is a compact per-basin time series. Restricting these two
+    # scopes to a single year sidesteps the explosion without touching the engine's row
+    # representation. Karl, 2026-09-14: "if buffer or area, and T is in bands, require a year."
+    if "T" in requested_bands and scope in ("buffer", "area") and from_year != to_year:
+        raise HTTPException(
+            status_code=422,
+            detail=f"scope={scope}: Band T requires a single year (from_year == to_year), not a range",
+        )
+
+    if scope == "buffer":
+        missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
+        if missing:
+            raise HTTPException(status_code=422, detail=f"scope=buffer requires: {', '.join(missing)}")
+        band_t_from = from_year if "T" in requested_bands else None
+        band_t_to = to_year if "T" in requested_bands else None
+        conn = db_connect()
+        try:
+            result = areal_signature(
+                lat, lon, radius_km, conn,
+                level=level, bands=sorted(requested_bands),
+                from_year=band_t_from, to_year=band_t_to,
+                include_detail=detail,
+            )
+        finally:
+            conn.close()
+
+        query: Dict[str, Any] = {
+            "lat": lat, "lon": lon, "radius_km": radius_km,
+            "bands": bands.upper(), "level": level,
+        }
+        if from_year is not None:
+            query["from_year"] = from_year
+        if to_year is not None:
+            query["to_year"] = to_year
+        # scope/bands/temporal are engine-payload fields that duplicate meta.query in
+        # another form (Karl, 2026-09-14: "duplicated at top level... scope should be in
+        # meta"); fold scope's non-duplicated remainder into meta.scope, drop the rest.
+        meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
+        result.pop("bands", None)
+        result.pop("temporal", None)
+        # "rows" -> "variables" (Karl, 2026-09-14): route-level rename only -- engine.py's
+        # assemble_payload() and /api/areas (which returns it unmodified) still say "rows".
+        result["variables"] = result.pop("rows")
+        result["meta"] = {
+            "signature_version": "0.4",
+            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "query": query,
+            "scope": meta_scope,
+            "data_sources": _data_sources_block(level),
+        }
+        return result
+
+    if scope == "area":
+        if geom_wkt is None:
+            raise HTTPException(status_code=422, detail="scope=area requires: geom_wkt")
+        if not re.match(r"^\s*(POLYGON|MULTIPOLYGON)\s*\(", geom_wkt, re.IGNORECASE):
+            raise HTTPException(
+                status_code=422,
+                detail="geom_wkt must be a POLYGON or MULTIPOLYGON",
+            )
+        band_t_from = from_year if "T" in requested_bands else None
+        band_t_to = to_year if "T" in requested_bands else None
+        conn = db_connect()
+        try:
+            result = areal_signature_polygon(
+                geom_wkt, conn,
+                level=level, bands=sorted(requested_bands),
+                from_year=band_t_from, to_year=band_t_to,
+                include_detail=detail,
+                scope_type="area",
+            )
+        finally:
+            conn.close()
+
+        query = {"geom_wkt": geom_wkt, "bands": bands.upper(), "level": level}
+        if from_year is not None:
+            query["from_year"] = from_year
+        if to_year is not None:
+            query["to_year"] = to_year
+        meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
+        result.pop("bands", None)
+        result.pop("temporal", None)
+        result["variables"] = result.pop("rows")
+        result["meta"] = {
+            "signature_version": "0.4",
+            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "query": query,
+            "scope": meta_scope,
+            "data_sources": _data_sources_block(level),
+        }
+        return result
+
+    if scope != "basin":
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer, area",
+        )
+
+    missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"scope=basin requires: {', '.join(missing)}")
+
     sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
-    # Filter profile_groups to requested bands
-    requested = set(bands.upper().replace(",", "").replace(" ", ""))
-    if sig.get("profile_groups"):
-        sig["profile_groups"] = {k: v for k, v in sig["profile_groups"].items() if k in requested}
+    # Filter signature_bands to requested bands
+    if sig.get("signature_bands"):
+        sig["signature_bands"] = {k: v for k, v in sig["signature_bands"].items() if k in requested_bands}
 
-    # Band T: temporal enrichment — stored in profile_groups["T"]
-    if "T" in requested:
-        if from_year is None or to_year is None:
-            band_t = {
-                "_status": "not_requested",
-                "_note": "Include from_year and to_year to retrieve Band T temporal data.",
-            }
+    # Band T: temporal enrichment — stored in signature_bands["T"]. from_year/to_year are
+    # guaranteed present here -- the top-of-function check already 422'd otherwise.
+    if "T" in requested_bands:
+        temporal = get_temporal_context(lat=lat, lon=lon, year_start=from_year, year_end=to_year)
+        if "error" in temporal:
+            band_t = {"_status": "error", "_note": temporal["error"]}
         else:
-            temporal = get_temporal_context(lat=lat, lon=lon, year_start=from_year, year_end=to_year)
-            if "error" in temporal:
-                band_t = {"_status": "error", "_note": temporal["error"]}
-            else:
-                temporal["_status"] = "ok"
-                band_t = temporal
+            temporal["_status"] = "ok"
+            band_t = temporal
 
-            hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
-            band_t["hyde_land_use"] = hyde
+        hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
+        band_t["hyde_land_use"] = hyde
 
         if flat:
             sig["temporal"] = band_t
         else:
-            sig.setdefault("profile_groups", {})["T"] = band_t
+            sig.setdefault("signature_bands", {})["T"] = band_t
 
     # F8.5: Qualifying notes for BCE queries on epoch-sensitive bands.
     # Bands C and D are sourced from contemporary datasets and do not represent
@@ -244,7 +407,7 @@ def signature(
     # may want contemporary baselines for comparison — but the note discloses
     # the limitation. Design principle: notes inform, they do not gatekeep.
     if from_year is not None and from_year < 0:
-        band_c = sig.get("profile_groups", {}).get("C")
+        band_c = sig.get("signature_bands", {}).get("C")
         if band_c is not None:
             band_c["_note"] = [
                 "Band C reflects contemporary climatology (WorldClim ~1970–2000 CE). "
@@ -252,7 +415,7 @@ def signature(
                 "these values describe present-day conditions at this location, "
                 "not conditions at the requested epoch."
             ]
-        band_d = sig.get("profile_groups", {}).get("D")
+        band_d = sig.get("signature_bands", {}).get("D")
         if band_d is not None:
             band_d["_note"] = [
                 "Band D reflects contemporary land use and demographic data "
@@ -266,6 +429,8 @@ def signature(
         query["from_year"] = from_year
     if to_year is not None:
         query["to_year"] = to_year
+    if place_links:
+        query["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
     sig["meta"] = {
         "signature_version": "0.4",
@@ -275,13 +440,7 @@ def signature(
             "type": "containing_basin",
             "basin_level": level,
         },
-        "data_sources": {
-            "basin": f"HydroATLAS v1.0 / BasinATLAS Level 0{level}",
-            "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
-            "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
-            "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-            "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
-        },
+        "data_sources": _data_sources_block(level),
     }
 
     return sig
@@ -656,3 +815,46 @@ def polity_geom(id: int):
         },
         "geometry": r[7],
     }
+
+
+# -----------------------
+# /clio -- Cliopatria-polity consolidation, Section 1 (WO_public-api-reshape.md).
+# Additive only: the three routes below delegate to the existing /polity/* functions
+# above (byte-identical behavior, zero duplication, zero risk of drift) plus one new
+# helper for the WKT form nothing live calls yet. Nothing existing is modified. Wiring
+# these into the signature-fetch path (replacing areas()'s independent name+year lookup)
+# is Section 2 -- not started.
+# -----------------------
+
+def _clio_resolve_geom_wkt(slice_id: int) -> Optional[str]:
+    """A polity slice's geometry as WKT, by its own row id -- for feeding an engine call
+    (areal_signature_polygon) once Section 2 wires this in. Not called by anything yet.
+    Returns None if the id doesn't exist (caller's job to 404)."""
+    sql = "SELECT ST_AsText(geom) FROM gaz.clio_polities WHERE id = %(id)s"
+    try:
+        conn = db_connect()
+        with conn.cursor() as cur:
+            cur.execute(sql, {"id": slice_id})
+            r = cur.fetchone()
+    finally:
+        if "conn" in locals():
+            conn.close()
+    return r[0] if r else None
+
+
+@router.get("/clio/search", include_in_schema=False)
+def clio_search(q: str = "", year: Optional[int] = None):
+    """Same as /polity/search -- delegates directly, not a reimplementation."""
+    return polity_search(q=q, year=year)
+
+
+@router.get("/clio/slices", include_in_schema=False)
+def clio_slices(name: str):
+    """Same as /polity/slices -- delegates directly, not a reimplementation."""
+    return polity_slices(name=name)
+
+
+@router.get("/clio/geom", include_in_schema=False)
+def clio_geom(id: int):
+    """Same as /polity/geom -- delegates directly, not a reimplementation."""
+    return polity_geom(id=id)

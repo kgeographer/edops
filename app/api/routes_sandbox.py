@@ -511,7 +511,11 @@ def narrative(
     year_start : if provided with year_end, includes LMR PDSI temporal context
     year_end   : end year for temporal context
     """
-    sig = get_signature(lat=lat, lon=lon)
+    # flat=True: flatten_signature() reads fields (elev_min, slope_avg, discharge_yr,
+    # temp_yr, ...) off the top level, not nested under signature_bands -- without this
+    # every Band A-E field silently read as "n/a" (found 2026-09-14, unrelated to this
+    # route's own dormancy: no GUI button currently calls /narrative).
+    sig = get_signature(lat=lat, lon=lon, flat=True)
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
@@ -582,11 +586,17 @@ _PLACE_TYPE_PREF = ("cities", "towns", "villages", "inhabited places",
 
 
 def _whg_place_type(place_types: List[Dict]) -> Optional[str]:
+    """Candidate-list display label(s) -- helps a user tell apart same-named results
+    (e.g. a city vs. the World Heritage Site of the same name). Display only: no AAT
+    identifiers surface here, just human-readable labels. Leads with the settlement-ish
+    preferred label (existing behavior); appends one more distinct label, if any, rather
+    than collapsing to a single pick and discarding the rest."""
     labels = [p.get("label") for p in (place_types or []) if p.get("label")]
-    for pref in _PLACE_TYPE_PREF:
-        if pref in labels:
-            return pref
-    return labels[0] if labels else None
+    if not labels:
+        return None
+    primary = next((pref for pref in _PLACE_TYPE_PREF if pref in labels), labels[0])
+    extra = next((l for l in labels if l != primary), None)
+    return f"{primary} · {extra}" if extra else primary
 
 
 def _ring(w: float, s: float, e: float, n: float) -> Dict:
@@ -887,12 +897,22 @@ def whg_entity_lookup(id: str = Query(..., description="Namespaced gazetteer ide
 
     types = [{"label": t.get("label", "")} for t in (entity.get("types") or []) if isinstance(t, dict)]
 
+    # Cross-gazetteer identifiers WHG already asserts for this record (closeMatch/
+    # exactMatch only -- these are the ones shaped as {ns}:{id} CURIEs; seeAlso entries
+    # are plain URLs, not identifiers). Not the pasted id itself (that's source_id above) --
+    # the *other* gazetteers' names for the same place. See docs/edop/lod/.
+    links = [
+        l.get("identifier") for l in (entity.get("links") or [])
+        if isinstance(l, dict) and l.get("type") in ("closeMatch", "exactMatch") and l.get("identifier")
+    ]
+
     return {
         "id": whg_place_id,
         "source_id": raw,
         "name": name,
         "lat": lat,
         "lon": lon,
+        "links": links,
         "types": types,
     }
 
@@ -1294,7 +1314,7 @@ def lmr_values(var: str, from_year: int, to_year: int):
 # /area endpoint — areal signature for a named polity
 # -----------------------
 
-@router.get("/area", summary="Areal signature for a named historical polity")
+@router.get("/area", summary="Areal signature for a named historical polity", include_in_schema=False)
 def area(
     polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
     year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
@@ -1415,7 +1435,7 @@ def area(
 # /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
-@router.get("/areas", summary="Areal signature by scope — buffer, single basin, polity, or basin ring")
+@router.get("/areas", summary="Areal signature by scope — buffer, single basin, polity, or basin ring", include_in_schema=False)
 def areas(
     scope: str = Query(..., description=(
         "Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. "
@@ -1443,6 +1463,12 @@ def areas(
     from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
     to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
+    place_links: Optional[str] = Query(None, description=(
+        "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
+        "the response's place_links. Not validated or re-resolved. Only applied for "
+        "scope=single_basin or scope=basin_ring -- a single resolved point is the only "
+        "case with one place's provenance to carry forward; ignored for buffer and polity."
+    )),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by scope, then
     aggregates their signature as a distribution (not an average). `scope` is confusingly
@@ -1453,7 +1479,7 @@ def areas(
     Response
     --------
     Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
-    scores across the resolved member basins — not the GET /api/signature profile_groups
+    scores across the resolved member basins — not the GET /api/signature signature_bands
     shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
     per-variable "distribution" histogram object to each row. Full variable inventory: see
     the Codebook (/docs/codebook/).
@@ -1606,6 +1632,13 @@ def areas(
             }
             if "T" in requested and band_t_from is not None:
                 payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
+
+        # A single resolved point (single_basin/basin_ring) is the only case with one
+        # place's gazetteer provenance to carry forward -- echoed, not re-validated. See
+        # docs/edop/lod/. Deliberately not buffer/polity: polity's identity shape (a set
+        # of hybas_ids, not one) is a separate, not-yet-resolved question.
+        if place_links and scope in ("single_basin", "basin_ring"):
+            payload["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
     except HTTPException:
         raise

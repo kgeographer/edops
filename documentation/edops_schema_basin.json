@@ -1,0 +1,755 @@
+{
+  "_doc": "EDOPS Signature Schema -- scope=basin, v0.4. Regenerated 2026-09-14 against live /api/signature?scope=basin output for both default and flat modes. Example values are real API output for Timbuktu (16.8167 N, -2.9833 E), BasinATLAS Level 08, bands ABCDET, Band T span 1350-1600 CE. This is a curated, annotated reference (grouped and labeled for readability, large per-year arrays replaced with a descriptive placeholder) -- not a raw response dump. Supersedes the single edops_schema.json (pre-2026-09-14), which predated the scope=basin/buffer/area split and the signature_bands rename.",
+  "_modes": {
+    "default": "Response includes meta, profile_summary, and signature_bands (nested band structure). Raw flat field values are not returned at the top level.",
+    "flat": "Add &flat=true to the request. Response includes meta, profile_summary, and all band field values as top-level keys. signature_bands is omitted. Band T temporal data appears at key 'temporal' rather than inside signature_bands."
+  },
+  "meta": {
+    "signature_version": "0.4",
+    "generated": "2026-09-14T16:49:09Z",
+    "query": {
+      "lat": 16.8167,
+      "lon": -2.9833,
+      "bands": "ABCDET",
+      "level": 8,
+      "from_year": 1350,
+      "to_year": 1600
+    },
+    "scope": {
+      "type": "containing_basin",
+      "basin_level": 8
+    },
+    "data_sources": {
+      "basin": "HydroATLAS v1.0 / BasinATLAS Level 08",
+      "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
+      "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+      "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
+      "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
+    },
+    "_note": "Always present on every /api/signature response. Injected by the route, not part of the DB query."
+  },
+  "always_present": {
+    "_note": "These keys appear in both default and flat responses.",
+    "id": 17334,
+    "up_area": 588.1,
+    "geom_geojson": "{GeoJSON Polygon string}",
+    "elev_source": "opentopodata",
+    "elev_dataset": "mapzen",
+    "elev_resolution_m": 30,
+    "elev_error": "_omitted when elevation lookup succeeds; present with message when both providers fail_",
+    "profile_summary": [
+      {
+        "key": "ecoregion",
+        "label": "Ecoregion",
+        "value": "Sahelian Acacia savanna"
+      },
+      {
+        "key": "zone_name",
+        "label": "Bioclimate zone",
+        "value": "Extremely hot and xeric"
+      },
+      {
+        "key": "strata_code",
+        "label": "Bioclimate stratum",
+        "value": "Q5"
+      },
+      {
+        "key": "land_cover_name",
+        "label": "Land cover",
+        "value": "Sparse herbaceous or sparse shrub cover"
+      },
+      {
+        "key": "elev_point",
+        "label": "Elevation (point, m)",
+        "value": 267.0
+      },
+      {
+        "key": "elev_min",
+        "label": "Elevation min (basin, m)",
+        "value": 262
+      },
+      {
+        "key": "elev_max",
+        "label": "Elevation max (basin, m)",
+        "value": 276
+      },
+      {
+        "key": "relief_position",
+        "label": "Relief position (0–1)",
+        "value": 0.35714285714285715
+      },
+      {
+        "key": "runoff",
+        "label": "Runoff (mm/yr)",
+        "value": 18
+      },
+      {
+        "key": "discharge_yr",
+        "label": "Discharge (m³/s, yr)",
+        "value": 0.7110000252723694
+      },
+      {
+        "key": "pop_density",
+        "label": "Population density",
+        "value": 86.87200164794922
+      }
+    ]
+  },
+  "default_response": {
+    "_note": "The signature_bands key is present only in the default (non-flat) response.",
+    "signature_bands": {
+      "A": {
+        "label": "Physiographic bedrock",
+        "items": [
+          {
+            "key": "elev_min",
+            "label": "elevation_min (ele_mt_smn)",
+            "value": 262
+          },
+          {
+            "key": "elev_max",
+            "label": "elevation_max (ele_mt_smx)",
+            "value": 276
+          },
+          {
+            "key": "elev_point",
+            "label": "elevation_point",
+            "value": 267.0
+          },
+          {
+            "key": "relief_range_m",
+            "label": "relief_range_m",
+            "value": 14.0
+          },
+          {
+            "key": "relief_position",
+            "label": "relief_position",
+            "value": 0.35714285714285715
+          },
+          {
+            "key": "slope_avg",
+            "label": "slope_deg (slp_dg_sav)",
+            "value": 0.1
+          },
+          {
+            "key": "slope_upstream",
+            "label": "slope_deg_u (slp_dg_uav)",
+            "value": 0.1
+          },
+          {
+            "key": "stream_gradient",
+            "label": "stream_gradient (sgr_dk_sav)",
+            "value": 3
+          },
+          {
+            "key": "lith_class",
+            "label": "lithology_name (lit_cl_smj)",
+            "value": "Unconsolidated Sediments (SU)"
+          },
+          {
+            "key": "karst",
+            "label": "karst_pct (kar_pc_sse)",
+            "value": 0
+          },
+          {
+            "key": "karst_upstream",
+            "label": "karst_pct_u (kar_pc_use)",
+            "value": 0
+          }
+        ]
+      },
+      "B": {
+        "label": "Hydro-climatic baselines",
+        "items": [
+          {
+            "key": "runoff",
+            "label": "runoff (run_mm_syr)",
+            "value": 18
+          },
+          {
+            "key": "discharge_yr",
+            "label": "discharge_annual (dis_m3_pyr)",
+            "value": 0.7110000252723694
+          },
+          {
+            "key": "discharge_min",
+            "label": "discharge_min (dis_m3_pmn)",
+            "value": 0.05000000074505806
+          },
+          {
+            "key": "discharge_max",
+            "label": "discharge_max (dis_m3_pmx)",
+            "value": 2.9059998989105225
+          },
+          {
+            "key": "river_area",
+            "label": "river_area (ria_ha_ssu)",
+            "value": 23.14299964904785
+          },
+          {
+            "key": "river_area_upstream",
+            "label": "river_area_u (ria_ha_usu)",
+            "value": 23.14299964904785
+          },
+          {
+            "key": "gw_table_depth",
+            "label": "groundwater_depth (gwt_cm_sav)",
+            "value": 16
+          },
+          {
+            "key": "pnv_majority",
+            "label": "pnv_majority_name (pnv_cl_smj)",
+            "value": "Open shrubland"
+          },
+          {
+            "key": "pnv_shares",
+            "label": "pnv_shares (pnv_pc_s01..s15)",
+            "value": {
+              "Open shrubland": 100
+            }
+          },
+          {
+            "key": "pct_clay",
+            "label": "pct_clay (cly_pc_sav)",
+            "value": 17
+          },
+          {
+            "key": "pct_silt",
+            "label": "pct_silt (slt_pc_sav)",
+            "value": 29
+          },
+          {
+            "key": "pct_sand",
+            "label": "pct_sand (snd_pc_sav)",
+            "value": 54
+          },
+          {
+            "key": "pct_clay_upstream",
+            "label": "pct_clay_u (cly_pc_uav)",
+            "value": 16
+          },
+          {
+            "key": "pct_silt_upstream",
+            "label": "pct_silt_u (slt_pc_uav)",
+            "value": 28
+          },
+          {
+            "key": "pct_sand_upstream",
+            "label": "pct_sand_u (snd_pc_uav)",
+            "value": 53
+          },
+          {
+            "key": "wet_pct_grp1",
+            "label": "wetland_pct_g1 (wet_pc_sg1)",
+            "value": 10
+          },
+          {
+            "key": "wet_pct_grp2",
+            "label": "wetland_pct_g2 (wet_pc_sg2)",
+            "value": 10
+          },
+          {
+            "key": "wet_pct_grp1_upstream",
+            "label": "wetland_pct_g1_u (wet_pc_ug1)",
+            "value": 10
+          },
+          {
+            "key": "wet_pct_grp2_upstream",
+            "label": "wetland_pct_g2_u (wet_pc_ug2)",
+            "value": 10
+          },
+          {
+            "key": "wetland_class",
+            "label": "wetland_class_id (wet_cl_smj)",
+            "value": "Freshwater marsh, floodplain"
+          }
+        ]
+      },
+      "C": {
+        "label": "Bioclimatic proxies",
+        "items": [
+          {
+            "key": "temp_yr",
+            "label": "temperature_annual (tmp_dc_syr)",
+            "value": 28.2
+          },
+          {
+            "key": "temp_min",
+            "label": "temperature_min (tmp_dc_smn)",
+            "value": 20.7
+          },
+          {
+            "key": "temp_max",
+            "label": "temperature_max (tmp_dc_smx)",
+            "value": 33.9
+          },
+          {
+            "key": "temp_yr_upstream",
+            "label": "temperature_annual_u (tmp_dc_uyr)",
+            "value": 28.2
+          },
+          {
+            "key": "precip_yr",
+            "label": "precipitation_annual (pre_mm_syr)",
+            "value": 172
+          },
+          {
+            "key": "precip_yr_upstream",
+            "label": "precipitation_annual_u (pre_mm_uyr)",
+            "value": 172
+          },
+          {
+            "key": "pre_mm_monthly",
+            "label": "precipitation_monthly (pre_mm_monthly)",
+            "value": [
+              0.0,
+              0.0,
+              0.0,
+              1.0,
+              4.0,
+              16.0,
+              49.0,
+              70.0,
+              29.0,
+              3.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "key": "tmp_dc_monthly",
+            "label": "temperature_monthly (tmp_dc_monthly)",
+            "value": [
+              20.7,
+              23.5,
+              26.8,
+              30.5,
+              33.2,
+              33.9,
+              31.7,
+              30.3,
+              30.9,
+              30.1,
+              25.5,
+              21.6
+            ]
+          },
+          {
+            "key": "pre_concentration",
+            "label": "pre_concentration",
+            "value": 0.8654666674956752
+          },
+          {
+            "key": "pre_peak_month",
+            "label": "pre_peak_month",
+            "value": 6.6630828844390795
+          },
+          {
+            "key": "tmp_concentration",
+            "label": "tmp_concentration",
+            "value": 0.3767815760993696
+          },
+          {
+            "key": "tmp_peak_month",
+            "label": "tmp_peak_month",
+            "value": 5.6461500848952255
+          },
+          {
+            "key": "seas_phase_offset",
+            "label": "seas_phase_offset",
+            "value": 1.0169327995438544
+          },
+          {
+            "key": "tmp_seas_amp",
+            "label": "tmp_seas_amp",
+            "value": 13.2
+          },
+          {
+            "key": "aridity",
+            "label": "aridity_index (ari_ix_sav)",
+            "value": 8
+          },
+          {
+            "key": "aridity_upstream",
+            "label": "aridity_index_u (ari_ix_uav)",
+            "value": 8
+          },
+          {
+            "key": "permafrost_extent",
+            "label": "permafrost_pct (prm_pc_sse)",
+            "value": 0
+          },
+          {
+            "key": "biome",
+            "label": "biome_name (tbi_cl_smj)",
+            "value": "Tropical & Subtropical Grasslands, Savannas & Shrublands"
+          },
+          {
+            "key": "ecoregion",
+            "label": "ecoregion_terrestrial_name (tec_cl_smj)",
+            "value": "Sahelian Acacia savanna"
+          },
+          {
+            "key": "eco_id",
+            "label": "ecoregion_terrestrial_id (tec_cl_smj)",
+            "value": 53
+          },
+          {
+            "key": "freshwater_ecoregion_class",
+            "label": "freshwater_habitat_name (fmh_cl_smj)",
+            "value": "Tropical and subtropical floodplain rivers and wetlands"
+          },
+          {
+            "key": "freshwater_ecoregion_name",
+            "label": "freshwater_ecoregion_name (fec_cl_smj)",
+            "value": "Inner Niger Delta"
+          }
+        ]
+      },
+      "D": {
+        "label": "Anthropocene markers",
+        "items": [
+          {
+            "key": "pop_density",
+            "label": "pop_density (ppd_pk_sav)",
+            "value": 86.87200164794922
+          },
+          {
+            "key": "human_footprint_09",
+            "label": "human_footprint_2009 (hft_ix_s09)",
+            "value": 33
+          },
+          {
+            "key": "human_footprint_09_upstream",
+            "label": "human_footprint_2009_u (hft_ix_u09)",
+            "value": 33
+          },
+          {
+            "key": "cropland_extent",
+            "label": "cropland_pct (crp_pc_sse)",
+            "value": 0
+          },
+          {
+            "key": "cropland_extent_upstream",
+            "label": "cropland_pct_u (crp_pc_use)",
+            "value": 0
+          },
+          {
+            "key": "pasture_extent",
+            "label": "pasture_pct (pst_pc_sse)",
+            "value": 3
+          },
+          {
+            "key": "pasture_extent_upstream",
+            "label": "pasture_pct_u (pst_pc_use)",
+            "value": 3
+          },
+          {
+            "key": "reservoir_vol",
+            "label": "reservoir_vol (rev_mc_usu)",
+            "value": 0
+          },
+          {
+            "key": "gdp_avg",
+            "label": "gdp_mean (gdp_ud_sav)",
+            "value": 2285
+          },
+          {
+            "key": "human_dev_idx",
+            "label": "hdi (hdi_ix_sav)",
+            "value": 0.442
+          }
+        ]
+      },
+      "E": {
+        "label": "Coastality",
+        "items": [
+          {
+            "key": "dist_sink",
+            "label": "dist_sink_km (dist_sink)",
+            "value": 2504.6
+          },
+          {
+            "key": "endorheic",
+            "label": "endorheic (endo)",
+            "value": 0
+          },
+          {
+            "key": "coast_flag",
+            "label": "coast_flag (coast)",
+            "value": 0
+          }
+        ]
+      },
+      "T": {
+        "lmr_status": "available",
+        "grid_cell": {
+          "lat": 16.0,
+          "lon": -2.0
+        },
+        "year_start": 1350,
+        "year_end": 1600,
+        "pdsi_series": "[251 annual {year, pdsi} objects, e.g. {\"year\": 1350, \"pdsi\": -0.2003}]",
+        "pdsi_mean": -0.1461,
+        "pdsi_min": -0.5504,
+        "pdsi_max": 0.1377,
+        "air_series": "[251 annual {year, air_anom_k} objects, e.g. {\"year\": 1350, \"air_anom_k\": -0.254}]",
+        "air_mean_anom_k": -0.146,
+        "prate_series": "[251 annual {year, prate_anom_mm_day} objects, e.g. {\"year\": 1350, \"prate_anom_mm_day\": -0.0494}]",
+        "prate_mean_anom_mm_day": -0.0196,
+        "volcanic_events": [
+          {
+            "year_ad": 1453,
+            "month": 1,
+            "vssi_tg": 9.97,
+            "vssi_1sig": 3.07,
+            "asymmetry": 0.829,
+            "location": null,
+            "tephra": false
+          },
+          {
+            "year_ad": 1458,
+            "month": 1,
+            "vssi_tg": 32.98,
+            "vssi_1sig": 4.8,
+            "asymmetry": 0.357,
+            "location": "Kuwae (Vanuatu)",
+            "tephra": false
+          },
+          {
+            "year_ad": 1477,
+            "month": 2,
+            "vssi_tg": 5.12,
+            "vssi_1sig": 1.61,
+            "asymmetry": 1.0,
+            "location": "Veiðivötn (Iceland)",
+            "tephra": true
+          },
+          {
+            "year_ad": 1585,
+            "month": 1,
+            "vssi_tg": 8.51,
+            "vssi_1sig": 2.34,
+            "asymmetry": 0.914,
+            "location": "Colima (Mexico)",
+            "tephra": false
+          },
+          {
+            "year_ad": 1595,
+            "month": 3,
+            "vssi_tg": 8.87,
+            "vssi_1sig": 1.51,
+            "asymmetry": 0.444,
+            "location": "Nevado del Ruiz (Columbia)",
+            "tephra": false
+          },
+          {
+            "year_ad": 1600,
+            "month": 2,
+            "vssi_tg": 18.95,
+            "vssi_1sig": 4.03,
+            "asymmetry": 0.671,
+            "location": "Huaynaputina (Peru)",
+            "tephra": false
+          }
+        ],
+        "volcanic_event_count": 6,
+        "volcanic_vssi_sum_tg": 84.4,
+        "years_since_last_major": 0,
+        "volcanic_events_note": null,
+        "lmr_out_of_range_note": null,
+        "lmr_fidelity_note": null,
+        "lmr_proxy_bias_note": "LMR reconstruction quality is strongest for Europe and North America, where proxy records are densest; results for East Asia, South Asia, and the Southern Hemisphere carry greater uncertainty.",
+        "_status": "ok",
+        "hyde_land_use": {
+          "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
+          "n_epochs": 3,
+          "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+        }
+      }
+    }
+  },
+  "flat_response": {
+    "_note": "flat=true: every signature_bands field appears as a top-level key instead (no signature_bands nesting); Band T appears at top-level key 'temporal' instead of nested under signature_bands['T']. always_present fields (below) and meta are identical in both modes -- omitted here to avoid repeating them.",
+    "elev_min": 262,
+    "elev_max": 276,
+    "elev_point": 267.0,
+    "relief_range_m": 14.0,
+    "relief_position": 0.35714285714285715,
+    "slope_avg": 0.1,
+    "slope_upstream": 0.1,
+    "stream_gradient": 3,
+    "lith_class": "Unconsolidated Sediments (SU)",
+    "karst": 0,
+    "karst_upstream": 0,
+    "runoff": 18,
+    "discharge_yr": 0.7110000252723694,
+    "discharge_min": 0.05000000074505806,
+    "discharge_max": 2.9059998989105225,
+    "river_area": 23.14299964904785,
+    "river_area_upstream": 23.14299964904785,
+    "gw_table_depth": 16,
+    "pnv_majority": "Open shrubland",
+    "pnv_shares": {
+      "Open shrubland": 100
+    },
+    "pct_clay": 17,
+    "pct_silt": 29,
+    "pct_sand": 54,
+    "pct_clay_upstream": 16,
+    "pct_silt_upstream": 28,
+    "pct_sand_upstream": 53,
+    "wet_pct_grp1": 10,
+    "wet_pct_grp2": 10,
+    "wet_pct_grp1_upstream": 10,
+    "wet_pct_grp2_upstream": 10,
+    "wetland_class": "Freshwater marsh, floodplain",
+    "temp_yr": 28.2,
+    "temp_min": 20.7,
+    "temp_max": 33.9,
+    "temp_yr_upstream": 28.2,
+    "precip_yr": 172,
+    "precip_yr_upstream": 172,
+    "pre_mm_monthly": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      4.0,
+      16.0,
+      49.0,
+      70.0,
+      29.0,
+      3.0,
+      0.0,
+      0.0
+    ],
+    "tmp_dc_monthly": [
+      20.7,
+      23.5,
+      26.8,
+      30.5,
+      33.2,
+      33.9,
+      31.7,
+      30.3,
+      30.9,
+      30.1,
+      25.5,
+      21.6
+    ],
+    "pre_concentration": 0.8654666674956752,
+    "pre_peak_month": 6.6630828844390795,
+    "tmp_concentration": 0.3767815760993696,
+    "tmp_peak_month": 5.6461500848952255,
+    "seas_phase_offset": 1.0169327995438544,
+    "tmp_seas_amp": 13.2,
+    "aridity": 8,
+    "aridity_upstream": 8,
+    "permafrost_extent": 0,
+    "biome": "Tropical & Subtropical Grasslands, Savannas & Shrublands",
+    "ecoregion": "Sahelian Acacia savanna",
+    "eco_id": 53,
+    "freshwater_ecoregion_class": "Tropical and subtropical floodplain rivers and wetlands",
+    "freshwater_ecoregion_name": "Inner Niger Delta",
+    "pop_density": 86.87200164794922,
+    "human_footprint_09": 33,
+    "human_footprint_09_upstream": 33,
+    "cropland_extent": 0,
+    "cropland_extent_upstream": 0,
+    "pasture_extent": 3,
+    "pasture_extent_upstream": 3,
+    "reservoir_vol": 0,
+    "gdp_avg": 2285,
+    "human_dev_idx": 0.442,
+    "dist_sink": 2504.6,
+    "endorheic": 0,
+    "coast_flag": 0,
+    "temporal": {
+      "lmr_status": "available",
+      "grid_cell": {
+        "lat": 16.0,
+        "lon": -2.0
+      },
+      "year_start": 1350,
+      "year_end": 1600,
+      "pdsi_series": "[251 annual {year, pdsi} objects, e.g. {\"year\": 1350, \"pdsi\": -0.2003}]",
+      "pdsi_mean": -0.1461,
+      "pdsi_min": -0.5504,
+      "pdsi_max": 0.1377,
+      "air_series": "[251 annual {year, air_anom_k} objects, e.g. {\"year\": 1350, \"air_anom_k\": -0.254}]",
+      "air_mean_anom_k": -0.146,
+      "prate_series": "[251 annual {year, prate_anom_mm_day} objects, e.g. {\"year\": 1350, \"prate_anom_mm_day\": -0.0494}]",
+      "prate_mean_anom_mm_day": -0.0196,
+      "volcanic_events": [
+        {
+          "year_ad": 1453,
+          "month": 1,
+          "vssi_tg": 9.97,
+          "vssi_1sig": 3.07,
+          "asymmetry": 0.829,
+          "location": null,
+          "tephra": false
+        },
+        {
+          "year_ad": 1458,
+          "month": 1,
+          "vssi_tg": 32.98,
+          "vssi_1sig": 4.8,
+          "asymmetry": 0.357,
+          "location": "Kuwae (Vanuatu)",
+          "tephra": false
+        },
+        {
+          "year_ad": 1477,
+          "month": 2,
+          "vssi_tg": 5.12,
+          "vssi_1sig": 1.61,
+          "asymmetry": 1.0,
+          "location": "Veiðivötn (Iceland)",
+          "tephra": true
+        },
+        {
+          "year_ad": 1585,
+          "month": 1,
+          "vssi_tg": 8.51,
+          "vssi_1sig": 2.34,
+          "asymmetry": 0.914,
+          "location": "Colima (Mexico)",
+          "tephra": false
+        },
+        {
+          "year_ad": 1595,
+          "month": 3,
+          "vssi_tg": 8.87,
+          "vssi_1sig": 1.51,
+          "asymmetry": 0.444,
+          "location": "Nevado del Ruiz (Columbia)",
+          "tephra": false
+        },
+        {
+          "year_ad": 1600,
+          "month": 2,
+          "vssi_tg": 18.95,
+          "vssi_1sig": 4.03,
+          "asymmetry": 0.671,
+          "location": "Huaynaputina (Peru)",
+          "tephra": false
+        }
+      ],
+      "volcanic_event_count": 6,
+      "volcanic_vssi_sum_tg": 84.4,
+      "years_since_last_major": 0,
+      "volcanic_events_note": null,
+      "lmr_out_of_range_note": null,
+      "lmr_fidelity_note": null,
+      "lmr_proxy_bias_note": "LMR reconstruction quality is strongest for Europe and North America, where proxy records are densest; results for East Asia, South Asia, and the Southern Hemisphere carry greater uncertainty.",
+      "_status": "ok",
+      "hyde_land_use": {
+        "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
+        "n_epochs": 3,
+        "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@ test_public_api_surface.py
 --------------------------
 Locks the *public* API surface: the set of routes marked include_in_schema=True
 (the ones Swagger and the generated API Guide document) must stay exactly the
-four advertised endpoints, each with a summary. If a new route is added without
+two advertised endpoints, each with a summary. If a new route is added without
 include_in_schema=False, or an internal route is accidentally exposed, this
 fails and names the offender — so it can't reach a release unnoticed.
 
@@ -16,11 +16,13 @@ from app.main import app
 
 # (method, path) -- the entire documented public surface. Update deliberately,
 # in the same commit that changes what the docs advertise.
+# /area and /areas made internal 2026-09-14 (include_in_schema=False) -- Karl:
+# "we are exposing /signature and /health" -- scope=buffer/area on /api/signature
+# cover the same ground publicly now; /area (named-polity) and /areas (scope
+# dispatcher) remain live but GUI/internal-only, per docsite/api.md's own note.
 EXPECTED_PUBLIC = {
     ("GET", "/api/health"),
     ("GET", "/api/signature"),
-    ("GET", "/api/area"),
-    ("GET", "/api/areas"),
 }
 
 
@@ -36,7 +38,7 @@ def _public_operations():
     return ops
 
 
-def test_public_surface_is_exactly_the_advertised_four():
+def test_public_surface_is_exactly_the_advertised_two():
     actual = _public_operations()
     leaked = actual - EXPECTED_PUBLIC
     missing = EXPECTED_PUBLIC - actual

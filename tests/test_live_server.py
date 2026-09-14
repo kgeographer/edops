@@ -81,10 +81,10 @@ def test_signature_version(sig):
     assert sig["meta"]["signature_version"] == "0.4"
 
 
-def test_signature_has_profile_groups(sig):
-    assert "profile_groups" in sig
+def test_signature_has_signature_bands(sig):
+    assert "signature_bands" in sig
     for band in "ABCDE":
-        assert band in sig["profile_groups"], f"Band {band} missing from profile_groups"
+        assert band in sig["signature_bands"], f"Band {band} missing from signature_bands"
 
 
 def test_signature_no_flat_mirror(sig):
@@ -103,7 +103,7 @@ def test_signature_meta_fields(sig):
 
 def test_signature_timbuktu_values(sig):
     """Spot-check a few known values for Timbuktu."""
-    items = {it["key"]: it["value"] for band in sig["profile_groups"].values()
+    items = {it["key"]: it["value"] for band in sig["signature_bands"].values()
              for it in band.get("items", [])}
     assert items.get("temp_yr") == pytest.approx(28.2, abs=1.0), "temp_yr out of expected range"
     assert items.get("aridity") is not None
@@ -114,8 +114,8 @@ def test_signature_timbuktu_values(sig):
 # Flat mode
 # ---------------------------------------------------------------------------
 
-def test_flat_no_profile_groups(sig_flat):
-    assert "profile_groups" not in sig_flat
+def test_flat_no_signature_bands(sig_flat):
+    assert "signature_bands" not in sig_flat
 
 
 def test_flat_has_field_values(sig_flat):
@@ -133,15 +133,15 @@ def test_flat_has_meta(sig_flat):
 # ---------------------------------------------------------------------------
 
 def test_band_t_present(sig_t):
-    assert "T" in sig_t.get("profile_groups", {}), "Band T missing from profile_groups"
+    assert "T" in sig_t.get("signature_bands", {}), "Band T missing from signature_bands"
 
 
 def test_band_t_status_ok(sig_t):
-    assert sig_t["profile_groups"]["T"].get("_status") == "ok"
+    assert sig_t["signature_bands"]["T"].get("_status") == "ok"
 
 
 def test_band_t_has_pdsi_series(sig_t):
-    t = sig_t["profile_groups"]["T"]
+    t = sig_t["signature_bands"]["T"]
     assert "pdsi_series" in t
     assert len(t["pdsi_series"]) > 0
 

@@ -34,15 +34,25 @@ def client(db_available):
         yield client
 
 
+def _band_value(sig, band, key):
+    """Look up a signature_bands item's value by key. 2026-09-14: seasonality fields
+    (pre_concentration, seas_phase_offset, ...) moved off the top level into their
+    catalog-declared band (Band C) -- see SIGNATURE_BANDS in app/db/signature.py."""
+    for item in sig.get("signature_bands", {}).get(band, {}).get("items", []):
+        if item["key"] == key:
+            return item["value"]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # 1. Athens — bands=AB
 # ---------------------------------------------------------------------------
 
 def test_athens_bands_ab(client):
-    r = client.get("/api/signature", params={"lat": 37.97, "lon": 23.73, "bands": "AB"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 37.97, "lon": 23.73, "bands": "AB"})
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     assert "A" in pg and "B" in pg
     assert "C" not in pg and "T" not in pg
     assert len(pg["A"]["items"]) > 0
@@ -53,9 +63,9 @@ def test_athens_bands_ab(client):
 # ---------------------------------------------------------------------------
 
 def test_samarkand_bands_abcde(client):
-    r = client.get("/api/signature", params={"lat": 39.65, "lon": 66.98, "bands": "ABCDE"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 39.65, "lon": 66.98, "bands": "ABCDE"})
     assert r.status_code == 200
-    pg = r.json()["profile_groups"]
+    pg = r.json()["signature_bands"]
     for band in ("A", "B", "C", "D", "E"):
         assert band in pg, f"Missing band {band}"
     assert "T" not in pg
@@ -66,13 +76,13 @@ def test_samarkand_bands_abcde(client):
 # ---------------------------------------------------------------------------
 
 def test_rome_bands_abct(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 41.9, "lon": 12.5,
         "bands": "ABCT", "from_year": 1, "to_year": 400,
     })
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C", "T"):
         assert band in pg, f"Missing band {band}"
 
@@ -89,13 +99,13 @@ def test_rome_bands_abct(client):
 # ---------------------------------------------------------------------------
 
 def test_kaifeng_bands_abct(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 34.8, "lon": 114.3,
         "bands": "ABCT", "from_year": 960, "to_year": 1127,
     })
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C", "T"):
         assert band in pg, f"Missing band {band}"
 
@@ -120,12 +130,12 @@ def test_kaifeng_bands_abct(client):
 # ---------------------------------------------------------------------------
 
 def test_timbuktu_bands_abt(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.77, "lon": -3.01,
         "bands": "ABT", "from_year": 1200, "to_year": 1600,
     })
     assert r.status_code == 200
-    pg = r.json()["profile_groups"]
+    pg = r.json()["signature_bands"]
     assert "A" in pg and "B" in pg and "T" in pg
     assert "C" not in pg
 
@@ -139,14 +149,14 @@ def test_timbuktu_bands_abt(client):
 # ---------------------------------------------------------------------------
 
 def test_kaifeng_level6(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 34.8, "lon": 114.3,
         "bands": "ABC", "level": 6,
     })
     assert r.status_code == 200
     data = r.json()
     assert data["meta"]["query"]["level"] == 6
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C"):
         assert band in pg
     assert "T" not in pg
@@ -157,24 +167,28 @@ def test_kaifeng_level6(client):
 # ---------------------------------------------------------------------------
 
 def test_seasonality_arrays_rome(client):
-    """Monthly arrays present and length-12 for Rome (L08 default)."""
-    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    """Monthly arrays present and length-12 for Rome (L08 default). Nested under
+    signature_bands["C"] (2026-09-14) -- the monthly arrays are catalog Band C
+    variables, not identity/provenance fields, so they no longer sit top-level."""
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C"})
     assert r.status_code == 200
     data = r.json()
-    assert isinstance(data.get("pre_mm_monthly"), list), "pre_mm_monthly missing"
-    assert len(data["pre_mm_monthly"]) == 12
-    assert isinstance(data.get("tmp_dc_monthly"), list), "tmp_dc_monthly missing"
-    assert len(data["tmp_dc_monthly"]) == 12
+    pre = _band_value(data, "C", "pre_mm_monthly")
+    tmp = _band_value(data, "C", "tmp_dc_monthly")
+    assert isinstance(pre, list), "pre_mm_monthly missing"
+    assert len(pre) == 12
+    assert isinstance(tmp, list), "tmp_dc_monthly missing"
+    assert len(tmp) == 12
 
 
 def test_seasonality_scalars_rome(client):
     """Pinned seasonality indices for Rome L08 — tolerance ±0.05."""
-    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C", "level": 8})
     assert r.status_code == 200
     data = r.json()
-    pre_conc   = data["pre_concentration"]
-    phase_off  = data["seas_phase_offset"]
-    tmp_amp    = data["tmp_seas_amp"]
+    pre_conc   = _band_value(data, "C", "pre_concentration")
+    phase_off  = _band_value(data, "C", "seas_phase_offset")
+    tmp_amp    = _band_value(data, "C", "tmp_seas_amp")
     assert pre_conc  is not None
     assert phase_off is not None
     assert tmp_amp   is not None
@@ -186,13 +200,13 @@ def test_seasonality_scalars_rome(client):
 
 def test_seasonality_discrimination(client):
     """Ordering relationships encode the Mediterranean vs monsoon discrimination story."""
-    rome   = client.get("/api/signature", params={"lat": 41.9,  "lon": 12.5,  "bands": "C"}).json()
-    delhi  = client.get("/api/signature", params={"lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
-    london = client.get("/api/signature", params={"lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
+    rome   = client.get("/api/signature", params={"scope": "basin", "lat": 41.9,  "lon": 12.5,  "bands": "C"}).json()
+    delhi  = client.get("/api/signature", params={"scope": "basin", "lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
+    london = client.get("/api/signature", params={"scope": "basin", "lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
 
-    rome_offset   = rome["seas_phase_offset"]
-    delhi_offset  = delhi["seas_phase_offset"]
-    london_conc   = london["pre_concentration"]
+    rome_offset   = _band_value(rome, "C", "seas_phase_offset")
+    delhi_offset  = _band_value(delhi, "C", "seas_phase_offset")
+    london_conc   = _band_value(london, "C", "pre_concentration")
 
     # Mediterranean (Rome) has large precip–temp phase offset; monsoon (Delhi) small
     assert rome_offset  is not None
@@ -217,14 +231,14 @@ def test_band_t_out_of_range_status_stays_ok(client):
     now signaled per-source (lmr_status, the *_note fields), not via _status itself.
     Confirmed against live output 2026-08-16; update this test in the same commit
     as any future Band T shape change, and re-run generate_api_guide.py + refresh
-    documentation/edops_schema.json alongside it.
+    documentation/edops_schema_basin.json alongside it.
     """
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.8167, "lon": -2.9833,
         "bands": "T", "from_year": -2100, "to_year": -1800,
     })
     assert r.status_code == 200
-    t = r.json()["profile_groups"]["T"]
+    t = r.json()["signature_bands"]["T"]
 
     assert t.get("_status") == "ok", (
         "_status should stay 'ok' once years are supplied, even when LMR/eVolv2k "
@@ -245,12 +259,12 @@ def test_band_t_available_shape(client):
     the four *_note fields (null when nothing to report), and hyde_land_use's
     {epochs, n_epochs, _note} structure. Same tripwire purpose as the test above.
     """
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.8167, "lon": -2.9833,
         "bands": "T", "from_year": 1350, "to_year": 1600,
     })
     assert r.status_code == 200
-    t = r.json()["profile_groups"]["T"]
+    t = r.json()["signature_bands"]["T"]
 
     assert t.get("_status") == "ok"
     assert t.get("lmr_status") == "available"

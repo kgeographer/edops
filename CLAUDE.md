@@ -130,8 +130,10 @@ was then cut from `main` for the deploy itself.
 (`scripts/edop/docsite/generate_api_guide.py` → `docsite/api.md`) — both sourced from live code
 (the variable catalog TSV; the public route set + docstrings) rather than hand-maintained.
 Swagger (`/api/schema`) is a custom-styled route reading that same route metadata. Public API
-surface is exactly `/health`, `/signature`, `/area`, `/areas` — everything else marked
-`include_in_schema=False`; lat/lon are range-validated. The `/api/areas` resolver parameter is
+surface is exactly `/health` and `/signature` (`/area` and `/area`s made internal 2026-09-14 —
+`scope=buffer`/`scope=area` on `/signature` cover that ground publicly now; `/area`/`/areas`
+remain live, GUI/internal-only, `include_in_schema=False`) — everything else marked the same
+way; lat/lon are range-validated. The `/api/areas` resolver parameter is
 `scope` (not the old `type`) throughout — request parameter, response envelope key, code
 identifiers, docs prose; "neighborhood" has been fully retired. Codebook rows for
 BasinATLAS-sourced variables link to their own page in the provider's PDF catalog
@@ -430,7 +432,7 @@ working under `notebooks/`. Consult it before writing or editing any cell.
 
 ```bash
 curl http://localhost:8000/api/health
-curl "http://localhost:8000/api/signature?lat=16.76618535&lon=-3.00777252"  # Timbuktu
+curl "http://localhost:8000/api/signature?scope=basin&lat=16.8167&lon=-2.9833"  # Timbuktu
 python -m pytest tests/                        # full suite (app + engine)
 python -m pytest tests/engine/                 # engine contract tests only
 python -m pytest tests/ --ignore=tests/engine/ # app tests only
@@ -465,7 +467,8 @@ site/ holds mkdocs generated/published markup
 | `documentation/EDOPS_eda_findings.md`           | EDA findings (F1.1–F11.6)                                                                                        |
 | `docs/edop/prospectus_20260505.md`              | Initial research direction doc (superseded by project summary)                                                   |
 | `docs/design/scenarios.md`                      | User profiles + scenarios — read before Lookup UI work                                                           |
-| `docs/edop/edops_schema.json`                   | Signature schema with Timbuktu example values                                                                    |
+| `documentation/edops_schema_basin.json`         | `/api/signature?scope=basin` schema, Timbuktu example values (2026-09-14, replaces the old single `edops_schema.json`) |
+| `documentation/edops_schema_area.json`          | `/api/signature?scope=area` schema, real bbox example — an entirely different shape (`variables`, not `signature_bands`) |
 
 ---
 

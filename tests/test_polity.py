@@ -262,3 +262,71 @@ def test_seshat_social_present(client):
 def test_seshat_unknown_id_returns_404(client):
     r = client.get("/api/polity/seshat?seshatid=xx_does_not_exist")
     assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# /api/clio/* -- Section 1 of docs/edop/api_shape/WO_public-api-reshape.md.
+# Additive-only consolidation: /clio/search, /clio/slices, /clio/geom delegate
+# directly to the /polity/* functions above (not reimplementations), so these
+# tests are equivalence checks against the routes tested above, plus coverage
+# for the one genuinely new piece (_clio_resolve_geom_wkt). Nothing live calls
+# /clio yet -- verified at the bottom of this section.
+# ---------------------------------------------------------------------------
+
+def test_clio_search_matches_polity_search(client):
+    a = client.get("/api/polity/search?q=song").json()
+    b = client.get("/api/clio/search?q=song").json()
+    assert a == b
+
+
+def test_clio_slices_matches_polity_slices(client, northern_song_slices):
+    b = client.get("/api/clio/slices?name=Northern+Song").json()
+    assert northern_song_slices == b
+
+
+def test_clio_geom_matches_polity_geom(client, northern_song_slices):
+    first_id = northern_song_slices[0]["id"]
+    a = client.get(f"/api/polity/geom?id={first_id}").json()
+    b = client.get(f"/api/clio/geom?id={first_id}").json()
+    assert a == b
+
+
+def test_clio_geom_404_for_unknown_id(client):
+    r = client.get("/api/clio/geom?id=99999999")
+    assert r.status_code == 404
+
+
+def test_clio_resolve_geom_wkt_matches_geojson_type(client, northern_song_slices):
+    """The new WKT helper isn't exposed over HTTP yet (Section 2 will call it
+    server-side) -- call it directly, and sanity-check it's deriving from the
+    same geom column as /polity/geom's GeoJSON (same slice, compatible type)."""
+    from app.api.routes_common import _clio_resolve_geom_wkt
+
+    first_id = northern_song_slices[0]["id"]
+    wkt = _clio_resolve_geom_wkt(first_id)
+    assert wkt is not None
+    assert wkt.startswith("POLYGON") or wkt.startswith("MULTIPOLYGON")
+
+    gj_type = client.get(f"/api/polity/geom?id={first_id}").json()["geometry"]["type"]
+    assert gj_type.upper() in wkt[:len(gj_type)].upper()
+
+
+def test_clio_resolve_geom_wkt_none_for_unknown_id():
+    from app.api.routes_common import _clio_resolve_geom_wkt
+    assert _clio_resolve_geom_wkt(99999999) is None
+
+
+def test_nothing_live_references_clio():
+    """Section 1 acceptance criterion: /clio is dormant -- built and tested in
+    isolation, not yet wired into any template or the areas() polity branch."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).parent.parent
+    hits = []
+    for pattern in ("app/templates/*.html", "app/api/routes_sandbox.py"):
+        for path in root.glob(pattern):
+            text = path.read_text(encoding="utf-8")
+            if re.search(r"/clio\b", text):
+                hits.append(str(path.relative_to(root)))
+    assert not hits, f"/clio referenced outside its own definition: {hits}"

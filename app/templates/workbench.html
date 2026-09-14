@@ -2284,7 +2284,7 @@
       return;
     }
 
-    const hasGrouped = sig.profile_summary && sig.profile_groups;
+    const hasGrouped = sig.profile_summary && sig.signature_bands;
 
     // Show heading when we have data, hide explainers
     if (headingEl) headingEl.style.display = hasGrouped ? '' : 'none';
@@ -2340,7 +2340,7 @@
 
     // ---------- Accordions ----------
     if (accEl) {
-      const groups = sig.profile_groups || {};
+      const groups = sig.signature_bands || {};
       const order = ['A', 'B', 'C', 'D', 'E'];
       const accId = 'profileAccordion';
 
@@ -2417,7 +2417,7 @@
   }
 
   async function fetchSignature(lon, lat) {
-    const url = `/api/signature?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}`;
+    const url = `/api/signature?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}&scope=basin&level=8`;
     const resp = await fetch(url);
     if (!resp.ok) {
       const txt = await resp.text();

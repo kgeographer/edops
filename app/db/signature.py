@@ -24,7 +24,7 @@ load_dotenv()  # reads .env from project root
 # Keyed by api_key_s and api_key_u; value is {schema_key, friendly_name, source, db_col, units}.
 # `source` is the dataset (e.g. "BasinATLAS v1.0"); `db_col` is the raw basin08 column
 # (e.g. "ari_ix_sav") — these were previously conflated under one "source" key.
-# Used in profile_groups to generate human-readable labels.
+# Used in signature_bands to generate human-readable labels.
 # -----------------------
 
 def _load_field_lookup() -> Dict[str, Dict[str, str]]:
@@ -216,12 +216,15 @@ LIMIT 1;
 # Profile presentation metadata (pilot)
 # -----------------------
 
-PROFILE_GROUPS: Dict[str, Dict[str, Any]] = {
+SIGNATURE_BANDS: Dict[str, Dict[str, Any]] = {
     "A": {
         "label": "Physiographic bedrock",
         "fields": [
             "elev_min",
             "elev_max",
+            "elev_point",
+            "relief_range_m",
+            "relief_position",
             "slope_avg",
             "slope_upstream",
             "stream_gradient",
@@ -264,11 +267,20 @@ PROFILE_GROUPS: Dict[str, Dict[str, Any]] = {
             "temp_yr_upstream",
             "precip_yr",
             "precip_yr_upstream",
+            "pre_mm_monthly",
+            "tmp_dc_monthly",
+            "pre_concentration",
+            "pre_peak_month",
+            "tmp_concentration",
+            "tmp_peak_month",
+            "seas_phase_offset",
+            "tmp_seas_amp",
             "aridity",
             "aridity_upstream",
             "permafrost_extent",
             "biome",
             "ecoregion",
+            "eco_id",
             "freshwater_ecoregion_class",
             "freshwater_ecoregion_name",
         ],
@@ -466,9 +478,9 @@ def get_signature(
 ) -> Dict[str, Any] | None:
     """Return a single basin signature dict for (lat, lon), or None if no basin covers point.
 
-    When flat=False (default): response includes profile_groups (nested band structure)
+    When flat=False (default): response includes signature_bands (nested band structure)
     but not raw flat field values. When flat=True: response includes flat field values
-    but omits profile_groups; Band T temporal data appears at key "temporal" instead.
+    but omits signature_bands; Band T temporal data appears at key "temporal" instead.
 
     Connection parameters are read from environment variables (typically via a .env file):
       DB_NAME, DB_USER, DB_HOST, DB_PORT, and optionally DB_PASSWORD.
@@ -566,9 +578,9 @@ def get_signature(
                         "value": sig.get(k),
                     })
 
-            # profile_groups: {A:{label,items:[{key,label,value}...]}, ...}
+            # signature_bands: {A:{label,items:[{key,label,value}...]}, ...}
             grouped: Dict[str, Any] = {}
-            for gcode, gspec in PROFILE_GROUPS.items():
+            for gcode, gspec in SIGNATURE_BANDS.items():
                 items: list[Dict[str, Any]] = []
                 for k in gspec["fields"]:
                     if k in sig:
@@ -587,26 +599,19 @@ def get_signature(
                 }
 
             out: Dict[str, Any] = {
-                # Seasonality arrays + derived scalar indices (Band C; top-level only)
-                "pre_mm_monthly":    pre_monthly,
-                "tmp_dc_monthly":    tmp_monthly,
-                "pre_concentration": seas.get("pre_concentration"),
-                "pre_peak_month":    seas.get("pre_peak_month"),
-                "tmp_concentration": seas.get("tmp_concentration"),
-                "tmp_peak_month":    seas.get("tmp_peak_month"),
-                "seas_phase_offset": seas.get("seas_phase_offset"),
-                "tmp_seas_amp":      seas.get("tmp_seas_amp"),
-                # Core fields
+                # Identity/geometry + provenance fields -- not in the variable catalog,
+                # so they stay top-level rather than nest in a band (2026-09-14: the 12
+                # catalog-matched fields that used to sit here too -- pre_mm_monthly,
+                # tmp_dc_monthly, pre_concentration, pre_peak_month, tmp_concentration,
+                # tmp_peak_month, seas_phase_offset, tmp_seas_amp, eco_id, elev_point,
+                # relief_range_m, relief_position -- moved into signature_bands A/C,
+                # their actual catalog bands; see SIGNATURE_BANDS above).
                 "id":           sig.get("id"),
-                "eco_id":       sig.get("eco_id"),
                 "up_area":      sig.get("up_area"),
                 "geom_geojson": sig.get("geom_geojson"),
-                "elev_point":        sig.get("elev_point"),
                 "elev_source":       sig.get("elev_source"),
                 "elev_dataset":      sig.get("elev_dataset"),
                 "elev_resolution_m": sig.get("elev_resolution_m"),
-                "relief_range_m":  sig.get("relief_range_m"),
-                "relief_position": sig.get("relief_position"),
                 "profile_summary": summary_items,
             }
             if "elev_error" in sig:
@@ -617,7 +622,7 @@ def get_signature(
                     for item in gdata.get("items", []):
                         out[item["key"]] = item["value"]
             else:
-                out["profile_groups"] = grouped
+                out["signature_bands"] = grouped
 
             return out
 

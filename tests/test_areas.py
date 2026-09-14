@@ -11,6 +11,7 @@ matches the exemplar at output/edop/surface/exemplars/02_buffer_detail.json.
 
 import json
 import urllib.error
+from urllib.parse import quote
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
@@ -774,7 +775,8 @@ class TestWhgSuggestRouteValidation:
         assert res["ccodes"] == ["ML"]
         assert "Timbuktu" in res["alt_names"]
         assert res["cname"] == "Mali"          # from _CCODES static dict
-        assert res["place_type"] == "cities"   # settlement label preferred
+        # settlement label preferred, second distinct label appended for disambiguation (2026-09-13)
+        assert res["place_type"] == "cities · inhabited places"
 
     def test_bbox_path_unions_exact_and_fuzzy(self, client, monkeypatch):
         """On the bbox path there's no 'exact wins' -- both sub-queries are merged, deduped by id."""
@@ -804,6 +806,12 @@ class TestWhgEntityRouteValidation:
             {"toponym": "Rome", "lang": "en"},
         ]},
         "types": [{"label": "city"}, {"identifier": "Q3685476", "label": "city"}],
+        "links": [
+            {"type": "closeMatch", "identifier": "gn:3169070"},
+            {"type": "exactMatch", "identifier": "tgn:7003138"},
+            {"type": "seeAlso", "identifier": "https://en.wikipedia.org/wiki/Rome"},
+            {"type": "closeMatch"},  # no identifier -- must not produce a bare None entry
+        ],
     }
 
     def test_unrecognized_prefix_returns_400(self, client):
@@ -835,6 +843,9 @@ class TestWhgEntityRouteValidation:
         assert data["lon"] == pytest.approx(12.482778)
         assert data["name"] == "Rome"   # lang=en preferred over the first (it) entry
         assert data["types"][0]["label"] == "city"
+        # closeMatch/exactMatch CURIEs only -- seeAlso (a URL, not a CURIE) and the
+        # identifier-less entry are both dropped (2026-09-13 LOD passthrough)
+        assert data["links"] == ["gn:3169070", "tgn:7003138"]
 
     def test_whg_native_id_drops_ns_segment(self, client, monkeypatch):
         """whg:5456866 -> WHG entity id 'place:5456866', no 'whg:' segment.
@@ -894,3 +905,319 @@ class TestWhgEntityRouteValidation:
         r = client.get("/api/whg/entity?id=pl:423025")
         assert r.status_code == 200, r.text
         assert r.json()["name"] == "Roma"   # no lang=en entry -- falls back to the first
+
+
+class TestPlaceLinksPassthrough:
+    """place_links echo -- carries a gazetteer-resolved point's identifiers into the
+    response, unvalidated, for scope=single_basin/basin_ring on /api/areas and for
+    /api/signature. DB-backed (real basin lookup at Timbuktu's coordinates); skipped
+    with the rest of this file's DB-dependent tests if no DB is available.
+    """
+
+    _LINKS = "gn:3169070,tgn:7003138"
+
+    def test_single_basin_echoes_place_links(self, buf_client):
+        r = buf_client.get(
+            f"/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_single_basin_omits_key_without_param(self, buf_client):
+        r = buf_client.get("/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833")
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()
+
+    def test_basin_ring_echoes_place_links(self, buf_client):
+        r = buf_client.get(
+            f"/api/areas?scope=basin_ring&lat=16.8167&lon=-2.9833&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_buffer_ignores_place_links(self, buf_client):
+        """Deliberately not wired for buffer -- see the route's place_links docstring."""
+        r = buf_client.get(
+            f"/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()
+
+    def test_signature_echoes_into_meta_query(self, buf_client):
+        r = buf_client.get(
+            f"/api/signature?lat=16.8167&lon=-2.9833&scope=basin&place_links={self._LINKS}"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["meta"]["query"]["place_links"] == ["gn:3169070", "tgn:7003138"]
+
+    def test_signature_omits_key_without_param(self, buf_client):
+        r = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&scope=basin")
+        assert r.status_code == 200, r.text
+        assert "place_links" not in r.json()["meta"]["query"]
+
+
+class TestSignatureScopeDispatch:
+    """Section 2 of docs/edop/api_shape/WO_public-api-reshape.md -- /api/signature grows
+    scope=buffer, a pure re-route to the same engine call /api/areas already makes, zero
+    reshaping. Equivalence checked directly against /api/areas's existing scope=buffer for
+    the same real query. scope has no default (Karl, 2026-09-14: "scope is absolutely
+    required -- we can't default to something there"); level defaults to 6 when omitted
+    (same call: no reason to punish an omitted level with an error the way scope's
+    ambiguity would). basin-ring was pulled back out the same day -- see the dedicated
+    test below.
+    """
+
+    def test_scope_is_required(self, client):
+        r = client.get("/api/signature?lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+
+    def test_level_defaults_to_6_when_omitted(self, buf_client):
+        a = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin").json()
+        b = buf_client.get(
+            "/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin&level=6"
+        ).json()
+        assert a == b
+
+    def test_scope_buffer_matches_areas_buffer(self, buf_client):
+        """/api/areas stays untouched (scope/bands/temporal/"rows" all top-level, no
+        meta); /api/signature (2026-09-14) drops the top-level duplicates of meta.query,
+        folds scope's non-echoed remainder into meta.scope, and renames "rows" to
+        "variables" -- reconstruct /api/areas's shape from /api/signature's meta and
+        compare, since the raw dicts now differ on purpose."""
+        a = buf_client.get(
+            "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        b = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        assert a["rows"] == b["variables"]
+        assert a["shortfall"] == b["shortfall"]
+        assert a["caveats"] == b["caveats"]
+        assert a["bands"] == sorted(b["meta"]["query"]["bands"])
+        assert a["temporal"] is None  # Band T not requested
+        query, meta_scope = b["meta"]["query"], b["meta"]["scope"]
+        assert a["scope"] == {
+            "type": meta_scope["type"],
+            "lat": query["lat"], "lon": query["lon"], "radius_km": query["radius_km"],
+            "level": query["level"],
+            "n_units": meta_scope["n_units"], "unit_type": meta_scope["unit_type"],
+            "member_ids": meta_scope["member_ids"],
+        }
+
+    def test_scope_buffer_requires_radius(self, client):
+        r = client.get("/api/signature?scope=buffer&lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+        assert "radius_km" in r.json()["detail"]
+
+    def test_scope_basin_requires_lat_lon(self, client):
+        """lat/lon are now optional at the param level (2026-09-14, ahead of scope=area,
+        which won't need them) -- checked per-scope instead. Missing entirely -- 422 names
+        both, not a generic FastAPI validation error."""
+        r = client.get("/api/signature?scope=basin")
+        assert r.status_code == 422
+        assert "lat" in r.json()["detail"] and "lon" in r.json()["detail"]
+
+    def test_scope_buffer_requires_lat_lon(self, client):
+        r = client.get("/api/signature?scope=buffer&radius_km=50")
+        assert r.status_code == 422
+        assert "lat" in r.json()["detail"] and "lon" in r.json()["detail"]
+
+    def test_unsupported_scope_rejected(self, client):
+        r = client.get("/api/signature?scope=neighborhood&lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+        assert "Unsupported scope" in r.json()["detail"]
+
+    # -- scope=area (Section 3) ---------------------------------------------
+    # Bbox rectangle as WKT -- the deliberately simple first test input (Karl,
+    # 2026-09-14), not arbitrary/large WKT. Northern-Italy-ish box, same region
+    # used elsewhere this week (WHG bounds probing).
+    _AREA_WKT = "POLYGON((7 44, 14 44, 14 47, 7 47, 7 44))"
+
+    def test_scope_area_requires_geom_wkt(self, client):
+        r = client.get("/api/signature?scope=area")
+        assert r.status_code == 422
+        assert "geom_wkt" in r.json()["detail"]
+
+    def test_scope_area_rejects_non_polygon_wkt(self, client):
+        r = client.get(f"/api/signature?scope=area&geom_wkt={quote('POINT(10 45)')}")
+        assert r.status_code == 422
+        assert "POLYGON" in r.json()["detail"]
+
+    def test_scope_area_accepts_polygon(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "variables" in data
+        assert data["meta"]["scope"]["n_units"] > 1
+        assert len(data["variables"]) > 0
+
+    def test_scope_area_labels_itself_area_not_polity(self, buf_client):
+        """areal_signature_polygon() was originally polity-only and hardcoded
+        scope['type']='polity' unconditionally -- 2026-09-14, Karl: 'a generic area
+        call should not hard-code the term polity.' Fixed with an optional
+        scope_type kwarg, default 'polity' (preserves the existing polity caller
+        untouched -- see the safety-net test below), 'area' passed explicitly here.
+        scope moved under meta (2026-09-14, dedup pass) -- see meta.scope, not top-level."""
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.json()["meta"]["scope"]["type"] == "area"
+
+    def test_polity_scope_type_unaffected_by_the_area_fix(self, buf_client):
+        """Safety net for the scope_type change: the pre-existing polity caller
+        (areas()'s scope=polity branch, which doesn't pass scope_type) must still
+        get 'type': 'polity' -- proves the default preserves old behavior exactly."""
+        r = buf_client.get(
+            "/api/areas?scope=polity&polity=Northern+Song&year=1000&bands=A"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["scope"]["type"] == "polity"
+
+    def test_scope_area_matches_areal_signature_polygon_directly(self, buf_client):
+        """Same WKT, same params, straight through the route vs. calling the engine
+        function directly -- proves the route isn't silently transforming anything
+        beyond the meta block it injects and the top-level scope/bands/temporal dedup
+        (2026-09-14) -- reconstruct the engine's raw shape from meta and compare."""
+        from app.db.connection import db_connect
+        from scripts.edop.areas.engine import areal_signature_polygon
+
+        conn = db_connect()
+        try:
+            expected = areal_signature_polygon(
+                self._AREA_WKT, conn, level=6, bands=["A"], scope_type="area"
+            )
+        finally:
+            conn.close()
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.status_code == 200, r.text
+        actual = r.json()
+        meta = actual.pop("meta")
+        query, meta_scope = meta["query"], meta["scope"]
+        actual["scope"] = {
+            "type": meta_scope["type"],
+            "level": query["level"],
+            "n_units": meta_scope["n_units"],
+            "unit_type": meta_scope["unit_type"],
+            "marginal_exposure": meta_scope["marginal_exposure"],
+        }
+        actual["bands"] = sorted(query["bands"])
+        actual["temporal"] = None  # Band T not requested
+        actual["rows"] = actual.pop("variables")
+        assert actual == expected
+
+    # -- meta block on buffer/area (2026-09-14) --------------------------------
+    # Karl, eyeballing three real payloads: "those two should get a meta: with
+    # the appropriate fields now elsewhere pulled into it." Matches basin's meta
+    # shape (signature_version/generated/query/data_sources); meta.scope carries
+    # whatever the engine's own scope object doesn't already duplicate in meta.query
+    # (revised same day -- Karl: "scope should be in meta" too, not left top-level).
+
+    def test_scope_buffer_has_meta(self, buf_client):
+        """meta.scope carries only what meta.query doesn't already say (2026-09-14
+        dedup pass) -- no lat/lon/radius_km/level in there, just the engine's actual
+        result data (n_units, unit_type, member_ids)."""
+        r = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        )
+        data = r.json()
+        meta = data["meta"]
+        assert meta["signature_version"] == "0.4"
+        assert "generated" in meta
+        assert meta["query"] == {
+            "lat": 16.8167, "lon": -2.9833, "radius_km": 50.0,
+            "bands": "A", "level": 6,
+        }
+        assert "basin" in meta["data_sources"]
+        assert meta["scope"]["type"] == "buffer"
+        assert set(meta["scope"]) == {"type", "n_units", "unit_type", "member_ids"}
+        assert "bands" not in data and "temporal" not in data and "scope" not in data
+        assert "variables" in data and "rows" not in data
+
+    def test_scope_area_has_meta(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        data = r.json()
+        meta = data["meta"]
+        assert meta["signature_version"] == "0.4"
+        assert "generated" in meta
+        assert meta["query"] == {"geom_wkt": self._AREA_WKT, "bands": "A", "level": 6}
+        assert "basin" in meta["data_sources"]
+        assert meta["scope"]["type"] == "area"
+        assert set(meta["scope"]) == {"type", "n_units", "unit_type", "marginal_exposure"}
+        assert "bands" not in data and "temporal" not in data and "scope" not in data
+        assert "variables" in data and "rows" not in data
+
+    def test_meta_data_sources_identical_across_scopes(self, buf_client):
+        """The three scopes must never drift on what data_sources says -- they
+        share one helper (_data_sources_block) precisely to guarantee this."""
+        basin = buf_client.get(
+            "/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=A"
+        ).json()
+        buffer_ = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        area = buf_client.get(
+            f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A"
+        ).json()
+        assert basin["meta"]["data_sources"] == buffer_["meta"]["data_sources"] == area["meta"]["data_sources"]
+
+    def test_band_t_missing_span_rejected_for_buffer(self, client):
+        r = client.get(
+            "/api/signature?scope=buffer&lat=16.8&lon=-2.9&radius_km=50&bands=ABT"
+        )
+        assert r.status_code == 422
+        assert "Band T" in r.json()["detail"]
+
+    def test_band_t_missing_span_rejected_for_basin(self, client):
+        """2026-09-14: Band T is uncomputable without a timespan -- Karl: 'if you ask
+        for T you must give a temporal scope.' The old graceful not_requested status
+        (still documented in documentation/edops_schema_basin.json's frozen example) is gone;
+        this is now a 422, same as buffer's, not a soft degradation."""
+        r = client.get("/api/signature?scope=basin&lat=16.8&lon=-2.9&bands=ABT")
+        assert r.status_code == 422
+        assert "Band T" in r.json()["detail"]
+
+    # -- Band T single-year restriction, buffer/area only (2026-09-14) --------
+    # "if buffer or area, and T is in bands, require a year" -- the row-explosion found
+    # while eyeballing real payloads (a 250-year span on a 5-basin buffer alone produced
+    # 792 rows). scope=basin is deliberately unaffected -- its Band T is a compact
+    # per-basin time series, not exploded rows, so a real range is fine there.
+
+    def test_buffer_band_t_rejects_year_range(self, client):
+        r = client.get(
+            "/api/signature?scope=buffer&lat=16.8&lon=-2.9&radius_km=50&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 422
+        assert "single year" in r.json()["detail"]
+
+    def test_area_band_t_rejects_year_range(self, client):
+        r = client.get(
+            f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 422
+        assert "single year" in r.json()["detail"]
+
+    def test_buffer_band_t_accepts_single_year(self, buf_client):
+        r = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=T"
+            "&from_year=1000&to_year=1000"
+        )
+        assert r.status_code == 200, r.text
+
+    def test_basin_band_t_year_range_unaffected(self, buf_client):
+        """The restriction is buffer/area-only -- basin's genuine multi-year range
+        (its compact per-basin time series, not exploded rows) must keep working."""
+        r = buf_client.get(
+            "/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 200, r.text
+        assert len(r.json()["signature_bands"]["T"]["pdsi_series"]) == 1600 - 1350 + 1
+
+    def test_scope_basin_ring_no_longer_offered(self, client):
+        """basin-ring pulled from the public endpoint 2026-09-14 -- it's really just the
+        center basin's own signature plus a GUI map-rendering feature (paint the
+        neighbors, let a click fetch its own separate scope=basin call), not a distinct
+        signature shape. Still lives internally on /api/areas?scope=basin_ring, untouched."""
+        r = client.get("/api/signature?scope=basin-ring&lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+        assert "Unsupported scope" in r.json()["detail"]
