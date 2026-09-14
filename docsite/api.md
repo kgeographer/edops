@@ -76,7 +76,10 @@ fields plus every variable as a top-level key (no profile_groups nesting); Band 
 top-level key "temporal" instead.
 
 scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
-flat, place_links are basin-only; ignored for buffer/area.
+flat, place_links are basin-only; ignored for buffer/area. Band T on these two scopes
+requires from_year == to_year (a single year, not a range) -- unlike scope=basin, Band T
+here explodes into one row per HYDE-epoch/LMR-year per member basin, so a real multi-year
+range is a genuine large-payload risk at this scope.
 
 Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
 ```

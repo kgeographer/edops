@@ -1086,6 +1086,45 @@ class TestSignatureScopeDispatch:
         assert r.status_code == 422
         assert "Band T" in r.json()["detail"]
 
+    # -- Band T single-year restriction, buffer/area only (2026-09-14) --------
+    # "if buffer or area, and T is in bands, require a year" -- the row-explosion found
+    # while eyeballing real payloads (a 250-year span on a 5-basin buffer alone produced
+    # 792 rows). scope=basin is deliberately unaffected -- its Band T is a compact
+    # per-basin time series, not exploded rows, so a real range is fine there.
+
+    def test_buffer_band_t_rejects_year_range(self, client):
+        r = client.get(
+            "/api/signature?scope=buffer&lat=16.8&lon=-2.9&radius_km=50&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 422
+        assert "single year" in r.json()["detail"]
+
+    def test_area_band_t_rejects_year_range(self, client):
+        r = client.get(
+            f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 422
+        assert "single year" in r.json()["detail"]
+
+    def test_buffer_band_t_accepts_single_year(self, buf_client):
+        r = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=T"
+            "&from_year=1000&to_year=1000"
+        )
+        assert r.status_code == 200, r.text
+
+    def test_basin_band_t_year_range_unaffected(self, buf_client):
+        """The restriction is buffer/area-only -- basin's genuine multi-year range
+        (its compact per-basin time series, not exploded rows) must keep working."""
+        r = buf_client.get(
+            "/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=ABT"
+            "&from_year=1350&to_year=1600"
+        )
+        assert r.status_code == 200, r.text
+        assert len(r.json()["profile_groups"]["T"]["pdsi_series"]) == 1600 - 1350 + 1
+
     def test_scope_basin_ring_no_longer_offered(self, client):
         """basin-ring pulled from the public endpoint 2026-09-14 -- it's really just the
         center basin's own signature plus a GUI map-rendering feature (paint the

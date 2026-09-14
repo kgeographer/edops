@@ -228,7 +228,10 @@ def signature(
     top-level key "temporal" instead.
 
     scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
-    flat, place_links are basin-only; ignored for buffer/area.
+    flat, place_links are basin-only; ignored for buffer/area. Band T on these two scopes
+    requires from_year == to_year (a single year, not a range) -- unlike scope=basin, Band T
+    here explodes into one row per HYDE-epoch/LMR-year per member basin, so a real multi-year
+    range is a genuine large-payload risk at this scope.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
@@ -239,6 +242,18 @@ def signature(
 
     if "T" in requested_bands and (from_year is None or to_year is None):
         raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
+
+    # v0.4: buffer/area's Band T explodes into one row per HYDE-epoch/LMR-year per member
+    # basin -- a genuine multi-year range is a real DoS-scale payload for these scopes (a
+    # 250-year span on a 5-basin buffer alone produced 792 rows, 66k+ lines), unlike
+    # scope=basin, whose Band T is a compact per-basin time series. Restricting these two
+    # scopes to a single year sidesteps the explosion without touching the engine's row
+    # representation. Karl, 2026-09-14: "if buffer or area, and T is in bands, require a year."
+    if "T" in requested_bands and scope in ("buffer", "area") and from_year != to_year:
+        raise HTTPException(
+            status_code=422,
+            detail=f"scope={scope}: Band T requires a single year (from_year == to_year), not a range",
+        )
 
     if scope == "buffer":
         missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
