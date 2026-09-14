@@ -2,7 +2,7 @@
 generate_signatures.py — Generate rev1 environmental signatures for named place sets.
 
 Queries v_basin08_persist_rev1, fetches point elevation, computes derived
-fields, and writes one JSON file per place following edops_schema.json structure.
+fields, and writes one JSON file per place following edops_schema_basin.json structure.
 
 Usage:
     python scripts/edop/generate_signatures.py set_personal_v1

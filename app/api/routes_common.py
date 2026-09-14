@@ -209,7 +209,7 @@ def signature(
         "Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer."
     )),
     bands: str = Query("ABCDE", description=(
-        "Which profile groups to include, e.g. \"ABCDE\" or \"ABCDET\"."
+        "Which signature bands to include, e.g. \"ABCDE\" or \"ABCDET\"."
     )),
     level: int = Query(6, description="Basin hierarchy level: 8 or 6."),
     from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),

@@ -4,15 +4,16 @@
 # API Guide
 
 EDOPS — the Environmental Dimensions of Place Service — generates structured
-environmental signatures for a coordinate, a buffer/basin-ring scope, or a
-historical polity's territory. Signatures are derived from global datasets aggregated
-at the hydrological sub-basin level in [BasinATLAS](https://www.hydrosheds.org/products/hydroatlas),
-with optional historical enrichment from LMR v2.1 (paleoclimate), eVolv2k v4 (volcanic
-events), and HYDE 3.4 (land use).
+environmental signatures for a single coordinate (`scope=basin`), a radius around one
+(`scope=buffer`), or an arbitrary polygon (`scope=area`). Signatures are derived from
+global datasets aggregated at the hydrological sub-basin level in
+[BasinATLAS](https://www.hydrosheds.org/products/hydroatlas), with optional historical
+enrichment from LMR v2.1 (paleoclimate), eVolv2k v4 (volcanic events), and HYDE 3.4
+(land use).
 
 **Base URL:** `https://edops.computingplace.org/api`<br>
 **Interactive schema:** [edops.computingplace.org/api/schema](https://edops.computingplace.org/api/schema)<br>
-**A full worked example payload:** [edops_schema.json](/documentation/edops_schema.json)
+**Full worked example payloads:** [edops_schema_basin.json](/documentation/edops_schema_basin.json) · [edops_schema_area.json](/documentation/edops_schema_area.json)
 
 > Research prototype. The API is publicly accessible but not under a stability
 > guarantee — parameters and response fields may change between versions.
@@ -53,7 +54,7 @@ Return an environmental signature.
 |---|---|---|---|---|
 | `lat` | float (-90 to 90) | no | — | Latitude, decimal degrees, in [-90, 90]. Required for scope=basin/buffer. |
 | `lon` | float (-180 to 180) | no | — | Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer. |
-| `bands` | str | no | `ABCDE` | Which profile groups to include, e.g. "ABCDE" or "ABCDET". |
+| `bands` | str | no | `ABCDE` | Which signature bands to include, e.g. "ABCDE" or "ABCDET". |
 | `level` | int | no | `6` | Basin hierarchy level: 8 or 6. |
 | `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
 | `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
@@ -93,67 +94,6 @@ the route drops both rather than ship the same information twice.
 Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
 ```
 
-### `GET /api/area`
-
-Return an areal environmental signature for a named Cliopatria polity.
-
-| Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `polity` | str | **yes** | — | Cliopatria polity name, exact match (e.g. "Northern Song"). |
-| `year` | int | **yes** | — | Resolver year CE — selects the polity boundary active at this year. |
-| `level` | int | no | `6` | Basin hierarchy level: 6 or 8. |
-| `bands` | str | no | `ABCDET` | Band letters to compute, e.g. "ABCDET". Add T to include Band T (requires from_year and to_year). |
-| `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
-| `to_year` | int | no | — | Band T span end, year CE. Required when T is in bands. |
-| `detail` | bool | no | `false` | If true, include per-variable histogram objects in the response. |
-
-**Response**
-
-```text
-Not the GET /api/signature shape. The areal envelope is a flat "rows" list — one
-object per variable, each carrying a representative score across the polity's member
-basins (a distribution summary, not an average — see engine.py) plus coherence /
-coverage / modality metadata. Alongside "rows":
-  "bands":      ["A", ...]   -- echoes the requested bands
-  "resolver":   {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
-  "scope":      {"type": "polity", "level", "n_units", "unit_type", ...}
-  "member_ids": [hybas_id, ...]
-  "caveats", "shortfall", "temporal", "modality_post_pass"
-  "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
-detail=true adds a per-variable "distribution" histogram object to each row.
-
-Full variable inventory: see the Codebook (/docs/codebook/).
-```
-
-### `GET /api/areas`
-
-Areal signature dispatcher — resolves to a set of member basins by scope, then aggregates their signature as a distribution (not an average). `scope` is confusingly named "area" alongside GET /api/area, but the four scope kinds are not all areas in the geometric sense: single_basin and polity are bounded regions, buffer is an arbitrary radius, and basin_ring is a topological set of basins, not a shape.
-
-| Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `scope` | str | **yes** | — | Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. Determines which of lat/lon/radius_km/polity/year are required (see each param's own description) and the shape of the `scope` block in the response. |
-| `lat` | float (-90 to 90) | no | — | WGS-84 latitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
-| `lon` | float (-180 to 180) | no | — | WGS-84 longitude, decimal degrees. Required for scope=buffer, single_basin, basin_ring. |
-| `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
-| `polity` | str | no | — | Cliopatria polity name, exact match (e.g. "Northern Song"). Required for scope=polity. |
-| `year` | int | no | — | Resolver year CE — selects the polity boundary active at this year. Required for scope=polity. |
-| `level` | int | no | `6` | Basin hierarchy level: 6 or 8. |
-| `bands` | str | no | `ABCDE` | Band letters to compute, e.g. "ABCDE" or "ABCDET". Add T to include Band T (requires from_year and to_year). |
-| `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
-| `to_year` | int | no | — | Band T span end, year CE. Required when T is in bands. |
-| `detail` | bool | no | `false` | If true, include per-variable histogram objects in the response. |
-| `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into the response's place_links. Not validated or re-resolved. Only applied for scope=single_basin or scope=basin_ring -- a single resolved point is the only case with one place's provenance to carry forward; ignored for buffer and polity. |
-
-**Response**
-
-```text
-Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
-scores across the resolved member basins — not the GET /api/signature signature_bands
-shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
-per-variable "distribution" histogram object to each row. Full variable inventory: see
-the Codebook (/docs/codebook/).
-```
-
 ### `GET /api/health`
 
 Confirm the service is running.
@@ -186,24 +126,18 @@ curl "https://edops.computingplace.org/api/signature?scope=basin&lat=41.9&lon=12
 curl "https://edops.computingplace.org/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=ABCDE&flat=true"
 ```
 
-**Areal signature for a polity — Northern Song at 1080 CE**
+**Buffer scope — aggregate signature within a radius**
 ```
-curl "https://edops.computingplace.org/api/area?polity=Northern%20Song&year=1080&bands=ABCDE"
+curl "https://edops.computingplace.org/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=ABCDE"
 ```
 
-**Buffer scope via the scope dispatcher**
+**Area scope — aggregate signature over an arbitrary polygon**
 ```
-curl "https://edops.computingplace.org/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=100&bands=ABCDE"
+curl "https://edops.computingplace.org/api/signature?scope=area&geom_wkt=POLYGON((7%2044,14%2044,14%2047,7%2047,7%2044))&bands=ABCDE"
 ```
 
 ## Notes for application developers
 
-- **`/area` vs `/areas`:** not a clean singular/plural pair. `/area` is polity-only.
-  `/areas` dispatches on `scope`, and its four resolver types aren't all "areas" in the
-  geometric sense — `single_basin` and `polity` are bounded regions, `buffer` is an
-  arbitrary radius, and `basin_ring` is a topological set of neighboring basins, not a
-  shape at all. "Area" in EDOPS currently covers several distinct things; not yet
-  normalized to one term.
 - **CORS:** Cross-origin requests are allowed — call the API directly from browser JavaScript.
 - **No basin found:** If the coordinate falls outside all known sub-basins (open
   ocean, ice sheet), the API returns HTTP 404.
@@ -214,13 +148,13 @@ curl "https://edops.computingplace.org/api/areas?scope=buffer&lat=16.8167&lon=-2
   whether every source had data — LMR, eVolv2k, and HYDE each have independent
   coverage windows, and a single query can mix available and unavailable sources.
   Check the per-source fields (`lmr_status`, the `*_note` fields) rather than
-  `_status` alone. See [edops_schema.json](/documentation/edops_schema.json)
-  for a full worked example.
-- **`level` default varies by endpoint, deliberately left as-is** — `/signature`
-  defaults to `8`; `/area` and `/areas` default to `6`. `/signature` always returns a
-  single basin's data regardless of level, so this only affects resolution, not
-  payload shape or size. Pass it explicitly if your use case depends on which
-  sub-basin resolution you get.
+  `_status` alone. See [edops_schema_basin.json](/documentation/edops_schema_basin.json)
+  for a full worked example (Band T on scope=area is a different, row-exploded shape —
+  see [edops_schema_area.json](/documentation/edops_schema_area.json) instead).
+- **`level` defaults to `6`** (BasinATLAS Level 06) for every scope. Pass `level=8`
+  explicitly for finer sub-basin resolution — `scope=basin` always returns a single
+  basin's data regardless of level, so this only affects which basin/how many member
+  basins are resolved, not the payload's shape.
 - **Rate limits:** None enforced currently.
 
 ---

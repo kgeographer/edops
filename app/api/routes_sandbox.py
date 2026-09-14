@@ -1314,7 +1314,7 @@ def lmr_values(var: str, from_year: int, to_year: int):
 # /area endpoint — areal signature for a named polity
 # -----------------------
 
-@router.get("/area", summary="Areal signature for a named historical polity")
+@router.get("/area", summary="Areal signature for a named historical polity", include_in_schema=False)
 def area(
     polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
     year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
@@ -1435,7 +1435,7 @@ def area(
 # /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
-@router.get("/areas", summary="Areal signature by scope — buffer, single basin, polity, or basin ring")
+@router.get("/areas", summary="Areal signature by scope — buffer, single basin, polity, or basin ring", include_in_schema=False)
 def areas(
     scope: str = Query(..., description=(
         "Spatial scope of the query: 'buffer', 'single_basin', 'polity', or 'basin_ring'. "

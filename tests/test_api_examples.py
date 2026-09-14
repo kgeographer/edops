@@ -231,7 +231,7 @@ def test_band_t_out_of_range_status_stays_ok(client):
     now signaled per-source (lmr_status, the *_note fields), not via _status itself.
     Confirmed against live output 2026-08-16; update this test in the same commit
     as any future Band T shape change, and re-run generate_api_guide.py + refresh
-    documentation/edops_schema.json alongside it.
+    documentation/edops_schema_basin.json alongside it.
     """
     r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.8167, "lon": -2.9833,

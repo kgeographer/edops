@@ -1168,7 +1168,7 @@ class TestSignatureScopeDispatch:
     def test_band_t_missing_span_rejected_for_basin(self, client):
         """2026-09-14: Band T is uncomputable without a timespan -- Karl: 'if you ask
         for T you must give a temporal scope.' The old graceful not_requested status
-        (still documented in documentation/edops_schema.json's frozen example) is gone;
+        (still documented in documentation/edops_schema_basin.json's frozen example) is gone;
         this is now a 422, same as buffer's, not a soft degradation."""
         r = client.get("/api/signature?scope=basin&lat=16.8&lon=-2.9&bands=ABT")
         assert r.status_code == 422
