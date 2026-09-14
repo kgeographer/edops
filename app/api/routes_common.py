@@ -178,8 +178,12 @@ def _extract_lonlat(entity: Dict[str, Any]) -> Optional[Tuple[float, float]]:
 
 @router.get("/signature", summary="Environmental signature for a coordinate")
 def signature(
-    lat: float = Query(..., ge=-90, le=90, description="Latitude, decimal degrees, in [-90, 90]."),
-    lon: float = Query(..., ge=-180, le=180, description="Longitude, decimal degrees, in [-180, 180]."),
+    lat: Optional[float] = Query(None, ge=-90, le=90, description=(
+        "Latitude, decimal degrees, in [-90, 90]. Required for scope=basin/buffer."
+    )),
+    lon: Optional[float] = Query(None, ge=-180, le=180, description=(
+        "Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer."
+    )),
     bands: str = Query("ABCDE", description=(
         "Which profile groups to include, e.g. \"ABCDE\" or \"ABCDET\"."
     )),
@@ -231,8 +235,9 @@ def signature(
         raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
 
     if scope == "buffer":
-        if radius_km is None:
-            raise HTTPException(status_code=422, detail="scope=buffer requires: radius_km")
+        missing = [p for p, v in [("lat", lat), ("lon", lon), ("radius_km", radius_km)] if v is None]
+        if missing:
+            raise HTTPException(status_code=422, detail=f"scope=buffer requires: {', '.join(missing)}")
         band_t_from = from_year if "T" in requested_bands else None
         band_t_to = to_year if "T" in requested_bands else None
         conn = db_connect()
@@ -251,6 +256,10 @@ def signature(
             status_code=422,
             detail=f"Unsupported scope '{scope}'. Supported: basin, buffer",
         )
+
+    missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"scope=basin requires: {', '.join(missing)}")
 
     sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
     if sig is None:

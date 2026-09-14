@@ -991,6 +991,19 @@ class TestSignatureScopeDispatch:
         assert r.status_code == 422
         assert "radius_km" in r.json()["detail"]
 
+    def test_scope_basin_requires_lat_lon(self, client):
+        """lat/lon are now optional at the param level (2026-09-14, ahead of scope=area,
+        which won't need them) -- checked per-scope instead. Missing entirely -- 422 names
+        both, not a generic FastAPI validation error."""
+        r = client.get("/api/signature?scope=basin")
+        assert r.status_code == 422
+        assert "lat" in r.json()["detail"] and "lon" in r.json()["detail"]
+
+    def test_scope_buffer_requires_lat_lon(self, client):
+        r = client.get("/api/signature?scope=buffer&radius_km=50")
+        assert r.status_code == 422
+        assert "lat" in r.json()["detail"] and "lon" in r.json()["detail"]
+
     def test_unsupported_scope_rejected(self, client):
         r = client.get("/api/signature?scope=neighborhood&lat=16.8&lon=-2.9")
         assert r.status_code == 422

@@ -51,8 +51,8 @@ Return an environmental signature.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `lat` | float (-90 to 90) | **yes** | — | Latitude, decimal degrees, in [-90, 90]. |
-| `lon` | float (-180 to 180) | **yes** | — | Longitude, decimal degrees, in [-180, 180]. |
+| `lat` | float (-90 to 90) | no | — | Latitude, decimal degrees, in [-90, 90]. Required for scope=basin/buffer. |
+| `lon` | float (-180 to 180) | no | — | Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer. |
 | `bands` | str | no | `ABCDE` | Which profile groups to include, e.g. "ABCDE" or "ABCDET". |
 | `level` | int | no | `6` | Basin hierarchy level: 8 or 6. |
 | `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
