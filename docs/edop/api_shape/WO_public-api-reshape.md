@@ -149,9 +149,20 @@ already correct and doesn't need to change; this section doesn't touch it.
 
 ## Section 2 — build `/api/signature` for `scope=basin | basin-ring | buffer`
 
-**Status: written, not built.** Written 2026-09-14, following the locked destination shape
-above. Supersedes the ordering (not the content) of what was Section 2 — Cliopatria/`/clio`
-now comes *after* the generic scopes exist, renumbered to Section 4 below.
+**Status: done, 2026-09-14.** Two corrections found and resolved during the build (see below,
+both folded back into the "locked" model at the top of this doc): basin-ring has no aggregate
+to reshape (kept exactly as `basin_ring_signature()` returns it, its own third shape); `scope`
+ended up required with no default at all ("scope is absolutely required, we can't default to
+something there" — Karl), `level` defaults to 6 when omitted (was 8) since 6 is the safe
+choice for an area-type query (L8 has ~10x L6's basin count) and there's no reason to punish an
+omitted level with an error the way scope's ambiguity would be. Every real internal
+`/api/signature` caller updated so none silently changed behavior (`sandbox.html` ×2 already
+sent `level`, just needed `scope=basin` added; `workbench.html`'s Profile panel sent neither,
+got `scope=basin&level=8` to preserve its exact current result; the research script needed
+`scope=basin`). `docsite/api.md` regenerated from `generate_api_guide.py` (its hardcoded
+example curls needed `scope=basin` too). 8 new tests, `test_api_examples.py` fixed (13 calls +
+one pinned value that needed its implicit L8 dependency made explicit). Full suite: 568 passed,
+21 skipped. Commit `a8b9e66`, branch `lod-prep`.
 
 ### Goal
 
