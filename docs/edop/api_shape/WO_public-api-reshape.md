@@ -228,18 +228,26 @@ re-routes, zero new aggregation or reshaping logic anywhere.
 
 ---
 
-## Section 3 — `scope=area`, generic case (bbox-WKT test input)
+## Section 3 — `scope=area`, generic case
 
-**Status: not written yet.** Builds on Section 2's now-unified `/api/signature`. First cut per
-Karl 2026-09-14: accepts a WKT geometry (a `bbox` param converted to a rectangle, via a helper
-in the same spirit as the existing `_bbox_polygon()` used for WHG's `/reconcile` bounds, is the
-simple test input — not arbitrary or large WKT yet), calls `areal_signature_polygon()` — the
-same engine primitive Cliopatria polities already use today. Kept deliberately simple. Only
-accepts `POLYGON`/`MULTIPOLYGON` geometry types (Karl, 2026-09-14) — reject others explicitly.
+**Status: done, 2026-09-14 (`d45ce3f`).** `geom_wkt` param, `POLYGON`/`MULTIPOLYGON` only (regex
+check on the WKT prefix, 422 otherwise) — no `bbox`-to-WKT conversion helper built; the test
+input is a hand-written bbox-shaped WKT string, not a separate parameter. Calls
+`areal_signature_polygon()` directly, same as Cliopatria polities already do.
 
-**Prerequisite done (`f69fcfc`):** `lat`/`lon` were hard-required at the param level for every
-scope; `scope=area` won't need them at all. Now `Optional`, checked per-scope like `radius_km`
-already was — `basin`/`buffer` both still require them, `area` (once built) won't ask for them.
+**Real bug found and fixed while building:** `areal_signature_polygon()` hardcoded
+`scope['type']='polity'` unconditionally — a leftover from being originally polity-only (WO20).
+"A generic area call should not hard-code the term 'polity'" (Karl). Fixed with a new
+`scope_type` kwarg on the engine function itself (default `'polity'`, so the existing
+Cliopatria polity branch is completely unaffected — proven by a dedicated safety-net test, not
+just assumed); the route passes `scope_type="area"` explicitly.
+
+**Prerequisite done (`f69fcfc`):** `lat`/`lon` made `Optional` at the param level ahead of this,
+checked per-scope like `radius_km` already was — `area` doesn't ask for them at all.
+
+6 new tests (required-param, WKT-type rejection, working end-to-end case, direct engine-call
+equivalence, area's own type label, the polity-path safety net). Full suite: 576 passed, 21
+skipped. Public `scope` list is now complete: `[basin, buffer, area]`.
 
 ---
 
