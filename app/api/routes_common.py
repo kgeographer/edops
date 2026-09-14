@@ -220,17 +220,14 @@ def signature(
     )),
     place_links: Optional[str] = Query(None, description=(
         "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
-        "meta.query.place_links. Not validated or re-resolved -- a caller who already "
-        "resolved this point via a gazetteer identifier can carry that provenance forward "
-        "into the response. Omit if the point wasn't resolved that way."
+        "meta.query.place_links."
     )),
     scope: str = Query(..., description=(
-        "Required -- no sensible default for what kind of query this is. 'basin': raw values "
-        "for the one basin containing this point -- the shape documented below. 'buffer': "
-        "aggregate distribution over the basins within radius_km of this point -- a different "
-        "shape (variables/shortfall/caveats/meta), see areal_signature(). 'area': "
-        "same shape as buffer, aggregated over the basins within an arbitrary polygon instead "
-        "of a radius -- see geom_wkt, and areal_signature_polygon()."
+        "'basin': raw values for the one basin containing this point -- the shape documented "
+        "below. 'buffer': aggregate distribution over the basins within radius_km of this "
+        "point -- a different shape (variables/shortfall/caveats/meta). 'area': same shape as "
+        "buffer, aggregated over the basins within an arbitrary polygon instead of a radius -- "
+        "see geom_wkt."
     )),
     radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
     geom_wkt: Optional[str] = Query(None, description=(
@@ -250,20 +247,18 @@ def signature(
     fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
     top-level key "temporal" instead.
 
-    scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
-    flat, place_links are basin-only; ignored for buffer/area. Band T on these two scopes
-    requires from_year == to_year (a single year, not a range) -- unlike scope=basin, Band T
-    here explodes into one row per HYDE-epoch/LMR-year per member basin, so a real multi-year
-    range is a genuine large-payload risk at this scope.
+    scope=buffer / area: an entirely different shape -- a flat "variables" list (one object
+    per requested variable, a distribution summary aggregated across the scope's member
+    basins, not an average) plus "shortfall" and "caveats". See edops_schema_area.json for
+    a full worked example. flat, place_links are basin-only; ignored for buffer/area. Band T
+    on these two scopes requires from_year == to_year (a single year, not a range) -- unlike
+    scope=basin, Band T here explodes into one row per HYDE-epoch/LMR-year per member basin,
+    so a real multi-year range is a genuine large-payload risk at this scope.
 
     All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
-    (the request echoed back), "scope", "data_sources"} block. meta["scope"] is
-    {"type": "containing_basin", "basin_level"} for basin; for buffer/area it's whatever
-    the engine's own scope object contributes beyond what "query" already says (buffer:
-    "type", "n_units", "unit_type", "member_ids"; area: "type", "n_units", "unit_type",
-    "marginal_exposure"). buffer/area's engine payload also has "bands" and "temporal"
-    keys that just restate meta["query"]["bands"]/from_year/to_year in another form --
-    the route drops both rather than ship the same information twice.
+    (the request echoed back), "scope", "data_sources"}. meta["scope"] is
+    {"type": "containing_basin", "basin_level"} for basin; {"type", "n_units", "unit_type",
+    "member_ids"} for buffer; {"type", "n_units", "unit_type", "marginal_exposure"} for area.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
