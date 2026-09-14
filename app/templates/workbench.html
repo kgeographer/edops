@@ -1206,7 +1206,7 @@
         layout: { visibility: 'none' },
         paint: {
           'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 4.5, 3],
-          'circle-color': '#666', 'circle-opacity': 0.7,
+          'circle-color': '#333', 'circle-opacity': 0.8,
           'circle-stroke-width': 1,
           'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
         },
@@ -1387,13 +1387,13 @@
       return `${_afrEsc(v)} <button type="button" class="afr-hl-btn" data-field="${field}" data-value="${_afrEsc(v)}" title="Highlight societies sharing this value">${mag}</button>`;
     };
     const sid = soc.soc_id || '';
-    const nameCell = _afrEsc(soc.name || '—') + (sid
-      ? ` (<a href="#" class="afr-soc-modal" data-sid="${_afrEsc(sid)}">${_afrEsc(sid)} record</a>)`
+    const nameCell = `<span class="afr-soc-name-value">${_afrEsc(soc.name || '—')}</span>` + (sid
+      ? ` (<a href="#" class="afr-soc-modal afr-soc-record-link" data-sid="${_afrEsc(sid)}">full record <i class="bi bi-box-arrow-up-right small"></i></a>)`
       : '');
     document.getElementById('soc-vars').innerHTML =
       `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
       `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
-      row('Name', nameCell) +
+      `<tr class="afr-soc-name-row"><td style="width:44%;">Name</td><td>${nameCell}</td></tr>` +
       row('Subsistence (EA042)', eaCell('subsistence', soc.subsistence)) +
       row('High gods (EA034)', eaCell('religion', soc.religion)) +
       `</tbody></table>` +

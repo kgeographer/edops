@@ -116,6 +116,13 @@
 .wo4-ecoregions-scroll { max-height: 50vh; overflow-y: auto; padding-right: 0.5rem; }
 .wo4-ecoregion-block { margin-bottom: 0.75rem; }
 
+/* Ecoregions tab, #eco-selected-info: the Wikipedia summary can run long -- scroll it
+   internally instead of pushing the page down, same pattern as the realm list above.
+   Name + links + meta line stay outside this rule, always visible. 40vh (2026-09-14
+   first pass) still let the whole card run off the window once the title/links/meta
+   rows and everything above it (map, header) were accounted for -- cut to 20vh. */
+#eco-selected-summary { max-height: 25vh; overflow-y: auto; padding-right: 0.5rem; }
+
 /* -- Composition donut + legend -- */
 .wo4-donut-row { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-top: 0.75rem; }
 .wo4-donut-figure { flex: none; }
@@ -143,6 +150,14 @@
   padding-left: .3rem;
   font-weight: 600;
 }
+
+/* African Regions — clicked society's Name row (renderAfrSociety()): the name was reading
+   as just another table row, no more prominent than Subsistence/High gods (Karl, 2026-09-14).
+   Whole row gets a bigger font; the name value itself (not the record link beside it) goes
+   bold + the site's accent red (matches .wo4-heading-value elsewhere on this page). */
+.afr-soc-name-row td { font-size: 1.05rem; }
+.afr-soc-name-value { font-weight: 700; color: #993333; }
+.afr-soc-record-link { font-size: 0.78rem; }
 
 /* African Regions — #soc-vars EA-value magnifier button */
 .afr-hl-btn {
@@ -178,5 +193,9 @@
   background-color: #e9ecef;
   border-color: #ced4da;
   color: #495057;
+}
+
+#eco-selected-summary {
+  font-size: 0.85rem;
 }
 
