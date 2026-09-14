@@ -49,7 +49,7 @@ NUMERIC_FIELDS = [
 
 
 def fetch_sig(lat, lon):
-    url = f"{API_BASE}?lat={lat}&lon={lon}&bands={BANDS}&level={LEVEL}"
+    url = f"{API_BASE}?lat={lat}&lon={lon}&bands={BANDS}&level={LEVEL}&scope=basin"
     with urllib.request.urlopen(url, timeout=20) as r:
         return json.loads(r.read().decode())
 

@@ -25,6 +25,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
+from scripts.edop.areas.engine import areal_signature, basin_ring_signature
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -182,7 +183,7 @@ def signature(
     bands: str = Query("ABCDE", description=(
         "Which profile groups to include, e.g. \"ABCDE\" or \"ABCDET\"."
     )),
-    level: int = Query(8, description="Basin hierarchy level: 8 or 6."),
+    level: int = Query(6, description="Basin hierarchy level: 8 or 6."),
     from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),
     to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–1998)."),
     flat: bool = Query(False, description=(
@@ -195,34 +196,81 @@ def signature(
         "resolved this point via a gazetteer identifier can carry that provenance forward "
         "into the response. Omit if the point wasn't resolved that way."
     )),
+    scope: str = Query(..., description=(
+        "Required -- no sensible default for what kind of query this is. 'basin': raw values "
+        "for the one basin containing this point -- the shape documented below. 'buffer': "
+        "aggregate distribution over the basins within radius_km of this point -- a different "
+        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). "
+        "'basin-ring': the containing basin's full signature plus one per first-order adjacent "
+        "basin, for comparison -- no aggregate, its own shape, see basin_ring_signature()."
+    )),
+    radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
+    detail: bool = Query(False, description=(
+        "scope=buffer/basin-ring only: include per-variable histogram/detail objects."
+    )),
 ):
-    """Return environmental signature for a coordinate.
+    """Return an environmental signature.
 
     Response
     --------
-    Default (flat=False): basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
+    scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
     "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
     for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
-    its own "_status" ("ok" | "not_requested" | "error").
+    its own "_status" ("ok" | "not_requested" | "error"). flat=True: the same identity/geometry
+    fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
+    top-level key "temporal" instead.
 
-    flat=True: the same identity/geometry fields plus every variable as a top-level key (no
-    profile_groups nesting); Band T appears at top-level key "temporal" instead.
+    scope=buffer / basin-ring: an entirely different shape -- see each scope's own docstring
+    above. flat, place_links are basin-only; ignored for buffer/basin-ring.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail=f"Basin level {level} not available; supported levels: 6, 8")
+
+    requested_bands = set(bands.upper().replace(",", "").replace(" ", ""))
+
+    if scope in ("buffer", "basin-ring"):
+        if scope == "buffer" and radius_km is None:
+            raise HTTPException(status_code=422, detail="scope=buffer requires: radius_km")
+        if "T" in requested_bands and (from_year is None or to_year is None):
+            raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
+        band_t_from = from_year if "T" in requested_bands else None
+        band_t_to = to_year if "T" in requested_bands else None
+        conn = db_connect()
+        try:
+            if scope == "buffer":
+                return areal_signature(
+                    lat, lon, radius_km, conn,
+                    level=level, bands=sorted(requested_bands),
+                    from_year=band_t_from, to_year=band_t_to,
+                    include_detail=detail,
+                )
+            return basin_ring_signature(
+                lat, lon, conn,
+                level=level, bands=sorted(requested_bands),
+                from_year=band_t_from, to_year=band_t_to,
+                include_detail=detail,
+            )
+        finally:
+            conn.close()
+
+    if scope != "basin":
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer, basin-ring",
+        )
+
     sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
     # Filter profile_groups to requested bands
-    requested = set(bands.upper().replace(",", "").replace(" ", ""))
     if sig.get("profile_groups"):
-        sig["profile_groups"] = {k: v for k, v in sig["profile_groups"].items() if k in requested}
+        sig["profile_groups"] = {k: v for k, v in sig["profile_groups"].items() if k in requested_bands}
 
     # Band T: temporal enrichment — stored in profile_groups["T"]
-    if "T" in requested:
+    if "T" in requested_bands:
         if from_year is None or to_year is None:
             band_t = {
                 "_status": "not_requested",

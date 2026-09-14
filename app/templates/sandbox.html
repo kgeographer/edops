@@ -2863,7 +2863,7 @@
       // currentLat/currentLon (the original query point), never from the clicked member.
       const [r, sigR] = await Promise.all([
         fetch(`/api/areas?${params}`),
-        fetch(`/api/signature?lat=${member.neighbor_lat}&lon=${member.neighbor_lon}&level=${lv}&bands=ABCE`),
+        fetch(`/api/signature?lat=${member.neighbor_lat}&lon=${member.neighbor_lon}&level=${lv}&bands=ABCE&scope=basin`),
       ]);
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const p = await r.json();
@@ -2977,7 +2977,7 @@
       // Kick off /api/signature in parallel for Analysis tab (raw values; /api/areas returns scores only)
       const _plQS = _currentPlaceLinks.length ? `&place_links=${encodeURIComponent(_currentPlaceLinks.join(','))}` : '';
       const _sigFetch = (currentLat != null)
-        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE${_plQS}`)
+        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE&scope=basin${_plQS}`)
         : null;
 
       if (scope === 'single') {

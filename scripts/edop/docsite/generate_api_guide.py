@@ -78,22 +78,22 @@ EXAMPLES_SECTION = """## Example requests
 
 **Bands A and B only — Athens**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=37.97&lon=23.73&bands=AB"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=37.97&lon=23.73&bands=AB"
 ```
 
 **Full baseline signature — Samarkand**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=39.65&lon=66.98&bands=ABCDE"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=39.65&lon=66.98&bands=ABCDE"
 ```
 
 **With historical climate — Rome, early imperial period**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"
 ```
 
 **Flat mode — all fields as top-level keys**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=16.8167&lon=-2.9833&bands=ABCDE&flat=true"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=ABCDE&flat=true"
 ```
 
 **Areal signature for a polity — Northern Song at 1080 CE**

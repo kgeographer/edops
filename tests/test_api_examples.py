@@ -39,7 +39,7 @@ def client(db_available):
 # ---------------------------------------------------------------------------
 
 def test_athens_bands_ab(client):
-    r = client.get("/api/signature", params={"lat": 37.97, "lon": 23.73, "bands": "AB"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 37.97, "lon": 23.73, "bands": "AB"})
     assert r.status_code == 200
     data = r.json()
     pg = data["profile_groups"]
@@ -53,7 +53,7 @@ def test_athens_bands_ab(client):
 # ---------------------------------------------------------------------------
 
 def test_samarkand_bands_abcde(client):
-    r = client.get("/api/signature", params={"lat": 39.65, "lon": 66.98, "bands": "ABCDE"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 39.65, "lon": 66.98, "bands": "ABCDE"})
     assert r.status_code == 200
     pg = r.json()["profile_groups"]
     for band in ("A", "B", "C", "D", "E"):
@@ -66,7 +66,7 @@ def test_samarkand_bands_abcde(client):
 # ---------------------------------------------------------------------------
 
 def test_rome_bands_abct(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 41.9, "lon": 12.5,
         "bands": "ABCT", "from_year": 1, "to_year": 400,
     })
@@ -89,7 +89,7 @@ def test_rome_bands_abct(client):
 # ---------------------------------------------------------------------------
 
 def test_kaifeng_bands_abct(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 34.8, "lon": 114.3,
         "bands": "ABCT", "from_year": 960, "to_year": 1127,
     })
@@ -120,7 +120,7 @@ def test_kaifeng_bands_abct(client):
 # ---------------------------------------------------------------------------
 
 def test_timbuktu_bands_abt(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.77, "lon": -3.01,
         "bands": "ABT", "from_year": 1200, "to_year": 1600,
     })
@@ -139,7 +139,7 @@ def test_timbuktu_bands_abt(client):
 # ---------------------------------------------------------------------------
 
 def test_kaifeng_level6(client):
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 34.8, "lon": 114.3,
         "bands": "ABC", "level": 6,
     })
@@ -158,7 +158,7 @@ def test_kaifeng_level6(client):
 
 def test_seasonality_arrays_rome(client):
     """Monthly arrays present and length-12 for Rome (L08 default)."""
-    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C"})
     assert r.status_code == 200
     data = r.json()
     assert isinstance(data.get("pre_mm_monthly"), list), "pre_mm_monthly missing"
@@ -169,7 +169,7 @@ def test_seasonality_arrays_rome(client):
 
 def test_seasonality_scalars_rome(client):
     """Pinned seasonality indices for Rome L08 — tolerance ±0.05."""
-    r = client.get("/api/signature", params={"lat": 41.9, "lon": 12.5, "bands": "C"})
+    r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C", "level": 8})
     assert r.status_code == 200
     data = r.json()
     pre_conc   = data["pre_concentration"]
@@ -186,9 +186,9 @@ def test_seasonality_scalars_rome(client):
 
 def test_seasonality_discrimination(client):
     """Ordering relationships encode the Mediterranean vs monsoon discrimination story."""
-    rome   = client.get("/api/signature", params={"lat": 41.9,  "lon": 12.5,  "bands": "C"}).json()
-    delhi  = client.get("/api/signature", params={"lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
-    london = client.get("/api/signature", params={"lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
+    rome   = client.get("/api/signature", params={"scope": "basin", "lat": 41.9,  "lon": 12.5,  "bands": "C"}).json()
+    delhi  = client.get("/api/signature", params={"scope": "basin", "lat": 28.6,  "lon": 77.2,  "bands": "C"}).json()
+    london = client.get("/api/signature", params={"scope": "basin", "lat": 51.5,  "lon": -0.12, "bands": "C"}).json()
 
     rome_offset   = rome["seas_phase_offset"]
     delhi_offset  = delhi["seas_phase_offset"]
@@ -219,7 +219,7 @@ def test_band_t_out_of_range_status_stays_ok(client):
     as any future Band T shape change, and re-run generate_api_guide.py + refresh
     documentation/edops_schema.json alongside it.
     """
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.8167, "lon": -2.9833,
         "bands": "T", "from_year": -2100, "to_year": -1800,
     })
@@ -245,7 +245,7 @@ def test_band_t_available_shape(client):
     the four *_note fields (null when nothing to report), and hyde_land_use's
     {epochs, n_epochs, _note} structure. Same tripwire purpose as the test above.
     """
-    r = client.get("/api/signature", params={
+    r = client.get("/api/signature", params={"scope": "basin",
         "lat": 16.8167, "lon": -2.9833,
         "bands": "T", "from_year": 1350, "to_year": 1600,
     })

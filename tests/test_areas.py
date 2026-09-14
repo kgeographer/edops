@@ -943,11 +943,75 @@ class TestPlaceLinksPassthrough:
         assert "place_links" not in r.json()
 
     def test_signature_echoes_into_meta_query(self, buf_client):
-        r = buf_client.get(f"/api/signature?lat=16.8167&lon=-2.9833&place_links={self._LINKS}")
+        r = buf_client.get(
+            f"/api/signature?lat=16.8167&lon=-2.9833&scope=basin&place_links={self._LINKS}"
+        )
         assert r.status_code == 200, r.text
         assert r.json()["meta"]["query"]["place_links"] == ["gn:3169070", "tgn:7003138"]
 
     def test_signature_omits_key_without_param(self, buf_client):
-        r = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833")
+        r = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&scope=basin")
         assert r.status_code == 200, r.text
         assert "place_links" not in r.json()["meta"]["query"]
+
+
+class TestSignatureScopeDispatch:
+    """Section 2 of docs/edop/api_shape/WO_public-api-reshape.md -- /api/signature grows
+    scope=buffer/basin-ring, pure re-routes to the same engine calls /api/areas already
+    makes, zero reshaping. Equivalence checked directly against /api/areas's existing
+    scope=buffer/scope=basin_ring for the same real query. scope has no default (Karl,
+    2026-09-14: "scope is absolutely required -- we can't default to something there");
+    level defaults to 6 when omitted (same call: no reason to punish an omitted level with
+    an error the way scope's ambiguity would).
+    """
+
+    def test_scope_is_required(self, client):
+        r = client.get("/api/signature?lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+
+    def test_level_defaults_to_6_when_omitted(self, buf_client):
+        a = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin").json()
+        b = buf_client.get(
+            "/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin&level=6"
+        ).json()
+        assert a == b
+
+    def test_scope_buffer_matches_areas_buffer(self, buf_client):
+        a = buf_client.get(
+            "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        b = buf_client.get(
+            "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
+        ).json()
+        assert a == b
+
+    def test_scope_basin_ring_matches_areas_basin_ring(self, buf_client):
+        a = buf_client.get(
+            "/api/areas?scope=basin_ring&lat=16.8167&lon=-2.9833&bands=A"
+        ).json()
+        b = buf_client.get(
+            "/api/signature?scope=basin-ring&lat=16.8167&lon=-2.9833&bands=A"
+        ).json()
+        assert a == b
+
+    def test_scope_buffer_requires_radius(self, client):
+        r = client.get("/api/signature?scope=buffer&lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+        assert "radius_km" in r.json()["detail"]
+
+    def test_unsupported_scope_rejected(self, client):
+        r = client.get("/api/signature?scope=neighborhood&lat=16.8&lon=-2.9")
+        assert r.status_code == 422
+        assert "Unsupported scope" in r.json()["detail"]
+
+    def test_band_t_missing_span_rejected_for_buffer(self, client):
+        r = client.get(
+            "/api/signature?scope=buffer&lat=16.8&lon=-2.9&radius_km=50&bands=ABT"
+        )
+        assert r.status_code == 422
+        assert "Band T" in r.json()["detail"]
+
+    def test_band_t_missing_span_rejected_for_basin_ring(self, client):
+        r = client.get("/api/signature?scope=basin-ring&lat=16.8&lon=-2.9&bands=ABT")
+        assert r.status_code == 422
+        assert "Band T" in r.json()["detail"]

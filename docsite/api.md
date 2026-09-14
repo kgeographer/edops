@@ -47,28 +47,34 @@ Full variable-by-variable reference: see the [Codebook](codebook.md).
 
 ### `GET /api/signature`
 
-Return environmental signature for a coordinate.
+Return an environmental signature.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `lat` | float (-90 to 90) | **yes** | — | Latitude, decimal degrees, in [-90, 90]. |
 | `lon` | float (-180 to 180) | **yes** | — | Longitude, decimal degrees, in [-180, 180]. |
 | `bands` | str | no | `ABCDE` | Which profile groups to include, e.g. "ABCDE" or "ABCDET". |
-| `level` | int | no | `8` | Basin hierarchy level: 8 or 6. |
+| `level` | int | no | `6` | Basin hierarchy level: 8 or 6. |
 | `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
 | `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
 | `flat` | bool | no | `false` | If true, return flat field values instead of nested profile_groups; Band T temporal data appears at key "temporal" rather than in profile_groups. |
+| `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into meta.query.place_links. Not validated or re-resolved -- a caller who already resolved this point via a gazetteer identifier can carry that provenance forward into the response. Omit if the point wasn't resolved that way. |
+| `scope` | str | **yes** | — | Required -- no sensible default for what kind of query this is. 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). 'basin-ring': the containing basin's full signature plus one per first-order adjacent basin, for comparison -- no aggregate, its own shape, see basin_ring_signature(). |
+| `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
+| `detail` | bool | no | `false` | scope=buffer/basin-ring only: include per-variable histogram/detail objects. |
 
 **Response**
 
 ```text
-Default (flat=False): basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
+scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
 "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
 for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
-its own "_status" ("ok" | "not_requested" | "error").
+its own "_status" ("ok" | "not_requested" | "error"). flat=True: the same identity/geometry
+fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
+top-level key "temporal" instead.
 
-flat=True: the same identity/geometry fields plus every variable as a top-level key (no
-profile_groups nesting); Band T appears at top-level key "temporal" instead.
+scope=buffer / basin-ring: an entirely different shape -- see each scope's own docstring
+above. flat, place_links are basin-only; ignored for buffer/basin-ring.
 
 Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
 ```
@@ -122,6 +128,7 @@ Areal signature dispatcher — resolves to a set of member basins by scope, then
 | `from_year` | int | no | — | Band T span start, year CE. Required when T is in bands. |
 | `to_year` | int | no | — | Band T span end, year CE. Required when T is in bands. |
 | `detail` | bool | no | `false` | If true, include per-variable histogram objects in the response. |
+| `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into the response's place_links. Not validated or re-resolved. Only applied for scope=single_basin or scope=basin_ring -- a single resolved point is the only case with one place's provenance to carry forward; ignored for buffer and polity. |
 
 **Response**
 
@@ -147,22 +154,22 @@ Confirm the service is running.
 
 **Bands A and B only — Athens**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=37.97&lon=23.73&bands=AB"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=37.97&lon=23.73&bands=AB"
 ```
 
 **Full baseline signature — Samarkand**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=39.65&lon=66.98&bands=ABCDE"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=39.65&lon=66.98&bands=ABCDE"
 ```
 
 **With historical climate — Rome, early imperial period**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=41.9&lon=12.5&bands=ABCT&from_year=1&to_year=400"
 ```
 
 **Flat mode — all fields as top-level keys**
 ```
-curl "https://edops.computingplace.org/api/signature?lat=16.8167&lon=-2.9833&bands=ABCDE&flat=true"
+curl "https://edops.computingplace.org/api/signature?scope=basin&lat=16.8167&lon=-2.9833&bands=ABCDE&flat=true"
 ```
 
 **Areal signature for a polity — Northern Song at 1080 CE**
