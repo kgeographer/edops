@@ -249,6 +249,30 @@ checked per-scope like `radius_km` already was — `area` doesn't ask for them a
 equivalence, area's own type label, the polity-path safety net). Full suite: 576 passed, 21
 skipped. Public `scope` list is now complete: `[basin, buffer, area]`.
 
+**Follow-up, 2026-09-14 — shape-parity pass (post-Section-3, before Section 4):** eyeballing
+real payloads (`output/edop/lod-prep/scope_{basin,buffer,area}.json`, gitignored) surfaced two
+gaps against basin's shape:
+
+- **Band T row-explosion.** buffer/area explode Band T into one row per HYDE-epoch/LMR-year per
+  member basin (a 250-year span on a 5-basin buffer alone produced 792 rows / 66k+ lines) —
+  unlike basin's compact per-basin time series. Fixed (`2c18d59`) by requiring `from_year ==
+  to_year` for these two scopes when `T` is requested (422 otherwise); basin's genuine
+  multi-year range is untouched. v0.4-scoped fix, not a row-representation redesign — a
+  technical user wanting per-slice time series still has to parse the full-monte payload
+  themselves.
+- **No `meta` block.** basin had one, buffer/area didn't (`06535af`). Both now get
+  `signature_version`/`generated`/`query`/`data_sources`, via one shared
+  `_data_sources_block(level)` helper so the three scopes can't drift on what it says.
+  `meta.scope` stays basin-only — buffer/area's existing top-level `scope` object (`n_units`,
+  `member_ids`, ...) is real result data, not a request echo, and left where it was.
+
+Left open, not actioned: whether buffer/area should ever get `profile_groups`-style band
+nesting (no strong technical reason it's absent — the per-row `band` field makes it mechanically
+feasible — but basin's flat/raw shape and buffer/area's aggregate/distribution shape may simply
+be two genuinely different kinds of data, not just missing normalization); the v0.3-style "show
+URL" / "view raw JSON in a modal" GUI affordance Karl flagged as missing from v0.4 (separate,
+GUI-side, not a schema question).
+
 ---
 
 ## Section 4 — Cliopatria via `/clio`, feeding `scope=area` (deferred; was Section 2)
