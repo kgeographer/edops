@@ -19,27 +19,37 @@ not a proposal.
   function name, not a concept. Every request resolves to exactly **one** signature — whether
   it aggregates over one basin or many. This is the starting assumption everything else follows
   from, not a naming preference.
-- **One public endpoint: `/api/signature`.** One parameter, `scope`, flat, four values, no
-  nesting: `basin` | `basin-ring` | `buffer` | `area`.
+- **One public endpoint: `/api/signature`.** One parameter, `scope`, flat, three values, no
+  nesting: `basin` | `buffer` | `area`. (`basin-ring` was in this list briefly, 2026-09-14 —
+  pulled back out the same day, see below.)
 - **Input shape per scope:**
-  - `basin`, `basin-ring` — a point (`lat`/`lon`).
+  - `basin` — a point (`lat`/`lon`).
   - `buffer` — a point + `radius_km`.
-  - `area` — a WKT geometry string. First build target: a **bbox-constructed** example
-    (short, trivial to round-trip) — not arbitrary or large WKT, kept simple deliberately.
-- **Three response shapes, not two — corrected 2026-09-14, mid-Section-2 — all three already
-  built and working today, none of them need reshaping into each other:**
-  - `basin` (one basin) → raw values + a few derived values. Existing machinery:
+  - `area` — a WKT geometry string (`POLYGON`/`MULTIPOLYGON` only). First build target: a
+    **bbox-constructed** example (short, trivial to round-trip) — not arbitrary or large WKT,
+    kept simple deliberately.
+- **Two response shapes, both already built and working today, no reshaping between them:**
+  - `basin` (one basin) → raw values + a few derived values, mostly straight DB columns and
+    category labels. Band T, if requested, requires `from_year`/`to_year` — "Band T is
+    irrelevant without a year or timespan — it is not computable, can't be returned" (Karl,
+    2026-09-14) — includes HYDE land-use summed across the grid cells within the one basin, and
+    an LMR pdsi/temp/precip distribution across the grid cells overlapping it (both already
+    within-basin aggregations `get_signature()` already does correctly — not the same kind of
+    aggregation `buffer`/`area` do across a *set of basins*). Existing machinery:
     `get_signature()` — today's `/api/signature`, unchanged, reused directly.
-  - `buffer` / `area` (many basins, aggregated) → distribution constructs driving histograms.
-    Existing machinery: `areal_signature()`, `areal_signature_polygon()` respectively.
-  - `basin-ring` (many basins, **not** aggregated — deliberately, per its own docstring: "there
-    is no meaningful aggregate across the ring — the per-neighbour comparison is the payload")
-    → center's full raw-value signature + one raw-value signature per adjacent basin + topology
-    metadata (bearing, shared border length). Existing machinery: `basin_ring_signature()`,
-    unchanged, returned as-is — **not** reshaped to match `buffer`/`area`'s envelope; there's no
-    aggregate in it to reshape. Karl's call once this was found: keep it exactly as it already
-    is, own shape, third kind, not a `buffer`/`area` sibling despite sitting on the same `scope`
-    param.
+  - `buffer` / `area` (many basins, aggregated across the set) → distribution constructs driving
+    histograms. Existing machinery: `areal_signature()`, `areal_signature_polygon()`
+    respectively. Should read like what the GUI already shows for these cases (buffer:
+    confirmed byte-identical to the GUI's own buffer query, 2026-09-14; area: no direct GUI
+    analog yet, but reuses the same envelope shape the GUI's polity queries already produce).
+  - **`basin-ring` is not a `scope` of its own.** Karl, 2026-09-14: "all basin-ring ever does is
+    pull a sig for the central basin — the rest is a GUI feature, rendering the surrounding
+    basins... allowing separate calls for their signatures." It decomposes into `scope=basin`,
+    called once per basin of interest — the ring topology (which basins are adjacent) is a
+    map-rendering concern the GUI already owns (`/api/basin/ring`), not something the public
+    signature endpoint needs to model. Built onto `/api/signature` briefly, then pulled back out
+    the same day once this was named — `/api/areas?scope=basin_ring` is untouched and still the
+    live internal mechanism for the GUI's ring rendering.
   - **Correction to this doc's own earlier framing (2026-09-13 version, below):** that version
     treated `single_basin_signature()` (the areas engine's n=1 case of its general aggregator,
     WO14) as the ancestor for the single-basin public product. Wrong — Karl: treating
@@ -147,9 +157,16 @@ already correct and doesn't need to change; this section doesn't touch it.
 
 ---
 
-## Section 2 — build `/api/signature` for `scope=basin | basin-ring | buffer`
+## Section 2 — build `/api/signature` for `scope=basin | buffer`
 
-**Status: done, 2026-09-14.** Two corrections found and resolved during the build (see below,
+**Status: done, 2026-09-14 (commits `a8b9e66`, `803d66c`, `fa71a31`).** Two further corrections
+landed the same day, after the section was first marked done: `basin-ring` pulled back out
+entirely (not a `scope` of its own — see the locked model above) and Band T made strict for
+`scope=basin` too (422 without a timespan, matching `buffer` — "Band T is irrelevant without a
+year or timespan," Karl). Public scope list is now `[basin, buffer]`, `area` still pending
+(Section 3). Below is the original build narrative, current except for those two points.
+
+Two corrections found and resolved during the original build (see below,
 both folded back into the "locked" model at the top of this doc): basin-ring has no aggregate
 to reshape (kept exactly as `basin_ring_signature()` returns it, its own third shape); `scope`
 ended up required with no default at all ("scope is absolutely required, we can't default to
