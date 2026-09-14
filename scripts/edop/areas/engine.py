@@ -2710,6 +2710,7 @@ def areal_signature_polygon(
     include_detail=False,
     resolver_year=None,
     polity_id=None,
+    scope_type='polity',
 ):
     """
     Full areal signature for a polygon geometry.
@@ -2732,6 +2733,11 @@ def areal_signature_polygon(
     polity_id      : int or None — if provided and level=8, uses pre-built crosswalk
                      instead of live ST_Intersection; falls back to resolve_polygon
                      if the polity is not in the crosswalk (island/oceanic cases)
+    scope_type     : str — scope['type'] label in the response. Default 'polity' is the
+                     original, still-live caller (the Cliopatria polity branch); a
+                     generic arbitrary-geometry caller should pass 'area' instead so its
+                     response doesn't misdescribe itself. Cosmetic only -- doesn't affect
+                     resolution or aggregation, both identical either way.
 
     Returns
     -------
@@ -2753,7 +2759,7 @@ def areal_signature_polygon(
     me_lt20 = float(basin_set.loc[bif < 0.2, 'weight'].sum())
 
     scope = {
-        'type':              'polity',
+        'type':              scope_type,
         'level':             level,
         'n_units':           len(basin_set),
         'unit_type':         'basin',

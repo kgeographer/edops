@@ -11,6 +11,7 @@ matches the exemplar at output/edop/surface/exemplars/02_buffer_detail.json.
 
 import json
 import urllib.error
+from urllib.parse import quote
 import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
@@ -1008,6 +1009,66 @@ class TestSignatureScopeDispatch:
         r = client.get("/api/signature?scope=neighborhood&lat=16.8&lon=-2.9")
         assert r.status_code == 422
         assert "Unsupported scope" in r.json()["detail"]
+
+    # -- scope=area (Section 3) ---------------------------------------------
+    # Bbox rectangle as WKT -- the deliberately simple first test input (Karl,
+    # 2026-09-14), not arbitrary/large WKT. Northern-Italy-ish box, same region
+    # used elsewhere this week (WHG bounds probing).
+    _AREA_WKT = "POLYGON((7 44, 14 44, 14 47, 7 47, 7 44))"
+
+    def test_scope_area_requires_geom_wkt(self, client):
+        r = client.get("/api/signature?scope=area")
+        assert r.status_code == 422
+        assert "geom_wkt" in r.json()["detail"]
+
+    def test_scope_area_rejects_non_polygon_wkt(self, client):
+        r = client.get(f"/api/signature?scope=area&geom_wkt={quote('POINT(10 45)')}")
+        assert r.status_code == 422
+        assert "POLYGON" in r.json()["detail"]
+
+    def test_scope_area_accepts_polygon(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "rows" in data
+        assert data["scope"]["n_units"] > 1
+        assert len(data["rows"]) > 0
+
+    def test_scope_area_labels_itself_area_not_polity(self, buf_client):
+        """areal_signature_polygon() was originally polity-only and hardcoded
+        scope['type']='polity' unconditionally -- 2026-09-14, Karl: 'a generic area
+        call should not hard-code the term polity.' Fixed with an optional
+        scope_type kwarg, default 'polity' (preserves the existing polity caller
+        untouched -- see the safety-net test below), 'area' passed explicitly here."""
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.json()["scope"]["type"] == "area"
+
+    def test_polity_scope_type_unaffected_by_the_area_fix(self, buf_client):
+        """Safety net for the scope_type change: the pre-existing polity caller
+        (areas()'s scope=polity branch, which doesn't pass scope_type) must still
+        get 'type': 'polity' -- proves the default preserves old behavior exactly."""
+        r = buf_client.get(
+            "/api/areas?scope=polity&polity=Northern+Song&year=1000&bands=A"
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["scope"]["type"] == "polity"
+
+    def test_scope_area_matches_areal_signature_polygon_directly(self, buf_client):
+        """Same WKT, same params, straight through the route vs. calling the engine
+        function directly -- proves the route isn't silently transforming anything."""
+        from app.db.connection import db_connect
+        from scripts.edop.areas.engine import areal_signature_polygon
+
+        conn = db_connect()
+        try:
+            expected = areal_signature_polygon(
+                self._AREA_WKT, conn, level=6, bands=["A"], scope_type="area"
+            )
+        finally:
+            conn.close()
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
+        assert r.status_code == 200, r.text
+        assert r.json() == expected
 
     def test_band_t_missing_span_rejected_for_buffer(self, client):
         r = client.get(

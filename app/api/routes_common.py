@@ -8,6 +8,7 @@ before assuming a helper is still page-scoped.
 """
 import json
 import math
+import re
 import ssl
 import urllib.parse
 import urllib.request
@@ -25,7 +26,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -204,10 +205,15 @@ def signature(
         "Required -- no sensible default for what kind of query this is. 'basin': raw values "
         "for the one basin containing this point -- the shape documented below. 'buffer': "
         "aggregate distribution over the basins within radius_km of this point -- a different "
-        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature()."
+        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). 'area': "
+        "same shape as buffer, aggregated over the basins within an arbitrary polygon instead "
+        "of a radius -- see geom_wkt, and areal_signature_polygon()."
     )),
     radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
-    detail: bool = Query(False, description="scope=buffer only: include per-variable histogram/detail objects."),
+    geom_wkt: Optional[str] = Query(None, description=(
+        "WKT geometry (SRID 4326), POLYGON or MULTIPOLYGON only. Required for scope=area."
+    )),
+    detail: bool = Query(False, description="scope=buffer/area only: include per-variable histogram/detail objects."),
 ):
     """Return an environmental signature.
 
@@ -221,8 +227,8 @@ def signature(
     fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
     top-level key "temporal" instead.
 
-    scope=buffer: an entirely different shape -- see its own docstring above. flat, place_links
-    are basin-only; ignored for buffer.
+    scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
+    flat, place_links are basin-only; ignored for buffer/area.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
@@ -251,10 +257,32 @@ def signature(
         finally:
             conn.close()
 
+    if scope == "area":
+        if geom_wkt is None:
+            raise HTTPException(status_code=422, detail="scope=area requires: geom_wkt")
+        if not re.match(r"^\s*(POLYGON|MULTIPOLYGON)\s*\(", geom_wkt, re.IGNORECASE):
+            raise HTTPException(
+                status_code=422,
+                detail="geom_wkt must be a POLYGON or MULTIPOLYGON",
+            )
+        band_t_from = from_year if "T" in requested_bands else None
+        band_t_to = to_year if "T" in requested_bands else None
+        conn = db_connect()
+        try:
+            return areal_signature_polygon(
+                geom_wkt, conn,
+                level=level, bands=sorted(requested_bands),
+                from_year=band_t_from, to_year=band_t_to,
+                include_detail=detail,
+                scope_type="area",
+            )
+        finally:
+            conn.close()
+
     if scope != "basin":
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer",
+            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer, area",
         )
 
     missing = [p for p, v in [("lat", lat), ("lon", lon)] if v is None]
