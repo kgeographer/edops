@@ -35,10 +35,10 @@ def client(db_available):
 
 
 def _band_value(sig, band, key):
-    """Look up a profile_groups item's value by key. 2026-09-14: seasonality fields
+    """Look up a signature_bands item's value by key. 2026-09-14: seasonality fields
     (pre_concentration, seas_phase_offset, ...) moved off the top level into their
-    catalog-declared band (Band C) -- see PROFILE_GROUPS in app/db/signature.py."""
-    for item in sig.get("profile_groups", {}).get(band, {}).get("items", []):
+    catalog-declared band (Band C) -- see SIGNATURE_BANDS in app/db/signature.py."""
+    for item in sig.get("signature_bands", {}).get(band, {}).get("items", []):
         if item["key"] == key:
             return item["value"]
     return None
@@ -52,7 +52,7 @@ def test_athens_bands_ab(client):
     r = client.get("/api/signature", params={"scope": "basin", "lat": 37.97, "lon": 23.73, "bands": "AB"})
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     assert "A" in pg and "B" in pg
     assert "C" not in pg and "T" not in pg
     assert len(pg["A"]["items"]) > 0
@@ -65,7 +65,7 @@ def test_athens_bands_ab(client):
 def test_samarkand_bands_abcde(client):
     r = client.get("/api/signature", params={"scope": "basin", "lat": 39.65, "lon": 66.98, "bands": "ABCDE"})
     assert r.status_code == 200
-    pg = r.json()["profile_groups"]
+    pg = r.json()["signature_bands"]
     for band in ("A", "B", "C", "D", "E"):
         assert band in pg, f"Missing band {band}"
     assert "T" not in pg
@@ -82,7 +82,7 @@ def test_rome_bands_abct(client):
     })
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C", "T"):
         assert band in pg, f"Missing band {band}"
 
@@ -105,7 +105,7 @@ def test_kaifeng_bands_abct(client):
     })
     assert r.status_code == 200
     data = r.json()
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C", "T"):
         assert band in pg, f"Missing band {band}"
 
@@ -135,7 +135,7 @@ def test_timbuktu_bands_abt(client):
         "bands": "ABT", "from_year": 1200, "to_year": 1600,
     })
     assert r.status_code == 200
-    pg = r.json()["profile_groups"]
+    pg = r.json()["signature_bands"]
     assert "A" in pg and "B" in pg and "T" in pg
     assert "C" not in pg
 
@@ -156,7 +156,7 @@ def test_kaifeng_level6(client):
     assert r.status_code == 200
     data = r.json()
     assert data["meta"]["query"]["level"] == 6
-    pg = data["profile_groups"]
+    pg = data["signature_bands"]
     for band in ("A", "B", "C"):
         assert band in pg
     assert "T" not in pg
@@ -168,7 +168,7 @@ def test_kaifeng_level6(client):
 
 def test_seasonality_arrays_rome(client):
     """Monthly arrays present and length-12 for Rome (L08 default). Nested under
-    profile_groups["C"] (2026-09-14) -- the monthly arrays are catalog Band C
+    signature_bands["C"] (2026-09-14) -- the monthly arrays are catalog Band C
     variables, not identity/provenance fields, so they no longer sit top-level."""
     r = client.get("/api/signature", params={"scope": "basin", "lat": 41.9, "lon": 12.5, "bands": "C"})
     assert r.status_code == 200
@@ -238,7 +238,7 @@ def test_band_t_out_of_range_status_stays_ok(client):
         "bands": "T", "from_year": -2100, "to_year": -1800,
     })
     assert r.status_code == 200
-    t = r.json()["profile_groups"]["T"]
+    t = r.json()["signature_bands"]["T"]
 
     assert t.get("_status") == "ok", (
         "_status should stay 'ok' once years are supplied, even when LMR/eVolv2k "
@@ -264,7 +264,7 @@ def test_band_t_available_shape(client):
         "bands": "T", "from_year": 1350, "to_year": 1600,
     })
     assert r.status_code == 200
-    t = r.json()["profile_groups"]["T"]
+    t = r.json()["signature_bands"]["T"]
 
     assert t.get("_status") == "ok"
     assert t.get("lmr_status") == "available"

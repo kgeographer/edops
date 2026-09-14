@@ -24,7 +24,7 @@ load_dotenv()  # reads .env from project root
 # Keyed by api_key_s and api_key_u; value is {schema_key, friendly_name, source, db_col, units}.
 # `source` is the dataset (e.g. "BasinATLAS v1.0"); `db_col` is the raw basin08 column
 # (e.g. "ari_ix_sav") — these were previously conflated under one "source" key.
-# Used in profile_groups to generate human-readable labels.
+# Used in signature_bands to generate human-readable labels.
 # -----------------------
 
 def _load_field_lookup() -> Dict[str, Dict[str, str]]:
@@ -216,7 +216,7 @@ LIMIT 1;
 # Profile presentation metadata (pilot)
 # -----------------------
 
-PROFILE_GROUPS: Dict[str, Dict[str, Any]] = {
+SIGNATURE_BANDS: Dict[str, Dict[str, Any]] = {
     "A": {
         "label": "Physiographic bedrock",
         "fields": [
@@ -478,9 +478,9 @@ def get_signature(
 ) -> Dict[str, Any] | None:
     """Return a single basin signature dict for (lat, lon), or None if no basin covers point.
 
-    When flat=False (default): response includes profile_groups (nested band structure)
+    When flat=False (default): response includes signature_bands (nested band structure)
     but not raw flat field values. When flat=True: response includes flat field values
-    but omits profile_groups; Band T temporal data appears at key "temporal" instead.
+    but omits signature_bands; Band T temporal data appears at key "temporal" instead.
 
     Connection parameters are read from environment variables (typically via a .env file):
       DB_NAME, DB_USER, DB_HOST, DB_PORT, and optionally DB_PASSWORD.
@@ -578,9 +578,9 @@ def get_signature(
                         "value": sig.get(k),
                     })
 
-            # profile_groups: {A:{label,items:[{key,label,value}...]}, ...}
+            # signature_bands: {A:{label,items:[{key,label,value}...]}, ...}
             grouped: Dict[str, Any] = {}
-            for gcode, gspec in PROFILE_GROUPS.items():
+            for gcode, gspec in SIGNATURE_BANDS.items():
                 items: list[Dict[str, Any]] = []
                 for k in gspec["fields"]:
                     if k in sig:
@@ -604,8 +604,8 @@ def get_signature(
                 # catalog-matched fields that used to sit here too -- pre_mm_monthly,
                 # tmp_dc_monthly, pre_concentration, pre_peak_month, tmp_concentration,
                 # tmp_peak_month, seas_phase_offset, tmp_seas_amp, eco_id, elev_point,
-                # relief_range_m, relief_position -- moved into profile_groups A/C,
-                # their actual catalog bands; see PROFILE_GROUPS above).
+                # relief_range_m, relief_position -- moved into signature_bands A/C,
+                # their actual catalog bands; see SIGNATURE_BANDS above).
                 "id":           sig.get("id"),
                 "up_area":      sig.get("up_area"),
                 "geom_geojson": sig.get("geom_geojson"),
@@ -622,7 +622,7 @@ def get_signature(
                     for item in gdata.get("items", []):
                         out[item["key"]] = item["value"]
             else:
-                out["profile_groups"] = grouped
+                out["signature_bands"] = grouped
 
             return out
 

@@ -120,7 +120,7 @@ NOTES_SECTION = """## Notes for application developers
 - **No basin found:** If the coordinate falls outside all known sub-basins (open
   ocean, ice sheet), the API returns HTTP 404.
 - **Response modes:** By default, environmental variables are grouped under
-  `profile_groups`. Pass `&flat=true` on `/signature` to receive all variable values
+  `signature_bands`. Pass `&flat=true` on `/signature` to receive all variable values
   as flat top-level keys instead.
 - **Band T availability:** `_status` reflects whether the Band T mechanism ran, not
   whether every source had data — LMR, eVolv2k, and HYDE each have independent

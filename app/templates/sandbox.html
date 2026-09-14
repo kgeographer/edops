@@ -1404,10 +1404,10 @@
 
   // ── Seasonality tab ──────────────────────────────────────────────────────
 
-  // profile_groups["C"] item lookup -- seasonality's fields all live in Band C
+  // signature_bands["C"] item lookup -- seasonality's fields all live in Band C
   // (2026-09-14: moved off the top level into their catalog-declared band).
   function _bandC(sig, key) {
-    const items = sig.profile_groups?.C?.items || [];
+    const items = sig.signature_bands?.C?.items || [];
     const item = items.find(i => i.key === key);
     return item ? item.value : undefined;
   }
@@ -2254,7 +2254,7 @@
   // ── Analysis tab helpers ──────────────────────────────────────────────────
 
   function sigVal(sig, key) {
-    const groups = sig.profile_groups || {};
+    const groups = sig.signature_bands || {};
     for (const g of Object.values(groups)) {
       for (const item of (g.items || [])) {
         if (item.key === key) return item.value;

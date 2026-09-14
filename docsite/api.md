@@ -57,9 +57,9 @@ Return an environmental signature.
 | `level` | int | no | `6` | Basin hierarchy level: 8 or 6. |
 | `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
 | `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
-| `flat` | bool | no | `false` | If true, return flat field values instead of nested profile_groups; Band T temporal data appears at key "temporal" rather than in profile_groups. |
+| `flat` | bool | no | `false` | If true, return flat field values instead of nested signature_bands; Band T temporal data appears at key "temporal" rather than in signature_bands. |
 | `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into meta.query.place_links. Not validated or re-resolved -- a caller who already resolved this point via a gazetteer identifier can carry that provenance forward into the response. Omit if the point wasn't resolved that way. |
-| `scope` | str | **yes** | — | Required -- no sensible default for what kind of query this is. 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). 'area': same shape as buffer, aggregated over the basins within an arbitrary polygon instead of a radius -- see geom_wkt, and areal_signature_polygon(). |
+| `scope` | str | **yes** | — | Required -- no sensible default for what kind of query this is. 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (variables/shortfall/caveats/meta), see areal_signature(). 'area': same shape as buffer, aggregated over the basins within an arbitrary polygon instead of a radius -- see geom_wkt, and areal_signature_polygon(). |
 | `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
 | `geom_wkt` | str | no | — | WKT geometry (SRID 4326), POLYGON or MULTIPOLYGON only. Required for scope=area. |
 | `detail` | bool | no | `false` | scope=buffer/area only: include per-variable histogram/detail objects. |
@@ -68,11 +68,11 @@ Return an environmental signature.
 
 ```text
 scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
-"profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
+"signature_bands": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
 for each requested band. Band T requires from_year and to_year (422 without them); when
-requested it nests under profile_groups["T"] instead, with its own "_status" ("ok" |
+requested it nests under signature_bands["T"] instead, with its own "_status" ("ok" |
 "error"). flat=True: the same identity/geometry
-fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
+fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
 top-level key "temporal" instead.
 
 scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
@@ -148,7 +148,7 @@ Areal signature dispatcher — resolves to a set of member basins by scope, then
 
 ```text
 Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
-scores across the resolved member basins — not the GET /api/signature profile_groups
+scores across the resolved member basins — not the GET /api/signature signature_bands
 shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
 per-variable "distribution" histogram object to each row. Full variable inventory: see
 the Codebook (/docs/codebook/).
@@ -208,7 +208,7 @@ curl "https://edops.computingplace.org/api/areas?scope=buffer&lat=16.8167&lon=-2
 - **No basin found:** If the coordinate falls outside all known sub-basins (open
   ocean, ice sheet), the API returns HTTP 404.
 - **Response modes:** By default, environmental variables are grouped under
-  `profile_groups`. Pass `&flat=true` on `/signature` to receive all variable values
+  `signature_bands`. Pass `&flat=true` on `/signature` to receive all variable values
   as flat top-level keys instead.
 - **Band T availability:** `_status` reflects whether the Band T mechanism ran, not
   whether every source had data — LMR, eVolv2k, and HYDE each have independent

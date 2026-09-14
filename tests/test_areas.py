@@ -979,18 +979,18 @@ class TestSignatureScopeDispatch:
         assert a == b
 
     def test_scope_buffer_matches_areas_buffer(self, buf_client):
-        """/api/areas stays untouched (scope/bands/temporal all top-level, no meta);
-        /api/signature (2026-09-14) drops the top-level duplicates of meta.query and
-        folds scope's non-echoed remainder into meta.scope -- reconstruct /api/areas's
-        shape from /api/signature's meta and compare, since the raw dicts now differ
-        on purpose."""
+        """/api/areas stays untouched (scope/bands/temporal/"rows" all top-level, no
+        meta); /api/signature (2026-09-14) drops the top-level duplicates of meta.query,
+        folds scope's non-echoed remainder into meta.scope, and renames "rows" to
+        "variables" -- reconstruct /api/areas's shape from /api/signature's meta and
+        compare, since the raw dicts now differ on purpose."""
         a = buf_client.get(
             "/api/areas?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
         b = buf_client.get(
             "/api/signature?scope=buffer&lat=16.8167&lon=-2.9833&radius_km=50&bands=A"
         ).json()
-        assert a["rows"] == b["rows"]
+        assert a["rows"] == b["variables"]
         assert a["shortfall"] == b["shortfall"]
         assert a["caveats"] == b["caveats"]
         assert a["bands"] == sorted(b["meta"]["query"]["bands"])
@@ -1047,9 +1047,9 @@ class TestSignatureScopeDispatch:
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
         assert r.status_code == 200, r.text
         data = r.json()
-        assert "rows" in data
+        assert "variables" in data
         assert data["meta"]["scope"]["n_units"] > 1
-        assert len(data["rows"]) > 0
+        assert len(data["variables"]) > 0
 
     def test_scope_area_labels_itself_area_not_polity(self, buf_client):
         """areal_signature_polygon() was originally polity-only and hardcoded
@@ -1100,14 +1100,15 @@ class TestSignatureScopeDispatch:
         }
         actual["bands"] = sorted(query["bands"])
         actual["temporal"] = None  # Band T not requested
+        actual["rows"] = actual.pop("variables")
         assert actual == expected
 
     # -- meta block on buffer/area (2026-09-14) --------------------------------
     # Karl, eyeballing three real payloads: "those two should get a meta: with
     # the appropriate fields now elsewhere pulled into it." Matches basin's meta
-    # shape (signature_version/generated/query/data_sources) but omits meta.scope
-    # -- the existing top-level scope object (n_units, member_ids, ...) stays put,
-    # it's real result data, not a request echo, and already richer than basin's.
+    # shape (signature_version/generated/query/data_sources); meta.scope carries
+    # whatever the engine's own scope object doesn't already duplicate in meta.query
+    # (revised same day -- Karl: "scope should be in meta" too, not left top-level).
 
     def test_scope_buffer_has_meta(self, buf_client):
         """meta.scope carries only what meta.query doesn't already say (2026-09-14
@@ -1128,6 +1129,7 @@ class TestSignatureScopeDispatch:
         assert meta["scope"]["type"] == "buffer"
         assert set(meta["scope"]) == {"type", "n_units", "unit_type", "member_ids"}
         assert "bands" not in data and "temporal" not in data and "scope" not in data
+        assert "variables" in data and "rows" not in data
 
     def test_scope_area_has_meta(self, buf_client):
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
@@ -1140,6 +1142,7 @@ class TestSignatureScopeDispatch:
         assert meta["scope"]["type"] == "area"
         assert set(meta["scope"]) == {"type", "n_units", "unit_type", "marginal_exposure"}
         assert "bands" not in data and "temporal" not in data and "scope" not in data
+        assert "variables" in data and "rows" not in data
 
     def test_meta_data_sources_identical_across_scopes(self, buf_client):
         """The three scopes must never drift on what data_sources says -- they
@@ -1208,7 +1211,7 @@ class TestSignatureScopeDispatch:
             "&from_year=1350&to_year=1600"
         )
         assert r.status_code == 200, r.text
-        assert len(r.json()["profile_groups"]["T"]["pdsi_series"]) == 1600 - 1350 + 1
+        assert len(r.json()["signature_bands"]["T"]["pdsi_series"]) == 1600 - 1350 + 1
 
     def test_scope_basin_ring_no_longer_offered(self, client):
         """basin-ring pulled from the public endpoint 2026-09-14 -- it's really just the

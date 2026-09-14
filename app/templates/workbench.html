@@ -2284,7 +2284,7 @@
       return;
     }
 
-    const hasGrouped = sig.profile_summary && sig.profile_groups;
+    const hasGrouped = sig.profile_summary && sig.signature_bands;
 
     // Show heading when we have data, hide explainers
     if (headingEl) headingEl.style.display = hasGrouped ? '' : 'none';
@@ -2340,7 +2340,7 @@
 
     // ---------- Accordions ----------
     if (accEl) {
-      const groups = sig.profile_groups || {};
+      const groups = sig.signature_bands || {};
       const order = ['A', 'B', 'C', 'D', 'E'];
       const accId = 'profileAccordion';
 

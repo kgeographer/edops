@@ -2,8 +2,8 @@
   "_doc": "EDOPS Signature Schema v0.4 — regenerated 2026-08-16 against live /api/signature output for both default and flat modes. Example values are real API output for Timbuktu (16.8167°N, −2.9833°E), BasinATLAS Level 08, bands ABCDET, Band T span 1350–1600 CE. This is a curated, annotated reference (grouped and labeled for readability) — not a raw response dump. Superseded the June 2026 (v0.3) version, which predated the seasonality-index fields and the current Band T shape.",
 
   "_modes": {
-    "default": "Response includes meta, profile_summary, and profile_groups (nested band structure). Raw flat field values are not returned at the top level.",
-    "flat": "Add &flat=true to the request. Response includes meta, profile_summary, and all band field values as top-level keys. profile_groups is omitted. Band T temporal data appears at key 'temporal' rather than inside profile_groups."
+    "default": "Response includes meta, profile_summary, and signature_bands (nested band structure). Raw flat field values are not returned at the top level.",
+    "flat": "Add &flat=true to the request. Response includes meta, profile_summary, and all band field values as top-level keys. signature_bands is omitted. Band T temporal data appears at key 'temporal' rather than inside signature_bands."
   },
 
   "meta": {
@@ -70,8 +70,8 @@
   },
 
   "default_response": {
-    "_note": "The profile_groups key is present only in the default (non-flat) response. Bands A–E are unchanged in shape since June 2026 (verified against live output).",
-    "profile_groups": {
+    "_note": "The signature_bands key is present only in the default (non-flat) response. Bands A–E are unchanged in shape since June 2026 (verified against live output).",
+    "signature_bands": {
       "A": {
         "label": "Physiographic bedrock",
         "items": [
@@ -233,6 +233,6 @@
   },
 
   "flat_response": {
-    "_note": "When &flat=true is set, profile_groups is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as profile_groups.T above) rather than inside profile_groups."
+    "_note": "When &flat=true is set, signature_bands is omitted. All band field values appear as top-level keys alongside the always_present fields and meta. Band T temporal data appears at key 'temporal' (same structure as signature_bands.T above) rather than inside signature_bands."
   }
 }

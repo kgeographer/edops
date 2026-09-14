@@ -5,8 +5,8 @@ Validates that the live signature payload matches the codebook.
 
 Two tests:
   1. Every implemented field with an api_key is accessible somewhere in the
-     response (profile_groups items or profile_summary).
-  2. Every implemented field that appears in profile_groups is in the band
+     response (signature_bands items or profile_summary).
+  2. Every implemented field that appears in signature_bands is in the band
      declared by the codebook.
 
 Any future drift between codebook and code will surface here first.
@@ -38,11 +38,11 @@ def _all_accessible_keys(sig):
     """
     Collect every key reachable in the response:
       - top-level scalar keys
-      - keys in profile_groups items
+      - keys in signature_bands items
       - keys in profile_summary items
     """
     keys = set(sig.keys())
-    for bdata in sig.get("profile_groups", {}).values():
+    for bdata in sig.get("signature_bands", {}).values():
         for item in bdata.get("items", []):
             keys.add(item["key"])
     for item in sig.get("profile_summary", []):
@@ -50,22 +50,22 @@ def _all_accessible_keys(sig):
     return keys
 
 
-def _profile_groups_values(sig):
-    """Return a flat {key: value} dict built from all profile_groups items."""
+def _signature_bands_values(sig):
+    """Return a flat {key: value} dict built from all signature_bands items."""
     values = {}
-    for bdata in sig.get("profile_groups", {}).values():
+    for bdata in sig.get("signature_bands", {}).values():
         for item in bdata.get("items", []):
             values[item["key"]] = item["value"]
     return values
 
 
-def _profile_groups_index(sig):
+def _signature_bands_index(sig):
     """
-    Return {api_key: band_letter} for every field in profile_groups.
+    Return {api_key: band_letter} for every field in signature_bands.
     Used to check band placement.
     """
     index = {}
-    for band, bdata in sig.get("profile_groups", {}).items():
+    for band, bdata in sig.get("signature_bands", {}).items():
         for item in bdata.get("items", []):
             index[item["key"]] = band
     return index
@@ -84,7 +84,7 @@ def test_implemented_fields_accessible(timbuktu_sig):
     Every implemented field with an api_key_s or api_key_u is reachable
     in the payload. Failures mean either the codebook is wrong (field marked
     implemented but not delivered) or the code is wrong (field dropped from
-    query or profile_groups).
+    query or signature_bands).
     """
     # These fields are synthesized by the areal engine and are deliberately
     # absent from the point signature (codebook notes: "Areal-engine output
@@ -120,24 +120,24 @@ def test_implemented_fields_accessible(timbuktu_sig):
 
 def test_implemented_fields_in_declared_band(timbuktu_sig):
     """
-    For fields that appear in profile_groups, each must be in the band
+    For fields that appear in signature_bands, each must be in the band
     declared by the codebook. Failures indicate a band mismatch between
-    codebook and PROFILE_GROUPS in signature.py.
+    codebook and SIGNATURE_BANDS in signature.py.
 
     Fields not in any profile_group (top-level only, profile_summary only)
     are skipped — they have no band placement to validate.
     """
-    pg_index = _profile_groups_index(timbuktu_sig)
+    sb_index = _signature_bands_index(timbuktu_sig)
     wrong = []
 
     for row in _codebook_implemented(exclude_bands=["T", "output"]):
         key = (row.get("api_key_s") or "").strip()
         declared_band = row["band"].strip()
 
-        if not key or key not in pg_index:
-            continue  # not in profile_groups — nothing to check here
+        if not key or key not in sb_index:
+            continue  # not in signature_bands — nothing to check here
 
-        actual_band = pg_index[key]
+        actual_band = sb_index[key]
         if actual_band != declared_band:
             wrong.append(
                 f"  {row['schema_key']:35s} '{key}': "
@@ -164,6 +164,6 @@ def test_no_unexpected_none_values(timbuktu_sig):
         "pop_density", "gdp_avg",
         "dist_sink",
     ]
-    flat = _profile_groups_values(timbuktu_sig)
+    flat = _signature_bands_values(timbuktu_sig)
     nulls = [k for k in must_have_value if flat.get(k) is None]
     assert not nulls, f"Unexpected None values for Timbuktu: {nulls}"

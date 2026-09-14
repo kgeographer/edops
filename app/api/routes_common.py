@@ -215,8 +215,8 @@ def signature(
     from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),
     to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–1998)."),
     flat: bool = Query(False, description=(
-        "If true, return flat field values instead of nested profile_groups; Band T "
-        "temporal data appears at key \"temporal\" rather than in profile_groups."
+        "If true, return flat field values instead of nested signature_bands; Band T "
+        "temporal data appears at key \"temporal\" rather than in signature_bands."
     )),
     place_links: Optional[str] = Query(None, description=(
         "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
@@ -228,7 +228,7 @@ def signature(
         "Required -- no sensible default for what kind of query this is. 'basin': raw values "
         "for the one basin containing this point -- the shape documented below. 'buffer': "
         "aggregate distribution over the basins within radius_km of this point -- a different "
-        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). 'area': "
+        "shape (variables/shortfall/caveats/meta), see areal_signature(). 'area': "
         "same shape as buffer, aggregated over the basins within an arbitrary polygon instead "
         "of a radius -- see geom_wkt, and areal_signature_polygon()."
     )),
@@ -243,11 +243,11 @@ def signature(
     Response
     --------
     scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
-    "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
+    "signature_bands": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
     for each requested band. Band T requires from_year and to_year (422 without them); when
-    requested it nests under profile_groups["T"] instead, with its own "_status" ("ok" |
+    requested it nests under signature_bands["T"] instead, with its own "_status" ("ok" |
     "error"). flat=True: the same identity/geometry
-    fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
+    fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
     top-level key "temporal" instead.
 
     scope=buffer / area: an entirely different shape -- see each scope's own docstring above.
@@ -318,6 +318,9 @@ def signature(
         meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
         result.pop("bands", None)
         result.pop("temporal", None)
+        # "rows" -> "variables" (Karl, 2026-09-14): route-level rename only -- engine.py's
+        # assemble_payload() and /api/areas (which returns it unmodified) still say "rows".
+        result["variables"] = result.pop("rows")
         result["meta"] = {
             "signature_version": "0.4",
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -357,6 +360,7 @@ def signature(
         meta_scope = _fold_scope_into_meta(result.pop("scope"), query)
         result.pop("bands", None)
         result.pop("temporal", None)
+        result["variables"] = result.pop("rows")
         result["meta"] = {
             "signature_version": "0.4",
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -380,11 +384,11 @@ def signature(
     if sig is None:
         raise HTTPException(status_code=404, detail="No basin covers this point")
 
-    # Filter profile_groups to requested bands
-    if sig.get("profile_groups"):
-        sig["profile_groups"] = {k: v for k, v in sig["profile_groups"].items() if k in requested_bands}
+    # Filter signature_bands to requested bands
+    if sig.get("signature_bands"):
+        sig["signature_bands"] = {k: v for k, v in sig["signature_bands"].items() if k in requested_bands}
 
-    # Band T: temporal enrichment — stored in profile_groups["T"]. from_year/to_year are
+    # Band T: temporal enrichment — stored in signature_bands["T"]. from_year/to_year are
     # guaranteed present here -- the top-of-function check already 422'd otherwise.
     if "T" in requested_bands:
         temporal = get_temporal_context(lat=lat, lon=lon, year_start=from_year, year_end=to_year)
@@ -400,7 +404,7 @@ def signature(
         if flat:
             sig["temporal"] = band_t
         else:
-            sig.setdefault("profile_groups", {})["T"] = band_t
+            sig.setdefault("signature_bands", {})["T"] = band_t
 
     # F8.5: Qualifying notes for BCE queries on epoch-sensitive bands.
     # Bands C and D are sourced from contemporary datasets and do not represent
@@ -408,7 +412,7 @@ def signature(
     # may want contemporary baselines for comparison — but the note discloses
     # the limitation. Design principle: notes inform, they do not gatekeep.
     if from_year is not None and from_year < 0:
-        band_c = sig.get("profile_groups", {}).get("C")
+        band_c = sig.get("signature_bands", {}).get("C")
         if band_c is not None:
             band_c["_note"] = [
                 "Band C reflects contemporary climatology (WorldClim ~1970–2000 CE). "
@@ -416,7 +420,7 @@ def signature(
                 "these values describe present-day conditions at this location, "
                 "not conditions at the requested epoch."
             ]
-        band_d = sig.get("profile_groups", {}).get("D")
+        band_d = sig.get("signature_bands", {}).get("D")
         if band_d is not None:
             band_d["_note"] = [
                 "Band D reflects contemporary land use and demographic data "

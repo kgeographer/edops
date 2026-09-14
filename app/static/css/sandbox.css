@@ -64,7 +64,7 @@ body { font-size: 1rem; }
   letter-spacing: 0.05em;
 }
 .sandbox-blurb-body {
-  font-size: 1rem;
+  font-size: .85rem;
   margin-bottom: 0.5rem;
 }
 .sandbox-blurb-body:last-child {

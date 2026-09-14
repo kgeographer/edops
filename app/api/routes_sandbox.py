@@ -512,7 +512,7 @@ def narrative(
     year_end   : end year for temporal context
     """
     # flat=True: flatten_signature() reads fields (elev_min, slope_avg, discharge_yr,
-    # temp_yr, ...) off the top level, not nested under profile_groups -- without this
+    # temp_yr, ...) off the top level, not nested under signature_bands -- without this
     # every Band A-E field silently read as "n/a" (found 2026-09-14, unrelated to this
     # route's own dormancy: no GUI button currently calls /narrative).
     sig = get_signature(lat=lat, lon=lon, flat=True)
@@ -1479,7 +1479,7 @@ def areas(
     Response
     --------
     Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
-    scores across the resolved member basins — not the GET /api/signature profile_groups
+    scores across the resolved member basins — not the GET /api/signature signature_bands
     shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
     per-variable "distribution" histogram object to each row. Full variable inventory: see
     the Codebook (/docs/codebook/).
