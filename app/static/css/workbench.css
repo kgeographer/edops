@@ -160,3 +160,23 @@
   white-space: nowrap;
 }
 
+/* African Regions — L6/L8 basin-level toggle. Bootstrap's default btn-check "checked" fill
+   is dark grey, which reads as disabled rather than selected. Active pill uses the site's
+   own accent green (matches .edops-page-pills .nav-link.active in site.css) with a plain
+   cursor, since clicking the already-selected pill does nothing; inactive pill keeps a
+   pointer cursor and goes pale grey on hover, inviting the click. */
+.afr-level-toggle .btn-check:checked + .btn {
+  background-color: #4a7c59;
+  border-color: #4a7c59;
+  color: #fff;
+  cursor: default;
+}
+.afr-level-toggle .btn-check:not(:checked) + .btn {
+  cursor: pointer;
+}
+.afr-level-toggle .btn-check:not(:checked) + .btn:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+  color: #495057;
+}
+

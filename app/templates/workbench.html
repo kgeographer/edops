@@ -299,11 +299,11 @@
                 <option value="precipitation_annual">Precipitation, annual</option>
               </optgroup>
             </select>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Basin level">
-              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
-              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
+            <div class="btn-group btn-group-sm afr-level-toggle" role="group" aria-label="Basin level">
               <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-8" value="8" autocomplete="off" checked>
               <label class="btn btn-outline-secondary" for="afr-lvl-8">L8</label>
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
             </div>
           </div>
         </div>
@@ -1121,22 +1121,21 @@
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
         paint: { 'fill-color': '#f2c94c', 'fill-opacity': AFR_WASH },
       });
-      // Light casing under the region border so it stays legible over any variable
-      // choropleth -- notably discharge, whose viridis low end is the same purple as
-      // the border and swallows it whole.
+      // White casing under the region border so it stays legible over any variable
+      // choropleth. Purple alone (the original color) still blended into blue/teal
+      // categorical patches even with the casing (Karl, 2026-09-14, screenshots of a
+      // land-cover paint) -- widened the casing and switched the line itself to near-
+      // black, the one color that won't blend with an arbitrary thematic hue.
       _afrMap.addLayer({
         id: 'lovejoy-line-casing', type: 'line', source: 'lovejoy',
-        paint: { 'line-color': 'rgba(255,255,255,0.7)', 'line-width': 3 },
+        paint: { 'line-color': 'rgba(255,255,255,0.85)', 'line-width': 4 },
       });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#54278f'],
-          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2, 1],
-          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
-          // 'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
-          // 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
-          // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#262626'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2.3, 1.4],
+          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.85],
         },
       });
       // Region name, one label per region -- styled after the Sandbox>Polities city
