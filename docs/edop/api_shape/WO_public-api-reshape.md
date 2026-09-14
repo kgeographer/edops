@@ -261,17 +261,88 @@ gaps against basin's shape:
   technical user wanting per-slice time series still has to parse the full-monte payload
   themselves.
 - **No `meta` block.** basin had one, buffer/area didn't (`06535af`). Both now get
-  `signature_version`/`generated`/`query`/`data_sources`, via one shared
-  `_data_sources_block(level)` helper so the three scopes can't drift on what it says.
-  `meta.scope` stays basin-only — buffer/area's existing top-level `scope` object (`n_units`,
-  `member_ids`, ...) is real result data, not a request echo, and left where it was.
+  `signature_version`/`generated`/`query`/`data_sources`.
+- **Top-level/`meta` duplication** (`51b5936`, revises the line above): Karl, eyeballing the
+  new `meta` block: "fields within meta ... are duplicated at top level, e.g. bands, temporal
+  params, scope should be in meta." buffer/area's engine payload carries top-level `bands` and
+  `temporal` that just restate `meta.query` in another form — dropped. Top-level `scope` mixed
+  request-echo (`lat`/`lon`/`radius_km`/`level`, already in `meta.query`) with real result data
+  (`n_units`, `unit_type`, `member_ids` / `marginal_exposure`) — folded via a new
+  `_fold_scope_into_meta()` helper, keeping only the non-duplicated part under `meta.scope`
+  (so `meta.scope` now exists for all three scopes, not basin-only as first built). Route-level
+  only — `engine.py`'s `assemble_payload()` and `/api/areas` (which returns it unmodified) are
+  untouched.
+- **basin's top-level env-variable duplication** (`b467e16`): Karl asked to check every
+  top-level field against `documentation/EDOPS_variable_catalog_v0.4.tsv` before acting. 12 of
+  17 matched a real catalog band (8 → Band C, 3 → Band A, `eco_id` → Band C) despite
+  `PROFILE_GROUPS` never listing them — moved in. The other 5 (`id`, `up_area`, `elev_source`,
+  `elev_dataset`, `elev_resolution_m`) aren't in the catalog — identity/provenance, left
+  top-level. Two live consumers read the moved fields off the top level and needed fixing in
+  the same commit: `sandbox.html`'s `renderSeasonality()` (live Seasonality tab — Karl confirmed
+  visually after the fix); `routes_sandbox.py`'s dormant `/narrative` endpoint (`get_signature()`
+  called without `flat=True`, so `flatten_signature()` was already reading most Band A–E fields
+  as "n/a" before this change — fixed by passing `flat=True`, in case the feature is ever
+  exposed again).
 
-Left open, not actioned: whether buffer/area should ever get `profile_groups`-style band
+- **`profile_groups` → `signature_bands`** (`fcaa13c`): EDOPS' actual vocabulary, per Karl — "a
+  carryover from the very first work, not a recent error." Renamed everywhere live: the
+  `PROFILE_GROUPS`/`profile_groups` constant and key in `app/db/signature.py`, `routes_common.py`
+  and `routes_sandbox.py` (comments), `sandbox.html` and `workbench.html` (both fetch
+  `/api/signature` directly and consume this key — Karl confirmed both visually after the
+  rename), the codebook-alignment/api-examples/live-server tests, `edops_schema.json`,
+  `documentation/README.md`, and the docsite generator. `sandbox_v03.html` (unrouted, dead
+  template) and `EDOPS_eda_findings.md` (historical finding describing code as it was on a past
+  date) deliberately left alone — neither is live vocabulary to correct.
+- **buffer/area `"rows"` → `"variables"`** (`fcaa13c`, same request): route-level rename only,
+  same pattern as the `meta` dedup work — `engine.py`'s `assemble_payload()` and `/api/areas`
+  (which returns its payload unmodified) still say `"rows"`.
+
+Left open, not actioned: whether buffer/area should ever get `signature_bands`-style band
 nesting (no strong technical reason it's absent — the per-row `band` field makes it mechanically
 feasible — but basin's flat/raw shape and buffer/area's aggregate/distribution shape may simply
 be two genuinely different kinds of data, not just missing normalization); the v0.3-style "show
 URL" / "view raw JSON in a modal" GUI affordance Karl flagged as missing from v0.4 (separate,
-GUI-side, not a schema question).
+GUI-side, not a schema question); whether `profile_summary` (a different, still-live key,
+untouched by the rename above — Karl only named `profile_groups`) deserves the same vocabulary
+scrutiny.
+
+**Architecture note surfaced during this pass** (no action, logged in
+`docs/design/deferred_items_register.md` under "Architecture", gitignored): `/api/areas`
+(internal/GUI) and `/api/signature` (public) share `engine.py`'s raw response shape instead of
+each having its own response model — today's dedup/move work is a route-level patch around
+that, not a fix of it. Karl: "trying to make internal routes and external API endpoints use the
+same code and do double duty" is "a basic flaw" — real, deferred, mitigating in place for now.
+
+**Follow-up, 2026-09-14 — `/area` and `/areas` made internal; schema docs split in two:**
+Karl caught that the docs/Swagger still advertised `/api/area` and `/api/areas` as public: "we
+are exposing /signature and /health" — those two now carry `include_in_schema=False`
+(`routes_sandbox.py`), same mechanism every other internal route already uses. Both still work
+exactly as before for GUI/internal callers; only their public visibility changed.
+`generate_api_guide.py`'s hand-authored constants (`EXAMPLES_SECTION`, `NOTES_SECTION`,
+`ENDPOINT_ORDER`, the intro prose) had `/area`/`/areas` curl examples and a "not a clean
+singular/plural pair" note baked in — replaced with `scope=buffer`/`scope=area` examples on
+`/signature` and a corrected single `level` default note (`6` for every scope, not "varies by
+endpoint" — that claim was about `/area`/`/areas`' own default, now moot). `docsite/api.md`
+regenerated: 2 public routes, not 4. `tests/test_public_api_surface.py`'s
+`EXPECTED_PUBLIC` gate updated to match (was locking in the old 4-route surface — exactly the
+kind of drift that test exists to catch, caught here by Karl's own read of the rendered docs,
+not by the test, since the test was itself asserting the stale expectation).
+
+Also: `documentation/edops_schema.json` (single file, `scope=basin` only, stale since the
+`b467e16` field-move — never fully regenerated after it, only string-renamed) retired. Replaced
+with `documentation/edops_schema_basin.json` and `documentation/edops_schema_area.json`,
+each regenerated from real live `/api/signature` output (Timbuktu; the Northern-Italy bbox WKT),
+using the old file's curation conventions (large per-year arrays and, for area, all but one
+illustrative row per `method` value's histogram bins/weights, replaced with a descriptive
+placeholder rather than dumped raw). `scope=buffer` deliberately not given its own file — Karl:
+"buffers are likely to go away soon." Every pointer to the old filename fixed: `app/main.py`'s
+FastAPI description (also fixed its own stale "historical polity" framing of `scope=area`,
+left over from before the split), `generate_api_guide.py`, `documentation/README.md` (also
+fixed its own pre-existing factual error, unrelated to this WO: it claimed `/api/area`/`/areas`
+"share the same signature_bands envelope" — they actually share the `variables`/`rows`-shaped
+envelope, `signature_bands` is basin-only), `CLAUDE.md`'s design-docs table and its `/api/signature`
+smoke-test curl (which also still used the retired pre-canonical Timbuktu coordinate pair —
+fixed to 16.8167/-2.9833 in the same edit), and two stale test-comment mentions.
 
 ---
 
