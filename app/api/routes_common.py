@@ -25,7 +25,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, basin_ring_signature
+from scripts.edop.areas.engine import areal_signature
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -200,14 +200,10 @@ def signature(
         "Required -- no sensible default for what kind of query this is. 'basin': raw values "
         "for the one basin containing this point -- the shape documented below. 'buffer': "
         "aggregate distribution over the basins within radius_km of this point -- a different "
-        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). "
-        "'basin-ring': the containing basin's full signature plus one per first-order adjacent "
-        "basin, for comparison -- no aggregate, its own shape, see basin_ring_signature()."
+        "shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature()."
     )),
     radius_km: Optional[float] = Query(None, description="Buffer radius in km. Required for scope=buffer."),
-    detail: bool = Query(False, description=(
-        "scope=buffer/basin-ring only: include per-variable histogram/detail objects."
-    )),
+    detail: bool = Query(False, description="scope=buffer only: include per-variable histogram/detail objects."),
 ):
     """Return an environmental signature.
 
@@ -215,13 +211,14 @@ def signature(
     --------
     scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
     "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
-    for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
-    its own "_status" ("ok" | "not_requested" | "error"). flat=True: the same identity/geometry
+    for each requested band. Band T requires from_year and to_year (422 without them); when
+    requested it nests under profile_groups["T"] instead, with its own "_status" ("ok" |
+    "error"). flat=True: the same identity/geometry
     fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
     top-level key "temporal" instead.
 
-    scope=buffer / basin-ring: an entirely different shape -- see each scope's own docstring
-    above. flat, place_links are basin-only; ignored for buffer/basin-ring.
+    scope=buffer: an entirely different shape -- see its own docstring above. flat, place_links
+    are basin-only; ignored for buffer.
 
     Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
     """
@@ -230,24 +227,18 @@ def signature(
 
     requested_bands = set(bands.upper().replace(",", "").replace(" ", ""))
 
-    if scope in ("buffer", "basin-ring"):
-        if scope == "buffer" and radius_km is None:
+    if "T" in requested_bands and (from_year is None or to_year is None):
+        raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
+
+    if scope == "buffer":
+        if radius_km is None:
             raise HTTPException(status_code=422, detail="scope=buffer requires: radius_km")
-        if "T" in requested_bands and (from_year is None or to_year is None):
-            raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
         band_t_from = from_year if "T" in requested_bands else None
         band_t_to = to_year if "T" in requested_bands else None
         conn = db_connect()
         try:
-            if scope == "buffer":
-                return areal_signature(
-                    lat, lon, radius_km, conn,
-                    level=level, bands=sorted(requested_bands),
-                    from_year=band_t_from, to_year=band_t_to,
-                    include_detail=detail,
-                )
-            return basin_ring_signature(
-                lat, lon, conn,
+            return areal_signature(
+                lat, lon, radius_km, conn,
                 level=level, bands=sorted(requested_bands),
                 from_year=band_t_from, to_year=band_t_to,
                 include_detail=detail,
@@ -258,7 +249,7 @@ def signature(
     if scope != "basin":
         raise HTTPException(
             status_code=422,
-            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer, basin-ring",
+            detail=f"Unsupported scope '{scope}'. Supported: basin, buffer",
         )
 
     sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
@@ -269,23 +260,18 @@ def signature(
     if sig.get("profile_groups"):
         sig["profile_groups"] = {k: v for k, v in sig["profile_groups"].items() if k in requested_bands}
 
-    # Band T: temporal enrichment — stored in profile_groups["T"]
+    # Band T: temporal enrichment — stored in profile_groups["T"]. from_year/to_year are
+    # guaranteed present here -- the top-of-function check already 422'd otherwise.
     if "T" in requested_bands:
-        if from_year is None or to_year is None:
-            band_t = {
-                "_status": "not_requested",
-                "_note": "Include from_year and to_year to retrieve Band T temporal data.",
-            }
+        temporal = get_temporal_context(lat=lat, lon=lon, year_start=from_year, year_end=to_year)
+        if "error" in temporal:
+            band_t = {"_status": "error", "_note": temporal["error"]}
         else:
-            temporal = get_temporal_context(lat=lat, lon=lon, year_start=from_year, year_end=to_year)
-            if "error" in temporal:
-                band_t = {"_status": "error", "_note": temporal["error"]}
-            else:
-                temporal["_status"] = "ok"
-                band_t = temporal
+            temporal["_status"] = "ok"
+            band_t = temporal
 
-            hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
-            band_t["hyde_land_use"] = hyde
+        hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
+        band_t["hyde_land_use"] = hyde
 
         if flat:
             sig["temporal"] = band_t

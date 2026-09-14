@@ -154,12 +154,7 @@
         ]
       },
       "T": {
-        "_note": "Present only when bands includes T. Shape has changed substantially since June 2026 -- most notably, '_status' is no longer a three-way ok/out_of_range/not_requested flag. It is 'ok' whenever from_year/to_year were supplied at all (meaning the mechanism ran without error); per-source data availability is now signaled separately via 'lmr_status' and the *_note fields below, since LMR, eVolv2k, and HYDE each have their own independent coverage window and a single query can mix available and unavailable sources.",
-
-        "_not_requested_example": {
-          "_status": "not_requested",
-          "_note": "Include from_year and to_year (CE integers) to retrieve Band T temporal data."
-        },
+        "_note": "Present only when bands includes T, and only ever present -- from_year and to_year are now required whenever T is requested (2026-09-14: 'Band T is irrelevant without a year or timespan -- it is not computable, can't be returned' -- 422 if either is missing, no graceful degradation). '_status' is a two-way ok/error flag, not the old three-way ok/out_of_range/not_requested -- it is 'ok' whenever the mechanism ran without error; per-source data availability is signaled separately via 'lmr_status' and the *_note fields below, since LMR, eVolv2k, and HYDE each have their own independent coverage window and a single query can mix available and unavailable sources.",
 
         "_ok_example": {
           "_doc": "from_year=1350, to_year=1600 -- fully within LMR (0-1998) and eVolv2k (-491-1890) coverage.",

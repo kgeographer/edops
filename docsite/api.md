@@ -59,22 +59,23 @@ Return an environmental signature.
 | `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
 | `flat` | bool | no | `false` | If true, return flat field values instead of nested profile_groups; Band T temporal data appears at key "temporal" rather than in profile_groups. |
 | `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into meta.query.place_links. Not validated or re-resolved -- a caller who already resolved this point via a gazetteer identifier can carry that provenance forward into the response. Omit if the point wasn't resolved that way. |
-| `scope` | str | **yes** | — | Required -- no sensible default for what kind of query this is. 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). 'basin-ring': the containing basin's full signature plus one per first-order adjacent basin, for comparison -- no aggregate, its own shape, see basin_ring_signature(). |
+| `scope` | str | **yes** | — | Required -- no sensible default for what kind of query this is. 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (rows/scope/bands/caveats/shortfall/temporal), see areal_signature(). |
 | `radius_km` | float | no | — | Buffer radius in km. Required for scope=buffer. |
-| `detail` | bool | no | `false` | scope=buffer/basin-ring only: include per-variable histogram/detail objects. |
+| `detail` | bool | no | `false` | scope=buffer only: include per-variable histogram/detail objects. |
 
 **Response**
 
 ```text
 scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) plus
 "profile_groups": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
-for each requested band. Band T (if requested) nests under profile_groups["T"] instead, with
-its own "_status" ("ok" | "not_requested" | "error"). flat=True: the same identity/geometry
+for each requested band. Band T requires from_year and to_year (422 without them); when
+requested it nests under profile_groups["T"] instead, with its own "_status" ("ok" |
+"error"). flat=True: the same identity/geometry
 fields plus every variable as a top-level key (no profile_groups nesting); Band T appears at
 top-level key "temporal" instead.
 
-scope=buffer / basin-ring: an entirely different shape -- see each scope's own docstring
-above. flat, place_links are basin-only; ignored for buffer/basin-ring.
+scope=buffer: an entirely different shape -- see its own docstring above. flat, place_links
+are basin-only; ignored for buffer.
 
 Full variable inventory (what each band/key means): see the Codebook (/docs/codebook/).
 ```
