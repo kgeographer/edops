@@ -299,11 +299,11 @@
                 <option value="precipitation_annual">Precipitation, annual</option>
               </optgroup>
             </select>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Basin level">
-              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
-              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
+            <div class="btn-group btn-group-sm afr-level-toggle" role="group" aria-label="Basin level">
               <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-8" value="8" autocomplete="off" checked>
               <label class="btn btn-outline-secondary" for="afr-lvl-8">L8</label>
+              <input type="radio" class="btn-check" name="afr-level" id="afr-lvl-6" value="6" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="afr-lvl-6">L6</label>
             </div>
           </div>
         </div>
@@ -1121,22 +1121,21 @@
         id: 'lovejoy-fill', type: 'fill', source: 'lovejoy',
         paint: { 'fill-color': '#f2c94c', 'fill-opacity': AFR_WASH },
       });
-      // Light casing under the region border so it stays legible over any variable
-      // choropleth -- notably discharge, whose viridis low end is the same purple as
-      // the border and swallows it whole.
+      // White casing under the region border so it stays legible over any variable
+      // choropleth. Purple alone (the original color) still blended into blue/teal
+      // categorical patches even with the casing (Karl, 2026-09-14, screenshots of a
+      // land-cover paint) -- widened the casing and switched the line itself to near-
+      // black, the one color that won't blend with an arbitrary thematic hue.
       _afrMap.addLayer({
         id: 'lovejoy-line-casing', type: 'line', source: 'lovejoy',
-        paint: { 'line-color': 'rgba(255,255,255,0.7)', 'line-width': 3 },
+        paint: { 'line-color': 'rgba(255,255,255,0.85)', 'line-width': 4 },
       });
       _afrMap.addLayer({
         id: 'lovejoy-line', type: 'line', source: 'lovejoy',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#54278f'],
-          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2, 1],
-          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
-          // 'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#2a0e57', '#54278f'],
-          // 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1],
-          // 'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.7],
+          'line-color': ['case', ['boolean', ['feature-state', 'selected'], false], '#993333', '#262626'],
+          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 2.3, 1.4],
+          'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0.85],
         },
       });
       // Region name, one label per region -- styled after the Sandbox>Polities city
@@ -1207,7 +1206,7 @@
         layout: { visibility: 'none' },
         paint: {
           'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 4.5, 3],
-          'circle-color': '#666', 'circle-opacity': 0.7,
+          'circle-color': '#333', 'circle-opacity': 0.8,
           'circle-stroke-width': 1,
           'circle-stroke-color': ['case', ['boolean', ['feature-state', 'selected'], false], 'crimson', '#fff'],
         },
@@ -1388,13 +1387,13 @@
       return `${_afrEsc(v)} <button type="button" class="afr-hl-btn" data-field="${field}" data-value="${_afrEsc(v)}" title="Highlight societies sharing this value">${mag}</button>`;
     };
     const sid = soc.soc_id || '';
-    const nameCell = _afrEsc(soc.name || '—') + (sid
-      ? ` (<a href="#" class="afr-soc-modal" data-sid="${_afrEsc(sid)}">${_afrEsc(sid)} record</a>)`
+    const nameCell = `<span class="afr-soc-name-value">${_afrEsc(soc.name || '—')}</span>` + (sid
+      ? ` (<a href="#" class="afr-soc-modal afr-soc-record-link" data-sid="${_afrEsc(sid)}">full record <i class="bi bi-box-arrow-up-right small"></i></a>)`
       : '');
     document.getElementById('soc-vars').innerHTML =
       `<p class="afr-soc-head mb-1 small text-uppercase">D-PLACE society</p>` +
       `<table class="table table-sm mb-2" style="font-size:.82rem;"><tbody>` +
-      row('Name', nameCell) +
+      `<tr class="afr-soc-name-row"><td style="width:44%;">Name</td><td>${nameCell}</td></tr>` +
       row('Subsistence (EA042)', eaCell('subsistence', soc.subsistence)) +
       row('High gods (EA034)', eaCell('religion', soc.religion)) +
       `</tbody></table>` +
