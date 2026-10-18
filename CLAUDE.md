@@ -113,6 +113,9 @@ point (`index.html`, `about.html`) to a small static site of its own so CP-level
 riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
 `logs/session_log_20260908.md`.
 
+**Analytics (2026-10-19):** GA tracking fixed (shared `_ga.html` partial, now on every page);
+signature query logging implemented (`app/query_log.py` → `public.query_log`).
+
 **Milestones:** v0.4 live 2026-09-08; announcement (social + mailing list) pending Karl's
 walkthrough. Braga (2026-09-23) — Spatial Humanities conference.
 
