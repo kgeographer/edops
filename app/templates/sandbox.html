@@ -799,6 +799,22 @@
                                   // needs its own cached copy, same idea as _centerPayload
   let _currentPlaceName = '';   // display name: set by setResolvedPoint (WHG) and example handler
   let _currentPlaceLinks = [];  // gazetteer identifiers ({ns}:{id}) from an identifier-paste
+
+  // Query log: builders tag requests src=ui_aux (server skips them); a user-initiated Get-signature
+  // upgrades its URL via _qlog(), which adds place_name and fires a GA event.
+  function _qlog(url) {
+    const u = new URL(url, location.origin);
+    const p = u.searchParams;
+    p.set('src', 'ui');
+    if (_currentPlaceName && !p.has('polity')) p.set('place_name', _currentPlaceName);
+    if (typeof gtag === 'function') {
+      gtag('event', 'signature_request', {
+        scope: p.get('scope'), level: p.get('level'), radius_km: p.get('radius_km') || undefined,
+        place_name: p.get('place_name') || p.get('polity') || undefined,
+      });
+    }
+    return u.pathname + u.search;
+  }
                                  // resolve, e.g. ["gn:3169070","tgn:7003138"] — empty for
                                  // coords/name-search, which have no such provenance to carry
 
@@ -907,7 +923,7 @@
         const resolverYear = document.getElementById('v3-resolver-year').value;
         if (!polityName || !resolverYear) return;
         const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('');
-        const params = new URLSearchParams({ scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true' });
+        const params = new URLSearchParams({ scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true', src: 'ui_aux' });
         if (bands.includes('T')) {
           const fy = document.getElementById('v3-polity-from-year').value;
           const ty = document.getElementById('v3-polity-to-year').value;
@@ -2871,8 +2887,8 @@
       // those two tabs never updated for ring members before: they were always fetched from
       // currentLat/currentLon (the original query point), never from the clicked member.
       const [r, sigR] = await Promise.all([
-        fetch(`/api/areas?${params}`),
-        fetch(`/api/signature?lat=${member.neighbor_lat}&lon=${member.neighbor_lon}&level=${lv}&bands=ABCE&scope=basin`),
+        fetch(_qlog(`/api/areas?${params}`)),
+        fetch(`/api/signature?lat=${member.neighbor_lat}&lon=${member.neighbor_lon}&level=${lv}&bands=ABCE&scope=basin&src=ui_aux`),
       ]);
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const p = await r.json();
@@ -2916,7 +2932,7 @@
   function buildSingleBasinUrl() {
     if (currentLat == null || currentLon == null) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ scope: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true' });
+    const params = new URLSearchParams({ scope: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true', src: 'ui_aux' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2934,7 +2950,7 @@
     const radius_km = parseFloat(document.getElementById('v3-radius').value);
     if (currentLat == null || currentLon == null || isNaN(radius_km)) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ scope: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true' });
+    const params = new URLSearchParams({ scope: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true', src: 'ui_aux' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2986,11 +3002,11 @@
       // Kick off /api/signature in parallel for Analysis tab (raw values; /api/areas returns scores only)
       const _plQS = _currentPlaceLinks.length ? `&place_links=${encodeURIComponent(_currentPlaceLinks.join(','))}` : '';
       const _sigFetch = (currentLat != null)
-        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE&scope=basin${_plQS}`)
+        ? fetch(`/api/signature?lat=${currentLat}&lon=${currentLon}&level=${lv}&bands=ABCE&scope=basin&src=ui_aux${_plQS}`)
         : null;
 
       if (scope === 'single') {
-        const url = buildSingleBasinUrl();
+        const url = buildSingleBasinUrl() && _qlog(buildSingleBasinUrl());
         if (!url) throw new Error('Single-basin scope requires a resolved lat/lon.');
         if (lv === 8) {
           // Parallel: sig + ring neighbors — extends paint context at L08
@@ -3018,7 +3034,7 @@
         }
 
       } else if (scope === 'buffer') {
-        const url = buildBufferUrl();
+        const url = buildBufferUrl() && _qlog(buildBufferUrl());
         if (!url) throw new Error('Buffer scope requires a resolved lat/lon and radius.');
         const r = await fetch(url);
         if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
@@ -3032,7 +3048,7 @@
       } else if (scope === 'ring') {
         if (currentLat == null) throw new Error('Ring scope requires a resolved lat/lon.');
         const [sigR, ringR] = await Promise.all([
-          fetch(buildSingleBasinUrl()),
+          fetch(_qlog(buildSingleBasinUrl())),
           fetch(`/api/basin/ring?lat=${currentLat}&lon=${currentLon}&level=${lv}`),
         ]);
         if (!sigR.ok)  { const b = await sigR.json().catch(()=>({}));  throw new Error(b.detail ?? `Server error ${sigR.status}`); }
@@ -3950,7 +3966,7 @@
     bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     btn.disabled = true;
     try {
-      const r = await fetch(`/api/areas?${params}`);
+      const r = await fetch(_qlog(`/api/areas?${params}`));
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
       const payload = await r.json();
       const nb = payload.scope || {};

@@ -18,6 +18,7 @@ from app.db.seasonality import load_similarity_index
 from app.db.context import load_context_index
 from app.db.climate_classes import load_class_index
 from app.db.societies_scan import load_societies_scan_substrate
+from app import query_log
 
 
 @asynccontextmanager
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
         load_class_index(conn, level=6)   # L06 eager (~1.5 s); L08 lazy on first use (WO7a)
     finally:
         conn.close()
+    query_log.ensure_table()
     load_societies_scan_substrate()   # CITYKIN WO4 -- small (1,133-row) parquet, no DB conn needed
     yield
 
@@ -101,6 +103,8 @@ app.add_middleware(
 # this covers the gap until that's configured, and any path nginx isn't gzipping.
 # minimum_size skips tiny bodies like /api/health where framing overhead > savings.
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+query_log.install(app)
 
 app.include_router(api_sandbox_router)
 app.include_router(api_common_router)
