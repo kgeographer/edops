@@ -24,6 +24,7 @@ articles/
 
 # Regenerable analysis output
 output/
+spatial/
 
 # MkDocs build output (docsite/ is the tracked source; this is generated at deploy time)
 site/
