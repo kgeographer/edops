@@ -45,6 +45,10 @@ def index(request: Request):
         return _render(request, "workbench.html", **_workbench_ctx())
     return _render(request, "index.html")
 
+@router.get("/dashboard")
+def dashboard(request: Request):
+    return _render(request, "dashboard.html")
+
 @router.get("/about")
 def about(request: Request):
     return _render(request, "about.html")
