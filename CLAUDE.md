@@ -13,7 +13,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
-- **Active phase — Dashboard:** `docs/edop/dashboard/`; sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/`
+- **Active phase — Dashboard:** `docs/edop/dashboard/` (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/`
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -395,6 +395,7 @@ working under `notebooks/`. Consult it before writing or editing any cell.
 ## Testing
 
 ```bash
+uvicorn app.main:app --reload      # local dev server, http://localhost:8000 (activate the `cedop` venv first)
 curl http://localhost:8000/api/health
 curl "http://localhost:8000/api/signature?scope=basin&lat=16.8167&lon=-2.9833"  # Timbuktu
 python -m pytest tests/                        # full suite (app + engine)
