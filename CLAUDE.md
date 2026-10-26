@@ -75,6 +75,16 @@ unlinked, not in the nav). It will borrow heavily from `sandbox.html` and less f
 → work orders → CC implements; experiments are notebooks under `notebooks/edop/dashboard/`. No further UI until
 the first design stages are done.
 
+**Design groundwork (2026-10-26).** Local-only (gitignored) material in `docs/design/dashboard/`:
+`sandbox_cheatsheet.md` — a code-cited map of what the Sandbox does (queries, signature structure, aggregation,
+UI, dates, quirks), written for Opus, verified against `b44aa01`; `examples/` — 9 trimmed real responses;
+`main_changes_log.md` — defects found that belong on `main` (not applied; read before v0.4 housekeeping);
+`edops_docs_for_opus.pdf` — docs subset with screenshots. Refresh the examples and re-check citations with
+`scripts/edop/dashboard/{make_cheatsheet_examples,check_cheatsheet_citations}.py` after material changes to
+`sandbox.html` or `engine.py`. Known gist: the Sandbox's main call is internal `/api/areas`; "Basin ring" returns
+the centre basin only; Analysis/Seasonality/Context/Similarity describe one basin whatever the scope; a date
+selects only Band T (not gating bands by date is deliberate). Detail: `logs/session_log_20261026.md`.
+
 **Next:** non-global (regional) temporal datasets — significant implications for the data model, API and
 dashboard UX; deferred until the dashboard is stubbed. Seed docs (not merged) are on remote branch
 `claude/remote-phone-file-access-hvttai`: `docs/edop/regional/{regional_layers_framing,drought_atlas_memo}.md`.
@@ -200,6 +210,7 @@ docs/edop/engine/        #   Work-order specs (tracked)
 docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
 docs/edop/demo/          #   Demo tracker + findings (tracked)
 docs/edop/dashboard/     #   Dashboard phase (tracked) ← active
+docs/design/dashboard/   #   Dashboard design material (gitignored): Sandbox cheat sheet, examples, main_changes_log
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
 docs/edop/pageload_explorer.txt  # per-page pseudocode reference (gitignored) — Explorer done,
