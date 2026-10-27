@@ -88,7 +88,7 @@ ex["_trimmed"]="A-E rows omitted (identical to 01); Band T rows reduced to first
 save("04_band_t_timbuktu_1475_1525.json", ex)
 # 5 band T polity
 p=get("areas",scope="polity",polity="Northern Song",year=961,bands="T",level=6,detail="true",from_year=961,to_year=1027)
-ex=areal_example(p,"Polity with Band T over the slice span 961-1027. NB bands=T still returned all A-E rows (known bug); only the T rows are shown here.",
+ex=areal_example(p,"Polity with Band T over the polity's whole span 961-1027 (not a single slice: the Sandbox itself sends the selected slice's own years, e.g. 990-1017 for slice 5). NB bands=T still returned all A-E rows (known bug); only the T rows are shown here.",
      "/api/areas?scope=polity&polity=Northern Song&year=961&level=6&bands=T&detail=true&from_year=961&to_year=1027")
 ex.pop("rows_summary_all_A_to_E"); ex.pop("representative_rows_full")
 ex["_trimmed"]="A-E rows omitted; Band T rows reduced to first/middle/last per variable; histogram arrays capped at 12 entries."
