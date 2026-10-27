@@ -84,6 +84,11 @@ UI, dates, quirks), written for Opus, verified against `b44aa01`; `examples/` â€
 `sandbox.html` or `engine.py`. Known gist: the Sandbox's main call is internal `/api/areas`; "Basin ring" returns
 the centre basin only; Analysis/Seasonality/Context/Similarity describe one basin whatever the scope; a date
 selects only Band T (not gating bands by date is deliberate). Detail: `logs/session_log_20261026.md`.
+On 2026-10-27 the cheat sheet was reconciled with the docs (`WO-01_reconcile docs and cheat sheet.md`, all 22 items
+closed; verified against `7152eee`). Docs errors were **logged, not fixed**: `main_changes_log.md` is the task list
+for a housekeeping branch off `main` (35 rows, grouped at the top; holds only changes that belong on `main`).
+`edops_docs_for_opus.md` is `docsite/` concatenated (`scripts/edop/dashboard/make_docs_markdown.py`). Detail:
+`logs/session_log_20261027.md`.
 
 **Next:** non-global (regional) temporal datasets â€” significant implications for the data model, API and
 dashboard UX; deferred until the dashboard is stubbed. Seed docs (not merged) are on remote branch
