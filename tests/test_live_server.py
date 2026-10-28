@@ -20,7 +20,7 @@ import pytest
 import httpx
 
 BASE = os.getenv("EDOPS_LIVE_URL", "").rstrip("/")
-TIMBUKTU = {"lat": 16.76618535, "lon": -3.00777252}
+TIMBUKTU = {"lat": 16.8167, "lon": -2.9833}
 
 
 def _skip_if_no_url():
@@ -38,14 +38,14 @@ def live():
 
 @pytest.fixture(scope="module")
 def sig(live):
-    r = live.get("/api/signature", params={**TIMBUKTU, "bands": "ABCDE"})
+    r = live.get("/api/signature", params={**TIMBUKTU, "scope": "basin", "level": 8, "bands": "ABCDE"})
     assert r.status_code == 200, f"signature returned {r.status_code}"
     return r.json()
 
 
 @pytest.fixture(scope="module")
 def sig_flat(live):
-    r = live.get("/api/signature", params={**TIMBUKTU, "bands": "ABCDE", "flat": "true"})
+    r = live.get("/api/signature", params={**TIMBUKTU, "scope": "basin", "bands": "ABCDE", "flat": "true"})
     assert r.status_code == 200, f"flat signature returned {r.status_code}"
     return r.json()
 
@@ -53,7 +53,7 @@ def sig_flat(live):
 @pytest.fixture(scope="module")
 def sig_t(live):
     r = live.get("/api/signature", params={
-        **TIMBUKTU, "bands": "T", "from_year": 1200, "to_year": 1400
+        **TIMBUKTU, "scope": "basin", "bands": "T", "from_year": 1200, "to_year": 1400
     })
     assert r.status_code == 200, f"Band T returned {r.status_code}"
     return r.json()
@@ -152,7 +152,7 @@ def test_band_t_has_pdsi_series(sig_t):
 
 def test_ocean_point_404(live):
     """Mid-Pacific point should return 404 — no basin covers open ocean."""
-    r = live.get("/api/signature", params={"lat": 0.0, "lon": -140.0})
+    r = live.get("/api/signature", params={"lat": 0.0, "lon": -140.0, "scope": "basin"})
     assert r.status_code == 404
 
 
