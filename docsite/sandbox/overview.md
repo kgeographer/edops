@@ -9,7 +9,7 @@ The left panel has two forks, plus a shared **Reset** button that clears everyth
 cold start.
 
 **Settlements** resolves a place by name (optionally `"Name, Country"`) or `lat,lon` coordinates
-via the World Historical Gazetteer, or loads one of four worked examples (Timbuktu, Kaifeng,
+via the World Historical Gazetteer, or loads one of five worked examples (Timbuktu, Kaifeng,
 Tbilisi, Santa Fe, San Francisco, each with a preset date range). 
 
 __Note:__ _you must zoom to the vicinity of the place you are seeking, in order to constrain results_. Once a place is resolved you can accept or 
@@ -19,8 +19,8 @@ change defaults for:
   within a radius you set, default 100 km, aggregated into one summary), or *Basin ring* (the
   containing basin's immediate neighbors — **not** aggregated; Get signature loads the center
   basin, and each ring member on the map is individually clickable to load its own signature for
-  comparison). Buffer changes what "the basin" means for every tab that follows, since it's a
-  genuine aggregate across more basins than a single-basin query. Basin ring is different in kind,
+  comparison). With a buffer, the Signature tab summarizes the whole set of basins; Analysis,
+  Seasonality, Context and Similarity always describe the containing basin. Basin ring is different in kind,
   not just degree — it's a per-neighbor comparison tool, not an aggregation scope.
 - **Level** — L06 (16,397 basins globally) or L08 (190,675 basins) — a coarser vs. finer
   BasinATLAS resolution.
@@ -30,14 +30,13 @@ change defaults for:
 
 **Polities:** Either search the Seshat project's 
 [Cliopatria polities](https://github.com/Seshat-Global-History-Databank/cliopatria) by name, 
-or load one of six worked examples (Northern
-Song, Abbasid Caliphate, Tibetan Empire, Tang Dynasty, Pagan Kingdom, Qin — the last flagged "no
-LMR" since it predates LMR's 1 CE coverage start). Selecting a polity reveals two independent
-temporal controls: a time-slice slider with VCR-style transport controls
-(first/previous/play/next) for stepping through the polity's historical boundary changes, and —
-separately — a Band T from-year/to-year range (T is pre-checked) for the paleoclimate/land-use
-aggregation window. The two are partially linked: moving the slider changes which boundary is shown. 
-**Get Signature** will resolve Band T values for the current polity time slice.
+or load one of eight worked examples (Northern
+Song, Inca Empire, Pagan Kingdom, Mali Empire, Kingdom of Poland, Abbasid Caliphate, Tibetan
+Empire, Qin — the last flagged "no LMR" since it predates the LMR record, which begins at 0 CE).
+Selecting a polity reveals a time-slice slider with VCR-style transport controls
+(first/previous/play/next) for stepping through the polity's historical boundary changes. Band T
+is pre-checked, and its time window is the selected slice's own years, so there is no separate
+date range to set. **Get signature** resolves the signature for the current slice.
 Level and Bands otherwise work the same as Settlements.
 
 For both forks, the **Get signature** button always fires the query for the current parameters.
@@ -47,7 +46,8 @@ For both forks, the **Get signature** button always fires the query for the curr
 ### Map
 
 Shows the basin boundaries for the current scope. Selecting a variable from the
-dropdown list paints all basins globally while focused on the current scope, providing useful context. 
+dropdown list paints basins by that variable: every basin worldwide at L06, and at L08 only the
+basins in the current scope (plus the neighbours of a single basin).
 
 ### Signature
 
@@ -64,8 +64,8 @@ current level to resolve distant sources — switching to L06 usually resolves i
 
 ### Seasonality
 
-Plots monthly precipitation and temperature as both a histogram and a radial
-(polar) chart, with an auto-generated prose summary of the precip/temp phase relationship
+Plots monthly precipitation and temperature as a climate diagram (precipitation bars with a
+temperature line) and a radial (polar) chart, with an auto-generated prose summary of the precip/temp phase relationship
 (e.g. Mediterranean-type anti-phase vs. monsoon-type co-incidence) and a stats table of derived
 seasonality variables (precip concentration, peak month, precip–temp phase offset).
 
@@ -73,8 +73,8 @@ seasonality variables (precip concentration, peak month, precip–temp phase off
 
 Answers "how typical is this basin?" — a table of global percentiles for seven key
 variables, computed two ways: against all basins worldwide, and against just the basins within a
-chosen radius (250/500/1000/2500 km, default 500) of this one — plus a map painting the mean
-value of a chosen variable across that radius. The two percentile columns can diverge sharply: a
+chosen radius (250/500/1000/2500 km, default 500) of this one — plus a map painting each
+basin in that radius with its own value of a chosen variable. The two percentile columns can diverge sharply: a
 basin can be unremarkable globally but an outlier regionally, or vice versa.
 
 ### Similarity

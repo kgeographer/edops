@@ -10,8 +10,8 @@ The **Settlements** tab panel offers
 
 The **Polities** tab panel ([see separate walkthrough](walkthrough-polity.md)) offers
 
-- polity name lookup on a list of 1522 polity temporally scoped historical boundaries from the Cliopatria dataset
-- a list of 6 example polities, with pre-filed timespans
+- polity name lookup on a list of 1,522 polities from the Cliopatria dataset, each with one or more time-sliced boundaries (12,987 in all)
+- a list of 8 example polities, with preset timespans
 
 ---
 ### Settlements tab
@@ -51,7 +51,7 @@ The following steps walk through generating several signature shapes for Tbilisi
 
         ![Context tab — Tbilisi basin ranked against 80 surrounding basins within 500 km](images/walkthrough-settlement/06c.jpg)
 
-    - **Similarity** finds basins most similar to the selected basin globally, with respect to variables in one of four "lenses": Precipitation, Temperature, Climate (precip + temp), and Terrain. Dropdown controls per lens let you adjust the thresholds used in gauging similarity.
+    - **Similarity** finds the basins that match the selected basin globally within the tolerances you set, with respect to variables in one of four "lenses": Precipitation, Temperature, Climate (precip + temp), and Terrain. Dropdown controls per lens let you adjust the tolerances used in gauging similarity.
 
         ![Similarity tab — Precipitation regime lens, 38 matching basins mapped](images/walkthrough-settlement/06d.jpg)
 
@@ -59,7 +59,7 @@ The following steps walk through generating several signature shapes for Tbilisi
 
         ![Atlas tab — global precipitation/temperature modality classes](images/walkthrough-settlement/06e.jpg)
 
-7. Go back to the map tab, and switch Scope from Single basin to Basin ring. The map now renders boundaries for the basins immediately surrounding the Tbilisi basin. The other tab panels still hold data for the core basin, but you can now pull signatures for any of the ring basins, by selecting one on the map or the small compass rose glyph on the left
+7. Go back to the map tab, and switch Scope from Single basin to Basin ring. The map now renders boundaries for the basins immediately surrounding the Tbilisi basin. The other tab panels still hold data for the core basin, but you can now pull signatures for any of the ring basins, by selecting one on the map or the small compass rose glyph on the left and clicking Get signature in its popup
 
     ![Basin ring view with Ring 3 member selected and Get signature popup](images/walkthrough-settlement/07.jpg)
 

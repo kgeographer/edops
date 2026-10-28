@@ -8,7 +8,7 @@ Known defects and coverage gaps are collected under [Caveats and limits](caveats
 
 The environmental facts asserted in EDOPS signatures are traceable to their source datasets, derived by methods each source documents. EDOPS resolves a named place or set of coordinates to one or more spatial units, retrieves what the sources say about them, and reports it with provenance. It does not adjudicate between sources or correct them. A limited number of values returned in signatures or by site features (e.g. derived variables, and similarity measures) are computed from source datasets rather than read from them directly.
 
-It is possible that two sources will have different values for the same variable at a given location. In this sense, the contents of EDOPS signature—seven instrument measures—are attestations. Furthermore, the aggregation of pixel values overlapping a basin as means or majority classes is an analytical step made under a selected rule.
+It is possible that two sources will have different values for the same variable at a given location. In this sense, the contents of an EDOPS signature are attestations. Furthermore, the aggregation of pixel values overlapping a basin as means or majority classes is an analytical step made under a selected rule.
 
 Elevation derived from digital terrain models is as close to direct measurement as environmental data gets. Cropland extent in 3000 BCE, from HYDE, is a model output carrying substantial uncertainty. Paleoclimate fields from LMR are reconstructions with quantifiable ensemble spread. EDOPS treats all three the same way: it serves them, attributes them, and leaves the assessment of their standing to the person using them.
 
@@ -47,4 +47,4 @@ Band assignments and the reasoning behind each are given in the [Codebook](../co
 
 ## EDOPS computes and serves. It does not conclude.
 
-There are no significance verdicts in the API, no automated judgements about whether two places are similar enough to matter, no thresholds encoding what counts as a meaningful difference. Where the interface applies a threshold — a tolerance band in a similarity query, for instance — the value is exposed as a control the user sets. 
+The API returns no significance tests and no verdicts that two places are similar enough to matter. EDOPS does apply fixed rules to label what it returns: the concentrated, spread and split badges, the water-provenance classes in Analysis, and the one-sentence summaries in Seasonality and Context. These are reading aids; the cutoffs are the project's choice, some still provisional, and may change. The badges are explained in [Reading a signature](../sandbox/reading-a-signature.md). Where a setting decides which places count as similar, such as a similarity tolerance, it is a user control, chosen from presets the interface defines in advance.
