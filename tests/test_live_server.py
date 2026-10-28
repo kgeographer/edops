@@ -157,13 +157,13 @@ def test_ocean_point_404(live):
 
 
 # ---------------------------------------------------------------------------
-# /area — areal signature for a named polity
+# /areas, scope=polity — areal signature for a named polity
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="module")
 def area_polity(live):
-    r = live.get("/api/area", params={"polity": "Northern Song", "year": 1000, "bands": "ABCDE"})
-    assert r.status_code == 200, f"/api/area returned {r.status_code}: {r.text[:300]}"
+    r = live.get("/api/areas", params={"scope": "polity", "polity": "Northern Song", "year": 1000, "bands": "ABCDE"})
+    assert r.status_code == 200, f"/api/areas returned {r.status_code}: {r.text[:300]}"
     return r.json()
 
 
@@ -181,13 +181,13 @@ def test_area_has_member_basins(area_polity):
 def test_area_row_envelope(area_polity):
     assert set(area_polity.get("bands", [])) == set("ABCDE"), "bands list should echo the request"
     rows = area_polity.get("rows")
-    assert isinstance(rows, list) and len(rows) > 0, "no variable rows in /api/area response"
+    assert isinstance(rows, list) and len(rows) > 0, "no variable rows in /api/areas response"
     seen = {row["band"] for row in rows}
     assert seen and seen <= set("ABCDE"), f"unexpected band label(s) on rows: {seen}"
 
 
 def test_area_unknown_polity_404(live):
-    r = live.get("/api/area", params={"polity": "Nowhere Empire", "year": 1000})
+    r = live.get("/api/areas", params={"scope": "polity", "polity": "Nowhere Empire", "year": 1000})
     assert r.status_code == 404
 
 

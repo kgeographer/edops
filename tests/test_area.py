@@ -1,7 +1,7 @@
 """
 test_area.py
 ------------
-Tests for GET /api/area — areal signature for a named Cliopatria polity.
+Tests for GET /api/areas?scope=polity — areal signature for a named Cliopatria polity.
 
 All DB-hitting tests are skipped if the DB is unavailable.
 
@@ -28,7 +28,7 @@ def client(db_available):
 @pytest.fixture(scope="module")
 def nsong_lean(client):
     """Lean N Song response (no Band T, no detail)."""
-    r = client.get("/api/area?polity=Northern+Song&year=1000&level=6&bands=ABCDE")
+    r = client.get("/api/areas?scope=polity&polity=Northern+Song&year=1000&level=6&bands=ABCDE")
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -37,7 +37,7 @@ def nsong_lean(client):
 def nsong_detail(client):
     """N Song with detail=true and Band T 900–1100 CE."""
     r = client.get(
-        "/api/area?polity=Northern+Song&year=1000&level=6"
+        "/api/areas?scope=polity&polity=Northern+Song&year=1000&level=6"
         "&bands=ABCDET&from_year=900&to_year=1100&detail=true"
     )
     assert r.status_code == 200, r.text
@@ -183,7 +183,7 @@ def test_detail_resolver_year_in_histogram_stamp(nsong_detail):
 def test_two_axis_independence(client):
     """year=1000 (boundary) with Band T 1200–1300 (different window) should work."""
     r = client.get(
-        "/api/area?polity=Northern+Song&year=1000&level=6"
+        "/api/areas?scope=polity&polity=Northern+Song&year=1000&level=6"
         "&bands=ABCDET&from_year=1200&to_year=1300&detail=true"
     )
     assert r.status_code == 200
@@ -203,32 +203,9 @@ def test_two_axis_independence(client):
 
 
 # ---------------------------------------------------------------------------
-# 404 paths
-# ---------------------------------------------------------------------------
-
-def test_404_unknown_polity(client):
-    r = client.get("/api/area?polity=Atlantis&year=500")
-    assert r.status_code == 404
-    assert "Atlantis" in r.text
-
-
-def test_404_name_exists_wrong_year(client):
-    # Northern Song existed ~960–1127 CE; year 500 should be 404 with available_periods
-    r = client.get("/api/area?polity=Northern+Song&year=500")
-    assert r.status_code == 404
-    data = r.json()
-    detail = data.get("detail", {})
-    assert "available_periods" in detail, "Expected available_periods in 404 detail"
-    periods = detail["available_periods"]
-    assert len(periods) > 0
-    for p in periods:
-        assert "fromyear" in p and "toyear" in p
-
-
-# ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
 
 def test_bad_level_rejected(client):
-    r = client.get("/api/area?polity=Northern+Song&year=1000&level=4")
+    r = client.get("/api/areas?scope=polity&polity=Northern+Song&year=1000&level=4")
     assert r.status_code == 400

@@ -1511,7 +1511,7 @@ def _lovejoy_geoms() -> Dict[str, Tuple[str, str, str]]:
 def lovejoy_signature(src_id: str):
     """Areal signature for one Lovejoy pre-colonial African subregion (WO05).
 
-    Live, not precomputed -- mirrors GET /api/area's own areal_signature_polygon call, keyed by
+    Live, not precomputed -- mirrors the polity branch of GET /api/areas (areal_signature_polygon), keyed by
     a Lovejoy src_id instead of a Cliopatria polity name. L6, all bands, Band T pinned to the
     locked 1600-1650 window (see workplan_africa.md WO05). Real compute cost, same order as a
     polity areal signature (~9s measured in sandbox.html) -- no server-side cache; the African

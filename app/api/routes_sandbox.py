@@ -1311,127 +1311,6 @@ def lmr_values(var: str, from_year: int, to_year: int):
 
 
 # -----------------------
-# /area endpoint — areal signature for a named polity
-# -----------------------
-
-@router.get("/area", summary="Areal signature for a named historical polity", include_in_schema=False)
-def area(
-    polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
-    year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
-    level: int = Query(6, description="Basin hierarchy level: 6 or 8."),
-    bands: str = Query("ABCDET", description=(
-        "Band letters to compute, e.g. \"ABCDET\". Add T to include Band T (requires "
-        "from_year and to_year)."
-    )),
-    from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
-    to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
-    detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
-):
-    """Return an areal environmental signature for a named Cliopatria polity.
-
-    Response
-    --------
-    Not the GET /api/signature shape. The areal envelope is a flat "rows" list — one
-    object per variable, each carrying a representative score across the polity's member
-    basins (a distribution summary, not an average — see engine.py) plus coherence /
-    coverage / modality metadata. Alongside "rows":
-      "bands":      ["A", ...]   -- echoes the requested bands
-      "resolver":   {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
-      "scope":      {"type": "polity", "level", "n_units", "unit_type", ...}
-      "member_ids": [hybas_id, ...]
-      "caveats", "shortfall", "temporal", "modality_post_pass"
-      "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
-    detail=true adds a per-variable "distribution" histogram object to each row.
-
-    Full variable inventory: see the Codebook (/docs/codebook/).
-    """
-    if level not in (6, 8):
-        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
-
-    requested = set(bands.upper().replace(",", "").replace(" ", ""))
-
-    try:
-        conn = db_connect()
-
-        # Lightweight polity lookup — no basin resolution yet
-        sql_lookup = """
-            SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
-            FROM gaz.clio_polities
-            WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
-        """
-        rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
-
-        if not rows:
-            # Check whether the name exists at any other period (nice-to-have 404 detail)
-            alt_rows = conn.execute(
-                "SELECT fromyear, toyear FROM gaz.clio_polities "
-                "WHERE NOT is_component AND name = %s ORDER BY fromyear",
-                (polity,),
-            ).fetchall()
-            if alt_rows:
-                raise HTTPException(
-                    status_code=404,
-                    detail={
-                        "message": f"Polity '{polity}' not active at year {year}",
-                        "available_periods": [
-                            {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
-                        ],
-                    },
-                )
-            raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
-
-        # Multiple matches: pick narrowest temporal span (mirrors resolve_polity)
-        if len(rows) > 1:
-            rows = sorted(rows, key=lambda r: r[3] - r[2])
-        polity_id, polity_name, fromyear, toyear, geom_wkt = (
-            rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
-        )
-
-        band_t_from = from_year if "T" in requested else None
-        band_t_to   = to_year   if "T" in requested else None
-
-        payload = areal_signature_polygon(
-            geom_wkt,
-            conn,
-            level=level,
-            bands=sorted(requested),
-            from_year=band_t_from,
-            to_year=band_t_to,
-            include_detail=detail,
-            resolver_year=year,
-            polity_id=polity_id,
-        )
-
-        member_rows = conn.execute(
-            "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
-            "WHERE polity_id = %s ORDER BY weight DESC",
-            (polity_id,),
-        ).fetchall()
-        payload["member_ids"] = [int(r[0]) for r in member_rows]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if "conn" in locals():
-            conn.close()
-
-    payload["resolver"] = {
-        "type":      "polity",
-        "polity":    polity_name,
-        "polity_id": int(polity_id),
-        "fromyear":  int(fromyear),
-        "toyear":    int(toyear),
-        "year":      year,
-    }
-    if "T" in requested and band_t_from is not None:
-        payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
-
-    return payload
-
-
-# -----------------------
 # /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
@@ -1471,14 +1350,14 @@ def areas(
     )),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by scope, then
-    aggregates their signature as a distribution (not an average). `scope` is confusingly
-    named "area" alongside GET /api/area, but the four scope kinds are not all areas
-    in the geometric sense: single_basin and polity are bounded regions, buffer is an
-    arbitrary radius, and basin_ring is a topological set of basins, not a shape.
+    aggregates their signature as a distribution (not an average). The four scope kinds
+    are not all areas in the geometric sense: single_basin and polity are bounded
+    regions, buffer is an arbitrary radius, and basin_ring is a topological set of
+    basins, not a shape.
 
     Response
     --------
-    Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
+    Areal envelope (a flat "rows" list of per-variable representative
     scores across the resolved member basins — not the GET /api/signature signature_bands
     shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
     per-variable "distribution" histogram object to each row. Full variable inventory: see
