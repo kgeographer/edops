@@ -3661,7 +3661,7 @@
 
     const hasLMR = _politySlices.some(s => s.toyear >= 700);
     _setLMRAvailability(hasLMR,
-      hasLMR ? null : 'LMR data begins 700 CE — this polity predates the record');
+      hasLMR ? null : 'The LMR map layer starts at 700 CE; this polity predates it. The Signature tab still reports LMR from 0 CE.');
 
     // Keep hidden select populated for test compat
     const sliceSel = document.getElementById('v3-slice-select');
@@ -4270,7 +4270,7 @@
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
       const floor = actualFrom ?? 700;
-      statusEl.textContent = `LMR data begins ${floor} CE — this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates the record`;
+      statusEl.textContent = `The LMR map layer starts at ${floor} CE; this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates it.`;
       _lmrPainting = false;
       return;
     }
