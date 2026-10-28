@@ -3368,6 +3368,14 @@
       const detail = `${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''} at${lvlParen}`;
       headingHtml = `${escapeHtml(_polityName)}${escapeHtml(yearsStr)} `
         + `<span style="font-size:0.9rem; font-weight:400; font-style: italic;">${escapeHtml(detail)}</span>`;
+    } else if (nb.type === 'buffer' && nb.radius_km != null) {
+      const bufLabel = _currentPlaceName
+        ? `${_currentPlaceName}, ${nb.radius_km} km buffer`
+        : `${nb.radius_km} km buffer`;
+      const lvlParen = nb.level ? ` Level ${String(nb.level).padStart(2,'0')}` : '';
+      const detail = `${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''} at${lvlParen}`;
+      headingHtml = `${escapeHtml(bufLabel)} `
+        + `<span style="font-size:0.9rem; font-weight:400; font-style: italic;">${escapeHtml(detail)}</span>`;
     } else {
       headingHtml = escapeHtml(`${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`);
     }
