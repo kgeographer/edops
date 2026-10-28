@@ -269,6 +269,8 @@ def signature(
 
     if "T" in requested_bands and (from_year is None or to_year is None):
         raise HTTPException(status_code=422, detail="Band T requires a timespan (from_year, to_year)")
+    if "T" in requested_bands and from_year > to_year:
+        raise HTTPException(status_code=422, detail="Band T: from_year must not be after to_year")
 
     # v0.4: buffer/area's Band T explodes into one row per HYDE-epoch/LMR-year per member
     # basin -- a genuine multi-year range is a real DoS-scale payload for these scopes (a

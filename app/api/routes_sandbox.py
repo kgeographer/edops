@@ -1410,6 +1410,11 @@ def areas(
                 status_code=422,
                 detail="Band T requires a timespan (from_year, to_year)",
             )
+        if from_year > to_year:
+            raise HTTPException(
+                status_code=422,
+                detail="Band T: from_year must not be after to_year",
+            )
 
     band_t_from = from_year if "T" in requested else None
     band_t_to   = to_year   if "T" in requested else None

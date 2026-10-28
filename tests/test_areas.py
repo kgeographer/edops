@@ -86,6 +86,25 @@ class TestValidation:
         assert r.status_code == 422
         assert "year" in r.json()["detail"]
 
+    def test_reversed_band_t_span_single_basin(self, client):
+        r = client.get("/api/areas?scope=single_basin&lat=16.8&lon=-2.9&bands=T&from_year=1500&to_year=1400")
+        assert r.status_code == 422
+        assert "from_year" in r.json()["detail"]
+
+    def test_reversed_band_t_span_polity(self, client):
+        r = client.get("/api/areas?scope=polity&polity=Northern+Song&year=1000&bands=T&from_year=1100&to_year=900")
+        assert r.status_code == 422
+
+    def test_reversed_span_ignored_without_band_t(self, client):
+        """Years are inert unless T is requested; stale values must not break a request."""
+        r = client.get("/api/areas?scope=single_basin&lat=16.8&lon=-2.9&bands=A&from_year=1500&to_year=1400")
+        assert r.status_code != 422
+
+    def test_reversed_band_t_span_public_basin(self, client):
+        r = client.get("/api/signature?scope=basin&lat=16.8&lon=-2.9&bands=T&from_year=1500&to_year=1400")
+        assert r.status_code == 422
+        assert "from_year" in r.json()["detail"]
+
     def test_polity_not_found(self, client):
         r = client.get("/api/areas?scope=polity&polity=Atlantis&year=500")
         assert r.status_code == 404
