@@ -4448,13 +4448,18 @@
       map.getContainer().appendChild(note);
     } else if (on && note) note.remove();
   }
-  // Probe one AWMC tile (4 s); a hung server raises no error, so it must be timed.
-  new Promise(res => {
-    const img = new Image(), t = setTimeout(() => res(false), 4000);
-    img.onload  = () => { clearTimeout(t); res(true); };
-    img.onerror = () => { clearTimeout(t); res(false); };
-    img.src = _AWMC_TILE.replace('{z}/{x}/{y}', '2/1/1');
-  }).then(ok => map.loaded() || map.isStyleLoaded() ? _setAwmc(ok) : map.once('load', () => _setAwmc(ok)));
+  // Probe one AWMC tile (4 s) after page load, so a hung server can't hold the load event open.
+  function _probeAwmc() {
+    new Promise(res => {
+      const img = new Image();
+      const t = setTimeout(() => { img.src = ''; res(false); }, 4000);
+      img.onload  = () => { clearTimeout(t); res(true); };
+      img.onerror = () => { clearTimeout(t); res(false); };
+      img.src = _AWMC_TILE.replace('{z}/{x}/{y}', '2/1/1');
+    }).then(ok => map.isStyleLoaded() ? _setAwmc(ok) : map.once('load', () => _setAwmc(ok)));
+  }
+  if (document.readyState === 'complete') _probeAwmc();
+  else window.addEventListener('load', _probeAwmc, { once: true });
   let _awmcErrors = 0;
   map.on('error', e => { if (e.sourceId === 'awmc' && ++_awmcErrors === 5) _setAwmc(false); });
 
