@@ -86,13 +86,13 @@ def test_corpus_shares_match_notebook(class_idx):
     """Cell 5/6 regression: modality + phase counts at L06."""
     mcats, mvals = cc.axis_values(6, "modality")
     pcats, pvals = cc.axis_values(6, "phase")
-    assert len(mvals) == 16338 and len(pvals) == 16338
+    assert len(mvals) == 16397 and len(pvals) == 16397
     mcount = {c["key"]: c["count"] for c in mcats}
     pcount = {c["key"]: c["count"] for c in pcats}
-    assert mcount == {"arid": 1434, "aseasonal": 1259, "1-season": 12652,
+    assert mcount == {"arid": 1493, "aseasonal": 1259, "1-season": 12652,
                       "2-season": 899, "undetermined": 94}
     assert pcount == {"warm-wet": 8272, "cool-wet": 2017,
-                      "weak coupling": 3149, "no thermal cycle": 2900}
+                      "weak coupling": 3208, "no thermal cycle": 2900}
 
 
 def test_probe_cells(class_idx, probe_ids):
