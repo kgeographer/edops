@@ -27,7 +27,7 @@ from app.db.seasonality import (
 from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring, NoBasinsError
 from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile, _extract_lonlat
 
 from pathlib import Path
@@ -1172,6 +1172,8 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
         return {"center": center_feature, "ring": ring_members}
     except HTTPException:
         raise
+    except NoBasinsError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1546,6 +1548,8 @@ def areas(
 
     except HTTPException:
         raise
+    except NoBasinsError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

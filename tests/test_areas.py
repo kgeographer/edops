@@ -397,6 +397,38 @@ class TestSingleBasinPayload:
         assert t_rows == []
 
 
+class TestNoBasinCoverage:
+    """Places BasinATLAS does not cover (Honolulu, open sea) return a clear 404, not a 500."""
+    _HNL = "lat=21.307&lon=-157.858"
+    _SEA = "POLYGON((-150 10,-149 10,-149 11,-150 11,-150 10))"
+
+    @pytest.mark.parametrize("scope", ["single_basin", "basin_ring"])
+    def test_point_scopes_404(self, buf_client, scope):
+        r = buf_client.get(f"/api/areas?scope={scope}&{self._HNL}&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basin covers the given point location"
+
+    def test_buffer_404(self, buf_client):
+        r = buf_client.get(f"/api/areas?scope=buffer&{self._HNL}&radius_km=50&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basins fall within this buffer"
+
+    def test_ring_topology_route_404(self, buf_client):
+        r = buf_client.get(f"/api/basin/ring?{self._HNL}&level=6")
+        assert r.status_code == 404
+
+    def test_public_buffer_404(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=buffer&{self._HNL}&radius_km=50&bands=A")
+        assert r.status_code == 404
+        assert "SQL" not in r.text and "hybas_id" not in r.text
+
+    def test_public_area_404(self, buf_client):
+        from urllib.parse import quote
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._SEA)}&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basins intersect this area"
+
+
 class TestBandFilter:
     """`bands` filters A-E rows (and gates Band T) on every scope that uses the engine."""
     _BASE = "/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833"

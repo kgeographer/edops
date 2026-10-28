@@ -26,7 +26,7 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, NoBasinsError
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -298,6 +298,8 @@ def signature(
                 from_year=band_t_from, to_year=band_t_to,
                 include_detail=detail,
             )
+        except NoBasinsError as e:
+            raise HTTPException(status_code=404, detail=str(e))
         finally:
             conn.close()
 
@@ -346,6 +348,8 @@ def signature(
                 include_detail=detail,
                 scope_type="area",
             )
+        except NoBasinsError as e:
+            raise HTTPException(status_code=404, detail=str(e))
         finally:
             conn.close()
 
