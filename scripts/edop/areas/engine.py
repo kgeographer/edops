@@ -2322,6 +2322,10 @@ def _areal_signature_from_basin_set(
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
+    # Band filter: rows carry their catalog band letter; bands=None keeps all of A-E.
+    if bands is not None:
+        basin_rows = [r for r in basin_rows if r['band'] in bands]
+
     # Raw DB column name alongside the friendly api_key -- static catalog lookup, same for
     # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
     for row in basin_rows:

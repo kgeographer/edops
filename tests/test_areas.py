@@ -378,6 +378,23 @@ class TestSingleBasinPayload:
         assert t_rows == []
 
 
+class TestBandFilter:
+    """`bands` filters A-E rows (and gates Band T) on every scope that uses the engine."""
+    _BASE = "/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833"
+
+    def test_single_band_returns_only_that_band(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=A").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"A"}
+
+    def test_two_bands_return_only_those_bands(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=BD").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"B", "D"}
+
+    def test_band_t_alone_returns_no_basin_rows(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=T&from_year=1000&to_year=1100").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"T"}
+
+
 # ---------------------------------------------------------------------------
 # Single-basin equivalence — live vs captured fixture
 # ---------------------------------------------------------------------------
