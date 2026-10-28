@@ -813,7 +813,7 @@ def make_row(
     """
     Build one complete row dict for any aggregation branch.
 
-    Pin 1: status ∈ ok | outside_active_domain | no_data  (never old verdicts)
+    Pin 1: status ∈ ok | outside_active_domain | no_data | not_areal | low_coverage  (never old verdicts)
     Pin 2: caveat is always a list (empty, never null); text lives in CAVEAT_TEXTS
     Pin 4: score_suppressed=True when score is null because two_regime verdict makes
            a single number dishonest; score_suppressed=False + score=None means score
@@ -1709,7 +1709,8 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
                              iqr/p25/p75 are secondary diagnostics, no longer coherence inputs).
       status               = 'ok' (the fallback's untyped-ness is carried by
                              method='distribution_only', not status; Pin 1
-                             vocabulary is {ok, outside_active_domain, no_data}).
+                             vocabulary is {ok, outside_active_domain, no_data, not_areal,
+                             low_coverage}).
 
     extreme — carrier-basin selection for a genuinely non-areal variable (currently unused;
     river_area moved to the area_weighted branch above, WO_dominant-basin-scope-fix --

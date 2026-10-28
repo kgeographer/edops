@@ -3505,8 +3505,11 @@
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${main}${b}`;
       }
-      case 'class_mixture':
-        return `<div>${raw !== null ? escapeHtml(String(raw)) : emptyCause(row)}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
+      case 'class_mixture': {
+        const lowCov = row.status === 'low_coverage'
+          ? ' <em title="Under half of this area has data">(low coverage)</em>' : '';
+        return `<div>${raw !== null ? escapeHtml(String(raw)) : emptyCause(row)}${lowCov}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
+      }
       case 'flag_fraction':
         return raw !== null ? `${(raw*100).toFixed(1)}%` : emptyCause(row);
       case 'distribution_only': {
