@@ -1208,10 +1208,13 @@ _LMR_BASELINE = (850, 1850)
 
 
 @router.get("/hyde/values", include_in_schema=False)
-def hyde_values(var: str, year: int, level: int = 6):
-    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
+def hyde_values(var: str, year: int, level: int = 6, to_year: Optional[int] = None):
+    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year or span.
 
-    Year is floor-snapped to the nearest available step in temporal.hyde_times.
+    Without to_year, year is floor-snapped to the step at or before it in temporal.hyde_times.
+    With to_year (span year..to_year), the epoch follows the Band T signature rule
+    (engine.aggregate_band_t): the first epoch inside the span, else the epoch nearest the
+    span midpoint, so the map shows an epoch the signature table also lists.
     level=6: temporal.hyde_basin06_steps (~0.033s, 16k basins, WO18).
     level=8: temporal.hyde_basin08_steps (~0.38s, 190k basins, WO22).
     Basins with no land coverage are omitted (transparent in choropleth).
@@ -1223,21 +1226,38 @@ def hyde_values(var: str, year: int, level: int = 6):
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail="level must be 6 or 8")
 
+    if to_year is not None and to_year < year:
+        raise HTTPException(status_code=422, detail="to_year must not be before year")
+
     steps_table = f"temporal.hyde_basin0{level}_steps"
 
     conn = db_connect()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT step_idx, year_ce
-                FROM temporal.hyde_times
-                WHERE year_ce <= %(year)s
-                ORDER BY year_ce DESC
-                LIMIT 1
-                """,
-                {"year": year},
-            )
+            if to_year is None:
+                cur.execute(
+                    """
+                    SELECT step_idx, year_ce
+                    FROM temporal.hyde_times
+                    WHERE year_ce <= %(year)s
+                    ORDER BY year_ce DESC
+                    LIMIT 1
+                    """,
+                    {"year": year},
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT step_idx, year_ce
+                    FROM temporal.hyde_times
+                    ORDER BY (year_ce NOT BETWEEN %(year)s AND %(to)s),
+                             CASE WHEN year_ce BETWEEN %(year)s AND %(to)s THEN year_ce
+                                  ELSE ABS(year_ce - %(mid)s) END,
+                             year_ce
+                    LIMIT 1
+                    """,
+                    {"year": year, "to": to_year, "mid": (year + to_year) // 2},
+                )
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=400, detail=f"No HYDE data at or before year {year}")

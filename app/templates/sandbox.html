@@ -983,7 +983,7 @@
     if (!key) return;
     const { fromYr, toYr } = _activeBandTYears();
     if (key.startsWith('lmr_'))       applyLMRChoropleth(key, fromYr, toYr);
-    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
+    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, ...hydeMapYears(fromYr, toYr));
     else                              applyBasinVar(key);
   }
 
@@ -4320,7 +4320,13 @@
     hyde_rangeland: { lo: '#ffffff', hi: '#993404' },
   };
 
-  async function applyHydeChoropleth(varKey, year) {
+  // Map year (default 1000 CE when none entered) and the span end, if a valid span is set.
+  function hydeMapYears(fromYr, toYr) {
+    if (!Number.isFinite(fromYr)) return [1000, null];
+    return [fromYr, Number.isFinite(toYr) && toYr >= fromYr ? toYr : null];
+  }
+
+  async function applyHydeChoropleth(varKey, year, toYear = null) {
     const dbVar = HYDE_DB_VAR[varKey];
     if (!dbVar) return;
     const level = _activeLevel();
@@ -4334,7 +4340,7 @@
     const statusEl = document.getElementById('v3-basin-status');
     statusEl.textContent = 'Loading…';
     try {
-      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}&level=${level}`);
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}${toYear != null ? `&to_year=${toYear}` : ''}&level=${level}`);
       if (!resp.ok) { statusEl.textContent = 'Error'; return; }
       const { values, actual_year } = await resp.json();
       const nums   = Object.values(values).filter(v => v != null && v > 0);
@@ -4400,7 +4406,7 @@
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
       if (!fromYr || isNaN(fromYr)) _flashBandT();
-      applyHydeChoropleth(key, fromYr || 1000);
+      applyHydeChoropleth(key, ...hydeMapYears(fromYr, toYr));
       return;
     }
     hideLMRLayer();
