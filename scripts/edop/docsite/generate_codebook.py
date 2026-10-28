@@ -31,7 +31,8 @@ BAND_INTROS = {
          "conditions, including the effects of upstream dams and diversions where present.",
     "C": "Contemporary climate baseline from BasinATLAS (WorldClim ~1970–2000 CE). These are "
          "long-run averages — for historical temperature and precipitation, Band T provides "
-         "LMR anomalies relative to a 20th-century reference.",
+         "LMR anomalies relative to the 850–1850 CE mean of the reanalysis's model prior "
+         "(Tardif et al. 2019).",
     "D": "Present-day only. Exclude or qualify for pre-modern analyses; useful as a contrast "
          "baseline.",
     "E": "Hydrological connectivity to the marine outlet.",
@@ -90,7 +91,8 @@ OTHER_HEADER = """## Other / not yet banded
 """
 
 ABBR_DEFS = (
-    "*[implemented]: Live in the current API and signature payload\n"
+    "*[implemented]: Built and available through the API or a payload; not every variable "
+    "appears in every signature\n"
     "*[planned]: Named in the catalog but not yet in the live API\n"
 )
 

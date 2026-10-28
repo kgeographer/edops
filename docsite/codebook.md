@@ -171,7 +171,7 @@ s+u both in signature <a href="/static/basinatlas_pages/L06.pdf" target="_blank"
 
 ### Band C — Bioclimatic
 
-Contemporary climate baseline from BasinATLAS (WorldClim ~1970–2000 CE). These are long-run averages — for historical temperature and precipitation, Band T provides LMR anomalies relative to a 20th-century reference. 32 variables in the catalog (26 implemented, 6 planned), all sourced from BasinATLAS v1.0 unless noted otherwise below.
+Contemporary climate baseline from BasinATLAS (WorldClim ~1970–2000 CE). These are long-run averages — for historical temperature and precipitation, Band T provides LMR anomalies relative to the 850–1850 CE mean of the reanalysis's model prior (Tardif et al. 2019). 32 variables in the catalog (26 implemented, 6 planned), all sourced from BasinATLAS v1.0 unless noted otherwise below.
 
 #### Climate Type
 
@@ -355,11 +355,11 @@ Hydrological connectivity to the marine outlet. 6 variables in the catalog (5 im
 **Coastal fraction** (`coast_fraction`) — implemented · Derived · fraction (0-1) · local only<br>
 Derived from coast_flag (0/1) via area-weighted weight sum. Convenience scalar complement to outlet_type. Areal-engine output only — not emitted by point signature.
 
+**Endorheic status** (`endorheic`) — implemented · local only<br>
+Derived from endo flag: exorheic/endorheic/coastal
+
 **Flow distance to marine outlet** (`dist_sink_km`) — implemented · km · local only<br>
 In Band E payload; raw basin08 units (m → divide by 1000 for km)
-
-**Outlet type** (`endorheic`) — implemented · local only<br>
-Derived from endo flag: exorheic/endorheic/coastal
 
 **Outlet type** (`outlet_type`) — implemented · Derived · local only<br>
 Derived from endorheic (0/1/2) and coast_flag (0/1); exclusivity verified (coast=1 never co-occurs with endo>0). Areal-engine output only — not emitted by point signature.
@@ -391,13 +391,13 @@ Per-epoch list; unmanaged/extensive grazing subset
 Annual series {year, pdsi} + pdsi_mean/min/max; 2°×2° nearest cell
 
 **Precipitation rate anomaly (LMR v2.1)** (`lmr_precip_anomaly`) — implemented · LMR v2.1 · mm/day<br>
-Annual series {year, prate_anom_mm_day} + mean; converted from kg/m²/s
+Annual series {year, prate_anom_mm_day} + mean; converted from kg/m²/s; anomaly vs. the 850–1850 CE CCSM4 mean (Tardif et al. 2019)
 
 **Sea-level pressure (LMR v2.1)** (`lmr_slp`) — planned · LMR v2.1 · hPa · point value<br>
 Not currently stored in temporal.lmr_climate
 
 **Temperature anomaly (LMR v2.1)** (`lmr_temp_anomaly`) — implemented · LMR v2.1 · K<br>
-Annual series {year, air_anom_k} + air_mean_anom_k; anomaly vs. reference period
+Annual series {year, air_anom_k} + air_mean_anom_k; anomaly vs. the 850–1850 CE CCSM4 mean (Tardif et al. 2019)
 
 #### Volcanic Forcing
 
@@ -430,5 +430,5 @@ Years between year_end and the most recent event ≥ 10 Tg; null if none in wind
 **LLM narrative summary** (`narrative`) — planned · Derived<br>
 Claude API; non-specialist natural language summary
 
-*[implemented]: Live in the current API and signature payload
+*[implemented]: Built and available through the API or a payload; not every variable appears in every signature
 *[planned]: Named in the catalog but not yet in the live API
