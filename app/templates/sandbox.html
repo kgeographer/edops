@@ -3461,8 +3461,17 @@
       ? `${fmtNum(raw)}${row.units ? ' ' + escapeHtml(row.units) : ''}` : null;
     const pctHtml = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
     const track   = score !== null && score !== undefined ? renderPercentileTrack(score) : '';
-    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || '—';
+    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || emptyCause(row);
     return `<div class="d-flex align-items-center gap-2">${parts}${track}</div>`;
+  }
+
+  // Italic cause for a row with nothing to show; a bare dash only for an unexpected null.
+  function emptyCause(row) {
+    if (row.status === 'outside_active_domain')
+      return row.n_units === 1 ? '<em>not present here</em>'
+        : '<em title="Under 10% of this area has any">largely absent</em>';
+    if (row.status === 'no_data') return '<em>no data</em>';
+    return '—';
   }
 
   function renderLeaf(row) {
@@ -3473,23 +3482,23 @@
       case 'area_weighted': {
         if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         let s;
-        if (row.status === 'outside_active_domain') s = 'outside active range';
+        if (row.status === 'outside_active_domain') s = emptyCause(row);
         else if (score !== null && score !== undefined) s = `${score.toFixed(1)} percentile`;
-        else s = '—';
+        else s = emptyCause(row);
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
         else if (row.coherence === 'split')         coh = `<span class="badge bg-info-subtle text-info-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">split</span>`;
         const caveat = row.score_suppressed
-          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">no single percentile: the area has two distinct groups of values</div>` : '';
         return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {}, det.window_lo, det.window_hi)}${caveat}`;
       }
       case 'dominant_basin': {
         if (row.status === 'not_areal')
-          return `<span style="font-size:0.85rem;">network measure, not meaningful for areas</span>`;
+          return `<span style="font-size:0.85rem;">river-network measure, not defined for an area</span>`;
         const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
-        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const main = [r, s].filter(Boolean).join(' · ') || emptyCause(row);
         // Carrier-basin ID is meaningless at n=1 -- there's only ever one basin, it's the one
         // being queried, "which basin was selected" isn't a question (Karl, 2026-08-12).
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
@@ -3497,21 +3506,21 @@
         return `${main}${b}`;
       }
       case 'class_mixture':
-        return `<div>${raw !== null ? escapeHtml(String(raw)) : '—'}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
+        return `<div>${raw !== null ? escapeHtml(String(raw)) : emptyCause(row)}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
       case 'flag_fraction':
-        return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
+        return raw !== null ? `${(raw*100).toFixed(1)}%` : emptyCause(row);
       case 'distribution_only': {
         if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
           ? `<div>${score.toFixed(1)} percentile</div>` : '';
         const caveat = row.score_suppressed
-          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">no single percentile: the area has two distinct groups of values</div>` : '';
         return `${scoreHtml}<div style="margin-top:3px;">${renderRangeBar(det)}</div>${caveat}`;
       }
       case 'extreme': {
         const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
-        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const main = [r, s].filter(Boolean).join(' · ') || emptyCause(row);
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${main}${b}`;
