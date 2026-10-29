@@ -38,7 +38,7 @@ integers scaled by 10 or 100; where EDOPS displays these the scaling is given in
 [Dataset](https://www.pbl.nl/en/image/links/hyde) ·
 [Article](https://essd.copernicus.org/articles/9/927/2017/essd-9-927-2017.pdf)
 
-Historical land use — cropland, pasture, grazing, rangeland — 10,000 BCE–2023 CE. Band T.
+Historical land use — cropland, pasture, grazing, rangeland — 10,000 BCE–2025 CE. Band T.
 
 **What to know.** HYDE is an allocation model, not a record of settlement. It distributes estimated
 national totals across grid cells by rules based on population density, terrain, and soil quality.
@@ -62,13 +62,14 @@ constrained for early periods. Recent work finds gridded population products sys
 undercount rural population, traced to incompleteness in national censuses rather than to any
 model's method. HYDE inherits that input problem, and compounds it where no census exists at all.
 
-*Worked example.* For Northern Song China at 1000 CE, HYDE yields roughly a third of the cropland
-area given by document-based reconstructions from Chinese historical geography. The shortfall
-concentrates in the lower Yangtze delta, the middle Yangtze, and Sichuan — the wet-rice and terraced
-regions — while cultivation is over-allocated to the flat Huang-Huai plain. At that date the Song
+*Worked example.* For Northern Song China at 1000 CE, HYDE yields about 124,000 km² of cropland. An
+environmental historian of the period, shown HYDE's map for that date, estimated that this is roughly
+a third of the cultivated area that document-based reconstructions of the period imply — an expert
+judgement, not a measured comparison. She also saw where the error falls: cultivation overestimated on
+the Huang-Huai plain south of the Shandong peninsula, and underestimated around the lower Yangtze
+delta, further up the Yangtze, and in Sichuan, the wet-rice and terraced regions. At that date the Song
 economic centre had already shifted south and the lower Yangtze was the most productive agricultural
 region in the world; HYDE puts the intensity on the northern plain instead.
-{verify: final figures and citations after WO6 merges}
 
 *Zeros are sometimes right.* Grazing, pasture, and rangeland read zero across the pre-contact
 Americas because there were no domesticated grazing animals there. That is the model working, not
@@ -79,15 +80,17 @@ missing data.
 [Dataset](https://www.ncei.noaa.gov/access/paleo-search/study/27850) ·
 [Article](https://doi.org/10.5194/cp-15-1251-2019)
 
-Gridded paleoclimate reanalysis — PDSI, temperature, precipitation — 1–2000 CE. Band T.
+Gridded paleoclimate reanalysis — PDSI, temperature, precipitation — 0–1998 CE (the Polities map
+layer starts at 700 CE). Band T.
 
 **What to know.** Reconstruction quality is geographically uneven: strongest for Europe and North
 America, where proxy records are densest, with greater uncertainty for East Asia, South Asia, and
 the Southern Hemisphere. A value is returned everywhere; the confidence behind it is not the same
 everywhere.
 
-Values are anomalies — departures from a reference period — not the absolute conditions a person
-would have experienced. The grid is coarse: a single cell spans a large area, and the number of
+Values are anomalies — departures from the 850–1850 CE mean of the reanalysis's model prior (CCSM4;
+Tardif et al. 2019) — not the absolute conditions a person would have experienced. The Polities map
+layer re-centres each cell on its own 850–1850 CE mean of the stored values, so its zero is that mean. The grid is coarse: a single cell spans a large area, and the number of
 cells intersecting a query is reported alongside the values. A query smaller than one cell is
 reading a regional average.
 
@@ -95,13 +98,12 @@ reading a regional average.
 
 [Dataset and citation](https://doi.org/10.1594/PANGAEA.971968)
 
-Volcanic stratospheric forcing events, 500 BCE–1900 CE. Band T. The name links directly to the
+Volcanic stratospheric forcing events, 491 BCE–1890 CE. Band T. The name links directly to the
 dataset's own DOI, which serves as its citation.
 
 **What to know.** Events are inferred from ice-core sulfate, primarily Greenland and Antarctica, so
 what is recorded is a deposition signal rather than the eruption itself. Small eruptions fall below
 detection, and the record thins going back in time.
-{verify: dating uncertainty by period, and how source volcanoes are attributed}
 
 ## Platform services
 
@@ -111,7 +113,7 @@ variables.
 - **[World Historical Gazetteer (WHG)](https://whgazetteer.org)** — place-name search and
   reconciliation for settlement lookup.
 - **[HydroRIVERS](https://www.hydrosheds.org/products/hydrorivers)** — the global river network
-  drawn on Sandbox's neighborhood map.
+  drawn on the Sandbox map.
 - **[OpenTopoData](https://www.opentopodata.org)** — live elevation lookups (Mapzen dataset) for
   point queries and the terrain similarity lens.
 - **[One Earth](https://www.oneearth.org)** — the bioregions framework behind Workbench's

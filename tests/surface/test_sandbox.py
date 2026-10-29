@@ -342,6 +342,25 @@ class TestHydeValuesLevel:
         vals = [v for v in r.json()["values"].values() if v is not None]
         assert all(0.0 <= v <= 1.01 for v in vals)
 
+    @pytest.mark.parametrize("year,to_year,expected", [
+        (1100, 1200, 1100),   # first epoch inside the span
+        (1560, 1640, 1600),   # floor-snap would give 1500
+        (990, 1017, 1000),    # floor-snap would give 900
+        (1540, 1580, 1600),   # no epoch inside: nearest the midpoint
+    ])
+    def test_span_follows_signature_rule(self, client, year, to_year, expected):
+        r = client.get(f"/api/hyde/values?var=cropland&year={year}&to_year={to_year}&level=6")
+        assert r.status_code == 200
+        assert r.json()["actual_year"] == expected
+
+    def test_year_alone_still_floor_snaps(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1560&level=6")
+        assert r.json()["actual_year"] == 1500
+
+    def test_reversed_span_rejected(self, client):
+        r = client.get("/api/hyde/values?var=cropland&year=1600&to_year=1500&level=6")
+        assert r.status_code == 422
+
     def test_invalid_level_rejected(self, client):
         r = client.get("/api/hyde/values?var=cropland&year=1000&level=9")
         assert r.status_code == 400

@@ -150,7 +150,8 @@ def _pearson_rows(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     Bc = B - B.mean(axis=1, keepdims=True)
     num = (Ac * Bc).sum(axis=1)
     den = np.sqrt((Ac**2).sum(axis=1) * (Bc**2).sum(axis=1))
-    return np.where(den > 0, num / den, np.nan)
+    with np.errstate(invalid="ignore", divide="ignore"):   # zero-variance rows (all-zero precip) -> NaN
+        return np.where(den > 0, num / den, np.nan)
 
 
 def classify_phase(PRE: np.ndarray, TMP: np.ndarray, tmp_seas_amp: np.ndarray) -> np.ndarray:
@@ -200,7 +201,7 @@ def build_level(conn, level: int) -> pd.DataFrame:
     pre_total = PRE.sum(axis=1)
     tmp_amp = TMP.max(axis=1) - TMP.min(axis=1)
 
-    valid = (np.isfinite(PRE).all(axis=1) & np.isfinite(TMP).all(axis=1) & (pre_total > 0))
+    valid = (np.isfinite(PRE).all(axis=1) & np.isfinite(TMP).all(axis=1) & (pre_total >= 0))
     d = d[valid].reset_index(drop=True)
     PRE, TMP, pre_total, tmp_amp = PRE[valid], TMP[valid], pre_total[valid], tmp_amp[valid]
 

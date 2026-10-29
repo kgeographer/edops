@@ -27,7 +27,7 @@ from app.db.seasonality import (
 from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring, NoBasinsError
 from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile, _extract_lonlat
 
 from pathlib import Path
@@ -1172,6 +1172,8 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
         return {"center": center_feature, "ring": ring_members}
     except HTTPException:
         raise
+    except NoBasinsError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1196,10 +1198,10 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
 # -----------------------
 
 _LMR_SAFE_VARS  = {"air", "prate"}
-# LMR's stored `air`/`prate` fields carry their native (modern) reference, so a raw
-# span mean reads as uniformly cold for any pre-industrial period. Re-baseline each
-# grid cell to its own last-millennium (850-1850 CE) mean so the map shows genuine
-# within-millennium anomalies. Matches the legend's "0 = 850-1850 mean".
+# LMR's stored `air`/`prate` values are anomalies against the 850-1850 CE mean of the
+# reanalysis's model prior (CCSM4; Tardif et al. 2019). Each grid cell's span mean is
+# re-centred on its own observed 850-1850 CE mean, so the map reads "0 = 850-1850 mean"
+# as the legend says.
 _LMR_BASELINE = (850, 1850)
 
 # _HYDE_EPOCH_RANGES/_HYDE_SAFE_VARS/_load_hyde_epoch_maxes moved to routes_common.py
@@ -1208,10 +1210,13 @@ _LMR_BASELINE = (850, 1850)
 
 
 @router.get("/hyde/values", include_in_schema=False)
-def hyde_values(var: str, year: int, level: int = 6):
-    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year.
+def hyde_values(var: str, year: int, level: int = 6, to_year: Optional[int] = None):
+    """Return flat {hybas_id: fraction} dict for one HYDE variable at a given CE year or span.
 
-    Year is floor-snapped to the nearest available step in temporal.hyde_times.
+    Without to_year, year is floor-snapped to the step at or before it in temporal.hyde_times.
+    With to_year (span year..to_year), the epoch follows the Band T signature rule
+    (engine.aggregate_band_t): the first epoch inside the span, else the epoch nearest the
+    span midpoint, so the map shows an epoch the signature table also lists.
     level=6: temporal.hyde_basin06_steps (~0.033s, 16k basins, WO18).
     level=8: temporal.hyde_basin08_steps (~0.38s, 190k basins, WO22).
     Basins with no land coverage are omitted (transparent in choropleth).
@@ -1223,21 +1228,38 @@ def hyde_values(var: str, year: int, level: int = 6):
     if level not in (6, 8):
         raise HTTPException(status_code=400, detail="level must be 6 or 8")
 
+    if to_year is not None and to_year < year:
+        raise HTTPException(status_code=422, detail="to_year must not be before year")
+
     steps_table = f"temporal.hyde_basin0{level}_steps"
 
     conn = db_connect()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT step_idx, year_ce
-                FROM temporal.hyde_times
-                WHERE year_ce <= %(year)s
-                ORDER BY year_ce DESC
-                LIMIT 1
-                """,
-                {"year": year},
-            )
+            if to_year is None:
+                cur.execute(
+                    """
+                    SELECT step_idx, year_ce
+                    FROM temporal.hyde_times
+                    WHERE year_ce <= %(year)s
+                    ORDER BY year_ce DESC
+                    LIMIT 1
+                    """,
+                    {"year": year},
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT step_idx, year_ce
+                    FROM temporal.hyde_times
+                    ORDER BY (year_ce NOT BETWEEN %(year)s AND %(to)s),
+                             CASE WHEN year_ce BETWEEN %(year)s AND %(to)s THEN year_ce
+                                  ELSE ABS(year_ce - %(mid)s) END,
+                             year_ce
+                    LIMIT 1
+                    """,
+                    {"year": year, "to": to_year, "mid": (year + to_year) // 2},
+                )
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=400, detail=f"No HYDE data at or before year {year}")
@@ -1265,8 +1287,7 @@ def lmr_values(var: str, from_year: int, to_year: int):
     """Return flat {"lat,lon": mean_anomaly} dict for one LMR variable over a CE span.
 
     Each cell's span mean is re-baselined to that cell's own 850–1850 CE mean
-    (_LMR_BASELINE), so values are anomalies vs the last-millennium normal — not
-    vs LMR's native modern reference (which skews every historical map cold).
+    (_LMR_BASELINE), so values are anomalies vs that cell's last-millennium normal.
     Quality floor at 700 CE: actual_from = max(from_year, 700).
     Spans entirely below 700 CE return an empty values dict.
     Straddling spans use [700, to_year]; actual_from reflects the effective start.
@@ -1311,127 +1332,6 @@ def lmr_values(var: str, from_year: int, to_year: int):
 
 
 # -----------------------
-# /area endpoint — areal signature for a named polity
-# -----------------------
-
-@router.get("/area", summary="Areal signature for a named historical polity", include_in_schema=False)
-def area(
-    polity: str = Query(..., description='Cliopatria polity name, exact match (e.g. "Northern Song").'),
-    year: int = Query(..., description="Resolver year CE — selects the polity boundary active at this year."),
-    level: int = Query(6, description="Basin hierarchy level: 6 or 8."),
-    bands: str = Query("ABCDET", description=(
-        "Band letters to compute, e.g. \"ABCDET\". Add T to include Band T (requires "
-        "from_year and to_year)."
-    )),
-    from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
-    to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
-    detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
-):
-    """Return an areal environmental signature for a named Cliopatria polity.
-
-    Response
-    --------
-    Not the GET /api/signature shape. The areal envelope is a flat "rows" list — one
-    object per variable, each carrying a representative score across the polity's member
-    basins (a distribution summary, not an average — see engine.py) plus coherence /
-    coverage / modality metadata. Alongside "rows":
-      "bands":      ["A", ...]   -- echoes the requested bands
-      "resolver":   {"type": "polity", "polity", "polity_id", "fromyear", "toyear", "year"}
-      "scope":      {"type": "polity", "level", "n_units", "unit_type", ...}
-      "member_ids": [hybas_id, ...]
-      "caveats", "shortfall", "temporal", "modality_post_pass"
-      "band_t_span": {"from_year", "to_year"}   -- present only when Band T requested
-    detail=true adds a per-variable "distribution" histogram object to each row.
-
-    Full variable inventory: see the Codebook (/docs/codebook/).
-    """
-    if level not in (6, 8):
-        raise HTTPException(status_code=400, detail=f"Level {level} not supported; use 6 or 8")
-
-    requested = set(bands.upper().replace(",", "").replace(" ", ""))
-
-    try:
-        conn = db_connect()
-
-        # Lightweight polity lookup — no basin resolution yet
-        sql_lookup = """
-            SELECT id, name, fromyear, toyear, ST_AsText(geom) AS geom_wkt
-            FROM gaz.clio_polities
-            WHERE NOT is_component AND name = %s AND fromyear <= %s AND toyear >= %s
-        """
-        rows = conn.execute(sql_lookup, (polity, year, year)).fetchall()
-
-        if not rows:
-            # Check whether the name exists at any other period (nice-to-have 404 detail)
-            alt_rows = conn.execute(
-                "SELECT fromyear, toyear FROM gaz.clio_polities "
-                "WHERE NOT is_component AND name = %s ORDER BY fromyear",
-                (polity,),
-            ).fetchall()
-            if alt_rows:
-                raise HTTPException(
-                    status_code=404,
-                    detail={
-                        "message": f"Polity '{polity}' not active at year {year}",
-                        "available_periods": [
-                            {"fromyear": r[0], "toyear": r[1]} for r in alt_rows
-                        ],
-                    },
-                )
-            raise HTTPException(status_code=404, detail=f"Polity '{polity}' not found")
-
-        # Multiple matches: pick narrowest temporal span (mirrors resolve_polity)
-        if len(rows) > 1:
-            rows = sorted(rows, key=lambda r: r[3] - r[2])
-        polity_id, polity_name, fromyear, toyear, geom_wkt = (
-            rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
-        )
-
-        band_t_from = from_year if "T" in requested else None
-        band_t_to   = to_year   if "T" in requested else None
-
-        payload = areal_signature_polygon(
-            geom_wkt,
-            conn,
-            level=level,
-            bands=sorted(requested),
-            from_year=band_t_from,
-            to_year=band_t_to,
-            include_detail=detail,
-            resolver_year=year,
-            polity_id=polity_id,
-        )
-
-        member_rows = conn.execute(
-            "SELECT hybas_id FROM temporal.polity_basin08_crosswalk "
-            "WHERE polity_id = %s ORDER BY weight DESC",
-            (polity_id,),
-        ).fetchall()
-        payload["member_ids"] = [int(r[0]) for r in member_rows]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if "conn" in locals():
-            conn.close()
-
-    payload["resolver"] = {
-        "type":      "polity",
-        "polity":    polity_name,
-        "polity_id": int(polity_id),
-        "fromyear":  int(fromyear),
-        "toyear":    int(toyear),
-        "year":      year,
-    }
-    if "T" in requested and band_t_from is not None:
-        payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
-
-    return payload
-
-
-# -----------------------
 # /areas endpoint — scope-dispatched areal signature
 # -----------------------
 
@@ -1471,14 +1371,14 @@ def areas(
     )),
 ):
     """Areal signature dispatcher — resolves to a set of member basins by scope, then
-    aggregates their signature as a distribution (not an average). `scope` is confusingly
-    named "area" alongside GET /api/area, but the four scope kinds are not all areas
-    in the geometric sense: single_basin and polity are bounded regions, buffer is an
-    arbitrary radius, and basin_ring is a topological set of basins, not a shape.
+    aggregates their signature as a distribution (not an average). The four scope kinds
+    are not all areas in the geometric sense: single_basin and polity are bounded
+    regions, buffer is an arbitrary radius, and basin_ring is a topological set of
+    basins, not a shape.
 
     Response
     --------
-    Same areal envelope as GET /api/area (a flat "rows" list of per-variable representative
+    Areal envelope (a flat "rows" list of per-variable representative
     scores across the resolved member basins — not the GET /api/signature signature_bands
     shape), with a `scope` block whose fields depend on `scope`. detail=true adds a
     per-variable "distribution" histogram object to each row. Full variable inventory: see
@@ -1530,6 +1430,11 @@ def areas(
             raise HTTPException(
                 status_code=422,
                 detail="Band T requires a timespan (from_year, to_year)",
+            )
+        if from_year > to_year:
+            raise HTTPException(
+                status_code=422,
+                detail="Band T: from_year must not be after to_year",
             )
 
     band_t_from = from_year if "T" in requested else None
@@ -1642,6 +1547,8 @@ def areas(
 
     except HTTPException:
         raise
+    except NoBasinsError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

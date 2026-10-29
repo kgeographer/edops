@@ -215,10 +215,10 @@
                 <div class="d-flex gap-1 align-items-center">
                   <label class="text-muted" style="font-size:0.8rem; white-space:nowrap;">Band T:</label>
                   <input type="number" id="v3-from-year" class="form-control form-control-sm"
-                         style="width:80px;" placeholder="from" min="-10000" max="2023">
+                         style="width:80px;" placeholder="from" min="-10000" max="2025" title="Years CE; negative = BCE">
                   <span class="text-muted small">–</span>
                   <input type="number" id="v3-to-year" class="form-control form-control-sm"
-                         style="width:80px;" placeholder="to" min="-10000" max="2023">
+                         style="width:80px;" placeholder="to" min="-10000" max="2025" title="Years CE; negative = BCE">
                 </div>
               </div>
 
@@ -251,12 +251,12 @@
                   <option value="">Load an example</option>
                   <option value="polity|Northern Song">Northern Song (961–1027 CE)</option>
                   <option value="polity|Inca Empire">Inca Empire (1440–1571 CE)</option>
-                  <option value="polity|Pagan Kingdom">Pagan Kingdom (860–1285 CE)</option>
+                  <option value="polity|Pagan Kingdom">Pagan Kingdom (850–1293 CE)</option>
                   <option value="polity|Mali Empire">Mali Empire (1236–1611 CE)</option>
                   <option value="polity|Kingdom of Poland">Kingdom of Poland (962–1449 CE)</option>
-                  <option value="polity|Abbasid Caliphate">Abbasid Caliphate (750–1258 CE)</option>
+                  <option value="polity|Abbasid Caliphate">Abbasid Caliphate (750–1259 CE)</option>
                   <option value="polity|Tibetan Empire">Tibetan Empire (623–849 CE)</option>
-                  <option value="polity|Qin">Qin (750–222 BCE) — no LMR</option>
+                  <option value="polity|Qin">Qin (750–219 BCE) — no LMR</option>
                 </select>
               </div>
 
@@ -342,10 +342,10 @@
                 <div class="d-flex gap-1 align-items-center">
                   <label class="text-muted" style="font-size:0.8rem; white-space:nowrap;">Band T:</label>
                   <input type="number" id="v3-polity-from-year" class="form-control form-control-sm"
-                         style="width:80px;" placeholder="from" min="-10000" max="2023">
+                         style="width:80px;" placeholder="from" min="-10000" max="2025">
                   <span class="text-muted small">–</span>
                   <input type="number" id="v3-polity-to-year" class="form-control form-control-sm"
-                         style="width:80px;" placeholder="to" min="-10000" max="2023">
+                         style="width:80px;" placeholder="to" min="-10000" max="2025">
                 </div>
               </div>
 
@@ -983,7 +983,7 @@
     if (!key) return;
     const { fromYr, toYr } = _activeBandTYears();
     if (key.startsWith('lmr_'))       applyLMRChoropleth(key, fromYr, toYr);
-    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, fromYr || 1000);
+    else if (key.startsWith('hyde_')) applyHydeChoropleth(key, ...hydeMapYears(fromYr, toYr));
     else                              applyBasinVar(key);
   }
 
@@ -3363,10 +3363,18 @@
       // level demoted to a smaller trailing span since the place + years are what identifies
       // the query; the count is supporting detail.
       const slice = _politySlices[_polityCurrentIdx];
-      const yearsStr = slice ? ` (${slice.fromyear} CE – ${slice.toyear} CE)` : '';
+      const yearsStr = slice ? ` (${formatYear(slice.fromyear)} – ${formatYear(slice.toyear)})` : '';
       const lvlParen = nb.level ? ` Level ${String(nb.level).padStart(2,'0')}` : '';
       const detail = `${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''} at${lvlParen}`;
       headingHtml = `${escapeHtml(_polityName)}${escapeHtml(yearsStr)} `
+        + `<span style="font-size:0.9rem; font-weight:400; font-style: italic;">${escapeHtml(detail)}</span>`;
+    } else if (nb.type === 'buffer' && nb.radius_km != null) {
+      const bufLabel = _currentPlaceName
+        ? `${_currentPlaceName}, ${nb.radius_km} km buffer`
+        : `${nb.radius_km} km buffer`;
+      const lvlParen = nb.level ? ` Level ${String(nb.level).padStart(2,'0')}` : '';
+      const detail = `${nb.n_units ?? '?'} basin${nb.n_units !== 1 ? 's' : ''} at${lvlParen}`;
+      headingHtml = `${escapeHtml(bufLabel)} `
         + `<span style="font-size:0.9rem; font-weight:400; font-style: italic;">${escapeHtml(detail)}</span>`;
     } else {
       headingHtml = escapeHtml(`${nb.n_units ?? '?'} ${nb.unit_type || 'unit'}${nb.n_units !== 1 ? 's' : ''}${lvlStr}`);
@@ -3453,8 +3461,17 @@
       ? `${fmtNum(raw)}${row.units ? ' ' + escapeHtml(row.units) : ''}` : null;
     const pctHtml = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
     const track   = score !== null && score !== undefined ? renderPercentileTrack(score) : '';
-    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || '—';
+    const parts = [rawHtml, pctHtml].filter(Boolean).join(' · ') || emptyCause(row);
     return `<div class="d-flex align-items-center gap-2">${parts}${track}</div>`;
+  }
+
+  // Italic cause for a row with nothing to show; a bare dash only for an unexpected null.
+  function emptyCause(row) {
+    if (row.status === 'outside_active_domain')
+      return row.n_units === 1 ? '<em>not present here</em>'
+        : '<em title="Under 10% of this area has any">largely absent</em>';
+    if (row.status === 'no_data') return '<em>no data</em>';
+    return '—';
   }
 
   function renderLeaf(row) {
@@ -3465,45 +3482,48 @@
       case 'area_weighted': {
         if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         let s;
-        if (row.status === 'outside_active_domain') s = 'outside active range';
+        if (row.status === 'outside_active_domain') s = emptyCause(row);
         else if (score !== null && score !== undefined) s = `${score.toFixed(1)} percentile`;
-        else s = '—';
+        else s = emptyCause(row);
         let coh = '';
         if      (row.coherence === 'concentrated') coh = `<span class="badge bg-success-subtle text-success-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">concentrated</span>`;
         else if (row.coherence === 'spread')        coh = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">spread</span>`;
         else if (row.coherence === 'split')         coh = `<span class="badge bg-info-subtle text-info-emphasis ms-2" style="font-size:0.7rem;font-weight:500;">split</span>`;
         const caveat = row.score_suppressed
-          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">no single percentile: the area has two distinct groups of values</div>` : '';
         return `<div>${s}${coh}</div>${renderHistogram(det.distribution || {}, det.window_lo, det.window_hi)}${caveat}`;
       }
       case 'dominant_basin': {
         if (row.status === 'not_areal')
-          return `<span style="font-size:0.85rem;">network measure, not meaningful for areas</span>`;
+          return `<span style="font-size:0.85rem;">river-network measure, not defined for an area</span>`;
         const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
-        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const main = [r, s].filter(Boolean).join(' · ') || emptyCause(row);
         // Carrier-basin ID is meaningless at n=1 -- there's only ever one basin, it's the one
         // being queried, "which basin was selected" isn't a question (Karl, 2026-08-12).
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${main}${b}`;
       }
-      case 'class_mixture':
-        return `<div>${raw !== null ? escapeHtml(String(raw)) : '—'}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
+      case 'class_mixture': {
+        const lowCov = row.status === 'low_coverage'
+          ? ' <em title="Under half of this area has data">(low coverage)</em>' : '';
+        return `<div>${raw !== null ? escapeHtml(String(raw)) : emptyCause(row)}${lowCov}</div><div style="margin-top:3px;">${renderMixtureBar(det)}</div>`;
+      }
       case 'flag_fraction':
-        return raw !== null ? `${(raw*100).toFixed(1)}%` : '—';
+        return raw !== null ? `${(raw*100).toFixed(1)}%` : emptyCause(row);
       case 'distribution_only': {
         if (row.n_units === 1) return renderSingleBasinContinuousLeaf(row);
         const scoreHtml = (!row.score_suppressed && score !== null && score !== undefined)
           ? `<div>${score.toFixed(1)} percentile</div>` : '';
         const caveat = row.score_suppressed
-          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">score suppressed — bimodal</div>` : '';
+          ? `<div style="font-size:0.72rem;color:#000;margin-top:1px;">no single percentile: the area has two distinct groups of values</div>` : '';
         return `${scoreHtml}<div style="margin-top:3px;">${renderRangeBar(det)}</div>${caveat}`;
       }
       case 'extreme': {
         const r = raw   !== null && raw !== undefined ? `${fmtNum(raw)}${row.units ? ' '+row.units : ''}` : null;
         const s = score !== null && score !== undefined ? `${score.toFixed(1)} percentile` : null;
-        const main = [r, s].filter(Boolean).join(' · ') || '—';
+        const main = [r, s].filter(Boolean).join(' · ') || emptyCause(row);
         const b = (row.n_units !== 1 && det.dominant_hybas_id)
           ? ` <span style="font-size:0.72rem;">basin ${det.dominant_hybas_id}</span>` : '';
         return `${main}${b}`;
@@ -3653,7 +3673,7 @@
 
     const hasLMR = _politySlices.some(s => s.toyear >= 700);
     _setLMRAvailability(hasLMR,
-      hasLMR ? null : 'LMR data begins 700 CE — this polity predates the record');
+      hasLMR ? null : 'The LMR map layer starts at 700 CE; this polity predates it. The Signature tab still reports LMR from 0 CE.');
 
     // Keep hidden select populated for test compat
     const sliceSel = document.getElementById('v3-slice-select');
@@ -4262,7 +4282,7 @@
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
       const floor = actualFrom ?? 700;
-      statusEl.textContent = `LMR data begins ${floor} CE — this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates the record`;
+      statusEl.textContent = `The LMR map layer starts at ${floor} CE; this slice (${formatYear(fromYear)}–${formatYear(toYear)}) predates it.`;
       _lmrPainting = false;
       return;
     }
@@ -4312,7 +4332,13 @@
     hyde_rangeland: { lo: '#ffffff', hi: '#993404' },
   };
 
-  async function applyHydeChoropleth(varKey, year) {
+  // Map year (default 1000 CE when none entered) and the span end, if a valid span is set.
+  function hydeMapYears(fromYr, toYr) {
+    if (!Number.isFinite(fromYr)) return [1000, null];
+    return [fromYr, Number.isFinite(toYr) && toYr >= fromYr ? toYr : null];
+  }
+
+  async function applyHydeChoropleth(varKey, year, toYear = null) {
     const dbVar = HYDE_DB_VAR[varKey];
     if (!dbVar) return;
     const level = _activeLevel();
@@ -4326,7 +4352,7 @@
     const statusEl = document.getElementById('v3-basin-status');
     statusEl.textContent = 'Loading…';
     try {
-      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}&level=${level}`);
+      const resp = await fetch(`/api/hyde/values?var=${dbVar}&year=${year}${toYear != null ? `&to_year=${toYear}` : ''}&level=${level}`);
       if (!resp.ok) { statusEl.textContent = 'Error'; return; }
       const { values, actual_year } = await resp.json();
       const nums   = Object.values(values).filter(v => v != null && v > 0);
@@ -4392,7 +4418,7 @@
       hideLMRLayer();
       document.getElementById('v3-basin-legend').style.display = 'none';
       if (!fromYr || isNaN(fromYr)) _flashBandT();
-      applyHydeChoropleth(key, fromYr || 1000);
+      applyHydeChoropleth(key, ...hydeMapYears(fromYr, toYr));
       return;
     }
     hideLMRLayer();
@@ -4405,27 +4431,49 @@
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
 
+  // Local Protomaps style underneath; AWMC historical terrain goes on top once a probe tile loads.
+  const _AWMC_TILE = 'https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png';
+  const _baseStyle = pmLightStyle();
+  _baseStyle.sources.awmc = {
+    type: 'raster', tiles: [_AWMC_TILE], tileSize: 256, minzoom: 1, maxzoom: 11,
+    attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
+  };
+  _baseStyle.layers.push({ id: 'awmc-layer', type: 'raster', source: 'awmc', layout: { visibility: 'none' } });
+
   const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
     center: [10, 25],
     zoom: 0.9,
     attributionControl: true,
-    style: {
-      version: 8,
-      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-      sources: {
-        awmc: {
-          type: 'raster',
-          tiles: ['https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png'],
-          tileSize: 256, minzoom: 1, maxzoom: 11,
-          attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
-        },
-      },
-      layers: [
-        { id: 'awmc-layer', type: 'raster', source: 'awmc' },
-      ],
-    },
+    style: _baseStyle,
   });
+
+  function _setAwmc(on) {
+    if (map.getLayer('awmc-layer')) map.setLayoutProperty('awmc-layer', 'visibility', on ? 'visible' : 'none');
+    let note = document.getElementById('v3-basemap-note');
+    if (!on && !note) {
+      note = document.createElement('div');
+      note.id = 'v3-basemap-note';
+      note.textContent = 'Historical terrain basemap unavailable; showing a modern basemap';
+      note.style.cssText = 'position:absolute; left:10px; bottom:34px; z-index:2; font-size:0.75rem; '
+        + 'font-style:italic; background:rgba(255,255,255,0.8); padding:1px 6px; border-radius:3px;';
+      map.getContainer().appendChild(note);
+    } else if (on && note) note.remove();
+  }
+  // Probe one AWMC tile (4 s) after page load, so a hung server can't hold the load event open.
+  function _probeAwmc() {
+    new Promise(res => {
+      const img = new Image();
+      const t = setTimeout(() => { img.src = ''; res(false); }, 4000);
+      img.onload  = () => { clearTimeout(t); res(true); };
+      img.onerror = () => { clearTimeout(t); res(false); };
+      img.src = _AWMC_TILE.replace('{z}/{x}/{y}', '2/1/1');
+    }).then(ok => map.isStyleLoaded() ? _setAwmc(ok) : map.once('load', () => _setAwmc(ok)));
+  }
+  if (document.readyState === 'complete') _probeAwmc();
+  else window.addEventListener('load', _probeAwmc, { once: true });
+  let _awmcErrors = 0;
+  map.on('error', e => { if (e.sourceId === 'awmc' && ++_awmcErrors === 5) _setAwmc(false); });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
   map.addControl(new maplibregl.ScaleControl(), 'bottom-left');

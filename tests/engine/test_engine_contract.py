@@ -55,14 +55,14 @@ TIM_LEVEL        = 6
 ROME_LAT, ROME_LON = 41.8967, 12.4822
 
 # Valid vocabulary sets
-VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data', 'not_areal'})
+VALID_STATUSES    = frozenset({'ok', 'outside_active_domain', 'no_data', 'not_areal', 'low_coverage'})
 VALID_METHODS     = frozenset({
     'area_weighted', 'dominant_basin', 'class_mixture', 'flag_fraction',
     'distribution_only', 'extreme',
     'grid_areal_distribution', 'global_forcing',
 })
 VALID_MODALITIES  = frozenset({'unimodal', 'two_regime'})
-VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'split', 'mixed', 'outside_active_domain'})
+VALID_COHERENCES  = frozenset({'concentrated', 'spread', 'split', 'mixed'})
 VALID_BANDS       = frozenset({'A', 'B', 'C', 'D', 'E', 'T'})
 VALID_KINDS       = frozenset({'continuous', 'categorical', 'flag'})
 DERIVED_KEYS      = frozenset({

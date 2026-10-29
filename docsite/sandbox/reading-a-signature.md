@@ -35,7 +35,7 @@ of 63.6 means this basin is wetter than 63.6% of all basins on Earth.
 
 ### Many basins
 
-You get an area-weighted percentile, a **concentrated** or **spread** badge, and a histogram of how
+You get an area-weighted percentile, a **concentrated**, **spread** or **split** badge, and a histogram of how
 the constituent basins are distributed:
 
 > Aridity — `59.1 percentile` · *spread*
@@ -47,16 +47,22 @@ the constituent basins are distributed:
 ![The same display with a concentrated badge, for contrast](images/reading/02b.jpg)
 
 The headline percentile is the area-weighted mean of each contributing basin's own percentile —
-larger basins pull it further. The two numbers flanking the histogram are the 10th and 90th
-percentiles of that distribution: the middle-80% range, expressed in percentile points rather than
-in the variable's own units.
+larger basins pull it further. The two numbers flanking the histogram are the lowest and the highest
+percentile among the contributing basins, so they mark the full extent of the distribution. (A few
+variables are drawn as a bar rather than a histogram; its end labels are the 10th and 90th
+percentiles, the middle 80%.)
 
-The badge summarises how much the basins disagree. Under 20 percentile points between p10 and p90
-is **concentrated** — the area is environmentally consistent in this respect. Twenty or more is
-**spread** — the area contains real internal variation, and the headline number is an average over
-genuinely different places.
+The badge summarises how much the basins agree. EDOPS looks for the stretch of the percentile
+scale, 30 points wide, that holds the most of the area; the pale band behind the histogram shows
+where it found it. If that stretch holds at least 65% of the area, the badge is **concentrated** —
+most of the area sits at much the same position, and the area is environmentally consistent in this
+respect. If not, it is **spread** — the area contains real internal variation, and the headline
+number is an average over genuinely different places. **Split** appears when at least half the area
+has exactly the same score (usually zero, where the variable is absent) and a real separate group,
+at least a tenth of the area, lies elsewhere on the scale. The 65% cutoff is provisional. With fewer
+than five basins no badge is shown, because the measure isn't reliable for so few.
 
-Both badges are informative. *Spread* is not a warning; for a large polity it is often the expected
+All three badges are informative. *Spread* is not a warning; for a large polity it is often the expected
 and interesting result.
 
 ### Reading the histogram
@@ -66,8 +72,9 @@ set — a buffered settlement, or a compact polity. A smooth mound means a large
 individual bars are individual basins and you can see the clustering directly; in a large set the
 distribution's shape is what matters.
 
-Note that a wide *range* and a *spread* badge are not the same thing. The range endpoints tell you
-where the extremes fall; the badge tells you whether the bulk of the area agrees.
+Note that a wide gap between the histogram's end labels and a *spread* badge are not the same
+thing. The end labels show where the extreme basins fall; the badge asks whether most of the area
+sits close together, so one long thin tail can leave the badge at *concentrated*.
 
 ## Categorical variables
 
@@ -94,34 +101,35 @@ basin's contribution rather than a summary of all of them.
 
 ## When a value is missing
 
-An em-dash (`—`) means no value is being reported. It does not mean zero. Zero is a real
-measurement and displays as `0`.
+An em-dash (`—`) appears only when a value is missing for a reason the interface doesn't recognise.
+It never means zero; zero is a real measurement and displays as `0`. When EDOPS knows why there is
+no number, it says so, in italics or as a note under the row:
 
-For a single-basin query this usually means the variable isn't coded for that basin — as with karst,
-permafrost, or the wetland groups in areas where those datasets have no coverage.
+*Not present here* (one basin) or *largely absent* (several basins) means the variable is
+essentially absent from the area: karst, permafrost or cropland where there is none. This is not
+missing data. The underlying values are zero or near it across at least 90% of the area, and a
+percentile isn't a meaningful way to represent that. For several basins the histogram is still
+shown, and hovering *largely absent* gives the rule.
 
-> Karst (no value)
+![Single-basin row reading "not present here"](images/reading/05.jpg)
 
-![Single-basin missing value: a bare em-dash](images/reading/05.jpg)
+![Multi-basin, "largely absent," histogram shown](images/reading/08.jpg)
 
-In a multi-basin query, an empty headline can mean three different things, and the label tells you
-which:
+*No data* means the source dataset has no value for the basin or basins in the query.
 
-- **A bare dash with an empty histogram** means no basin in the query area had the variable at all —
-  the same no-coverage case as above, just spread across a set of basins instead of one.
-- **"score suppressed — bimodal,"** with the histogram still shown, means the contributing basins
-  split into two genuinely different clusters rather than one continuous distribution. A single
-  percentile would average across that split and misrepresent both halves, so none is reported — read
-  the histogram directly instead.
+*(Low coverage)*, shown after a category's name, means less than half of the query area has a value
+for that variable. The rest is open water, lies beyond the basin data, or has no value in the
+source (ice sheets, for example). The category shown is the leading one among the part that does.
 
-    ![Multi-basin, "score suppressed — bimodal," histogram shown](images/reading/07.jpg)
+"No single percentile: the area has two distinct groups of values," with the histogram still shown,
+means the contributing basins split into two different clusters. A single percentile would average
+across the split and misrepresent both halves, so none is reported — read the histogram directly.
 
-- **"outside active range,"** with the histogram still shown, means the variable is present but
-  essentially absent everywhere in the query area — for example, permafrost extent for a region with
-  almost no permafrost. This is not missing data; the underlying values are genuinely at or near zero
-  across nearly the whole area, and a percentile isn't a meaningful way to represent that.
+![Multi-basin, "no single percentile," histogram shown](images/reading/07.jpg)
 
-    ![Multi-basin, "outside active range," histogram shown](images/reading/08.jpg)
+"River-network measure, not defined for an area" appears for polity queries on the discharge rows
+(annual mean, monthly maximum and minimum). They describe a position on the river network, so they
+have no value for an area.
 
 ## The date stamp
 

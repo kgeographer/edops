@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 is live and frozen at tag `v0.4.1`** (GitHub release; deployed 2026-10-25). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **`main` = prod: nothing lands on it until a phase is accepted.** Active work is on branch **`dashboard`** (cut from `main` 2026-10-25). Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
+- **v0.4 is live and frozen at tag `v0.4.2`** (GitHub release; deployed 2026-10-29). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **`main` = prod: nothing lands on it until a phase is accepted.** Active work is on branch **`dashboard`** (cut from `main` 2026-10-25). Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -56,7 +56,7 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | Reorg (housekeeping)        | complete 2026-08-03             | new canonical routes (`/sandbox`, `/explorer`, `/workbench`); unified EDOPS header; `sandbox.html` retired. **Live since the 2026-09-08 v0.4 cutover** |
 | DOCS_v4                     | complete 2026-08-24             | Full documentation/legibility pass — MkDocs site, generated Codebook/API Guide, help-icon harness, all walkthroughs + screenshots. **Live since the 2026-09-08 v0.4 cutover** |
 | kgreview                    | complete 2026-08-30             | `docs/TODO_kgreview.md` backlog closed; broadened into a general legibility/UX pass — Cliopatria header/nav parity, `.text-muted` removal, Workbench WH Cities copy + ecoregion→Wiki lookup, explorer histogram fix, Sandbox terrain ramp, Sandbox Polities Cities/Countries layers. Merged to `main` `0fdb283` |
-| **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.1` 2026-10-25; v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
+| **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 | **Dashboard**               | **active** (branch `dashboard`, from 2026-10-25) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
@@ -117,10 +117,10 @@ the CP entry point (`index.html`, `about.html`) to a small static site of its ow
 riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
 `logs/session_log_20260908.md`.
 
-**Branching:** `main` = prod, frozen at `v0.4.1`. A new phase is a plain branch cut off `main` (`dashboard`
+**Branching:** `main` = prod, frozen at `v0.4.2`. A new phase is a plain branch cut off `main` (`dashboard`
 now; a regional-data branch later), with WO-child branches under it if wanted, merged to `main` only when the
 phase is accepted and then deployed. Housekeeping is cut off `main` and merged straight back. Tags: `v0.3`,
-`v0.4` (cutover marker), `v0.4.1` (release). Branch cleanup 2026-10-25 left only `main`, `dashboard` and the
+`v0.4` (cutover marker), `v0.4.1` and `v0.4.2` (releases). Branch cleanup 2026-10-25 left only `main`, `dashboard` and the
 `claude/…` remote branch; the old list is in `logs/branch_cleanup_20261025.txt`.
 
 **What v0.4 contains (DOCS_v4 + kgreview + deploy fixes):** MkDocs live in-repo (`docsite/` source, `mkdocs.yml`,
@@ -142,8 +142,8 @@ exists (in-app modal → `docsite/project.md` → `docsite/data-sources.md` →
 routes.py` (formerly ~4000 lines) no longer exists** — split into `routes_common.py`,
 `routes_cliopatria.py`, `routes_explorer.py`, `routes_workbench.py`, `routes_sandbox.py`. Two
 working-reference docs in `docs/edop/` worth consulting rather than re-deriving:
-`pageload_explorer.txt` (on-load + variable-selection pseudocode) and `routes_audit.txt` (re-run
-after any future route change). `app/static/basinatlas_pages/` (gitignored, ~13MB split-PDF
+`pageload_explorer.txt` (on-load + variable-selection pseudocode) and `routes_audit.txt` (regenerate
+after any route change: `python scripts/edop/routes_audit.py docs/edop/routes_audit.txt`). `app/static/basinatlas_pages/` (gitignored, ~13MB split-PDF
 output) is in `MAINTAIN_DEPLOY.md`'s rsync asset list and was deployed to `edops04` in the v0.4
 dry run — see that file (repo root, gitignored, Karl's personal maintain/deploy reference) for
 the full asset list and the signature-update-to-docs propagation steps.
@@ -220,8 +220,8 @@ docs/design/             #   deferred_items_register.md, scenarios.md (gitignore
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
 docs/edop/pageload_explorer.txt  # per-page pseudocode reference (gitignored) — Explorer done,
                           #   Sandbox/Workbench to follow; consult before re-deriving page behavior
-docs/edop/routes_audit.txt       # every app/api/routes.py route classified live/shared/orphaned
-                          #   (gitignored) — re-run the audit after any route add/remove/rename
+docs/edop/routes_audit.txt       # every live /api route classified by template/JS caller (gitignored);
+                          #   generated by scripts/edop/routes_audit.py — regenerate after any route add/remove/rename
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
 scripts/edop/areas/      # Areas engine — engine.py is the primary artifact
 notebooks/edop/explore/  # CHAR phase EDA notebooks

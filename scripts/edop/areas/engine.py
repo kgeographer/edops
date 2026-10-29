@@ -41,6 +41,10 @@ _LOW_RES_CELL_THRESHOLD  = 5    # w_eff below which histogram is flagged low_res
 _LOW_RES_BASIN_THRESHOLD = 3    # n_units below which basin histogram is flagged
 
 
+class NoBasinsError(LookupError):
+    """A query resolved to no basins (BasinATLAS has no coverage there); routes return 404."""
+
+
 def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
     """
     Buffer resolver: point + radius → weighted basin set.
@@ -88,6 +92,8 @@ def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
     """
 
     df = pd.read_sql(sql, conn)
+    if df.empty:
+        raise NoBasinsError('No basins fall within this buffer')
     df['hybas_id'] = df['hybas_id'].astype('int64')
     return df
 
@@ -813,7 +819,7 @@ def make_row(
     """
     Build one complete row dict for any aggregation branch.
 
-    Pin 1: status ∈ ok | outside_active_domain | no_data  (never old verdicts)
+    Pin 1: status ∈ ok | outside_active_domain | no_data | not_areal | low_coverage  (never old verdicts)
     Pin 2: caveat is always a list (empty, never null); text lives in CAVEAT_TEXTS
     Pin 4: score_suppressed=True when score is null because two_regime verdict makes
            a single number dishonest; score_suppressed=False + score=None means score
@@ -1709,7 +1715,8 @@ def aggregate_b5(basin_set, matrix_df, raw_df, meta_df):
                              iqr/p25/p75 are secondary diagnostics, no longer coherence inputs).
       status               = 'ok' (the fallback's untyped-ness is carried by
                              method='distribution_only', not status; Pin 1
-                             vocabulary is {ok, outside_active_domain, no_data}).
+                             vocabulary is {ok, outside_active_domain, no_data, not_areal,
+                             low_coverage}).
 
     extreme — carrier-basin selection for a genuinely non-areal variable (currently unused;
     river_area moved to the area_weighted branch above, WO_dominant-basin-scope-fix --
@@ -2322,6 +2329,10 @@ def _areal_signature_from_basin_set(
 
     basin_rows = b1_rows + b2_rows + b3_rows + b4_rows + b5_rows
 
+    # Band filter: rows carry their catalog band letter; bands=None keeps all of A-E.
+    if bands is not None:
+        basin_rows = [r for r in basin_rows if r['band'] in bands]
+
     # Raw DB column name alongside the friendly api_key -- static catalog lookup, same for
     # every scope type (Karl's browser review, 2026-08-12: "runoff (run_mm_syr)").
     for row in basin_rows:
@@ -2447,6 +2458,8 @@ def resolve_single_basin(lat, lon, level, conn):
     WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
     """
     df = pd.read_sql(sql, conn)
+    if df.empty:
+        raise NoBasinsError('No basin covers the given point location')
     df['hybas_id'] = df['hybas_id'].astype('int64')
     df['weight']   = 1.0
     return df
@@ -2572,6 +2585,8 @@ def resolve_basin_ring(lat, lon, level, conn):
         FROM {table}
         WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326))
     """).fetchone()
+    if row is None:
+        raise NoBasinsError('No basin covers the given point location')
     center_id  = int(row[0])
     center_lat = float(row[1])
     center_lon = float(row[2])
@@ -2752,6 +2767,8 @@ def areal_signature_polygon(
             basin_set = resolve_polygon(geom_wkt, level_str, conn)
     else:
         basin_set = resolve_polygon(geom_wkt, level_str, conn)
+    if basin_set.empty:
+        raise NoBasinsError('No basins intersect this area')
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     bif = basin_set['basin_in_polity_fraction']

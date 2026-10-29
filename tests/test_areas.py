@@ -86,6 +86,25 @@ class TestValidation:
         assert r.status_code == 422
         assert "year" in r.json()["detail"]
 
+    def test_reversed_band_t_span_single_basin(self, client):
+        r = client.get("/api/areas?scope=single_basin&lat=16.8&lon=-2.9&bands=T&from_year=1500&to_year=1400")
+        assert r.status_code == 422
+        assert "from_year" in r.json()["detail"]
+
+    def test_reversed_band_t_span_polity(self, client):
+        r = client.get("/api/areas?scope=polity&polity=Northern+Song&year=1000&bands=T&from_year=1100&to_year=900")
+        assert r.status_code == 422
+
+    def test_reversed_span_ignored_without_band_t(self, client):
+        """Years are inert unless T is requested; stale values must not break a request."""
+        r = client.get("/api/areas?scope=single_basin&lat=16.8&lon=-2.9&bands=A&from_year=1500&to_year=1400")
+        assert r.status_code != 422
+
+    def test_reversed_band_t_span_public_basin(self, client):
+        r = client.get("/api/signature?scope=basin&lat=16.8&lon=-2.9&bands=T&from_year=1500&to_year=1400")
+        assert r.status_code == 422
+        assert "from_year" in r.json()["detail"]
+
     def test_polity_not_found(self, client):
         r = client.get("/api/areas?scope=polity&polity=Atlantis&year=500")
         assert r.status_code == 404
@@ -376,6 +395,55 @@ class TestSingleBasinPayload:
     def test_no_band_t_rows_without_span(self, timbuktu_single):
         t_rows = [r for r in timbuktu_single["rows"] if r.get("band") == "T"]
         assert t_rows == []
+
+
+class TestNoBasinCoverage:
+    """Places BasinATLAS does not cover (Honolulu, open sea) return a clear 404, not a 500."""
+    _HNL = "lat=21.307&lon=-157.858"
+    _SEA = "POLYGON((-150 10,-149 10,-149 11,-150 11,-150 10))"
+
+    @pytest.mark.parametrize("scope", ["single_basin", "basin_ring"])
+    def test_point_scopes_404(self, buf_client, scope):
+        r = buf_client.get(f"/api/areas?scope={scope}&{self._HNL}&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basin covers the given point location"
+
+    def test_buffer_404(self, buf_client):
+        r = buf_client.get(f"/api/areas?scope=buffer&{self._HNL}&radius_km=50&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basins fall within this buffer"
+
+    def test_ring_topology_route_404(self, buf_client):
+        r = buf_client.get(f"/api/basin/ring?{self._HNL}&level=6")
+        assert r.status_code == 404
+
+    def test_public_buffer_404(self, buf_client):
+        r = buf_client.get(f"/api/signature?scope=buffer&{self._HNL}&radius_km=50&bands=A")
+        assert r.status_code == 404
+        assert "SQL" not in r.text and "hybas_id" not in r.text
+
+    def test_public_area_404(self, buf_client):
+        from urllib.parse import quote
+        r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._SEA)}&bands=A")
+        assert r.status_code == 404
+        assert r.json()["detail"] == "No basins intersect this area"
+
+
+class TestBandFilter:
+    """`bands` filters A-E rows (and gates Band T) on every scope that uses the engine."""
+    _BASE = "/api/areas?scope=single_basin&lat=16.8167&lon=-2.9833"
+
+    def test_single_band_returns_only_that_band(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=A").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"A"}
+
+    def test_two_bands_return_only_those_bands(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=BD").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"B", "D"}
+
+    def test_band_t_alone_returns_no_basin_rows(self, buf_client):
+        rows = buf_client.get(f"{self._BASE}&bands=T&from_year=1000&to_year=1100").json()["rows"]
+        assert rows and {r["band"] for r in rows} == {"T"}
 
 
 # ---------------------------------------------------------------------------
