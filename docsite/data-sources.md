@@ -104,7 +104,6 @@ dataset's own DOI, which serves as its citation.
 **What to know.** Events are inferred from ice-core sulfate, primarily Greenland and Antarctica, so
 what is recorded is a deposition signal rather than the eruption itself. Small eruptions fall below
 detection, and the record thins going back in time.
-{verify: dating uncertainty by period, and how source volcanoes are attributed}
 
 ## Platform services
 

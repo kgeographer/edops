@@ -27,7 +27,7 @@ landscape, but measures of the cost of crossing it are lacking and would be a us
 
 **Band T sources cover different spans** at different resolutions, so a single query date or timespan will return values from some temporal datasets and not others. Coverage per source is in [Data sources](../data-sources.md).
 
-**BCE handling.** For the HYDE and eVolv2k datasets, dates before year 1 use astronomical year numbering (year 0 = 1 BCE, year -1 = 2 BCE), not traditional historical calendars' no-year-zero convention. These are annually-resolved reconstructions, so a one-year offset in labeling isn't meaningful next to the datasets' own uncertainty. 
+**BCE handling.** For the HYDE and eVolv2k datasets, dates before year 1 use astronomical year numbering (year 0 = 1 BCE, year -1 = 2 BCE), not traditional historical calendars' no-year-zero convention. These are annually-resolved reconstructions, so a one-year offset in labeling isn't meaningful next to the datasets' own uncertainty. Sandbox year inputs and labels use a typical convention: enter a negative number for BCE, and −44 is shown as 44 BCE. This can differ by one year from the astronomical numbering above, but is immaterial for these datasets.
 
 **Global only, by design and by constraint.** For an ostensibly historical resource we are doing
 what we can with what exists globally. Regional paleoenvironmental reconstructions are often better
