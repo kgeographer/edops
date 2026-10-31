@@ -1,0 +1,115 @@
+{
+ "lens_id": "climate.precip",
+ "lens_label": "Precipitation regime",
+ "level": 6,
+ "query_basin_id": 1060551560,
+ "shade_by": "precip_shape",
+ "bands": {
+  "precip_shape": 0.9,
+  "precip_magnitude": 1.5,
+  "precip_amplitude_cv": 0.15
+ },
+ "set_size": 119,
+ "query_values": {
+  "pre_total_mm": 190.0,
+  "cv": 1.5618,
+  "tmp_mean_c": 28.58,
+  "tmp_range_c": 12.3,
+  "elev_m": 266.0,
+  "relief_range_m": 22.0
+ },
+ "per_condition": {
+  "precip_shape": 2148,
+  "precip_magnitude": 2552,
+  "precip_amplitude_cv": 513
+ },
+ "attrition": [
+  {
+   "condition": "precip_shape",
+   "remaining": 2148
+  },
+  {
+   "condition": "precip_magnitude",
+   "remaining": 645
+  },
+  {
+   "condition": "precip_amplitude_cv",
+   "remaining": 119
+  }
+ ],
+ "spatial": {
+  "max_dist_from_query_km": 9306.6,
+  "diameter_km": 10487.0
+ },
+ "members_total": 119,
+ "members_first_5": [
+  {
+   "basin_id": 1060635020,
+   "corr": 0.9995,
+   "pre_total_mm": 243.0,
+   "elev_m": 289.0,
+   "relief_range_m": 158.0,
+   "lat": 15.658623250462682,
+   "lon": 0.42337763072353946,
+   "place_id": 84253,
+   "place_name": "Gao",
+   "ccodes": [
+    "ML"
+   ]
+  },
+  {
+   "basin_id": 1060564960,
+   "corr": 0.9994,
+   "pre_total_mm": 257.0,
+   "elev_m": 269.0,
+   "relief_range_m": 83.0,
+   "lat": 16.245524597132516,
+   "lon": -2.928625452538323,
+   "place_id": 5551399,
+   "place_name": "Diré",
+   "ccodes": [
+    "ML"
+   ]
+  },
+  {
+   "basin_id": 1060577760,
+   "corr": 0.9993,
+   "pre_total_mm": 204.0,
+   "elev_m": 266.0,
+   "relief_range_m": 54.0,
+   "lat": 16.26911570207804,
+   "lon": 0.07939038232993992,
+   "place_id": 4621809,
+   "place_name": "Tomb of Askia",
+   "ccodes": [
+    "ML"
+   ]
+  },
+  {
+   "basin_id": 1060041510,
+   "corr": 0.9992,
+   "pre_total_mm": 127.0,
+   "elev_m": 294.0,
+   "relief_range_m": 255.0,
+   "lat": 17.787676662897724,
+   "lon": -1.413894948505158,
+   "place_id": null,
+   "place_name": null,
+   "ccodes": null
+  },
+  {
+   "basin_id": 1060554560,
+   "corr": 0.9991,
+   "pre_total_mm": 153.0,
+   "elev_m": 389.0,
+   "relief_range_m": 183.0,
+   "lat": 17.51924955602226,
+   "lon": 1.87726774988622,
+   "place_id": null,
+   "place_name": null,
+   "ccodes": null
+  }
+ ],
+ "_note": "Similarity tab, Precipitation lens, default thresholds: the set of matching basins (only 5 of 119 shown), how far they reach, the query basin's own values.",
+ "_query": "/api/similarity/conjunction?lat=16.8167&lon=-2.9833&lens=climate.precip&level=6&corr=0.9&ratio=1.5&cv=0.15"
+}

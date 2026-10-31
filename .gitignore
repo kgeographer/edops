@@ -75,6 +75,12 @@ docs/cdop/*
 !docs/cdop/pilot/**
 !docs/cdop/citykin/
 !docs/cdop/citykin/**
+!docs/design/
+docs/design/*
+!docs/design/dashboard/
+docs/design/dashboard/*.pdf
+docs/design/dashboard/.DS_Store
+docs/design/dashboard/edops_docs_for_opus.md
 
 # Office temp/lock files
 ~$*

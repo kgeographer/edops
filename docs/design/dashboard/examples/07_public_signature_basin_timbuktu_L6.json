@@ -1,0 +1,226 @@
+{
+ "_note": "The parallel public call (/api/signature?scope=basin&bands=ABCE) that feeds the Analysis and Seasonality tabs: raw values per variable, no percentiles. Items trimmed per band (monthly arrays kept).",
+ "_query": "/api/signature?lat=16.8167&lon=-2.9833&level=6&bands=ABCE&scope=basin",
+ "_captured": "2026-10-29",
+ "id": 1478,
+ "up_area": 382644.3,
+ "geom_geojson": "<omitted>",
+ "elev_source": "opentopodata",
+ "elev_dataset": "mapzen",
+ "elev_resolution_m": 30,
+ "profile_summary": [
+  {
+   "key": "ecoregion",
+   "label": "Ecoregion",
+   "value": "Inner Niger Delta flooded savanna"
+  },
+  {
+   "key": "zone_name",
+   "label": "Bioclimate zone",
+   "value": "Extremely hot and xeric"
+  },
+  {
+   "key": "strata_code",
+   "label": "Bioclimate stratum",
+   "value": "Q6"
+  },
+  {
+   "key": "land_cover_name",
+   "label": "Land cover",
+   "value": "Sparse herbaceous or sparse shrub cover"
+  },
+  {
+   "key": "elev_point",
+   "label": "Elevation (point, m)",
+   "value": 267.0
+  },
+  {
+   "key": "elev_min",
+   "label": "Elevation min (basin, m)",
+   "value": 257
+  },
+  {
+   "key": "elev_max",
+   "label": "Elevation max (basin, m)",
+   "value": 279
+  },
+  {
+   "key": "relief_position",
+   "label": "Relief position (0–1)",
+   "value": 0.45454545454545453
+  },
+  {
+   "key": "runoff",
+   "label": "Runoff (mm/yr)",
+   "value": 34
+  },
+  {
+   "key": "discharge_yr",
+   "label": "Discharge (m³/s, yr)",
+   "value": 499.327
+  },
+  {
+   "key": "pop_density",
+   "label": "Population density",
+   "value": 26.705
+  }
+ ],
+ "signature_bands": {
+  "A": {
+   "label": "Physiographic bedrock",
+   "items": [
+    {
+     "key": "elev_min",
+     "label": "elevation_min (ele_mt_smn)",
+     "value": 257
+    },
+    {
+     "key": "elev_max",
+     "label": "elevation_max (ele_mt_smx)",
+     "value": 279
+    },
+    {
+     "key": "elev_point",
+     "label": "elevation_point",
+     "value": 267.0
+    },
+    {
+     "key": "relief_range_m",
+     "label": "relief_range_m",
+     "value": 22.0
+    }
+   ],
+   "items_total": 11
+  },
+  "B": {
+   "label": "Hydro-climatic baselines",
+   "items": [
+    {
+     "key": "runoff",
+     "label": "runoff (run_mm_syr)",
+     "value": 34
+    },
+    {
+     "key": "discharge_yr",
+     "label": "discharge_annual (dis_m3_pyr)",
+     "value": 499.327
+    },
+    {
+     "key": "discharge_min",
+     "label": "discharge_min (dis_m3_pmn)",
+     "value": 277.059
+    },
+    {
+     "key": "discharge_max",
+     "label": "discharge_max (dis_m3_pmx)",
+     "value": 1049.821
+    }
+   ],
+   "items_total": 20
+  },
+  "C": {
+   "label": "Bioclimatic proxies",
+   "items": [
+    {
+     "key": "pre_mm_monthly",
+     "label": "precipitation_monthly (pre_mm_monthly)",
+     "value": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      4.0,
+      17.0,
+      54.0,
+      78.0,
+      32.0,
+      4.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "key": "tmp_dc_monthly",
+     "label": "temperature_monthly (tmp_dc_monthly)",
+     "value": [
+      21.5,
+      24.3,
+      27.5,
+      31.0,
+      33.5,
+      33.8,
+      31.5,
+      29.9,
+      30.7,
+      30.4,
+      26.5,
+      22.4
+     ]
+    },
+    {
+     "key": "temp_yr",
+     "label": "temperature_annual (tmp_dc_syr)",
+     "value": 28.6
+    },
+    {
+     "key": "temp_min",
+     "label": "temperature_min (tmp_dc_smn)",
+     "value": 21.5
+    },
+    {
+     "key": "temp_max",
+     "label": "temperature_max (tmp_dc_smx)",
+     "value": 33.8
+    },
+    {
+     "key": "temp_yr_upstream",
+     "label": "temperature_annual_u (tmp_dc_uyr)",
+     "value": 26.8
+    }
+   ],
+   "items_total": 22
+  },
+  "E": {
+   "label": "Coastality",
+   "items": [
+    {
+     "key": "dist_sink",
+     "label": "dist_sink_km (dist_sink)",
+     "value": 2331.1
+    },
+    {
+     "key": "endorheic",
+     "label": "endorheic (endo)",
+     "value": 0
+    },
+    {
+     "key": "coast_flag",
+     "label": "coast_flag (coast)",
+     "value": 0
+    }
+   ],
+   "items_total": 3
+  }
+ },
+ "meta": {
+  "signature_version": "0.4",
+  "generated": "2026-10-29T06:08:27Z",
+  "query": {
+   "lat": 16.8167,
+   "lon": -2.9833,
+   "bands": "ABCE",
+   "level": 6
+  },
+  "scope": {
+   "type": "containing_basin",
+   "basin_level": 6
+  },
+  "data_sources": {
+   "basin": "HydroATLAS v1.0 / BasinATLAS Level 06",
+   "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
+   "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+   "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
+   "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
+  }
+ }
+}

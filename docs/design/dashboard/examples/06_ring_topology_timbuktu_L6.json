@@ -1,0 +1,44 @@
+{
+ "_note": "Ring topology as the Sandbox receives it from /api/basin/ring: centre id and per-neighbour interior point and bearing. Geometry omitted. The ring's signature is the CENTRE basin's single_basin signature (01); each neighbour is fetched separately with scope=single_basin at its neighbor_lat/lon.",
+ "_query": "/api/basin/ring?lat=16.8167&lon=-2.9833&level=6",
+ "_captured": "2026-10-29",
+ "center_hybas_id": 1060551560,
+ "n_neighbours": 5,
+ "ring": [
+  {
+   "hybas_id": 1060041510,
+   "neighbor_lat": 17.787676662897724,
+   "neighbor_lon": -1.413894948505158,
+   "border_bearing": 4.983681131865012,
+   "centroid_bearing": 46.347253038995746
+  },
+  {
+   "hybas_id": 1060564740,
+   "neighbor_lat": 16.457932027241327,
+   "neighbor_lon": -4.031625731792628,
+   "border_bearing": 277.4168158197467,
+   "centroid_bearing": 259.27409770809305
+  },
+  {
+   "hybas_id": 1060551770,
+   "neighbor_lat": 16.336301167564898,
+   "neighbor_lon": -2.155181600092041,
+   "border_bearing": 91.88076775339738,
+   "centroid_bearing": 133.16960557923585
+  },
+  {
+   "hybas_id": 1060564960,
+   "neighbor_lat": 16.245524597132516,
+   "neighbor_lon": -2.928625452538323,
+   "border_bearing": 231.2430619998444,
+   "centroid_bearing": 214.37652082584572
+  },
+  {
+   "hybas_id": 1060550540,
+   "neighbor_lat": 17.07361111101403,
+   "neighbor_lon": -1.4828475826992733,
+   "border_bearing": 72.00328989457012,
+   "centroid_bearing": 71.59541606068103
+  }
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "level": 6,
+ "query_basin_id": 1060551560,
+ "radius_km": 500,
+ "radius_count": 109,
+ "rows": [
+  {
+   "variable": "pre_mm_syr",
+   "label": "Mean annual precipitation",
+   "unit": "mm/yr",
+   "value": 189.0,
+   "global_percentile": 16.9,
+   "radius_percentile": 50.0
+  },
+  {
+   "variable": "tmp_dc_syr",
+   "label": "Mean annual temperature",
+   "unit": "°C",
+   "value": 28.6,
+   "global_percentile": 98.2,
+   "radius_percentile": 42.6
+  },
+  {
+   "variable": "tmp_seas_amp",
+   "label": "Seasonal temperature range",
+   "unit": "°C",
+   "value": 12.3,
+   "global_percentile": 35.2,
+   "radius_percentile": 53.7
+  },
+  {
+   "variable": "ele_mt_sav",
+   "label": "Mean elevation",
+   "unit": "m",
+   "value": 266.0,
+   "global_percentile": 38.8,
+   "radius_percentile": 5.1
+  },
+  {
+   "variable": "slp_dg_sav",
+   "label": "Mean slope",
+   "unit": "°",
+   "value": 0.1,
+   "global_percentile": 6.4,
+   "radius_percentile": 7.4
+  },
+  {
+   "variable": "ari_ix_sav",
+   "label": "Aridity index",
+   "unit": "P/PET ×100",
+   "value": 9.0,
+   "global_percentile": 11.3,
+   "radius_percentile": 50.9
+  },
+  {
+   "variable": "run_mm_syr",
+   "label": "Annual runoff",
+   "unit": "mm/yr",
+   "value": 34.0,
+   "global_percentile": 28.0,
+   "radius_percentile": 80.6
+  }
+ ],
+ "_note": "Context tab: 7 variables, each value with its percentile against all basins and against basins within the radius.",
+ "_query": "/api/context?lat=16.8167&lon=-2.9833&level=6&radius_km=500"
+}
