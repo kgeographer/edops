@@ -48,7 +48,8 @@ def stat_quantiles(df, ids, qs=(0.1, 0.25, 0.5, 0.75, 0.9)):
     rows = []
     for (sid, kind), g in df[df.applies & df.id.isin(ids)].groupby(["id", "kind"]):
         v = g.stat.astype(float)
-        rows.append(dict(id=sid, kind=kind, n=len(g), **{f"p{int(q * 100)}": P.wquantile(v, g.w, q) for q in qs}))
+        ok = v.notna()
+        rows.append(dict(id=sid, kind=kind, n=int(ok.sum()), **{f"p{int(q * 100)}": P.wquantile(v[ok], g.w[ok], q) for q in qs}))
     return pd.DataFrame(rows)
 
 
