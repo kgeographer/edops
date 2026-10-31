@@ -5,6 +5,7 @@ exactly as received (detail=true), one file per query, under output/edop/dashboa
 
     python scripts/edop/dashboard/wo02_harvest.py plan-fixtures      # write manifest_fixtures.json
     python scripts/edop/dashboard/wo02_harvest.py plan-population    # draw sample, write manifest_population.json
+    python scripts/edop/dashboard/wo02_harvest.py plan-bandt         # Band T-only fixtures F35-F45, own manifest
     python scripts/edop/dashboard/wo02_harvest.py fetch fixtures     # fetch every query in the manifest
     python scripts/edop/dashboard/wo02_harvest.py fetch population   # (add --only ID ... to refetch some)
     python scripts/edop/dashboard/wo02_harvest.py pretty fixtures    # re-indent saved payloads (whitespace only)
@@ -72,6 +73,25 @@ def fixtures():
         q("F32", S, 6, 35.01, 135.77, why="Kyoto: humid temperate, Japan"),
         q("F33", S, 6, *TIMBUKTU, bands="ABCDET", span=(1140, 1170), why="CE span with no eVolv2k event (gap 1137-1171)"),
         q("F34", S, 6, *TIMBUKTU, bands="ABCDET", span=(1940, 1960), why="span containing the 1950 HYDE epoch (hyde_caveat)"),
+    ]
+
+
+def bandt_fixtures():
+    """Band T-only fixtures added for the Band T family (Step 3). Kept in their own manifest so the main fixture set,
+    and the earlier families' results, are unchanged."""
+    S, B, P = "single_basin", "buffer", "polity"
+    return [
+        q("F35", B, 6, *TIMBUKTU, radius_km=100, bands="T", span=(1475, 1525), why="Band T over a buffer footprint"),
+        q("F36", B, 6, *ROME, radius_km=200, bands="T", span=(1000, 1100), why="Band T over a buffer with sea (about half the circle)"),
+        q("F37", S, 8, *TIMBUKTU, bands="T", span=(1475, 1525), why="Band T at L8: the LMR cell count at the smaller scale"),
+        q("F38", P, 8, bands="T", polity="Northern Song", year=961, span=(961, 1027), why="Band T on a polity at L8 (crosswalk path)"),
+        q("F39", P, 6, bands="T", polity="Roman Republic", year=-100, span=(-200, -100), why="BCE polity: no LMR, HYDE nearest epoch, eVolv2k events"),
+        q("F40", S, 6, *TIMBUKTU, bands="T", span=(1257, 1257), why="single-year span (the Samalas event year)"),
+        q("F41", S, 6, *TIMBUKTU, bands="T", span=(1980, 2020), why="span crossing the end of the LMR coverage (1998) and HYDE's annual epochs"),
+        q("F42", S, 6, *ROME, bands="T", span=(-50, 50), why="span crossing the BCE and CE boundary (LMR starts at 1 CE)"),
+        q("F43", S, 6, -13.96, -61.69, bands="T", span=(1475, 1525), why="the largest L6 basin (216,379 km2, Bolivia and Brazil): the most LMR cells a single basin can have"),
+        q("F44", S, 6, *TIMBUKTU, bands="T", span=(800, 1200), why="a long span (401 years): row counts and payload size"),
+        q("F45", B, 6, *TIMBUKTU, radius_km=500, bands="T", span=(1475, 1525), why="a 500 km buffer: a large footprint, many LMR cells (low_resolution expected false)"),
     ]
 
 
@@ -159,11 +179,12 @@ def fetch(name, only=None):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["plan-fixtures", "plan-population", "fetch", "pretty"])
-    ap.add_argument("which", nargs="?", choices=["fixtures", "population"])
+    ap.add_argument("cmd", choices=["plan-fixtures", "plan-population", "plan-bandt", "fetch", "pretty"])
+    ap.add_argument("which", nargs="?", choices=["fixtures", "population", "bandt"])
     ap.add_argument("--only", nargs="*")
     a = ap.parse_args()
     if a.cmd == "plan-fixtures": write_manifest("fixtures", fixtures())
+    elif a.cmd == "plan-bandt": write_manifest("bandt", bandt_fixtures())
     elif a.cmd == "plan-population": plan_population()
     elif a.cmd == "pretty": pretty_set(a.which)
     else: fetch(a.which, a.only)

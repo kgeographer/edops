@@ -34,6 +34,12 @@ def load_all():
     return [q for q in fx if q["http"] == 200], [q for q in pop if q["http"] == 200], mf["provenance"]
 
 
+def load_bandt():
+    """The Band T-only fixtures (F35 to F45, manifest_bandt.json); those that returned 200."""
+    _, items = load_set("bandt")
+    return [q for q in items if q["http"] == 200]
+
+
 def population_weights(pop):
     """Query id -> weight so that each climate zone counts in proportion to its number of L6 basins worldwide.
 
