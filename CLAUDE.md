@@ -100,7 +100,7 @@ source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus).
 **Next (dashboard):** Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
 source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
 LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
-Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. Then non-global (regional)
+Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Then non-global (regional)
 temporal datasets (significant implications for the data model, API and dashboard UX); seed docs (not merged) are on
 remote branch `claude/remote-phone-file-access-hvttai`: `docs/edop/regional/{regional_layers_framing,drought_atlas_memo}.md`.
 
