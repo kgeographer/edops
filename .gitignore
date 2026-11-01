@@ -81,6 +81,7 @@ docs/design/*
 docs/design/dashboard/*.pdf
 docs/design/dashboard/.DS_Store
 docs/design/dashboard/edops_docs_for_opus.md
+docs/design/dashboard/EDOPS v1 plan 31Oct.md
 
 # Office temp/lock files
 ~$*
