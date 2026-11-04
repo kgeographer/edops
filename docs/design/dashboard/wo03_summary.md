@@ -1,4 +1,4 @@
-# WO-03 summary (draft, Q1 to Q3 done; Q5, Q6 not started; Q4 on hold)
+# WO-03 summary (draft, Q1 to Q5 done; Q6 not started; Q4 reframed)
 
 Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer to it). Measured on the local database at L6, on 9 test places and the WO-02 sample of 306 random basins (not settlements, which sit on coasts and rivers more often).
 
@@ -24,6 +24,19 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 - **The place's own ecoregion is the basin's largest in 94% of sample basins** (280 of 297); in the rest the place is in a smaller one. At the test places, Alexandria, Timbuktu and Tbilisi are in the smaller.
 - **Gaps.** Coastal and lake basins are partly outside every ecoregion polygon (median full coverage, worst 71%); one sample point, in a lake, falls in none. 26 of 847 ecoregions have no Wikipedia text; they matter for 3 to 4 of 306 sample places.
 
+## Q4. River names (reframed; Natural Earth supplied by Karl, not in the database)
+
+- **The layer names the main stem near a place in about 60% of World Heritage Cities** (156 of 258 within 10 km of the nearest river above 10,000 km²), and 38% of random basins (115 of 306), which bracket settlements in general. It is better in Europe (87 of 115 cities) than for Arab states (5 of 21); desert and polar basins have almost none.
+- **When it matches, the match is tight** (on the line or far from it), but the named river may be far from the place: in a 30-city check, 9 of 22 matched cities had the main stem more than 50 km away, and a few names are branches (Lek, not Rhine).
+- **No name does not mean no river.** The river network says a river is there (Berlin: a 12,700 km² stem 12 km away, with no line in the layer). Names would be added only for close, confident matches.
+
+## Q5. Nearest main stem
+
+- **The basin's own upstream area can be far from the river a place sits near:** Kaifeng's nearest river above 1,000 km² is 11.5 km away and drains 48 times the basin's own area. Timbuktu and Tbilisi sit on the big river (ratio about 1).
+- **In 306 random basins, a river 10 or more times larger than the basin lies within reach for 4% at 1,000 km² (median 10 km away), 15% at 10,000 km² (median 62 km) and 64% at 100,000 km² (median 369 km).** At the top threshold the figure mostly reflects distance. None of the rivers that touch the core exceed the basin's area tenfold.
+- **Median distance to the nearest river above 10,000 km² is 49 km;** above 1,000 km², 9 km.
+- Limit: upstream area is size at that point; a major river near its source reads small.
+
 ## Decisions these numbers raise (for Karl and Opus)
 
 1. Keep every touching basin as a neighbour, or drop point contacts and very short borders? What cutoff?
@@ -33,7 +46,9 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 5. How to treat a neighbour whose catchment is almost the core's, and ties or zeros, in "where the core ranks" statements.
 6. Whether the ring should be built from one score call (faster, needs a code change to verify).
 7. Which ecoregions to name for a place or a ring: any area, 1% or 5%; and what to say about the part outside every ecoregion (coast, lakes) and about the 26 ecoregions with no text.
+8. Whether to name rivers at all, and if so the rule: name only for a close named line and a close stem ("on the Danube"), generic wording otherwise (I-9: `gaz.hydrorivers` is incomplete; `gaz.rivers` was used).
+9. What distance and size count as a river "near" a place, given the distances above.
 
 ## Still to do
 
-Q5 nearest main stem; Q6 where the point sits. Q4 (river names) needs a named-rivers source, which the database does not have.
+Q6 where the point sits (distance to the core boundary, nearest neighbour, distance to the nearest basin for island and coastal points).

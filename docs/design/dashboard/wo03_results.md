@@ -316,6 +316,7 @@ Open, from the above (none is a verdict):
 - **I-6** Area ratios are unbounded for tiny cores (1k): the largest `max_ratio` is 2,904 and the largest `min_ratio` 1,024, both from cores under 60 km²; 8 of 306 sample cores are under 100 km².
 - **I-7** Three notions of "coastal" coexist (1l): the `coast` flag, the Sandbox badge "Coastal terminal" (`dist_sink` under 1 km), and the engine's `outlet_type`. The Sandbox badge and the flag disagree for 1,690 of 3,784 L6 basins labelled Coastal terminal (45%). Whether the Sandbox rule is intentional was not established.
 - **I-8** Resolved by the source documentation (supplied by Karl 2026-11-02; document not named): a sink (`endo` = 2) with `next_down` > 0 carries a "virtual" connection, a topological link to an appropriate downstream polygon so that routing queries work in larger basins, not surface flow; "users can decide whether or not to terminate the routing at endorheic sinks". So the 319 of 1,686 L6 sinks with a `next_down` (267 pointing at an `endo` = 0 basin) are by design, and the 5 sample cores whose `next_down` basin is 29 to 432 km away and not a neighbour are such links. Consequence: Q2's first classification (Cell 2) followed virtual links as if they were flow; Q2 Cell 6 re-classes with them cut.
+- **I-9** `gaz.hydrorivers` (8,319,315 reaches) lacks 158,568 reaches that `gaz.rivers` (8,477,883) has; all of them lie in northern North America and Greenland (latitude 51 to 84, longitude -179 to -12; upstream area up to 210,421 km2). Every `hyriv_id` in `gaz.hydrorivers` is in `gaz.rivers`. Q4 and Q5 use `gaz.rivers`. Why `gaz.hydrorivers` is incomplete was not investigated.
 
 ## Q2. Flow relation of neighbours (notebook `wo03_q2_flow.ipynb`)
 
@@ -348,6 +349,31 @@ Notes for the algorithm stage (not measured here):
 - Karl's hypothesis for the 26 ecoregions without Wikipedia text (not checked): articles may exist under changed names, since the ecoregion-to-article mapping was not done exhaustively; and OneEarth may have added or renamed ecoregions when it took over from WWF stewardship. A check would compare these 26 names with Wikipedia titles and with the WWF 2001 ecoregion list.
 - A description rule needs a cutoff (any, 1%, 5%) and a way to handle the uncovered share (coastal and lake basins).
 
-## Q4 to Q6
+## Q4. River names: does the Natural Earth layer reach the main stem (notebook `wo03_q4_river_names.ipynb`)
 
-Not started (Q4 on hold).
+The work order's Q4 (carry names along main stems, share of cores and rings with a named river) was not done as written. Natural Earth rivers are not in the database. Karl supplied the file (`data/ne_10m_rivers_lake_centerlines_scale_rank`, version 5.0.0) and its map showed large gaps in deserts and mountains, so the question tested was whether the layer names the main stem near a place often enough to use. Table: `output/edop/whg/q4_names.csv`. Place sets: the 258 World Heritage Cities (`gaz.wh_cities`; nearer to major rivers than settlements in general, so an upper bound) and the 306 WO-02 sample points (a lower bound). Method: nearest reach in `gaz.rivers` above a threshold (Q5 query), the point on it closest to the place, and the nearest named Natural Earth line to that point (distance in a projection centred on the point). The whole run (564 places, 2 thresholds, 1,128 queries) took 21 s.
+
+- **Layer:** 4,224 lines; 479 lake centerlines and 6 canals not used; 150 river-class lines have no name; 3,589 named river lines used, 1,044 distinct names, mostly scale ranks 6 to 9 (2,669), 95 of rank 1.
+- **Named line within 10 km of the main stem, WH Cities:** reach above 10,000 km2: 156 of 258 (60%); above 1,000 km2: 74 (29%). Sample: 115 of 306 (38%) and 56 (18%). Going from a 5 km to a 50 km cutoff moves the count only from 153 to 179 (cities, 10,000 km2): a match is on the line or far from it.
+- **By region (cities, 10,000 km2, within 10 km):** Europe 87 of 115; Asia and the Pacific 34 of 63; Americas 24 of 48; Africa 6 of 11; Arab states 5 of 21. Sample by climate zone: zones 1 to 4 and 15 have 0 or 1 of 17 matched (zone numbers not looked up).
+- **Distance from the place to its nearest reach (cities):** median 8.4 km above 1,000 km2, 59.2 km above 10,000 km2 (90th percentile 201 km).
+- **Spot check, 30 random cities (10,000 km2):** 22 have a named line within 3.3 km of the main stem point and 8 have none within 66 km (Berlin, Brasilia, Dakar, George Town, Ibiza, Marrakesh, Miagao, Muharraq). Berlin: main stem 11.7 km away but no line for it in the layer; the nearest named lines are the Oder (72 km) and the Elbe (81 km). Of the 22 matched, 9 have the main stem more than 50 km from the city (Haenam 189 km, San Gimignano 160, Røros 134, Cuernavaca 101 km, and five more). 22 of 258 cities have two differently named lines within 25 km of the main stem point.
+- **Name forms vary:** "Lek" for the reach at Amsterdam (a Rhine branch, from background knowledge, not checked), "Han" with "Namhan" 16.7 km away at Seoul (Jongno), "Pilcomayo River" with a suffix at Sucre where the others are bare names.
+- Limits: the match to a line does not show the river is the one a description would mention; the spot check was read by eye and was not checked against a source; dateline not handled.
+
+Framing (Karl): absence of a nearby Natural Earth line does not mean absence of a river. `gaz.rivers` supplies presence, size and distance; the layer supplies a name only where it has a line. A rule would state presence with a distance and add a name only for a close, confident match; otherwise generic wording. "On the river" would need a close named line and a close stem: in the 30-city spot check, about 5 have the stem within 5 km (Cordoba, Grand-Bassam, Hamburg, Yaroslavl; Jongno at 5.4 km). Absence of a reach in `gaz.rivers` also does not prove absence of a stream (small and seasonal channels; not tested).
+
+## Q5. Nearest main stem (notebook `wo03_q5_main_stem.ipynb`)
+
+Nearest reach in `gaz.rivers` with upstream area (`upland_skm`) at or above 1,000, 10,000 and 100,000 km2 (905,279, 273,674 and 60,558 reaches); distance by geography from the point; compared with the core's `up_area`. Query 0.00 to 1.2 s (median 0.002 s). Sample table: `output/edop/whg/q5_sample.csv` (918 rows, 306 cores). Names: see Q4.
+
+- **Test places (ratio = stem upstream area / core upstream area):** Kaifeng: reach 11.5 km away, 733,592 km2 against the core's 15,267, ratio 48, outside the core, the same reach at all three thresholds. Timbuktu 12.6 km, ratio 0.99, inside the core; Tbilisi 0.4 km, ratio 0.93, inside. Alexandria: 52 km, 2,916,802 km2, ratio 178. Lviv 9.76 at 100,000 km2 (372 km away). Tristan da Cunha (no basin): nearest reach 2,806 km away at 1,000 km2, 2,837 km at 10,000.
+- **Ratio of 10 or more, test places (9 with a basin):** 1 at 1,000 km2 (Kaifeng); 2 at 10,000 (Kaifeng, Alexandria); 5 at 100,000 (Kaifeng, Poltava, Chaco Canyon, Alexandria, Utqiagvik), at distances of 11 to 658 km.
+- **Sample (306), distance to the nearest such reach:** median 9.0 km above 1,000 km2 (90th percentile 30 km), 49.0 km above 10,000 km2 (155 km), 317.5 km above 100,000 km2 (1,006 km).
+- **Sample, ratio of 10 or more:** 13 (4.2%) above 1,000 km2, median distance 10 km; 46 (15.0%) above 10,000 km2, median 62 km; 195 (63.7%) above 100,000 km2, median 369 km. Ratio of 100 or more: 5, 12 and 41. None of the reaches that touch the core has a ratio of 10 or more at any threshold (234, 109 and 26 touch the core).
+- **Reach touches the core:** 76.5% (1,000 km2), 35.6% (10,000), 8.5% (100,000).
+- Limits: upstream area measures size at that point, not the river's size overall; a major river near its source has a small value there, and a headwater reach of a major river can fall under a threshold. A ratio of 10 or more is the work order's "order of magnitude" read as a ratio, not a defined cutoff. Sample points are basin interior points, not settlements; the settlement comparison was done only for names (Q4), not for the gap.
+
+## Q6. Where the point sits
+
+Not started.
