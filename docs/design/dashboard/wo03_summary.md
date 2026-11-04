@@ -1,4 +1,4 @@
-# WO-03 summary (draft, Q1 and Q2 done; Q3, Q5, Q6 not started; Q4 on hold)
+# WO-03 summary (draft, Q1 to Q3 done; Q5, Q6 not started; Q4 on hold)
 
 Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer to it). Measured on the local database at L6, on 9 test places and the WO-02 sample of 306 random basins (not settlements, which sit on coasts and rivers more often).
 
@@ -18,6 +18,12 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 - **Ring completeness.** Every basin that drains into a core is in its ring. A core's downstream basin is in the ring except for sinks.
 - **Upstream-catchment values.** Flow neighbours differ from the core by about half as much as off-stream ones (3.5 against 7.5 to 9.1 percentile points), but mostly because their catchments overlap: a neighbour whose catchment is within 10% of the core's (10% of flow neighbours) is the same place on these variables.
 
+## Q3. Ecoregions
+
+- **A basin has one or two ecoregions of any size, a ring two or three.** At 5% of the area: 146 of 298 sample basins have one, 111 two, 41 three or more; rings have a median of 2 (90% have 4 or fewer). Basin and ecoregion boundaries are drawn independently, so this is expected.
+- **The place's own ecoregion is the basin's largest in 94% of sample basins** (280 of 297); in the rest the place is in a smaller one. At the test places, Alexandria, Timbuktu and Tbilisi are in the smaller.
+- **Gaps.** Coastal and lake basins are partly outside every ecoregion polygon (median full coverage, worst 71%); one sample point, in a lake, falls in none. 26 of 847 ecoregions have no Wikipedia text; they matter for 3 to 4 of 306 sample places.
+
 ## Decisions these numbers raise (for Karl and Opus)
 
 1. Keep every touching basin as a neighbour, or drop point contacts and very short borders? What cutoff?
@@ -26,7 +32,8 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 4. What to show when a place has no neighbours or only coastal ones (islands, offshore points)?
 5. How to treat a neighbour whose catchment is almost the core's, and ties or zeros, in "where the core ranks" statements.
 6. Whether the ring should be built from one score call (faster, needs a code change to verify).
+7. Which ecoregions to name for a place or a ring: any area, 1% or 5%; and what to say about the part outside every ecoregion (coast, lakes) and about the 26 ecoregions with no text.
 
 ## Still to do
 
-Q3 ecoregions; Q5 nearest main stem; Q6 where the point sits. Q4 (river names) needs a named-rivers source, which the database does not have.
+Q5 nearest main stem; Q6 where the point sits. Q4 (river names) needs a named-rivers source, which the database does not have.

@@ -330,6 +330,24 @@ Open, from the above (none is a verdict):
 - **Ranks:** the first measure (does the core's rank change when flow neighbours are dropped) was uninformative (14 of 14 at all three places because the denominator changes) and is not used. Ranking by "1 + number above" gives "1st of 6" when every basin is tied at 0 (Timbuktu `karst_upstream`, Kaifeng `wet_pct_grp2_upstream`): a rank rule needs tie handling.
 - Limits: 14 `_upstream` variables; percentile points; sample is random basins, not settlements; the 3-place table is 19 pairs.
 
-## Q3 to Q6
+## Q3. Ecoregions (notebook `wo03_q3_ecoregions.ipynb`)
+
+**Answer:** a basin usually has one or two ecoregions of any size, a ring two or three. Pair table of areas: `output/edop/whg/q3_basin_eco.csv` (3,387 rows, 1,735 basins); per-core summary `q3_core_ring_eco.csv` (307 cores = 298 sample cores with neighbours + 9 test places). Areas are geography areas of basin-ecoregion intersections; 69 invalid ecoregion geometries were repaired with `ST_MakeValid`. The 1,735-basin run took 801 s (the first 200 took 122 s; one stretch, 200 to 400, took 473 s).
+
+- **Ecoregions per core (298 sample cores):** any area: median 2, 90th percentile 3, max 7. At 1% of the core: mean 1.8; at 5%: mean 1.7. At 5%, 146 cores have 1, 111 have 2, 35 have 3, 5 have 4, 1 has 5.
+- **Per ring (core plus neighbours):** any area: median 3, 90th percentile 5, max 9; at 5% of the ring: median 2, 90th percentile 4, max 7. 76 rings have 1, 113 have 2, 58 have 3, 31 have 4, 20 have 5 to 7.
+- **Largest ecoregion's share of the core:** median 0.92, 10th percentile 0.52, min 0.28.
+- **The place's own ecoregion** (sample point = interior point of the basin): exactly one in 297 of 298; it is the core's largest-share ecoregion in 280 of 297 (94.3%). In the 17 others the point is in a smaller ecoregion. Test places: 6 of 9 are in the largest; Alexandria (largest share 0.69), Timbuktu (0.69), Tbilisi (0.79) are not.
+- **Test places, ring versus core:** core 1 to 5 ecoregions, ring 2 to 7 (Alexandria 3 to 5, Tbilisi 3 to 7); at 5% the ring is 2 to 4 (Alexandria 2, Tbilisi 3). Timbuktu's neighbours add none.
+- **Coverage gaps (share of core or ring inside any ecoregion polygon):** median 1.0, mean 0.991, minimum 0.709 (core) and 0.713 (ring). 9 sample cores are under 90% covered: 8 have the coast flag (uncovered 10% to 28%, probably sea beyond the polygons; shapes not inspected), and 1 (7060400750, centre 45.0, -80.0, coordinates in Georgian Bay; not checked on a map) has 29% uncovered and is the one sample point that falls in no ecoregion (nearest polygon 6.8 km away). Sample points are interior points of basins, so one can land on a lake; a settlement would not.
+- **Wikipedia text:** 821 of 847 ecoregions have a link and a summary; 26 have neither (Nearctic 10, Afrotropic 6, Antarctica 5, Palearctic 3, Neotropic 1, Australasia 1; e.g. Renosterveld, Cross-Timbers, Gariep Karoo, five Antarctic tundras, Queen Charlotte Islands conifer forests). Every `eco_wikitext` row matches an ecoregion. The point's ecoregion lacks text in 3 of 306 cores, the core's largest in 4 of 307.
+- Limits: sample is random basins, not settlements; ecoregion shares are by area only (position not measured); no Wikipedia summaries were read.
+
+Notes for the algorithm stage (not measured here):
+- Basins and ecoregions are drawn independently, so a basin often spans several ecoregions (median 2 in the sample). The count, each piece's compass position within the basin, and what each ecoregion is look useful as setting context for a place. Position was not measured in Q3 (EDA only); if built, measure bearings from the place (see 1j).
+- Karl's hypothesis for the 26 ecoregions without Wikipedia text (not checked): articles may exist under changed names, since the ecoregion-to-article mapping was not done exhaustively; and OneEarth may have added or renamed ecoregions when it took over from WWF stewardship. A check would compare these 26 names with Wikipedia titles and with the WWF 2001 ecoregion list.
+- A description rule needs a cutoff (any, 1%, 5%) and a way to handle the uncovered share (coastal and lake basins).
+
+## Q4 to Q6
 
 Not started (Q4 on hold).
