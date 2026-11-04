@@ -374,6 +374,17 @@ Nearest reach in `gaz.rivers` with upstream area (`upland_skm`) at or above 1,00
 - **Reach touches the core:** 76.5% (1,000 km2), 35.6% (10,000), 8.5% (100,000).
 - Limits: upstream area measures size at that point, not the river's size overall; a major river near its source has a small value there, and a headwater reach of a major river can fall under a threshold. A ratio of 10 or more is the work order's "order of magnitude" read as a ratio, not a defined cutoff. Sample points are basin interior points, not settlements; the settlement comparison was done only for names (Q4), not for the gap.
 
-## Q6. Where the point sits
+## Q6. Where the point sits (notebook `wo03_q6_point_position.ipynb`)
 
-Not started.
+For each point: the L6 basin containing it, distance to the core's outline (the coast counts for a coastal basin), distance to the nearest neighbouring basin (a divide), the core's size measure (square root of its area, km), neighbours within 5 and 25 km. Tables: `output/edop/whg/q6_points.csv` (10 test places, 258 WH Cities, 306 sample points) and `q6_geonames_subset.csv` (random 3,000 of 27,699 GeoNames cities). Neighbours are by `ST_Touches`, as in the ring. The sample points are basin interior points, so their distances reflect how the point was chosen.
+
+- **Test places (inside a basin: 9):** distance to the nearest neighbouring basin 6 to 28 km at 7 of them (3% to 26% of the core size measure); Lviv 1.9 km (1.5%, the only one with a neighbour within 5 km); Kaifeng 6.0 km (4.9%). Alexandria is 1.5 km from the core's outline (the coast) but 46.9 km from the nearest neighbour; Utqiagvik 0.2 km from the outline and 6.2 km from the nearest neighbour. Tristan da Cunha has no basin; nearest basin 2,803.7 km.
+- **WH Cities (254 inside a basin):** distance to the core outline: median 7.6 km (10% 0.6, 90% 29.5), as a share of the size measure median 0.076 (10% 0.007, 90% 0.223). Distance to the nearest neighbouring basin: median 13.5 km (10% 2.2, 90% 41.6; 14 cities have no neighbour). Nearest neighbour within 1 km: 13 (5%); 5 km: 47 (19%); 10 km: 86 (34%); 25 km: 175 (69%). At or under 2% of the size measure: 66 (26%); 5%: 100 (39%); 10%: 154 (61%).
+- **Coast versus divide:** for 84 of 254 WH Cities (33%) the nearest part of the outline is closer than any neighbouring basin (14 of those have no neighbour). Sample: 32 of 306.
+- **Neighbours within 5 km of the point (WH Cities):** none for 207, one for 35, two for 12.
+- **Sample (306 interior points):** distance to the outline median 15.0 km (0.229 of the size measure); to the nearest neighbour median 16.2 km; nearest neighbour within 1 km: 5 (2%), 5 km: 43 (14%).
+- **Points with no L6 basin (the point is inside no basin polygon):** GeoNames subset 6 of 3,000 (0.2%; 2,994 have a basin); WH Cities 4 of 258.
+  - Near an edge: Akureyri (Iceland) is 0.2 km outside the nearest basin; Levuka (Fiji, a WH City) is under 5 m outside. Cause not looked at (probably the coastline).
+  - Islands with no L6 basin: Apia 7,196 km from the nearest basin, East Honolulu 3,630, Kaneohe 3,617, Assomada 661, Bambous 570 (GeoNames subset); Cidade Velha 652, Angra do Heroismo 1,108, St. George's (Bermuda) 1,052 (WH Cities); Tristan da Cunha 2,804 (test place).
+  - A snap of about 1 km would catch Akureyri and Levuka; no tolerance up to hundreds of km changes the islands.
+- Limits: points just offshore of a coast with a basin nearby are not represented (settlement coordinates do not produce them), so how often those occur was not measured; the size measure is one choice (equivalent side length); sample distances reflect the choice of interior points; the GeoNames subset is 3,000 of 27,699.

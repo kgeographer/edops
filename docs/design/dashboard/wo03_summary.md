@@ -1,4 +1,4 @@
-# WO-03 summary (draft, Q1 to Q5 done; Q6 not started; Q4 reframed)
+# WO-03 summary (draft, Q1 to Q6 done; Q4 reframed)
 
 Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer to it). Measured on the local database at L6, on 9 test places and the WO-02 sample of 306 random basins (not settlements, which sit on coasts and rivers more often).
 
@@ -37,6 +37,12 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 - **Median distance to the nearest river above 10,000 km² is 49 km;** above 1,000 km², 9 km.
 - Limit: upstream area is size at that point; a major river near its source reads small.
 
+## Q6. Where the point sits
+
+- **WH Cities sit near a basin edge more often than a basin's middle point does:** the median distance to the core's outline is 7.6 km, 7.6% of the core's size (equivalent side); the nearest neighbouring basin is within 5 km for 19% and within 25 km for 69%.
+- **For a third of cities (84 of 254) the nearest edge is the coast, not a divide;** Alexandria is 1.5 km from the coast and 47 km from the nearest neighbouring basin.
+- **A settlement has an L6 basin in nearly every case:** 2,994 of 3,000 GeoNames cities. The 6 without are 5 islands the basin data does not cover (570 to 7,196 km from the nearest basin) and Akureyri, whose point is 0.2 km outside a basin's edge; Levuka (Fiji) among the WH Cities is under 5 m outside. Snapping would fix the edge cases and nothing else. Points just offshore of a coast were not measured.
+
 ## Decisions these numbers raise (for Karl and Opus)
 
 1. Keep every touching basin as a neighbour, or drop point contacts and very short borders? What cutoff?
@@ -48,7 +54,9 @@ Read this first. Evidence and tables: `wo03_results.md` (issue numbers I-n refer
 7. Which ecoregions to name for a place or a ring: any area, 1% or 5%; and what to say about the part outside every ecoregion (coast, lakes) and about the 26 ecoregions with no text.
 8. Whether to name rivers at all, and if so the rule: name only for a close named line and a close stem ("on the Danube"), generic wording otherwise (I-9: `gaz.hydrorivers` is incomplete; `gaz.rivers` was used).
 9. What distance and size count as a river "near" a place, given the distances above.
+10. Whether to snap a point outside every basin to the nearest one, and the tolerance: a snap of about 1 km would fix Akureyri and Levuka and nothing else; the other points with no basin are islands 570 km or more away.
+11. How to word "near the edge of its basin" when the nearest edge is the coast, and whether the cutoff is a distance or a share of the core's size (1 km, 5 km, 10 km and 25 km are 5%, 19%, 34% and 69% of WH Cities).
 
 ## Still to do
 
-Q6 where the point sits (distance to the core boundary, nearest neighbour, distance to the nearest basin for island and coastal points).
+Nothing in WO-03 beyond review by Karl and Opus. Not done: Q4 as the work order wrote it (matching names along main stems; share of cores and rings with a named river).
