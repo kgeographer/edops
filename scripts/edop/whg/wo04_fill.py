@@ -6,17 +6,21 @@ on the local database, and the saved WO-03 ring and flow tables. Used by noteboo
 """
 import json
 import re
+import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
 
+from pathlib import Path
+
 import numpy as np
 
 BASE = 'http://localhost:8000'
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATES_PATH = ROOT / 'docs' / 'design' / 'dashboard' / 'profile_templates.md'
 MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
           'November', 'December']
-STATUS_WORDS = {'outside_active_domain': 'zero here, so no percentile', 'no_data': 'no data in the source',
-                'low_coverage': 'low coverage', 'not_areal': 'not defined for an area'}
+SECTIONS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']
 
 # units that are 'maybe' or 'no' in wo04a_results.md, with what each needs
 NEED = {
@@ -31,7 +35,9 @@ NEED = {
     'S3.3': 'cutoffs for a much larger river nearby',
     'S3.4': 'lake share, not in the payloads',
     'S4.1a': 'terrain scheme or cutoff (wo04b)',
+    'S4.1b': 'a texture class word',
     'S4.3': 'cutoffs for karst and permafrost words',
+    'S5.1c': 'wording',
     'S5.2': 'ring comparison rules',
     'S6.2c': 'description of a neighbouring basin (ring rules)',
     'S6.3': 'contrast counts (ring rules); no compass words',
@@ -43,6 +49,60 @@ NEED = {
     'S8.3': 'snap (not built)',
     'S9.1': 'URL scheme from WHG into EDOPS',
 }
+
+
+_TPL = {}
+
+
+def templates():
+    """The wording in profile_templates.md; re-read whenever the file changes. Refuses a version with no Changes line."""
+    mtime = TEMPLATES_PATH.stat().st_mtime
+    if _TPL.get('mtime') == mtime:
+        return _TPL['data']
+    text, version, changes, section = {}, None, [], None
+    for line in TEMPLATES_PATH.read_text().splitlines():
+        line = line.rstrip()
+        if line.startswith('## '):
+            section = line[3:].strip().lower()
+        elif line.startswith('Version:'):
+            version = int(line.split(':', 1)[1])
+        elif section == 'changes' and line.startswith('- v'):
+            changes.append(line)
+        else:
+            m = re.match(r'([A-Za-z0-9_.]+): (.*)$', line)
+            if m and section != 'changes':
+                text[m.group(1)] = m.group(2)
+    newest = max((int(re.match(r'- v(\d+) ', c).group(1)) for c in changes), default=None)
+    if version is None or newest != version:
+        raise ValueError(f'{TEMPLATES_PATH.name}: Version is {version} but the newest Changes line is v{newest}; '
+                         'raise Version and add a Changes line (- vN | date | who | what and why)')
+    _TPL.update(mtime=mtime, data=dict(text=text, version=version, changes=changes))
+    return _TPL['data']
+
+
+_SLOT = re.compile(r'\{([A-Za-z0-9_.]+)\}')
+
+
+def fmt(key, vals):
+    """Fill template `key` from profile_templates.md; a slot the code does not supply stops the run."""
+    tpl = templates()['text'].get(key)
+    if tpl is None:
+        raise KeyError(f'{TEMPLATES_PATH.name} has no line "{key}:"')
+
+    def sub(m):
+        if m.group(1) not in vals:
+            raise KeyError(f'{TEMPLATES_PATH.name}, "{key}": the slot {{{m.group(1)}}} is not one the generator supplies')
+        return str(vals[m.group(1)])
+    return _SLOT.sub(sub, tpl)
+
+
+def templates_stamp():
+    """Which wording made a generated file: version, last commit of the template file, edited since."""
+    rel = str(TEMPLATES_PATH.relative_to(ROOT))
+    git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
+    last = git('log', '-1', '--format=%h', '--', rel)
+    edited = bool(git('status', '--porcelain', '--', rel))
+    return f'{TEMPLATES_PATH.name} v{templates()["version"]} (last commit {last or "none yet"}; edited since: {"yes" if edited else "no"})'
 
 
 def PH(uid, extra=''):
@@ -144,7 +204,7 @@ def fill_units(F):
     m = sigval(pub, 'tmp_dc_monthly')
     if m and len(m) == 12:
         lo, hi = int(np.argmin(m)), int(np.argmax(m))
-        U['S2.2bc'] = ok(f'from {m[lo]:.1f} °C in {MONTHS[lo]} to {m[hi]:.1f} °C in {MONTHS[hi]}')
+        U['S2.2bc'] = ok(fmt('S2.2bc', dict(lo_temp=f'{m[lo]:.1f}', lo_month=MONTHS[lo], hi_temp=f'{m[hi]:.1f}', hi_month=MONTHS[hi])))
     else:
         U['S2.2bc'] = no('no monthly temperature')
 
@@ -155,7 +215,7 @@ def fill_units(F):
         U['S3.2a'] = no('no area')
     cls, pr, ar, tr = provenance(F)
     if cls == 'Exogenous water supply':
-        U['S3.2b'] = ok('wetter', f'class {cls}; precipitation ratio {pr:.2f}' + (f', moisture ratio {ar:.2f}' if ar else ''))
+        U['S3.2b'] = ok(fmt('S3.2b.wetter', {}), f'class {cls}; precipitation ratio {pr:.2f}' + (f', moisture ratio {ar:.2f}' if ar else ''))
     else:
         U['S3.2b'] = no(f'class is {cls}: the built rule has no "drier" or "cooler" statement, only "wetter" for exogenous water', na=True)
     U['S3.2b']['class'] = cls
@@ -164,11 +224,11 @@ def fill_units(F):
     if dist is None:
         U['S3.5'] = no('no distance to the sink')
     elif endo == 2:
-        U['S3.5'] = ok('nowhere: it is a closed basin, an inland sink', f'endo=2; dist_sink {dist:,.0f} km')
+        U['S3.5'] = ok(fmt('S3.5.closed', {}), f'endo=2; dist_sink {dist:,.0f} km')
     elif endo == 1:
-        U['S3.5'] = ok(f'to an inland sink about {dist:,.0f} km downstream along the river from the basin\'s outlet', 'endo=1')
+        U['S3.5'] = ok(fmt('S3.5.inland', dict(km=f'{dist:,.0f}')), 'endo=1')
     else:
-        U['S3.5'] = ok(f'to the sea about {dist:,.0f} km downstream along the river from the basin\'s outlet', 'endo=0')
+        U['S3.5'] = ok(fmt('S3.5.sea', dict(km=f'{dist:,.0f}')), 'endo=0')
 
     lith = sigval(pub, 'lith_class')
     U['S4.2'] = ok(re.sub(r'\s*\([A-Z]{2}\)$', '', lith)) if lith else no('no lithology')
@@ -176,11 +236,11 @@ def fill_units(F):
     for uid, var, key, word in (('S5.1a', 'cropland_extent', 'cropland_extent', 'cropland'), ('S5.1b', 'pasture_extent', 'pasture_extent', 'pasture')):
         val, st = sigval(pub, key), rows.get(var, {}).get('status')
         if st == 'outside_active_domain':
-            U[uid] = ok(f'no {word} is recorded', 'zero here (outside active domain)')
+            U[uid] = ok(fmt(uid + '.none', {}), 'zero here (outside active domain)')
         elif val is None or st == 'no_data':
             U[uid] = no('no data')
         else:
-            U[uid] = ok(f'{val:.0f}%')
+            U[uid] = ok(fmt(uid + '.some', dict(value=f'{val:.0f}%')))
 
     n = F['n_nb']
     U['S6.1a'] = ok(f'{n + 1}', 'empty ring: needs its own wording' if n == 0 else None)
@@ -188,8 +248,8 @@ def fill_units(F):
     if f['up1'] + f['upN'] + f['dn1'] + f['dnN'] == 0:
         U['S6.2'] = no('no upstream or downstream neighbour in the ring', na=True)
     else:
-        U['S6.2'] = ok(f"upstream: {f['up1']} direct, {f['upN']} further; downstream: {f['dn1']} direct, {f['dnN']} further")
-    U['S7.2'] = ok('Its basin touches the sea.') if coast == 1 else no('basin does not touch the sea (optional part not stated)', na=True)
+        U['S6.2'] = ok(fmt('S6.2', f))
+    U['S7.2'] = ok(fmt('S7.2', {})) if coast == 1 else no('basin does not touch the sea (optional part not stated)', na=True)
     U['S8.1a'] = ok(f"{F['sub_area']:,.0f}") if F['sub_area'] else no('no area')
 
     bad = [(r['variable'], r['status']) for r in F['areas']['rows'] if r['status'] != 'ok']
@@ -198,10 +258,10 @@ def fill_units(F):
     if bad:
         txt = []
         if zero:
-            txt.append(f"{len(zero)} measures are zero here and so have no percentile: " + ', '.join(zero))
+            txt.append(fmt('S8.2.zero', dict(n=len(zero), list=', '.join(zero))))
         if other:
-            txt.append(f"{len(other)} have no value: " + '; '.join(f'{v} ({STATUS_WORDS.get(st, st)})' for v, st in other))
-        U['S8.2'] = ok('. '.join(txt))
+            txt.append(fmt('S8.2.other', dict(n=len(other), list='; '.join(f'{v} ({templates()["text"].get("status." + st, st)})' for v, st in other))))
+        U['S8.2'] = ok(fmt('S8.2', dict(parts='. '.join(txt))))
     else:
         U['S8.2'] = no('every measure has a value (optional part not stated)', na=True)
     U['S9.2'] = ok(F['wiki_url']) if F['wiki_url'] else no('no Wikipedia text for this ecoregion')
@@ -209,41 +269,34 @@ def fill_units(F):
 
 
 def render_filled_profile(name, F, U):
-    """The filled_profile as markdown: yes units filled, maybe units as visible placeholders."""
+    """The filled_profile as markdown: yes units filled, maybe units as visible placeholders. Wording: profile_templates.md."""
     L = [f'## {name}: environmental profile', '']
     if F['pub'] is None:
-        L += ['No basin contains this point (structured response `no_basin`; nearest basin: see WO-03 Q6). Every basin-keyed unit is empty.', '',
-              f'{PH("S1.1b")} {PH("S1.3")} {PH("S9.1")}', '']
+        stub = {uid: PH(uid) for uid in ('S1.1b', 'S1.3', 'S9.1')}
+        L += [fmt('nobasin.text', {}), '', fmt('nobasin.frame', stub), '']
         return '\n'.join(L)
-    t = lambda uid, default='⟦not filled⟧': U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
+    t = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
     s = F['pub']
     pct = lambda v: 'n/a' if v is None else f'{v}%'
-    km, perm = pct(sigval(s, 'karst')), pct(sigval(s, 'permafrost_extent'))
     sand, silt, clay = sigval(s, 'pct_sand'), sigval(s, 'pct_silt'), sigval(s, 'pct_clay')
     comp = f'{sand:.0f}% sand, {silt:.0f}% silt, {clay:.0f}% clay' if None not in (sand, silt, clay) else 'composition missing'
-    L += ['### Setting', f'{name} sits at about {PH("S1.1b")} m above sea level, in {PH("S1.1c")} country. It lies in the {t("S1.2a")} ecoregion, {PH("S1.2b")}. {PH("S1.3")} {PH("S1.4")}', '',
-          '### Climate',
-          f'Rainfall averages about {t("S2.1a")} mm a year, {PH("S2.1b")}. Temperatures average {t("S2.2a")} °C, {t("S2.2bc")}. {PH("S2.3")}', '']
-    s32 = f'Most of the water passing here falls far upstream: the catchment above is {t("S3.2a")} times the size of the local basin, and {t("S3.2b")} than it.' if U['S3.2b']['ok'] else f'⟦S3.2: not stated; {U["S3.2b"]["why"]}; area ratio {t("S3.2a")}⟧'
-    L += ['### Water', f'{name} is {PH("S3.1")}. {s32} {PH("S3.3")} {PH("S3.4")} The basin drains {t("S3.5")}.', '',
-          '### Land and geology',
-          f'The land is {PH("S4.1a")}, with ⟦S4.1b maybe: needs a texture class word; composition: {comp}⟧. The underlying rock is mostly {t("S4.2")}. {PH("S4.3", f"karst {km}, permafrost {perm}")}', '']
     lc = F['rows'].get('land_cover_name', {}).get('representative_raw')
-    def part(uid, noun, tail):
-        if not U[uid]['ok']:
-            return f'⟦{uid}: {U[uid]["why"]}⟧'
-        return U[uid]['text'] if U[uid]['text'].startswith('no ') else f'about {U[uid]["text"]} of the basin is {noun}{tail}'
-    crop_part, past_part = part('S5.1a', 'cropland', ''), part('S5.1b', 'pasture', '')
-    past_part = past_part.replace('about ', '', 1) if past_part.startswith('about ') else past_part
-    L += ['### Land cover today',
-          f'Today {crop_part} and {past_part}; ⟦S5.1c maybe: needs wording; GLC2000 majority: {lc}⟧ covers most of the rest. {PH("S5.2", "population density " + "{:,.1f}".format(sigval(s, "pop_density"))  + " per km²")}', '']
-    L += ['### Surroundings',
-          f"{name}'s basin is one of {t('S6.1a')} that meet here. {t('S6.2')} {PH('S6.2c')} {PH('S6.3')} {PH('S6.4')} {PH('S6.5')}", '']
-    L += ['### Coast and reach', f'{PH("S7.1a")} {t("S7.2")} {PH("S7.3")}', '']
-    dot = '.' if U['S8.2']['ok'] else ''
-    L += ['### About these figures',
-          f'These figures describe the basin of about {t("S8.1a")} km² that contains {name}, from global datasets of about {PH("S8.1b")}. {t("S8.2")}{dot} {PH("S8.3")}', '']
-    L += ['### Buttons', f'{PH("S9.1")} [Ecoregion on Wikipedia: {t("S9.2")}] [Data as JSON: always]', '']
+    extra = {'S4.1b': f'composition: {comp}',
+             'S4.3': f'karst {pct(sigval(s, "karst"))}, permafrost {pct(sigval(s, "permafrost_extent"))}',
+             'S5.1c': f'GLC2000 majority: {lc}',
+             'S5.2': 'population density ' + '{:,.1f}'.format(sigval(s, 'pop_density')) + ' per km²'}
+    vals = {'name': name}
+    for uid in NEED:
+        vals[uid] = PH(uid, extra.get(uid, ''))
+    for uid in U:
+        if U[uid]['ok'] or uid not in NEED:
+            vals[uid] = t(uid)
+    if U['S3.2b']['ok']:
+        vals['S3.2'] = fmt('S3.2', {'S3.2a': t('S3.2a'), 'S3.2b': t('S3.2b')})
+    else:
+        vals['S3.2'] = f'⟦S3.2: not stated; {U["S3.2b"]["why"]}; area ratio {t("S3.2a")}⟧'
+    for sec in SECTIONS:
+        L += [f'### {fmt(sec + ".title", {})}', fmt(sec + '.frame', vals), '']
     notes = [f'- {k}: {v["note"]}' for k, v in U.items() if v.get('note')]
     notes += [f'- {k}: {"not applicable" if v.get("na") else "not filled"} ({v["why"]})' for k, v in U.items() if not v['ok']]
     L += ['**Fill notes**', *notes, '']
