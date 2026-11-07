@@ -20,7 +20,7 @@ STEP = 2                  # "much larger": this many discharge classes (a factor
 D_KM = (10, 25, 50)       # distances tried for "nearby"
 # the values the sentences use now; the table keeps every value tried, so changing them needs no new query
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
-NAMED_LIMITS = {'r4': 25.0, 'r5': 5.0}   # S3.1 tier 1: a named river is mentioned out to this distance, by size: class 4 or larger (100 m3/s and up) 25 km, class 5 (10 to 99 m3/s) 5 km
+NAMED_LIMITS = {'r4': 25.0, 'r5': 10.0}   # S3.1 tier 1: a named river is mentioned out to this distance, by size: class 4 or larger (100 m3/s and up) 25 km, class 5 (10 to 99 m3/s) 10 km
 ON_KM = 1.5               # ... and within this distance the place is 'on' it
 NEAR_KM = 3.0             # S3.1: no named river, but a river of class 5 or larger within this distance is mentioned (tier 2); beyond, silence
 # S3.1 ignores anything smaller than class 5 (10 m3/s): the class 6 values stay in the table but are not used
@@ -161,6 +161,18 @@ def _val(row, k):
 
 
 _LABELS = {}
+_GENERIC = {'river', 'rio', 'rio', 'the', 'of', 'de', 'del', 'la', 'le', 'les', 'fleuve', 'riviere', 'branch', 'canal'}
+
+
+def _tokens(x):
+    import re, unicodedata
+    t = re.sub(r'[^a-z0-9 ]', ' ', unicodedata.normalize('NFKD', str(x)).encode('ascii', 'ignore').decode().lower()).split()
+    return {w for w in t if len(w) >= 3 and w not in _GENERIC}
+
+
+def agrees(ne_name, label):
+    """The Wikidata label and the Natural Earth line's own name share a word (an id attached to the wrong river does not)."""
+    return bool(_tokens(ne_name) & _tokens(label))
 
 
 def labels():
@@ -178,6 +190,8 @@ def _name(row, prefix):
     if not isinstance(q, str) or not q or km is None or not (km <= NAME_KM) or q not in labels():
         return ''
     if km2 is not None and km2 <= NAME_KM and (nm2 or q2) and q2 != q:
+        return ''
+    if not agrees(nm, labels()[q]):
         return ''
     return labels()[q]
 
