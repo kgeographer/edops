@@ -1,6 +1,6 @@
 # WO-05 results (running file, in progress)
 
-Written as the cells come back. Sections follow the numbered items of `wo05_place layer-framingA-wo04-fixes.md`. Nothing here is final until `wo05_summary.md` exists. Evidence comes from `notebooks/edop/whg/wo05_place_layer.ipynb` (Karl ran it; outputs pasted in the session) and `output/edop/whg/wo05_fill.csv`. Wording under test is `profile_templates_v4_target.md` (now Version 3).
+Written as the cells come back. Sections follow the numbered items of `wo05_place layer-framingA-wo04-fixes.md`. Nothing here is final until `wo05_summary.md` exists. Evidence comes from `notebooks/edop/whg/wo05_place_layer.ipynb` (Karl ran it; outputs pasted in the session) and `output/edop/whg/wo05_fill.csv`. Wording under test was the working copy `profile_templates_v4_target.md` (since swapped into `profile_templates.md` and deleted; commit 58fae48 holds it).
 
 ## 1. The place layer
 

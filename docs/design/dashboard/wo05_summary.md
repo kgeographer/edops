@@ -25,4 +25,4 @@ Met, checked on the regenerated `wo05_filled_profiles.md` (stamped `profile_temp
 
 ## Files
 
-`wo05_results.md`, `wo05_filled_profiles.md` (regenerated from live `profile_templates.md` v4), `wo05_wikilinks.csv` (all 847 rows, suspect flag), `profile_templates.md` (v4, live), `profile_templates_v4_target.md` (same content, kept as the WO-05 target), `profile_templates_v2_target.md` (Opus's original v2, untouched), notebook `notebooks/edop/whg/wo05_place_layer.ipynb`.
+`wo05_results.md`, `wo05_filled_profiles.md` (regenerated from live `profile_templates.md` v4), `wo05_wikilinks.csv` (all 847 rows, suspect flag), `profile_templates.md` (v4, live; the WO-05 working copy `profile_templates_v4_target.md` was deleted after the swap, recoverable from commit 58fae48), `profile_templates_v2_target.md` (Opus's original v2, untouched), notebook `notebooks/edop/whg/wo05_place_layer.ipynb`.
