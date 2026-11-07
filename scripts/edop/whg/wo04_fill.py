@@ -79,6 +79,10 @@ def check_keys(text):
     known = required | KEYS_OPTIONAL
     if 'S6.2.in_none' in text:
         known |= wo06_rings.ring_optional()
+    if 'S3.1.named' in text:   # nearest-river wording (WO-07): the template must carry every line it reads
+        from scripts.edop.whg import wo07_rivers
+        required |= wo07_rivers.river_keys()
+        known |= wo07_rivers.river_keys()
     unknown, missing = sorted(set(text) - known), sorted(required - set(text))
     if unknown or missing:
         raise ValueError(f'{TEMPLATES_PATH.name}: ' + '; '.join(
@@ -177,7 +181,7 @@ def label(key):
 
 
 def templates_stamp():
-    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script and wo06_rings.py."""
+    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script, wo06_rings.py and wo07_rivers.py."""
     git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
 
     def state(path):
@@ -185,7 +189,8 @@ def templates_stamp():
         return f'last commit {git("log", "-1", "--format=%h", "--", rel) or "none yet"}; edited since: {"yes" if git("status", "--porcelain", "--", rel) else "no"}'
     return (f'{TEMPLATES_PATH.name} v{templates()["version"]} ({state(TEMPLATES_PATH)}); '
             f'script {Path(__file__).name} ({state(Path(__file__).resolve())}); '
-            f'script wo06_rings.py ({state(Path(__file__).resolve().parent / "wo06_rings.py")})')
+            f'script wo06_rings.py ({state(Path(__file__).resolve().parent / "wo06_rings.py")}); '
+            f'script wo07_rivers.py ({state(Path(__file__).resolve().parent / "wo07_rivers.py")})')
 
 
 def PH(uid, extra=''):
@@ -218,11 +223,14 @@ def sigval(pub, key):
     return None
 
 
-def build_facts(lat, lon, conn, pairs, flow, ring=None):
+def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables; ring is
     wo06_rings.load_table() ({core hybas_id: rows}), needed only once the template carries the ring comparison lines."""
     pub, ar = fetch_point(lat, lon)
     F = dict(lat=lat, lon=lon, pub=pub, areas=ar, hid=None)
+    if rivers is not None:
+        from scripts.edop.whg import wo07_rivers
+        F['river'] = rivers.get(wo07_rivers.key(lat, lon))
     pe = conn.execute('SELECT eco_id, eco_name FROM gaz."Ecoregions2017" WHERE ST_Intersects(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) LIMIT 1',
                       (lon, lat)).fetchone()
     F['pt_eco_id'], F['pt_eco_name'] = (int(pe[0]), pe[1]) if pe else (None, None)
@@ -361,6 +369,10 @@ def fill_units(F):
         else:
             U[uid] = ok(fmt(uid + '.some', dict(value=f'{val:.0f}%')))
 
+    if has('S3.1.named'):   # nearest river and a much larger one nearby (WO-07 part C)
+        from scripts.edop.whg import wo07_rivers
+        U.update(wo07_rivers.fill_river_units(F, ok, no))
+
     n = F['n_nb']
     rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)
     U['S6.1a'] = ok(numword(n + 1) if rings else f'{n + 1}', 'empty ring: needs its own wording' if n == 0 else None)
@@ -412,7 +424,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = {'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.3'} if has('S3.3.named') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''

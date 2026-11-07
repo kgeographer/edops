@@ -185,7 +185,12 @@ def _stated(slugs, cap, key_ext, key_abo, key_cnt, V, core, nbs):
     live = [(s, c) for s, c in cm.items() if c]
     if not live:
         return None, dict(kind='none', ext=[], used=[], unstated='')
-    s, c = max(live, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
+    firm = [(s, c) for s, c in live if 2 * c['k'] > c['m']]     # a count is stated only when it is more than half the set
+    if not firm:
+        s, c = max(live, key=lambda sc: sc[1]['k'])
+        k, m = _nums(c['k'], c['m'])
+        return None, dict(kind='count_unstated', ext=[], used=[], unstated=f'{s} {c["side"]} than {k} of {m}, not more than half')
+    s, c = max(firm, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
     k, m = _nums(c['k'], c['m'])
     if _has(key_cnt):
         text = W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k, m=m))
