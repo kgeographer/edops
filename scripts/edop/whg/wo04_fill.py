@@ -424,7 +424,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.3'} if has('S3.3.named') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
@@ -436,6 +436,9 @@ def render_filled_profile(name, F, U):
         vals['S3.2'] = fmt('S3.2', {'S3.2a': t('S3.2a'), 'S3.2b': t('S3.2b')})
     else:
         vals['S3.2'] = f'⟦S3.2: not stated; {U["S3.2b"]["why"]}; area ratio {t("S3.2a")}⟧'
+    for k_, v_ in list(vals.items()):
+        if k_ != 'name' and isinstance(v_, str) and '{name}' in v_:
+            vals[k_] = v_.replace('{name}', name)      # units that open with the place's name (S3.1)
     for sec in SECTIONS:
         L += [f'### {fmt(sec + ".title", {})}', tidy(fmt(sec + '.frame', vals)), '']
     notes = [f'- {k}: {v["note"]}' for k, v in U.items() if v.get('note')]

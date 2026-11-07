@@ -12,6 +12,7 @@ import pandas as pd
 from scripts.edop.whg import wo04_fill as W
 
 RIVERS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_rivers.csv'
+LABELS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_river_labels.csv'
 NE_SHP = W.ROOT / 'data' / 'ne_10m_rivers_lake_centerlines_scale_rank' / 'ne_10m_rivers_lake_centerlines_scale_rank.shp'
 
 CLASSES = (5, 6)          # minimum size of the nearest river tried: ord_flow at or below 5 (10 m3/s) or 6 (1 m3/s)
@@ -19,6 +20,9 @@ STEP = 2                  # "much larger": this many discharge classes (a factor
 D_KM = (10, 25, 50)       # distances tried for "nearby"
 # the values the sentences use now; the table keeps every value tried, so changing them needs no new query
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
+NAMED_KM = 10.0           # S3.1: a named river within this distance is named (tier 1)
+ON_KM = 1.5               # ... and within this distance the place is 'on' it
+NEAR_KM = 3.0             # S3.1: no named river, but a river of class 6 or larger within this distance is mentioned (tier 2); beyond, silence
 OWN_MIN_KM = 1.0          # a reach counts as "in the own basin" only with more than this much length inside it (not a boundary clip)
 
 REACH_SQL = """
@@ -39,12 +43,12 @@ WHERE b.hybas_id = %s AND ST_Length(ST_Intersection(r.geom, b.geom)::geography) 
 """
 
 _NE = {}
-_PARTS = ('reach', 'ord', 'dis', 'km', 'name', 'name_km', 'name2', 'name2_km')
+_PARTS = ('reach', 'ord', 'dis', 'km', 'cx', 'cy', 'name', 'name_km', 'qid', 'name2', 'name2_km', 'qid2')
 FIELDS = ['key', 'label', 'group', 'lat', 'lon', 'hid', 'own_min'] + [f'{p}_{x}' for p in ('r5', 'r6', 'big') for x in _PARTS]
 
 
 def river_keys():
-    return {'S3.1.named', 'S3.1.unnamed', 'S3.3.named', 'S3.3.unnamed', 'S3.3.same'}
+    return {'S3.1.on', 'S3.1.named', 'S3.1.unnamed', 'S3.1.unnamed_on', 'S3.3.named', 'S3.3.unnamed', 'S3.3.same', 'S3.3.same.named'}
 
 
 def key(lat, lon):
@@ -58,12 +62,14 @@ def _ne():
         G['label_name'] = G['name_en'].where(G['name_en'].notna(), G['name'])
         ok = G['featurecla'].isin(['River', 'River (Intermittent)']) & G['label_name'].notna()
         NE = G[ok].reset_index(drop=True)
+        NE['qid'] = NE['wikidataid'].where(NE['wikidataid'].notna(), '')
         _NE.update(df=NE, sindex=NE.geometry.sindex)
     return _NE
 
 
 def ne_nearest(lat, lon, n_keep=2):
-    """Distinct-name nearest Natural Earth river lines to a point: [(name, km), ...], nearest first (as in WO-03 Q4)."""
+    """Distinct nearest Natural Earth river lines to a point: [(name, km, wikidata id), ...], nearest first (as in WO-03 Q4).
+    Two lines are the same river when they share an id (or, without one, a name)."""
     from pyproj import CRS, Transformer
     from shapely.geometry import Point
     from shapely.ops import transform
@@ -76,14 +82,15 @@ def ne_nearest(lat, lon, n_keep=2):
         ids = sindex.query(pt.buffer(r))
         if len(ids) == 0:
             continue
-        rows = sorted(((NE['label_name'].iloc[i], transform(tr.transform, NE.geometry.iloc[i]).distance(Point(0, 0)) / 1000.0) for i in ids), key=lambda x: x[1])
+        rows = sorted(((NE['label_name'].iloc[i], transform(tr.transform, NE.geometry.iloc[i]).distance(Point(0, 0)) / 1000.0, NE['qid'].iloc[i]) for i in ids), key=lambda x: x[1])
         best = rows
         if rows[0][1] <= inscribed(r):
             break
     out, seen = [], set()
-    for nm, km in best:
-        if nm not in seen:
-            seen.add(nm); out.append((nm, km))
+    for nm, km, qid in best:
+        ident = qid or nm
+        if ident not in seen:
+            seen.add(ident); out.append((nm, km, qid))
         if len(out) == n_keep:
             break
     return out
@@ -98,9 +105,9 @@ def _reach(conn, lat, lon, max_class, prefix, within_km=None):
     if r is None:
         return {}
     nn = ne_nearest(r[5], r[4], 2)
-    d = {f'{prefix}_reach': r[0], f'{prefix}_ord': r[1], f'{prefix}_dis': r[2], f'{prefix}_km': r[3],
-         f'{prefix}_name': nn[0][0] if nn else '', f'{prefix}_name_km': nn[0][1] if nn else np.nan,
-         f'{prefix}_name2': nn[1][0] if len(nn) > 1 else '', f'{prefix}_name2_km': nn[1][1] if len(nn) > 1 else np.nan}
+    d = {f'{prefix}_reach': r[0], f'{prefix}_ord': r[1], f'{prefix}_dis': r[2], f'{prefix}_km': r[3], f'{prefix}_cx': r[4], f'{prefix}_cy': r[5],
+         f'{prefix}_name': nn[0][0] if nn else '', f'{prefix}_name_km': nn[0][1] if nn else np.nan, f'{prefix}_qid': nn[0][2] if nn else '',
+         f'{prefix}_name2': nn[1][0] if len(nn) > 1 else '', f'{prefix}_name2_km': nn[1][1] if len(nn) > 1 else np.nan, f'{prefix}_qid2': nn[1][2] if len(nn) > 1 else ''}
     return d
 
 
@@ -152,15 +159,26 @@ def _val(row, k):
     return None if v is None or (isinstance(v, float) and np.isnan(v)) else v
 
 
+_LABELS = {}
+
+
+def labels():
+    """{wikidata id: English label} from the one-time lookup (fetch_labels); empty if it has not been run."""
+    if not _LABELS and LABELS_CSV.exists():
+        t = pd.read_csv(LABELS_CSV).fillna('')
+        _LABELS.update({q: l for q, l in zip(t['qid'], t['label_en']) if l})
+    return _LABELS
+
+
 def _name(row, prefix):
-    """The river's name only when a Natural Earth line lies within NAME_KM of the reach and no second differently
-    named line does (two close names are ambiguous, so the sentence says 'a river'); else ''."""
-    nm, km, nm2, km2 = (_val(row, f'{prefix}_{x}') for x in ('name', 'name_km', 'name2', 'name2_km'))
-    if not isinstance(nm, str) or not nm or km is None or not (km <= NAME_KM):
+    """The river's name (its Wikidata label) only when a Natural Earth line with an id and a label lies within NAME_KM of
+    the reach and no line of a different river does (two close rivers are ambiguous, so the sentence says 'a river')."""
+    nm, km, q, nm2, km2, q2 = (_val(row, f'{prefix}_{x}') for x in ('name', 'name_km', 'qid', 'name2', 'name2_km', 'qid2'))
+    if not isinstance(q, str) or not q or km is None or not (km <= NAME_KM) or q not in labels():
         return ''
-    if isinstance(nm2, str) and nm2 and km2 is not None and km2 <= NAME_KM:
+    if km2 is not None and km2 <= NAME_KM and (nm2 or q2) and q2 != q:
         return ''
-    return nm
+    return labels()[q]
 
 
 def _km(km):
@@ -173,17 +191,24 @@ def fill_river_units(F, ok, no):
     row = F.get('river')
     if row is None:
         return {'S3.1': no('no river row for this point'), 'S3.3': no('no river row for this point', na=True)}
-    p = f'r{USE_CLASS}'
     U = {}
-    if _val(row, f'{p}_km') is None:
-        U['S3.1'] = no('no river of this size in gaz.rivers')
-    else:
-        nm = _name(row, p)
-        text = W.fmt('S3.1.named', dict(d=_km(row[f'{p}_km']), river=nm)) if nm else W.fmt('S3.1.unnamed', dict(d=_km(row[f'{p}_km'])))
-        U['S3.1'] = ok(text, f'class {int(row[p + "_ord"])} reach {int(row[p + "_reach"])}, {row[p + "_km"]:.1f} km, {row[p + "_dis"]:.1f} m3/s; '
-                       + (f'named {nm} (line {row[p + "_name_km"]:.1f} km from the reach)' if nm else
-                          f'unnamed (nearest line: {row.get(p + "_name") or "none"}'
-                          + (f', {row[p + "_name_km"]:.1f} km' if isinstance(row.get(p + "_name"), str) and row.get(p + "_name") else '') + ')'))
+    used = None             # the reach S3.1 spoke about
+    nm_ = '{name}'          # the place's name is put in by the renderer
+    named = [(row[f'{p}_km'], p, _name(row, p)) for p in ('r5', 'r6') if _val(row, f'{p}_km') is not None and _name(row, p)]
+    named = [t for t in named if t[0] <= NAMED_KM]
+    k6 = _val(row, 'r6_km')
+    if named:                                   # tier 1: a named river is close
+        km, p, nm = min(named)
+        used = int(row[f'{p}_reach'])
+        text = W.fmt('S3.1.on' if km <= ON_KM else 'S3.1.named', dict(name=nm_, d=_km(km), river=nm))
+        U['S3.1'] = ok(text, f'tier 1: class {int(row[p + "_ord"])} reach {int(row[p + "_reach"])}, {km:.1f} km, {row[p + "_dis"]:.1f} m3/s; named {nm} (line {row[p + "_name_km"]:.1f} km from the reach)')
+    elif k6 is not None and k6 <= NEAR_KM:      # tier 2: an unnamed river is truly close
+        used = int(row['r6_reach'])
+        text = W.fmt('S3.1.unnamed_on' if k6 <= ON_KM else 'S3.1.unnamed', dict(name=nm_, d=_km(k6)))
+        U['S3.1'] = ok(text, f'tier 2: class {int(row["r6_ord"])} reach {int(row["r6_reach"])}, {k6:.1f} km, {row["r6_dis"]:.1f} m3/s; no name (nearest line: {row.get("r6_name") or "none"}' + (f', {row["r6_name_km"]:.1f} km' if _val(row, 'r6_name_km') is not None else '') + ')')
+    else:                                       # tier 3: silence
+        k5 = _val(row, 'r5_km')
+        U['S3.1'] = no('no river within ' + f'{NEAR_KM:g} km of class 6 or larger, and no named river within {NAMED_KM:g} km (nearest class 5: ' + (f'{k5:.0f} km)' if k5 is not None else 'none)'), na=True)
     big_km = _val(row, 'big_km')
     if big_km is None:
         own = _val(row, 'own_min')
@@ -192,11 +217,98 @@ def fill_river_units(F, ok, no):
         U['S3.3'] = no(f'the nearest much larger river is {big_km:.0f} km away (more than {USE_D})', na=True)
     else:
         nm = _name(row, 'big')
-        same = _val(row, f'{p}_reach') is not None and int(row[f'{p}_reach']) == int(row['big_reach'])   # S3.1 already named this river
+        same = used is not None and used == int(row['big_reach'])   # S3.1 already spoke of this river
         if same:
-            text = W.fmt('S3.3.same', {})
+            text = W.fmt('S3.3.same.named', dict(river=nm)) if nm else W.fmt('S3.3.same', {})
         else:
             text = W.fmt('S3.3.named', dict(d=_km(big_km), river=nm)) if nm else W.fmt('S3.3.unnamed', dict(d=_km(big_km)))
         U['S3.3'] = ok(text, f'own basin largest class {int(row["own_min"])}; class {int(row["big_ord"])} reach {int(row["big_reach"])}, {big_km:.1f} km, {row["big_dis"]:.0f} m3/s; '
                        + ('the same reach as S3.1; ' if same else '') + (f'named {nm}' if nm else 'unnamed'))
     return U
+
+
+# ---- proper river names: Wikidata labels for the Natural Earth lines' wikidataid ---------------------------------------
+
+WD_API = 'https://www.wikidata.org/w/api.php'
+WD_AGENT = 'EDOPS-research/0.4 (https://edops.computingplace.org; karl.geog@gmail.com) river-label lookup'
+
+
+def ne_ids():
+    """The distinct Wikidata ids on Natural Earth's named river lines, with the Natural Earth names that carry each."""
+    import geopandas as gpd
+    G = gpd.read_file(NE_SHP)
+    R = G[G['featurecla'].isin(['River', 'River (Intermittent)']) & G['wikidataid'].notna()]
+    return R.groupby('wikidataid').agg(ne_names=('name_en', lambda s: '; '.join(sorted({x for x in s if isinstance(x, str)}))),
+                                       lines=('name_en', 'size')).reset_index()
+
+
+def fetch_labels(path=LABELS_CSV, batch=50, pause=0.6, log=print):
+    """One-time lookup: English label and description for every id, saved to a CSV (an id already in the file is skipped)."""
+    import json, ssl, time, urllib.parse, urllib.request
+    import certifi
+    ctx = ssl.create_default_context(cafile=certifi.where())      # this Python has no system certificate bundle
+    ids = ne_ids()
+    have = set(pd.read_csv(path)['qid']) if path.exists() else set()
+    todo = [q for q in ids['wikidataid'] if q not in have]
+    new = []
+    for i in range(0, len(todo), batch):
+        chunk = todo[i:i + batch]
+        url = WD_API + '?' + urllib.parse.urlencode(dict(action='wbgetentities', ids='|'.join(chunk), props='labels|descriptions', languages='en', format='json'))
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': WD_AGENT}), timeout=60, context=ctx) as r:
+            ents = json.loads(r.read()).get('entities', {})
+        for q in chunk:
+            e = ents.get(q, {})
+            new.append(dict(qid=q, label_en=e.get('labels', {}).get('en', {}).get('value', ''),
+                            description_en=e.get('descriptions', {}).get('en', {}).get('value', ''), missing='missing' in e))
+        log(f'  {min(i + batch, len(todo))} of {len(todo)}')
+        time.sleep(pause)
+    if new:
+        pd.DataFrame(new).to_csv(path, mode='a', header=not path.exists(), index=False)
+    return len(have) + len(new), len(new)
+
+
+# ---- is a name solid? the along-the-course check ----------------------------------------------------------------------
+
+CHAIN_SQL = "SELECT next_down::bigint, length_km::float8, ST_AsText(geom) FROM gaz.rivers WHERE hyriv_id = %s"
+
+
+def course_check(conn, reach, qid, max_reaches=15, max_km=40.0, step_km=1.0, tol_km=2.0):
+    """How well a Natural Earth river (all its lines with this Wikidata id) follows the matched reach: the share of points
+    sampled every step_km along the reach (first_frac) and along it plus the reaches downstream, up to max_km (chain_frac),
+    that lie within tol_km of the river's lines. A real match follows the course; a wrong one touches it at a point."""
+    from pyproj import CRS, Transformer
+    from shapely import wkt
+    from shapely.geometry import Point
+    from shapely.ops import linemerge, transform, unary_union
+    lines, rid, km = [], int(reach), 0.0
+    for _ in range(max_reaches):
+        r = conn.execute(CHAIN_SQL, (rid,)).fetchone()
+        if r is None:
+            break
+        g = linemerge(wkt.loads(r[2]))
+        lines.append(g if g.geom_type == 'LineString' else max(g.geoms, key=lambda x: x.length)); km += r[1] or 0.0
+        if not r[0] or km >= max_km:
+            break
+        rid = int(r[0])
+    if not lines or not isinstance(qid, str) or not qid:
+        return {}
+    NE = _ne()['df']
+    same = NE[NE['qid'] == qid]
+    if same.empty:
+        return {}
+    c = lines[0].coords[0]
+    tr = Transformer.from_crs(CRS.from_epsg(4326), CRS.from_proj4(f'+proj=aeqd +lat_0={c[1]} +lon_0={c[0]} +datum=WGS84 +units=m'), always_xy=True)
+    near = same[same.geometry.distance(Point(c[0], c[1])) < 3.0]       # about 300 km, in degrees
+    if near.empty:
+        return dict(first_frac=0.0, chain_frac=0.0, n_pts=0, rank=int(same['scalerank'].min()), reaches=len(lines), km=round(km, 1))
+    ne = unary_union([transform(tr.transform, g) for g in near.geometry])
+    pts = []
+    for ln in lines:
+        L = transform(tr.transform, ln)
+        n = max(1, int(L.length / (step_km * 1000.0)))
+        pts.append([L.interpolate(k / n, normalized=True) for k in range(n + 1)] if L.length > 0 else [])
+    ok = lambda p: ne.distance(p) <= tol_km * 1000.0
+    first = [ok(p) for p in pts[0]] or [False]
+    allp = [ok(p) for ps in pts for p in ps] or [False]
+    return dict(first_frac=round(sum(first) / len(first), 2), chain_frac=round(sum(allp) / len(allp), 2), n_pts=len(allp),
+                rank=int(near['scalerank'].min()), reaches=len(lines), km=round(km, 1))
