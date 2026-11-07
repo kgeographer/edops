@@ -59,7 +59,8 @@ _TPL = {}
 _UNITS = [f'S{i}' for i in range(1, 10)]
 KEYS_ALWAYS = {f'{s}.{p}' for s in _UNITS for p in ('title', 'frame')} | {
     'S2.2bc', 'S3.2b.wetter', 'S3.5.sea', 'S3.5.inland', 'S3.5.closed', 'S5.1a.some', 'S5.1a.none', 'S5.1b.some',
-    'S5.1b.none', 'S6.2', 'S7.2', 'S8.2', 'S8.2.zero', 'S8.2.other', 'nobasin.text', 'nobasin.frame'}
+    'S5.1b.none', 'S7.2', 'S8.2', 'S8.2.zero', 'S8.2.other', 'nobasin.text', 'nobasin.frame'}
+KEYS_FLOW_PLAIN = {'S6.2'}   # the one-line flow counts of templates v4 and earlier; replaced by the S6.2.* lines (ring rules)
 KEYS_PLAIN = {'S3.2'}   # the single water sentence of templates v1 (no framing A)
 KEYS_FRAMING_A = {'S1.2c', 'S3.2.exogenous', 'S3.2.uniform', 'S3.2.local', 'S3.2.coastal', 'S3.2.endorheic',
                   'S3.2.undetermined'}   # required once S1.2c is present
@@ -71,6 +72,11 @@ def check_keys(text):
     """Refuse a template file whose keys the generator does not recognise, or that lacks a required one."""
     framing_a = 'S1.2c' in text
     required = KEYS_ALWAYS | (KEYS_FRAMING_A if framing_a else KEYS_PLAIN)
+    if 'S6.2.in_none' in text:   # ring comparison rules (WO-06): the template must carry every line they read
+        from scripts.edop.whg import wo06_rings
+        required |= wo06_rings.ring_keys()
+    else:
+        required |= KEYS_FLOW_PLAIN
     known = required | KEYS_OPTIONAL
     unknown, missing = sorted(set(text) - known), sorted(required - set(text))
     if unknown or missing:
@@ -130,6 +136,19 @@ def has(key):
 def tidy(text):
     """Close the gaps left by empty phrases."""
     return re.sub(r' {2,}', ' ', text).strip()
+
+
+_NUMWORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+
+def numword(n):
+    """A whole number as a word up to ten, else digits."""
+    return _NUMWORDS[n] if 0 <= n <= 10 else f'{n:,}'
+
+
+def join_and(items):
+    """'a', 'a and b', 'a, b and c'"""
+    return items[0] if len(items) == 1 else ', '.join(items[:-1]) + ' and ' + items[-1]
 
 
 _LABELS = {}
@@ -197,8 +216,9 @@ def sigval(pub, key):
     return None
 
 
-def build_facts(lat, lon, conn, pairs, flow):
-    """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables."""
+def build_facts(lat, lon, conn, pairs, flow, ring=None):
+    """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables; ring is
+    wo06_rings.load_table() ({core hybas_id: rows}), needed only once the template carries the ring comparison lines."""
     pub, ar = fetch_point(lat, lon)
     F = dict(lat=lat, lon=lon, pub=pub, areas=ar, hid=None)
     pe = conn.execute('SELECT eco_id, eco_name FROM gaz."Ecoregions2017" WHERE ST_Intersects(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) LIMIT 1',
@@ -216,6 +236,9 @@ def build_facts(lat, lon, conn, pairs, flow):
     F['n_point_contacts'] = int((p['shared_km'] == 0).sum())
     f = flow[flow['core_id'] == hid].drop_duplicates('nb_id')['flow_real'].value_counts().to_dict()
     F['flow'] = {k: int(f.get(k, 0)) for k in ('up1', 'upN', 'dn1', 'dnN', 'same', 'other')}
+    fl = flow[flow['core_id'] == hid].drop_duplicates('nb_id')
+    F['flow_nb'] = {int(a): b for a, b in zip(fl['nb_id'], fl['flow_real'])}
+    F['ring'] = ring.get(hid) if ring is not None else None
     eco_id = sigval(pub, 'eco_id')
     w = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (int(eco_id),)).fetchone() if eco_id is not None else None
     F['wiki_url'] = w[0] if w and w[0] else None
@@ -337,9 +360,13 @@ def fill_units(F):
             U[uid] = ok(fmt(uid + '.some', dict(value=f'{val:.0f}%')))
 
     n = F['n_nb']
-    U['S6.1a'] = ok(f'{n + 1}', 'empty ring: needs its own wording' if n == 0 else None)
+    rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)
+    U['S6.1a'] = ok(numword(n + 1) if rings else f'{n + 1}', 'empty ring: needs its own wording' if n == 0 else None)
     f = F['flow']
-    if f['up1'] + f['upN'] + f['dn1'] + f['dnN'] == 0:
+    if rings:
+        from scripts.edop.whg import wo06_rings
+        U.update(wo06_rings.fill_ring_units(F, ok, no))
+    elif f['up1'] + f['upN'] + f['dn1'] + f['dnN'] == 0:
         U['S6.2'] = no('no upstream or downstream neighbour in the ring', na=True)
     else:
         U['S6.2'] = ok(fmt('S6.2', f))
@@ -383,9 +410,12 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
+    ring_silent = {'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.4', 'S6.5'} if has('S6.2.in_none') else set()
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
-            vals[uid] = t(uid)
+            vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
+        elif uid in ring_silent and U[uid].get('na'):
+            vals[uid] = ''
     if 'S3.2' in U:
         vals['S3.2'] = t('S3.2')
     elif U['S3.2b']['ok']:
