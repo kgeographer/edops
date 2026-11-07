@@ -20,7 +20,7 @@ STEP = 2                  # "much larger": this many discharge classes (a factor
 D_KM = (10, 25, 50)       # distances tried for "nearby"
 # the values the sentences use now; the table keeps every value tried, so changing them needs no new query
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
-NAMED_LIMITS = {'r4': 25.0, 'r5': 10.0}   # S3.1 tier 1: a named river is mentioned out to this distance, by size: class 4 or larger (100 m3/s and up) 25 km, class 5 (10 to 99 m3/s) 10 km
+NAMED_LIMITS = {'r4': 25.0}   # S3.1 tier 1: only a river of class 4 or larger (100 m3/s and up) is named, out to this distance; smaller rivers are never named (see wo07_results.md, river names)
 ON_KM = 1.5               # ... and within this distance the place is 'on' it
 NEAR_KM = 3.0             # S3.1: no named river, but a river of class 5 or larger within this distance is mentioned (tier 2); beyond, silence
 # S3.1 ignores anything smaller than class 5 (10 m3/s): the class 6 values stay in the table but are not used
