@@ -22,7 +22,8 @@ D_KM = (10, 25, 50)       # distances tried for "nearby"
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
 NAMED_KM = 10.0           # S3.1: a named river within this distance is named (tier 1)
 ON_KM = 1.5               # ... and within this distance the place is 'on' it
-NEAR_KM = 3.0             # S3.1: no named river, but a river of class 6 or larger within this distance is mentioned (tier 2); beyond, silence
+NEAR_KM = 3.0             # S3.1: no named river, but a river of class 5 or larger within this distance is mentioned (tier 2); beyond, silence
+# S3.1 ignores anything smaller than class 5 (10 m3/s): the class 6 values stay in the table but are not used
 OWN_MIN_KM = 1.0          # a reach counts as "in the own basin" only with more than this much length inside it (not a boundary clip)
 
 REACH_SQL = """
@@ -194,21 +195,21 @@ def fill_river_units(F, ok, no):
     U = {}
     used = None             # the reach S3.1 spoke about
     nm_ = '{name}'          # the place's name is put in by the renderer
-    named = [(row[f'{p}_km'], p, _name(row, p)) for p in ('r5', 'r6') if _val(row, f'{p}_km') is not None and _name(row, p)]
+    named = [(row[f'{p}_km'], p, _name(row, p)) for p in ('r5',) if _val(row, f'{p}_km') is not None and _name(row, p)]
     named = [t for t in named if t[0] <= NAMED_KM]
-    k6 = _val(row, 'r6_km')
+    k6 = _val(row, 'r5_km')
     if named:                                   # tier 1: a named river is close
         km, p, nm = min(named)
         used = int(row[f'{p}_reach'])
         text = W.fmt('S3.1.on' if km <= ON_KM else 'S3.1.named', dict(name=nm_, d=_km(km), river=nm))
         U['S3.1'] = ok(text, f'tier 1: class {int(row[p + "_ord"])} reach {int(row[p + "_reach"])}, {km:.1f} km, {row[p + "_dis"]:.1f} m3/s; named {nm} (line {row[p + "_name_km"]:.1f} km from the reach)')
     elif k6 is not None and k6 <= NEAR_KM:      # tier 2: an unnamed river is truly close
-        used = int(row['r6_reach'])
+        used = int(row['r5_reach'])
         text = W.fmt('S3.1.unnamed_on' if k6 <= ON_KM else 'S3.1.unnamed', dict(name=nm_, d=_km(k6)))
-        U['S3.1'] = ok(text, f'tier 2: class {int(row["r6_ord"])} reach {int(row["r6_reach"])}, {k6:.1f} km, {row["r6_dis"]:.1f} m3/s; no name (nearest line: {row.get("r6_name") or "none"}' + (f', {row["r6_name_km"]:.1f} km' if _val(row, 'r6_name_km') is not None else '') + ')')
+        U['S3.1'] = ok(text, f'tier 2: class {int(row["r5_ord"])} reach {int(row["r5_reach"])}, {k6:.1f} km, {row["r5_dis"]:.1f} m3/s; no name (nearest line: {row.get("r5_name") or "none"}' + (f', {row["r5_name_km"]:.1f} km' if _val(row, 'r5_name_km') is not None else '') + ')')
     else:                                       # tier 3: silence
         k5 = _val(row, 'r5_km')
-        U['S3.1'] = no('no river within ' + f'{NEAR_KM:g} km of class 6 or larger, and no named river within {NAMED_KM:g} km (nearest class 5: ' + (f'{k5:.0f} km)' if k5 is not None else 'none)'), na=True)
+        U['S3.1'] = no('no river of class 5 or larger within ' + f'{NEAR_KM:g} km, and no named one within {NAMED_KM:g} km (nearest class 5: ' + (f'{k5:.0f} km)' if k5 is not None else 'none)'), na=True)
     big_km = _val(row, 'big_km')
     if big_km is None:
         own = _val(row, 'own_min')
