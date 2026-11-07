@@ -6,7 +6,7 @@ them to output/edop/whg/wo06_ring_values.csv. The rules then run on that table a
 
 A comparison states only what is true without a cutoff: being the highest or lowest of the set, counts of the
 basins a basin is more or less than, "all of them". Ties are never ranked. Wording is in profile_templates.md
-(the `cmp.*`, `S2.3.*`, `S5.2.*`, `S6.2.*`, `S6.3.all`, `S6.4`, `S6.5` lines). Read-only.
+(the `cmp.*`, `S2.3.*`, `S5.2.*`, `S6.2.*`, `S6.3.*` and `S6.5` lines). Read-only.
 """
 import pandas as pd
 
@@ -15,34 +15,39 @@ from scripts.edop.whg import wo04_fill as W
 RING_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo06_ring_values.csv'
 
 MIN_NB = 3                             # fewest neighbours with a value for any comparison
+MIN_ABO = 5                            # fewest for "all but one" (in a ring of three or four it is only "second highest")
 CAP = dict(S2_3=2, S5_2=2, S6_5=3)     # most extremes stated in one sentence
 
 # measure slug -> variable name in the ring rows (elev_mean and forest_extent come from basin06; relief is derived)
 MEAS = {'precip': 'precip_yr', 'temp': 'temp_yr', 'aridity': 'aridity', 'elev': 'elev_mean', 'relief': 'relief',
         'slope': 'slope_avg', 'cropland': 'cropland_extent', 'pasture': 'pasture_extent', 'popdens': 'pop_density',
-        'forest': 'forest_extent', 'karst': 'karst', 'sand': 'pct_sand', 'silt': 'pct_silt', 'clay': 'pct_clay'}
+        'footprint': 'human_footprint_09', 'forest': 'forest_extent', 'karst': 'karst', 'sand': 'pct_sand',
+        'silt': 'pct_silt', 'clay': 'pct_clay', 'runoff': 'runoff', 'permafrost': 'permafrost_extent',
+        'gwdepth': 'gw_table_depth'}
 # which measures each sentence draws on, in the order they are tried (an editorial choice, to be adjusted)
 L_S23 = ['precip', 'temp', 'aridity']
-L_S52 = ['cropland', 'pasture', 'popdens']
-L_S63 = ['elev', 'precip', 'temp', 'aridity']      # only measures with an adjective ("all drier")
-L_S65 = ['elev', 'relief', 'slope', 'forest', 'karst', 'sand', 'silt', 'clay']
-# numeric local measures counted by S6.4 (flow-position measures such as discharge and river area are left out)
-NUMERIC_LOCAL = ['precip_yr', 'temp_yr', 'temp_min', 'temp_max', 'aridity', 'runoff', 'cropland_extent',
-                 'pasture_extent', 'pop_density', 'human_footprint_09', 'elev_min', 'elev_max', 'elev_mean', 'relief',
-                 'slope_avg', 'stream_gradient', 'wet_pct_grp1', 'wet_pct_grp2', 'forest_extent', 'karst',
-                 'permafrost_extent', 'pct_sand', 'pct_silt', 'pct_clay', 'gw_table_depth']
+L_S52 = ['cropland', 'pasture']                    # population density and human footprint are left out: places are where people are
+L_S63 = ['elev', 'precip', 'temp', 'aridity']      # only measures with an adjective ("all higher")
+L_S65 = ['elev', 'relief', 'slope', 'forest', 'karst', 'sand', 'silt', 'clay', 'runoff', 'permafrost', 'gwdepth']
+L_UNSTATED = {'popdens': 'population density', 'footprint': 'human footprint'}   # compared, kept in the fill notes only
 
 
 def ring_keys():
     """Every template key the ring rules read; check_keys requires them once the template has S6.2.in_none."""
     keys = {f'S6.2.{k}' for k in ('in_none', 'in_one', 'in_some', 'out_one', 'out_some', 'out_none')}
-    keys |= {'S2.3.extreme', 'S2.3.count', 'S5.2.extreme', 'S5.2.count', 'S6.3.all', 'S6.4', 'S6.5'}
-    keys |= {'S2.3.extreme.precip', 'S2.3.count.precip', 'S6.3.all.precip'}     # precipitation has its own frames ("receives ... precipitation")
+    keys |= {'S2.3.extreme', 'S2.3.allbutone', 'S2.3.allbutone.precip', 'S5.2.extreme', 'S5.2.allbutone',
+             'S6.3.all', 'S6.3.all.precip', 'S6.3.allbutone', 'S6.3.allbutone.precip', 'S6.5'}
     for s in set(L_S23) | set(L_S52) | set(L_S63):
         keys |= {f'cmp.{s}.{d}' for d in ('top', 'bottom', 'more', 'less')}
     for s in L_S65:
         keys |= {f'cmp.{s}.{d}' for d in ('top', 'bottom')}
     return keys
+
+
+def ring_optional():
+    """Middle counts ("less than three of the five"): they speak only while the template carries these lines."""
+    return {'S2.3.count', 'S2.3.count.precip', 'S5.2.count'}
+
 
 
 # ---- the persisted table -------------------------------------------------------------------------------------
@@ -128,12 +133,28 @@ def compare(core_val, nb_vals):
     if less == 0 and more == 0:
         return None
     side, k = ('more', less) if less >= more else ('less', more)
-    return dict(m=m, less=less, more=more, top=(less == m), bottom=(more == m), side=side, k=k)
+    return dict(m=m, less=less, more=more, top=(less == m), bottom=(more == m), side=side, k=k,
+                abo=(m >= MIN_ABO and k == m - 1))
 
 
 def _frame(key, slug):
     """The measure's own frame (`key.slug`) when the template has one, else the shared one."""
     return f'{key}.{slug}' if f'{key}.{slug}' in W.templates()['text'] else key
+
+
+def _has(key):
+    return key in W.templates()['text']
+
+
+def _nums(*ns):
+    """Numbers as words up to ten; figures for all of them as soon as one is above ten ("10 of the 12")."""
+    return tuple(W.numword(n) for n in ns) if max(ns) <= 10 else tuple(f'{n:,}' for n in ns)
+
+
+def _join_phrases(ws):
+    """'receives the least precipitation and is the most arid'; a run of 'is ...' phrases shares its verb."""
+    out = [w[3:] if i and w.startswith('is ') and ws[i - 1].startswith('is ') else w for i, w in enumerate(ws)]
+    return W.join_and(out)
 
 
 def _cmps(slugs, V, core, nbs):
@@ -144,27 +165,41 @@ def _cmps(slugs, V, core, nbs):
     return out
 
 
-def _stated(slugs, cap, key_ext, key_cnt, V, core, nbs):
-    """The sentence for S2.3 or S5.2: the extremes (up to cap), else the most one-sided count; plus a trace."""
+def _stated(slugs, cap, key_ext, key_abo, key_cnt, V, core, nbs):
+    """The sentence for S2.3 or S5.2: the extremes (up to cap) in one sentence, else an "all but one", else (while the
+    template has the count lines) the most one-sided count; plus a trace. A count not stated is kept in `unstated`."""
     cm = _cmps(slugs, V, core, nbs)
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]
     if ext:
         used = ext[:cap]
-        groups = {}          # extremes over the same set of basins and the same frame share one sentence
+        groups = {}          # extremes over the same set of basins share one sentence
         for s, d in used:
-            groups.setdefault((cm[s]['m'] + 1, _frame(key_ext, s)), []).append(W.fmt(f'cmp.{s}.{d}', {}))
-        text = ' '.join(W.fmt(k, dict(cmp=W.join_and(ws), n=W.numword(n))) for (n, k), ws in groups.items())
-        return text, dict(kind='extreme', ext=ext, used=used)
+            groups.setdefault(cm[s]['m'] + 1, []).append(W.fmt(f'cmp.{s}.{d}', {}))
+        text = ' '.join(W.fmt(key_ext, dict(cmp=_join_phrases(ws), n=W.numword(n))) for n, ws in groups.items())
+        return text, dict(kind='extreme', ext=ext, used=used, unstated='')
+    abo = [(s, c) for s, c in cm.items() if c and c['abo']]
+    if abo:
+        s, c = abo[0]
+        text = W.fmt(_frame(key_abo, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), m=_nums(c['m'])[0]))
+        return text, dict(kind='allbutone', ext=[], used=[(s, c['side'])], unstated='')
     live = [(s, c) for s, c in cm.items() if c]
     if not live:
-        return None, dict(kind='none', ext=[], used=[])
+        return None, dict(kind='none', ext=[], used=[], unstated='')
     s, c = max(live, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
-    text = W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=W.numword(c['k']), m=W.numword(c['m'])))
-    return text, dict(kind='count', ext=[], used=[(s, c['side'])])
+    k, m = _nums(c['k'], c['m'])
+    if _has(key_cnt):
+        text = W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k, m=m))
+        return text, dict(kind='count', ext=[], used=[(s, c['side'])], unstated='')
+    return None, dict(kind='count_unstated', ext=[], used=[], unstated=f'{s} {c["side"]} than {k} of {m}')
+
+
+def _standing(slug, c):
+    """For the fill notes: where the core stands on a measure the sentences leave out."""
+    return f'{slug} ' + ('highest' if c['top'] else 'lowest' if c['bottom'] else f'{c["side"]} than {c["k"]} of {c["m"]}')
 
 
 def fill_ring_units(F, ok, no):
-    """S6.2, S2.3, S5.2, S6.3, S6.4, S6.5 and a ring note, for one basin. ok and no are fill_units' own constructors."""
+    """S6.2, S2.3, S5.2, S6.3, S6.5 and a ring note, for one basin. ok and no are fill_units' own constructors."""
     U = {}
     f = F['flow']
     n_in, n_out = f['up1'] + f['upN'], f['dn1'] + f['dnN']
@@ -177,7 +212,7 @@ def fill_ring_units(F, ok, no):
         U['S6.2'] = ok(first[:1].upper() + first[1:] + ' ' + W.fmt('S6.2.' + b, dict(n=W.numword(n_out))),
                        f'in {n_in}, out {n_out}')
     df = F.get('ring')
-    others = ('S2.3', 'S5.2', 'S6.3', 'S6.4', 'S6.5')
+    others = ('S2.3', 'S5.2', 'S6.3', 'S6.5')
     if df is None:
         for uid in others:
             U[uid] = no('no ring values for this basin')
@@ -193,47 +228,42 @@ def fill_ring_units(F, ok, no):
         U['S6.ring'] = ok('', f'{len(nbs)} neighbours; ring rules silent')
         return U
 
-    for uid, slugs, ck, kx, kc in (('S2.3', L_S23, 'S2_3', 'S2.3.extreme', 'S2.3.count'),
-                                   ('S5.2', L_S52, 'S5_2', 'S5.2.extreme', 'S5.2.count')):
-        text, tr = _stated(slugs, CAP[ck], kx, kc, V, core, nbs)
-        U[uid] = ok(text, f'{tr["kind"]}: ' + ', '.join(f'{s} {d}' for s, d in tr['used'])) if text else no('no measure with data distinguishes the basin', na=True)
+    for uid, slugs, ck, kx, ka, kc in (('S2.3', L_S23, 'S2_3', 'S2.3.extreme', 'S2.3.allbutone', 'S2.3.count'),
+                                       ('S5.2', L_S52, 'S5_2', 'S5.2.extreme', 'S5.2.allbutone', 'S5.2.count')):
+        text, tr = _stated(slugs, CAP[ck], kx, ka, kc, V, core, nbs)
+        if text:
+            U[uid] = ok(text, f'{tr["kind"]}: ' + ', '.join(f'{s} {d}' for s, d in tr['used']))
+        elif tr['unstated']:
+            U[uid] = no(f'count not stated: {tr["unstated"]}', na=True)
+        else:
+            U[uid] = no('no measure with data distinguishes the basin', na=True)
         U[uid]['trace'] = tr
 
     across = [m for m in nbs if F['flow_nb'].get(m) in ('same', 'other')]
-    hit = []
+    hit, abo = [], []
     for s in L_S63:
         d = V.get(MEAS[s], {})
         c, xs = d.get(core), [d[m] for m in across if m in d]
-        if c is not None and len(xs) >= MIN_NB:
-            if all(round(x, 6) > round(c, 6) for x in xs):
-                hit.append((s, 'more'))
-            elif all(round(x, 6) < round(c, 6) for x in xs):
-                hit.append((s, 'less'))
+        if c is None or len(xs) < MIN_NB:
+            continue
+        up, dn = sum(round(x, 6) > round(c, 6) for x in xs), sum(round(x, 6) < round(c, 6) for x in xs)
+        if up == len(xs):
+            hit.append((s, 'more'))
+        elif dn == len(xs):
+            hit.append((s, 'less'))
+        elif len(xs) >= MIN_ABO and up == len(xs) - 1:
+            abo.append((s, 'more'))
+        elif len(xs) >= MIN_ABO and dn == len(xs) - 1:
+            abo.append((s, 'less'))
     if hit:
         s, d = hit[0]
-        U['S6.3'] = ok(W.fmt(_frame('S6.3.all', s), dict(cmp=W.fmt(f'cmp.{s}.{d}', {}))), f'{s} {d}; {len(across)} across a divide')
+        U['S6.3'] = ok(W.fmt(_frame('S6.3.all', s), dict(cmp=W.fmt(f'cmp.{s}.{d}', {}))), f'all: {s} {d}; {len(across)} across a divide')
+    elif abo:
+        s, d = abo[0]
+        U['S6.3'] = ok(W.fmt(_frame('S6.3.allbutone', s), dict(cmp=W.fmt(f'cmp.{s}.{d}', {}))), f'all but one: {s} {d}; {len(across)} across a divide')
     else:
-        U['S6.3'] = no(f'no measure on which all {len(across)} basins across its divides lie on one side', na=True)
-    U['S6.3']['trace'] = dict(across=len(across), hit=hit)
-
-    out = []     # measures on which the core lies outside the range of its neighbours
-    m = 0
-    for var in NUMERIC_LOCAL:
-        d = V.get(var, {})
-        c, xs = d.get(core), [d[x] for x in nbs if x in d]
-        if c is None or len(xs) < MIN_NB or all(round(x, 6) == round(c, 6) for x in xs):
-            continue
-        m += 1
-        if not min(xs) <= c <= max(xs):
-            out.append(var)
-    k = len(out)
-    if k:
-        U['S6.4'] = ok(W.fmt('S6.4', dict(k=W.numword(k), m=W.numword(m))), f'outside on {k} of {m}: ' + ', '.join(out))
-    elif m:
-        U['S6.4'] = no(f'within the range of its neighbours on all {m} measures (nothing to say)', na=True)
-    else:
-        U['S6.4'] = no('no measure to compare', na=True)
-    U['S6.4']['trace'] = dict(k=k, m=m, out=out)
+        U['S6.3'] = no(f'no measure on which all, or all but one of, the {len(across)} basins across its divides lie on one side', na=True)
+    U['S6.3']['trace'] = dict(across=len(across), hit=hit, abo=abo)
 
     cm = _cmps(L_S65, V, core, nbs)
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]
@@ -242,10 +272,12 @@ def fill_ring_units(F, ok, no):
         U['S6.5'] = ok(W.fmt('S6.5', dict(n=W.numword(len(nbs) + 1), list=W.join_and([W.fmt(f'cmp.{s}.{d}', {}) for s, d in used]))),
                        ', '.join(f'{s} {d}' for s, d in used))
     else:
-        U['S6.5'] = no('the basin is the highest or lowest of the set on none of the terrain, forest, karst or soil measures', na=True)
+        U['S6.5'] = no('the basin is the highest or lowest of the set on none of the terrain, forest, karst, soil, runoff, permafrost or water-table measures', na=True)
     U['S6.5']['trace'] = dict(ext=ext, used=ext[:CAP['S6_5']])
 
+    left_out = [_standing(L_UNSTATED[s], c) for s, c in _cmps(list(L_UNSTATED), V, core, nbs).items() if c]
     rank = 'the smallest' if areas[core] < min(nb_areas) else 'the largest' if areas[core] > max(nb_areas) else 'neither the smallest nor the largest'
-    U['S6.ring'] = ok('', f'{len(nbs)} neighbours; areas km2 core {areas[core]:,.0f}, neighbours {min(nb_areas):,.0f} to {max(nb_areas):,.0f}; the core is {rank} by area')
+    U['S6.ring'] = ok('', f'{len(nbs)} neighbours; areas km2 core {areas[core]:,.0f}, neighbours {min(nb_areas):,.0f} to {max(nb_areas):,.0f}; the core is {rank} by area'
+                      + ('; left out of the sentences: ' + ', '.join(left_out) if left_out else ''))
     U['S6.ring']['trace'] = dict(n_nb=len(nbs), smallest=areas[core] < min(nb_areas), largest=areas[core] > max(nb_areas))
     return U

@@ -42,7 +42,6 @@ NEED = {
     'S5.2': 'ring comparison rules',
     'S6.2c': 'description of a neighbouring basin (ring rules)',
     'S6.3': 'contrast counts (ring rules); no compass words',
-    'S6.4': 'cutoff for "resembles"',
     'S6.5': 'ring "furthest from the set" rule',
     'S7.1a': 'coastline data (no distance-to-coast field)',
     'S7.3': 'edge kind from the point (live layer)',
@@ -78,6 +77,8 @@ def check_keys(text):
     else:
         required |= KEYS_FLOW_PLAIN
     known = required | KEYS_OPTIONAL
+    if 'S6.2.in_none' in text:
+        known |= wo06_rings.ring_optional()
     unknown, missing = sorted(set(text) - known), sorted(required - set(text))
     if unknown or missing:
         raise ValueError(f'{TEMPLATES_PATH.name}: ' + '; '.join(
@@ -411,7 +412,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = {'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.4', 'S6.5'} if has('S6.2.in_none') else set()
+    ring_silent = {'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
