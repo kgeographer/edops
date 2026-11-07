@@ -37,6 +37,7 @@ def ring_keys():
     """Every template key the ring rules read; check_keys requires them once the template has S6.2.in_none."""
     keys = {f'S6.2.{k}' for k in ('in_none', 'in_one', 'in_some', 'out_one', 'out_some', 'out_none')}
     keys |= {'S2.3.extreme', 'S2.3.count', 'S5.2.extreme', 'S5.2.count', 'S6.3.all', 'S6.4', 'S6.5'}
+    keys |= {'S2.3.extreme.precip', 'S2.3.count.precip', 'S6.3.all.precip'}     # precipitation has its own frames ("receives ... precipitation")
     for s in set(L_S23) | set(L_S52) | set(L_S63):
         keys |= {f'cmp.{s}.{d}' for d in ('top', 'bottom', 'more', 'less')}
     for s in L_S65:
@@ -130,6 +131,11 @@ def compare(core_val, nb_vals):
     return dict(m=m, less=less, more=more, top=(less == m), bottom=(more == m), side=side, k=k)
 
 
+def _frame(key, slug):
+    """The measure's own frame (`key.slug`) when the template has one, else the shared one."""
+    return f'{key}.{slug}' if f'{key}.{slug}' in W.templates()['text'] else key
+
+
 def _cmps(slugs, V, core, nbs):
     out = {}
     for s in slugs:
@@ -144,13 +150,16 @@ def _stated(slugs, cap, key_ext, key_cnt, V, core, nbs):
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]
     if ext:
         used = ext[:cap]
-        text = ' '.join(W.fmt(key_ext, dict(cmp=W.fmt(f'cmp.{s}.{d}', {}), n=W.numword(cm[s]['m'] + 1))) for s, d in used)
+        groups = {}          # extremes over the same set of basins and the same frame share one sentence
+        for s, d in used:
+            groups.setdefault((cm[s]['m'] + 1, _frame(key_ext, s)), []).append(W.fmt(f'cmp.{s}.{d}', {}))
+        text = ' '.join(W.fmt(k, dict(cmp=W.join_and(ws), n=W.numword(n))) for (n, k), ws in groups.items())
         return text, dict(kind='extreme', ext=ext, used=used)
     live = [(s, c) for s, c in cm.items() if c]
     if not live:
         return None, dict(kind='none', ext=[], used=[])
     s, c = max(live, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
-    text = W.fmt(key_cnt, dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=W.numword(c['k']), m=W.numword(c['m'])))
+    text = W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=W.numword(c['k']), m=W.numword(c['m'])))
     return text, dict(kind='count', ext=[], used=[(s, c['side'])])
 
 
@@ -202,21 +211,29 @@ def fill_ring_units(F, ok, no):
                 hit.append((s, 'less'))
     if hit:
         s, d = hit[0]
-        U['S6.3'] = ok(W.fmt('S6.3.all', dict(cmp=W.fmt(f'cmp.{s}.{d}', {}))), f'{s} {d}; {len(across)} across a divide')
+        U['S6.3'] = ok(W.fmt(_frame('S6.3.all', s), dict(cmp=W.fmt(f'cmp.{s}.{d}', {}))), f'{s} {d}; {len(across)} across a divide')
     else:
         U['S6.3'] = no(f'no measure on which all {len(across)} basins across its divides lie on one side', na=True)
     U['S6.3']['trace'] = dict(across=len(across), hit=hit)
 
-    k = m = 0
+    out = []     # measures on which the core lies outside the range of its neighbours
+    m = 0
     for var in NUMERIC_LOCAL:
         d = V.get(var, {})
         c, xs = d.get(core), [d[x] for x in nbs if x in d]
         if c is None or len(xs) < MIN_NB or all(round(x, 6) == round(c, 6) for x in xs):
             continue
         m += 1
-        k += min(xs) <= c <= max(xs)
-    U['S6.4'] = ok(W.fmt('S6.4', dict(k=W.numword(k), m=W.numword(m)))) if m else no('no measure to compare', na=True)
-    U['S6.4']['trace'] = dict(k=k, m=m)
+        if not min(xs) <= c <= max(xs):
+            out.append(var)
+    k = len(out)
+    if k:
+        U['S6.4'] = ok(W.fmt('S6.4', dict(k=W.numword(k), m=W.numword(m))), f'outside on {k} of {m}: ' + ', '.join(out))
+    elif m:
+        U['S6.4'] = no(f'within the range of its neighbours on all {m} measures (nothing to say)', na=True)
+    else:
+        U['S6.4'] = no('no measure to compare', na=True)
+    U['S6.4']['trace'] = dict(k=k, m=m, out=out)
 
     cm = _cmps(L_S65, V, core, nbs)
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]

@@ -176,14 +176,15 @@ def label(key):
 
 
 def templates_stamp():
-    """Which wording and which rules made a generated file: template version, and last commit and edited-since for both the template file and this script."""
+    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script and wo06_rings.py."""
     git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
 
     def state(path):
         rel = str(path.relative_to(ROOT))
         return f'last commit {git("log", "-1", "--format=%h", "--", rel) or "none yet"}; edited since: {"yes" if git("status", "--porcelain", "--", rel) else "no"}'
     return (f'{TEMPLATES_PATH.name} v{templates()["version"]} ({state(TEMPLATES_PATH)}); '
-            f'script {Path(__file__).name} ({state(Path(__file__).resolve())})')
+            f'script {Path(__file__).name} ({state(Path(__file__).resolve())}); '
+            f'script wo06_rings.py ({state(Path(__file__).resolve().parent / "wo06_rings.py")})')
 
 
 def PH(uid, extra=''):

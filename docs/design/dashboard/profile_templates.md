@@ -6,7 +6,7 @@ This file is the target of the WO-04 to WO-07 work: the wording of the Environme
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 4
+Version: 5
 
 ## Changes
 
@@ -14,6 +14,7 @@ Version: 4
 - v2 | 2026-11-05 | Opus | Framing A (Karl's decision): Setting speaks about the place; the other sections name the basin they describe. S1.2a now means the point's ecoregion. New units S1.2c (the basin's majority ecoregion, when it differs) and S1.5a, S1.5b (the basin's elevation range); wording for the four water classes other than exogenous; a phrase for a basin that meets the sea at its outlet; S8 says which figures are the place's and which the basin's. Needs WO-05 for the new units and phrases before it runs.
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
+- v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
 
 ## Section titles
 
@@ -79,9 +80,74 @@ S5.1a.none: no cropland is recorded
 S5.1b.some: {value} of the basin is pasture
 S5.1b.none: no pasture is recorded
 
-Surroundings. `{up1}`, `{upN}`, `{dn1}`, `{dnN}`: neighbours that drain into this basin (direct, further away), and that this basin drains into (direct, further away). Wording for this section is WO-06's.
+Surroundings. The flow lines say how many of the basins that meet here drain into this basin, and how many this basin drains into (directly or through another basin). `{n}`: that number, as a word up to ten. Wording for this section is WO-06's.
 
-S6.2: upstream: {up1} direct, {upN} further; downstream: {dn1} direct, {dnN} further
+S6.2.in_none: None of them drains into it.
+S6.2.in_one: One of them drains into it.
+S6.2.in_some: {n} of them drain into it.
+S6.2.out_one: It drains into one of them.
+S6.2.out_some: It drains into {n} of them.
+S6.2.out_none: It drains into none of them.
+
+## Comparisons with the basins around
+
+How a basin is said to compare with the basins that share a border with it. `{n}`: the basins that meet here, counting this one. `{m}`: the neighbours with a value. `{k}`: how many of them the basin is more or less than. `{cmp}`: a word from the `cmp` lines below. `{list}`: phrases joined by commas and "and". Numbers up to ten are words. A tie is never turned into a rank.
+
+S2.3.extreme: Its basin is {cmp} of the {n} basins that meet here.
+S2.3.count: Its basin is {cmp} than {k} of the {m} basins around it.
+S2.3.extreme.precip: Its basin receives {cmp} precipitation of the {n} basins that meet here.
+S2.3.count.precip: Its basin receives {cmp} precipitation than {k} of the {m} basins around it.
+S5.2.extreme: Its basin has {cmp} of the {n} basins that meet here.
+S5.2.count: Its basin has {cmp} than {k} of the {m} basins around it.
+S6.3.all: The basins across its divides are all {cmp}.
+S6.3.all.precip: The basins across its divides all receive {cmp} precipitation.
+S6.4: On {k} of {m} measures, its values fall outside the range of the basins around it.
+S6.5: Of the {n} basins that meet here, it has {list}.
+
+Words for each measure. `top` and `bottom`: the basin is the highest or lowest of the set. `more` and `less`: it is more or less than most of its neighbours (S2.3, S5.2), or, in S6.3, what its neighbours all are.
+
+cmp.precip.top: the most
+cmp.precip.bottom: the least
+cmp.precip.more: more
+cmp.precip.less: less
+cmp.temp.top: the warmest
+cmp.temp.bottom: the coolest
+cmp.temp.more: warmer
+cmp.temp.less: cooler
+cmp.aridity.top: the most humid
+cmp.aridity.bottom: the most arid
+cmp.aridity.more: more humid
+cmp.aridity.less: more arid
+cmp.elev.top: the highest mean elevation
+cmp.elev.bottom: the lowest mean elevation
+cmp.elev.more: higher
+cmp.elev.less: lower
+cmp.cropland.top: the most cropland
+cmp.cropland.bottom: the least cropland
+cmp.cropland.more: more cropland
+cmp.cropland.less: less cropland
+cmp.pasture.top: the most pasture
+cmp.pasture.bottom: the least pasture
+cmp.pasture.more: more pasture
+cmp.pasture.less: less pasture
+cmp.popdens.top: the highest population density
+cmp.popdens.bottom: the lowest population density
+cmp.popdens.more: a higher population density
+cmp.popdens.less: a lower population density
+cmp.relief.top: the most relief
+cmp.relief.bottom: the least relief
+cmp.slope.top: the steepest slopes
+cmp.slope.bottom: the gentlest slopes
+cmp.forest.top: the most forest
+cmp.forest.bottom: the least forest
+cmp.karst.top: the most karst
+cmp.karst.bottom: the least karst
+cmp.sand.top: the most sand
+cmp.sand.bottom: the least sand
+cmp.silt.top: the most silt
+cmp.silt.bottom: the least silt
+cmp.clay.top: the most clay
+cmp.clay.bottom: the least clay
 
 Coast.
 
