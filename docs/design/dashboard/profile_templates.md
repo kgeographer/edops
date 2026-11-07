@@ -6,11 +6,14 @@ This file is the target of the WO-04 to WO-07 work: the wording of the Environme
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 1
+Version: 4
 
 ## Changes
 
 - v1 | 2026-11-05 | CC | Wording moved out of wo04_fill.py into this file. No wording changed: the ten filled_profiles regenerate identically.
+- v2 | 2026-11-05 | Opus | Framing A (Karl's decision): Setting speaks about the place; the other sections name the basin they describe. S1.2a now means the point's ecoregion. New units S1.2c (the basin's majority ecoregion, when it differs) and S1.5a, S1.5b (the basin's elevation range); wording for the four water classes other than exogenous; a phrase for a basin that meets the sea at its outlet; S8 says which figures are the place's and which the basin's. Needs WO-05 for the new units and phrases before it runs.
+- v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
+- v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 
 ## Section titles
 
@@ -26,30 +29,47 @@ S9.title: Buttons
 
 ## Section sentences
 
-Slots are unit ids. `{S3.2}`, `{S5.1a}` and `{S5.1b}` are built from the phrases further down.
+Slots are unit ids. `{S1.2c}`, `{S3.2}`, `{S5.1a}` and `{S5.1b}` are built from the phrases further down.
 
-S1.frame: {name} sits at about {S1.1b} m above sea level, in {S1.1c} country. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.3} {S1.4}
-S2.frame: Rainfall averages about {S2.1a} mm a year, {S2.1b}. Temperatures average {S2.2a} °C, {S2.2bc}. {S2.3}
+Setting speaks about the place. `{S1.1b}` is the elevation at the point; `{S1.5a}` and `{S1.5b}` are the lowest and highest elevation in the basin that contains it; `{S1.1c}` is a terrain word for that basin (WO-07). `{S1.2a}` is the ecoregion at the point.
+
+S1.frame: {name} sits at about {S1.1b} m above sea level, in a basin of {S1.1c} country that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.2c} {S1.3} {S1.4}
+
+The other sections speak about the basin and say so.
+
+S2.frame: Across the surrounding basin of about {S8.1a} km², rainfall averages about {S2.1a} mm a year, {S2.1b}. Temperatures there average {S2.2a} °C, {S2.2bc}. {S2.3}
 S3.frame: {name} is {S3.1}. {S3.2} {S3.3} {S3.4} The basin drains {S3.5}.
-S4.frame: The land is {S4.1a}, with {S4.1b}. The underlying rock is mostly {S4.2}. {S4.3}
+S4.frame: Across the basin, the land is {S4.1a}, with {S4.1b}. The underlying rock is mostly {S4.2}. {S4.3}
 S5.frame: Today {S5.1a} and {S5.1b}; {S5.1c} covers most of the rest. {S5.2}
 S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.4} {S6.5}
 S7.frame: {S7.1a} {S7.2} {S7.3}
-S8.frame: These figures describe the basin of about {S8.1a} km² that contains {name}, from global datasets of about {S8.1b}. {S8.2} {S8.3}
+S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3}
 S9.frame: {S9.1} [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
 
 ## Phrases
+
+Setting. `{eco}`: the basin's majority ecoregion. S1.2c appears only when it differs from the point's.
+
+S1.2c: Most of its basin lies in the {eco} ecoregion.
 
 Climate. `{lo_temp}`, `{lo_month}`, `{hi_temp}`, `{hi_month}`: coldest and warmest month of the monthly temperature curve.
 
 S2.2bc: from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}
 
-Water. S3.2 appears only where the Analysis tab's rule says the water supply is exogenous. `{S3.2a}`: ratio of the catchment above to the local basin. `{S3.2b}`: the comparison word. `{km}`: distance along the river from the basin's outlet to the sea or inland sink.
+Water. S3.2 takes one form for each class of the Analysis tab's rule. `{S3.2a}`: ratio of the catchment above to the local basin. `{S3.2b}`: the comparison word. `{km}`: distance along the river from the basin's outlet to the sea or inland sink. The four forms other than exogenous are drafts; CC checks each against the rule's definition of its class and reports where the wording claims more than the class means.
 
-S3.2: Most of the water passing here falls far upstream: the catchment above is {S3.2a} times the size of the local basin, and {S3.2b} than it.
+S3.2.exogenous: Most of the water passing here falls far upstream: the catchment above is {S3.2a} times the size of the local basin, and {S3.2b} than it.
+S3.2.uniform: The catchment above is {S3.2a} times the size of the local basin, with much the same climate.
+S3.2.headwater: No other basin drains into this one: the water here is gathered within the basin itself.
+S3.2.local: The catchment above is {S3.2a} times the size of the local basin, in a somewhat different climate from it.
+S3.2.coastal: The basin meets the sea at its outlet, so little water arrives from upstream.
+S3.2.coastal_large: The basin meets the sea at its outlet.
+S3.2.endorheic:
+S3.2.undetermined:
 S3.2b.wetter: wetter
-S3.5.sea: to the sea about {km} km downstream along the river from the basin's outlet
-S3.5.inland: to an inland sink about {km} km downstream along the river from the basin's outlet
+S3.5.sea: to the sea about {km} km beyond its outlet
+S3.5.sea_zero: directly to the sea
+S3.5.inland: to an inland sink about {km} km beyond its outlet
 S3.5.closed: nowhere: it is a closed basin, an inland sink
 
 Land cover. `{value}`: the share, as a whole-number percentage.
@@ -59,7 +79,7 @@ S5.1a.none: no cropland is recorded
 S5.1b.some: {value} of the basin is pasture
 S5.1b.none: no pasture is recorded
 
-Surroundings. `{up1}`, `{upN}`, `{dn1}`, `{dnN}`: neighbours that drain into this basin (direct, further away), and that this basin drains into (direct, further away).
+Surroundings. `{up1}`, `{upN}`, `{dn1}`, `{dnN}`: neighbours that drain into this basin (direct, further away), and that this basin drains into (direct, further away). Wording for this section is WO-06's.
 
 S6.2: upstream: {up1} direct, {upN} further; downstream: {dn1} direct, {dnN} further
 
@@ -67,9 +87,10 @@ Coast.
 
 S7.2: Its basin touches the sea.
 
-About these figures. `{parts}`: the statements below, joined by full stops. `{n}`: the number of measures. `{list}`: their names.
+About these figures. `{parts}`: the statements below, joined by full stops. `{n}`: the number of measures. `{list}`: their readable names (WO-05), not internal field names.
 
 S8.2: {parts}.
+label.upstream: {label} (upstream)
 S8.2.zero: {n} measures are zero here and so have no percentile: {list}
 S8.2.other: {n} have no value: {list}
 

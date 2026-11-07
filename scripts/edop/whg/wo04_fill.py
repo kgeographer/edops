@@ -4,6 +4,7 @@ Fills every 'yes' unit of modal_dummy_annotated.md from real data for a point; l
 'no' unit as a visible placeholder naming what is missing. Read-only: GETs on the local server, SELECTs
 on the local database, and the saved WO-03 ring and flow tables. Used by notebooks/edop/whg/wo04c_fill.ipynb.
 """
+import csv
 import json
 import re
 import subprocess
@@ -53,10 +54,34 @@ NEED = {
 
 _TPL = {}
 
+# Every key the generator reads. A template file with a key outside these sets, or without a required one, is refused,
+# so a misspelt or stray line cannot silently switch wording off. New wording the script learns to use goes in here.
+_UNITS = [f'S{i}' for i in range(1, 10)]
+KEYS_ALWAYS = {f'{s}.{p}' for s in _UNITS for p in ('title', 'frame')} | {
+    'S2.2bc', 'S3.2b.wetter', 'S3.5.sea', 'S3.5.inland', 'S3.5.closed', 'S5.1a.some', 'S5.1a.none', 'S5.1b.some',
+    'S5.1b.none', 'S6.2', 'S7.2', 'S8.2', 'S8.2.zero', 'S8.2.other', 'nobasin.text', 'nobasin.frame'}
+KEYS_PLAIN = {'S3.2'}   # the single water sentence of templates v1 (no framing A)
+KEYS_FRAMING_A = {'S1.2c', 'S3.2.exogenous', 'S3.2.uniform', 'S3.2.local', 'S3.2.coastal', 'S3.2.endorheic',
+                  'S3.2.undetermined'}   # required once S1.2c is present
+KEYS_OPTIONAL = {'S3.2.headwater', 'S3.2.coastal_large', 'S3.5.sea_zero', 'label.upstream',
+                 'status.outside_active_domain', 'status.no_data', 'status.low_coverage', 'status.not_areal'}
+
+
+def check_keys(text):
+    """Refuse a template file whose keys the generator does not recognise, or that lacks a required one."""
+    framing_a = 'S1.2c' in text
+    required = KEYS_ALWAYS | (KEYS_FRAMING_A if framing_a else KEYS_PLAIN)
+    known = required | KEYS_OPTIONAL
+    unknown, missing = sorted(set(text) - known), sorted(required - set(text))
+    if unknown or missing:
+        raise ValueError(f'{TEMPLATES_PATH.name}: ' + '; '.join(
+            ([f'keys the generator does not recognise (misspelt, or not supported yet): {", ".join(unknown)}'] if unknown else [])
+            + ([f'required keys missing: {", ".join(missing)}'] if missing else [])))
+
 
 def templates():
     """The wording in profile_templates.md; re-read whenever the file changes. Refuses a version with no Changes line."""
-    mtime = TEMPLATES_PATH.stat().st_mtime
+    mtime = (str(TEMPLATES_PATH), TEMPLATES_PATH.stat().st_mtime)
     if _TPL.get('mtime') == mtime:
         return _TPL['data']
     text, version, changes, section = {}, None, [], None
@@ -69,13 +94,14 @@ def templates():
         elif section == 'changes' and line.startswith('- v'):
             changes.append(line)
         else:
-            m = re.match(r'([A-Za-z0-9_.]+): (.*)$', line)
+            m = re.match(r'([A-Za-z0-9_.]+):\s*(.*)$', line)
             if m and section != 'changes':
                 text[m.group(1)] = m.group(2)
     newest = max((int(re.match(r'- v(\d+) ', c).group(1)) for c in changes), default=None)
     if version is None or newest != version:
         raise ValueError(f'{TEMPLATES_PATH.name}: Version is {version} but the newest Changes line is v{newest}; '
                          'raise Version and add a Changes line (- vN | date | who | what and why)')
+    check_keys(text)
     _TPL.update(mtime=mtime, data=dict(text=text, version=version, changes=changes))
     return _TPL['data']
 
@@ -96,13 +122,49 @@ def fmt(key, vals):
     return _SLOT.sub(sub, tpl)
 
 
+def has(key):
+    """True when the template file has a line for `key`: how a newer template switches a newer behaviour on."""
+    return key in templates()['text']
+
+
+def tidy(text):
+    """Close the gaps left by empty phrases."""
+    return re.sub(r' {2,}', ' ', text).strip()
+
+
+_LABELS = {}
+
+
+def catalog_labels():
+    """{variable key: (readable name, is_upstream)} from the variable catalog."""
+    if not _LABELS:
+        path = ROOT / 'documentation' / 'EDOPS_variable_catalog_v0.4.tsv'
+        with open(path, newline='') as fh:
+            for r in csv.DictReader(fh, delimiter='\t'):
+                if r['api_key_s']:
+                    _LABELS.setdefault(r['api_key_s'], (r['friendly_name'], False))
+                if r['api_key_u']:
+                    _LABELS.setdefault(r['api_key_u'], (r['friendly_name'], True))
+    return _LABELS
+
+
+def label(key):
+    """Readable name for a variable key, from the catalog; the key itself when the catalog has none or the template has no label.upstream."""
+    name, up = catalog_labels().get(key, (None, False))
+    if name is None or not has('label.upstream'):
+        return key
+    return fmt('label.upstream', {'label': name}) if up else name
+
+
 def templates_stamp():
-    """Which wording made a generated file: version, last commit of the template file, edited since."""
-    rel = str(TEMPLATES_PATH.relative_to(ROOT))
+    """Which wording and which rules made a generated file: template version, and last commit and edited-since for both the template file and this script."""
     git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
-    last = git('log', '-1', '--format=%h', '--', rel)
-    edited = bool(git('status', '--porcelain', '--', rel))
-    return f'{TEMPLATES_PATH.name} v{templates()["version"]} (last commit {last or "none yet"}; edited since: {"yes" if edited else "no"})'
+
+    def state(path):
+        rel = str(path.relative_to(ROOT))
+        return f'last commit {git("log", "-1", "--format=%h", "--", rel) or "none yet"}; edited since: {"yes" if git("status", "--porcelain", "--", rel) else "no"}'
+    return (f'{TEMPLATES_PATH.name} v{templates()["version"]} ({state(TEMPLATES_PATH)}); '
+            f'script {Path(__file__).name} ({state(Path(__file__).resolve())})')
 
 
 def PH(uid, extra=''):
@@ -139,6 +201,9 @@ def build_facts(lat, lon, conn, pairs, flow):
     """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables."""
     pub, ar = fetch_point(lat, lon)
     F = dict(lat=lat, lon=lon, pub=pub, areas=ar, hid=None)
+    pe = conn.execute('SELECT eco_id, eco_name FROM gaz."Ecoregions2017" WHERE ST_Intersects(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) LIMIT 1',
+                      (lon, lat)).fetchone()
+    F['pt_eco_id'], F['pt_eco_name'] = (int(pe[0]), pe[1]) if pe else (None, None)
     if pub is None or ar is None:
         return F
     hid = int(ar['scope']['hybas_id'])
@@ -154,6 +219,8 @@ def build_facts(lat, lon, conn, pairs, flow):
     eco_id = sigval(pub, 'eco_id')
     w = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (int(eco_id),)).fetchone() if eco_id is not None else None
     F['wiki_url'] = w[0] if w and w[0] else None
+    wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
+    F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
 
 
@@ -194,8 +261,23 @@ def fill_units(F):
     ok = lambda text, note=None: dict(ok=True, text=text, why=None, note=note)
     no = lambda why, na=False: dict(ok=False, text=None, why=why, na=na)
 
+    A = has('S1.2c')   # framing A: the Setting speaks about the place (templates v2 and later)
     eco = sigval(pub, 'ecoregion')
-    U['S1.2a'] = ok(eco, "the basin's majority ecoregion; the template means the point's") if eco else no('no ecoregion')
+    if not A:
+        U['S1.2a'] = ok(eco, "the basin's majority ecoregion; the template means the point's") if eco else no('no ecoregion')
+    else:
+        peco = F['pt_eco_name']
+        if peco:
+            U['S1.2a'] = ok(peco, 'the ecoregion at the point')
+        else:
+            U['S1.2a'] = ok(eco, "no ecoregion polygon at the point; the basin's majority used") if eco else no('no ecoregion')
+        differs = bool(peco) and F['pt_eco_id'] != sigval(pub, 'eco_id')
+        U['S1.2c'] = ok(fmt('S1.2c', {'eco': eco})) if differs else ok('', 'point and basin ecoregions agree')
+        el = sigval(pub, 'elev_point')
+        U['S1.1b'] = ok(f'{el:,.0f}', f"{pub.get('elev_dataset')}, {pub.get('elev_resolution_m')} m, via {pub.get('elev_source')}") if el is not None else no('no elevation from the live service')
+        for uid, key in (('S1.5a', 'elev_min'), ('S1.5b', 'elev_max')):
+            ev = sigval(pub, key)
+            U[uid] = ok(f'{ev:,.0f}') if ev is not None else no('no value')
 
     v = sigval(pub, 'precip_yr')
     U['S2.1a'] = ok(f'{v:.0f}') if v is not None else no('no value')
@@ -219,6 +301,16 @@ def fill_units(F):
     else:
         U['S3.2b'] = no(f'class is {cls}: the built rule has no "drier" or "cooler" statement, only "wetter" for exogenous water', na=True)
     U['S3.2b']['class'] = cls
+    if A:
+        slug = {'Exogenous water supply': 'exogenous', 'Catchment-uniform': 'uniform', 'Local-dominant': 'local',
+                'Coastal terminal': 'coastal', 'Endorheic': 'endorheic', 'Undetermined': 'undetermined'}[cls]
+        ratio = F['up_area'] / F['sub_area'] if F['sub_area'] and F['up_area'] else None
+        if ratio is not None and ratio <= 1.05 and slug in ('uniform', 'local') and has('S3.2.headwater'):
+            slug = 'headwater'
+        elif ratio is not None and ratio > 2 and slug == 'coastal' and has('S3.2.coastal_large'):
+            slug = 'coastal_large'
+        t32 = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
+        U['S3.2'] = ok(fmt('S3.2.' + slug, {'S3.2a': t32('S3.2a'), 'S3.2b': t32('S3.2b')}), f'class {cls}')
 
     endo, dist, coast = sigval(pub, 'endorheic'), sigval(pub, 'dist_sink'), sigval(pub, 'coast_flag')
     if dist is None:
@@ -227,6 +319,8 @@ def fill_units(F):
         U['S3.5'] = ok(fmt('S3.5.closed', {}), f'endo=2; dist_sink {dist:,.0f} km')
     elif endo == 1:
         U['S3.5'] = ok(fmt('S3.5.inland', dict(km=f'{dist:,.0f}')), 'endo=1')
+    elif has('S3.5.sea_zero') and round(dist) == 0:
+        U['S3.5'] = ok(fmt('S3.5.sea_zero', {}), 'endo=0; dist_sink rounds to 0 km')
     else:
         U['S3.5'] = ok(fmt('S3.5.sea', dict(km=f'{dist:,.0f}')), 'endo=0')
 
@@ -258,13 +352,14 @@ def fill_units(F):
     if bad:
         txt = []
         if zero:
-            txt.append(fmt('S8.2.zero', dict(n=len(zero), list=', '.join(zero))))
+            txt.append(fmt('S8.2.zero', dict(n=len(zero), list=', '.join(label(v) for v in zero))))
         if other:
-            txt.append(fmt('S8.2.other', dict(n=len(other), list='; '.join(f'{v} ({templates()["text"].get("status." + st, st)})' for v, st in other))))
+            txt.append(fmt('S8.2.other', dict(n=len(other), list='; '.join(f'{label(v)} ({templates()["text"].get("status." + st, st)})' for v, st in other))))
         U['S8.2'] = ok(fmt('S8.2', dict(parts='. '.join(txt))))
     else:
         U['S8.2'] = no('every measure has a value (optional part not stated)', na=True)
-    U['S9.2'] = ok(F['wiki_url']) if F['wiki_url'] else no('no Wikipedia text for this ecoregion')
+    wiki = (F['wiki_url_pt'] or F['wiki_url']) if A and F['pt_eco_id'] is not None else F['wiki_url']
+    U['S9.2'] = ok(wiki) if wiki else no('no Wikipedia text for this ecoregion')
     return U
 
 
@@ -291,13 +386,16 @@ def render_filled_profile(name, F, U):
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid)
-    if U['S3.2b']['ok']:
+    if 'S3.2' in U:
+        vals['S3.2'] = t('S3.2')
+    elif U['S3.2b']['ok']:
         vals['S3.2'] = fmt('S3.2', {'S3.2a': t('S3.2a'), 'S3.2b': t('S3.2b')})
     else:
         vals['S3.2'] = f'⟦S3.2: not stated; {U["S3.2b"]["why"]}; area ratio {t("S3.2a")}⟧'
     for sec in SECTIONS:
-        L += [f'### {fmt(sec + ".title", {})}', fmt(sec + '.frame', vals), '']
+        L += [f'### {fmt(sec + ".title", {})}', tidy(fmt(sec + '.frame', vals)), '']
     notes = [f'- {k}: {v["note"]}' for k, v in U.items() if v.get('note')]
-    notes += [f'- {k}: {"not applicable" if v.get("na") else "not filled"} ({v["why"]})' for k, v in U.items() if not v['ok']]
+    notes += [f'- {k}: {"not applicable" if v.get("na") else "not filled"} ({v["why"]})' for k, v in U.items()
+              if not v['ok'] and not (k == 'S3.2b' and 'S3.2' in U)]
     L += ['**Fill notes**', *notes, '']
     return '\n'.join(L)
