@@ -1,6 +1,6 @@
 # WO-07 results (running file)
 
-2026-11-08. Sections are added as each part is done. Part A (WO-06 adjustments) and Part B (class words) are still to be written up; Part C's decisions and its open issue are recorded below so they are not lost.
+2026-11-07. Sections are added as each part is done. Part A (WO-06 adjustments) and Part B (class words) are still to be written up; Part C's decisions and its open issue are recorded below so they are not lost.
 
 Template under construction: `profile_templates_v6_target.md` (becomes the live file at the end of the WO). Code: `scripts/edop/whg/wo07_rivers.py`, `wo06_rings.py`, `wo04_fill.py`. Notebook: `notebooks/edop/whg/wo07_adjust_classes_rivers.ipynb`.
 
@@ -41,7 +41,7 @@ River table: `output/edop/whg/wo07_rivers.csv` (574 points: ten places, 306 samp
 
 1. A correction table keyed on Natural Earth line ids (right name, or blank), seeded with these two and grown as reviewers report errors. Karl's view, from a decade with gazetteers: unbounded, a lost cause.
 2. A visible caveat on the pilot page ("river names come from Natural Earth and Wikidata and may be misattributed") with a way to report an error. Not decided; a page decision for Karl and Opus.
-3. Name only class 4 or larger rivers. **Adopted** (Karl, 8 Nov). It removes the Oaxaca type (small tributaries whose names collide) but not Dujiangyan.
+3. Name only class 4 or larger rivers. **Adopted** (Karl, 7 Nov). It removes the Oaxaca type (small tributaries whose names collide) but not Dujiangyan.
 4. A lenient along-the-course filter (leave a river unnamed if its line follows under about 20% of the reach). On the 68 checked cities it catches only Dujiangyan and loses no correct name. Not adopted.
 5. No names at all (always "a river runs about N km from X"). True everywhere, much less useful.
 
