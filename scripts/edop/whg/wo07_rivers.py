@@ -15,12 +15,12 @@ RIVERS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_rivers.csv'
 LABELS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_river_labels.csv'
 NE_SHP = W.ROOT / 'data' / 'ne_10m_rivers_lake_centerlines_scale_rank' / 'ne_10m_rivers_lake_centerlines_scale_rank.shp'
 
-CLASSES = (5, 6)          # minimum size of the nearest river tried: ord_flow at or below 5 (10 m3/s) or 6 (1 m3/s)
+CLASSES = (4, 5, 6)       # minimum size of the nearest river tried: ord_flow at or below 4 (100 m3/s), 5 (10 m3/s) or 6 (1 m3/s)
 STEP = 2                  # "much larger": this many discharge classes (a factor of 10 each) above the largest in the own basin
 D_KM = (10, 25, 50)       # distances tried for "nearby"
 # the values the sentences use now; the table keeps every value tried, so changing them needs no new query
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
-NAMED_KM = 10.0           # S3.1: a named river within this distance is named (tier 1)
+NAMED_LIMITS = {'r4': 25.0, 'r5': 5.0}   # S3.1 tier 1: a named river is mentioned out to this distance, by size: class 4 or larger (100 m3/s and up) 25 km, class 5 (10 to 99 m3/s) 5 km
 ON_KM = 1.5               # ... and within this distance the place is 'on' it
 NEAR_KM = 3.0             # S3.1: no named river, but a river of class 5 or larger within this distance is mentioned (tier 2); beyond, silence
 # S3.1 ignores anything smaller than class 5 (10 m3/s): the class 6 values stay in the table but are not used
@@ -45,7 +45,7 @@ WHERE b.hybas_id = %s AND ST_Length(ST_Intersection(r.geom, b.geom)::geography) 
 
 _NE = {}
 _PARTS = ('reach', 'ord', 'dis', 'km', 'cx', 'cy', 'name', 'name_km', 'qid', 'name2', 'name2_km', 'qid2')
-FIELDS = ['key', 'label', 'group', 'lat', 'lon', 'hid', 'own_min'] + [f'{p}_{x}' for p in ('r5', 'r6', 'big') for x in _PARTS]
+FIELDS = ['key', 'label', 'group', 'lat', 'lon', 'hid', 'own_min'] + [f'{p}_{x}' for p in ('r4', 'r5', 'r6', 'big') for x in _PARTS]
 
 
 def river_keys():
@@ -195,8 +195,8 @@ def fill_river_units(F, ok, no):
     U = {}
     used = None             # the reach S3.1 spoke about
     nm_ = '{name}'          # the place's name is put in by the renderer
-    named = [(row[f'{p}_km'], p, _name(row, p)) for p in ('r5',) if _val(row, f'{p}_km') is not None and _name(row, p)]
-    named = [t for t in named if t[0] <= NAMED_KM]
+    named = [(row[f'{p}_km'], p, _name(row, p)) for p in NAMED_LIMITS if _val(row, f'{p}_km') is not None and _name(row, p)]
+    named = [t for t in named if t[0] <= NAMED_LIMITS[t[1]]]
     k6 = _val(row, 'r5_km')
     if named:                                   # tier 1: a named river is close
         km, p, nm = min(named)
@@ -209,7 +209,7 @@ def fill_river_units(F, ok, no):
         U['S3.1'] = ok(text, f'tier 2: class {int(row["r5_ord"])} reach {int(row["r5_reach"])}, {k6:.1f} km, {row["r5_dis"]:.1f} m3/s; no name (nearest line: {row.get("r5_name") or "none"}' + (f', {row["r5_name_km"]:.1f} km' if _val(row, 'r5_name_km') is not None else '') + ')')
     else:                                       # tier 3: silence
         k5 = _val(row, 'r5_km')
-        U['S3.1'] = no('no river of class 5 or larger within ' + f'{NEAR_KM:g} km, and no named one within {NAMED_KM:g} km (nearest class 5: ' + (f'{k5:.0f} km)' if k5 is not None else 'none)'), na=True)
+        U['S3.1'] = no('no river of class 5 or larger within ' + f'{NEAR_KM:g} km, and no named river within its limit (nearest class 5: ' + (f'{k5:.0f} km)' if k5 is not None else 'none)'), na=True)
     big_km = _val(row, 'big_km')
     if big_km is None:
         own = _val(row, 'own_min')
