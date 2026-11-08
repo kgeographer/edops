@@ -383,12 +383,13 @@ def fill_units(F):
 
     for uid, var, key, word in (('S5.1a', 'cropland_extent', 'cropland_extent', 'cropland'), ('S5.1b', 'pasture_extent', 'pasture_extent', 'pasture')):
         share, st = val(F, key), rows.get(var, {}).get('status')
-        if st == 'outside_active_domain':
-            U[uid] = ok(fmt(uid + '.none', {}), 'zero here (outside active domain)')
-        elif share is None or st == 'no_data':
+        if share is None and st != 'outside_active_domain':
             U[uid] = no('no data')
+        elif not share:   # zero, by value; the engine's outside_active_domain flag is a percentile guard, not a zero (it hides 1%)
+            U[uid] = ok(fmt(uid + '.none', {}), 'zero' + (' (flagged outside active domain)' if st == 'outside_active_domain' else ''))
         else:
-            U[uid] = ok(fmt(uid + '.some', dict(value=f'{share:.0f}%')))
+            U[uid] = ok(fmt(uid + '.some', dict(value=f'{share:.0f}%')),
+                        '1%, flagged outside active domain by the engine (a percentile guard)' if st == 'outside_active_domain' else None)
 
     if has('S3.1.named'):   # nearest river and a much larger one nearby (WO-07 part C)
         from scripts.edop.whg import wo07_rivers
