@@ -83,6 +83,10 @@ def check_keys(text):
         from scripts.edop.whg import wo07_rivers
         required |= wo07_rivers.river_keys()
         known |= wo07_rivers.river_keys()
+    if 'S4.1a' in text:   # class words (WO-07 part B)
+        from scripts.edop.whg import wo07_classes
+        required |= wo07_classes.class_keys()
+        known |= wo07_classes.class_keys()
     unknown, missing = sorted(set(text) - known), sorted(required - set(text))
     if unknown or missing:
         raise ValueError(f'{TEMPLATES_PATH.name}: ' + '; '.join(
@@ -181,7 +185,7 @@ def label(key):
 
 
 def templates_stamp():
-    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script, wo06_rings.py and wo07_rivers.py."""
+    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script, wo06_rings.py, wo07_rivers.py and wo07_classes.py."""
     git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
 
     def state(path):
@@ -190,7 +194,8 @@ def templates_stamp():
     return (f'{TEMPLATES_PATH.name} v{templates()["version"]} ({state(TEMPLATES_PATH)}); '
             f'script {Path(__file__).name} ({state(Path(__file__).resolve())}); '
             f'script wo06_rings.py ({state(Path(__file__).resolve().parent / "wo06_rings.py")}); '
-            f'script wo07_rivers.py ({state(Path(__file__).resolve().parent / "wo07_rivers.py")})')
+            f'script wo07_rivers.py ({state(Path(__file__).resolve().parent / "wo07_rivers.py")}); '
+            f'script wo07_classes.py ({state(Path(__file__).resolve().parent / "wo07_classes.py")})')
 
 
 def PH(uid, extra=''):
@@ -252,6 +257,8 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     eco_id = sigval(pub, 'eco_id')
     w = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (int(eco_id),)).fetchone() if eco_id is not None else None
     F['wiki_url'] = w[0] if w and w[0] else None
+    from scripts.edop.whg import wo07_classes
+    F['glc'] = wo07_classes.glc_shares(conn, hid)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
@@ -358,7 +365,7 @@ def fill_units(F):
         U['S3.5'] = ok(fmt('S3.5.sea', dict(km=f'{dist:,.0f}')), 'endo=0')
 
     lith = sigval(pub, 'lith_class')
-    U['S4.2'] = ok(re.sub(r'\s*\([A-Z]{2}\)$', '', lith)) if lith else no('no lithology')
+    U['S4.2'] = ok(re.sub(r'\s*\([A-Z]{2}\)$', '', lith).lower()) if lith else no('no lithology')   # GLiM label in lower case (WO-07)
 
     for uid, var, key, word in (('S5.1a', 'cropland_extent', 'cropland_extent', 'cropland'), ('S5.1b', 'pasture_extent', 'pasture_extent', 'pasture')):
         val, st = sigval(pub, key), rows.get(var, {}).get('status')
@@ -372,6 +379,10 @@ def fill_units(F):
     if has('S3.1.named'):   # nearest river and a much larger one nearby (WO-07 part C)
         from scripts.edop.whg import wo07_rivers
         U.update(wo07_rivers.fill_river_units(F, ok, no))
+
+    if has('S4.1a'):   # class words (WO-07 part B)
+        from scripts.edop.whg import wo07_classes
+        U.update(wo07_classes.fill_class_units(F, ok, no, sigval, fmt, tidy))
 
     n = F['n_nb']
     rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)
@@ -424,7 +435,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S4.3', 'S5.1c'} if has('S4.1a') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
