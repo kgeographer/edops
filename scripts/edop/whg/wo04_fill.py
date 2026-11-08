@@ -45,8 +45,6 @@ NEED = {
     'S6.2c': 'description of a neighbouring basin (ring rules)',
     'S6.3': 'contrast counts (ring rules); no compass words',
     'S6.5': 'ring "furthest from the set" rule',
-    'S7.1a': 'coastline data (no distance-to-coast field)',
-    'S7.3': 'edge kind from the point (live layer)',
     'S8.1b': 'glossary of dataset years',
     'S9.1': 'URL scheme from WHG into EDOPS',
 }
@@ -282,6 +280,9 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     F['lake_pct'] = wo08_units.lake_pct(conn, hid)
     if has('S1.4.one'):   # the basin's other ecoregions (WO-08 B4)
         F['eco_shares'] = wo08_units.eco_shares(conn, hid)
+    if has('S7.3'):   # the seacoast (WO-08 B6)
+        o, nearest = wo08_units.basin_coast(conn, hid, lat, lon)
+        F['coast'] = dict(o=o, s=nearest)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
@@ -429,6 +430,11 @@ def fill_units(F):
         U['S6.2'] = no('no upstream or downstream neighbour in the ring', na=True)
     else:
         U['S6.2'] = ok(fmt('S6.2', f))
+    if has('S7.3'):   # the seacoast: the signature's coast flag or an outline within COAST_TOUCH_KM of the coastline (WO-08 B6)
+        from scripts.edop.whg import wo08_units
+        U.update(wo08_units.fill_coast_units(F, ok, no, val, fmt))
+        o = (F.get('coast') or {}).get('o')
+        coast = 1 if (coast == 1 or (o is not None and o <= wo08_units.COAST_TOUCH_KM)) else coast
     U['S7.2'] = ok(fmt('S7.2', {})) if coast == 1 else no('basin does not touch the sea (optional part not stated)', na=True)
     if has('S8.3'):
         U['S8.3'] = ok(fmt('S8.3', {'d': f"{max(1, round(F['snap_m'])):,}"}), f"moved {F['snap_m']:.1f} m") if F.get('snap_m') is not None else no('the point is inside a basin', na=True)
@@ -471,7 +477,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.4'} if has('S1.4.one') else set()) | ({'S8.3'} if has('S8.3') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.4'} if has('S1.4.one') else set()) | ({'S8.3'} if has('S8.3') else set()) | ({'S7.2', 'S7.3'} if has('S7.3') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
@@ -487,7 +493,9 @@ def render_filled_profile(name, F, U):
         if k_ != 'name' and isinstance(v_, str) and '{name}' in v_:
             vals[k_] = v_.replace('{name}', name)      # units that open with the place's name (S3.1)
     for sec in SECTIONS:
-        L += [f'### {fmt(sec + ".title", {})}', tidy(fmt(sec + '.frame', vals)), '']
+        body = tidy(fmt(sec + '.frame', vals))
+        if body.strip():   # a section with nothing true to say (Coast and reach, inland) has no heading either
+            L += [f'### {fmt(sec + ".title", {})}', body, '']
     notes = [f'- {k}: {v["note"]}' for k, v in U.items() if v.get('note')]
     notes += [f'- {k}: {"not applicable" if v.get("na") else "not filled"} ({v["why"]})' for k, v in U.items()
               if not v['ok'] and not (k == 'S3.2b' and 'S3.2' in U)]

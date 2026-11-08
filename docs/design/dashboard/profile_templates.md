@@ -6,7 +6,7 @@ This file is the product of the WO-04 to WO-07 work: the wording of the Environm
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 13
+Version: 15
 
 ## Changes
 
@@ -15,6 +15,8 @@ Version: 13
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 - v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v15 | 2026-11-08 | CC | S7.1a (distance to the seacoast) dropped at Karl's decision: it largely repeats the Water section, can seem to contradict it (Tbilisi: 251 km from the nearest coast, the Black Sea, but its river runs to the Caspian), and overstates proximity at estuary ports (Hamburg). Removed `S7.1a`, `S7.1a.on` and `{S7.1a}` from `S7.frame`. `S7.3` is now the key that switches the seacoast feature on.
+- v14 | 2026-11-08 | CC | WO-08 B6. New `S7.1a` ("{name} is about {d} km from the seacoast."), `S7.1a.on` (under a kilometre) and `S7.3` ("The nearest edge of its basin is the seacoast."). "Seacoast" because the Caspian counts (Karl); the WO's "coast" would read oddly for Baku. `S7.2` is unchanged in wording; it now also speaks when the basin's outline lies within 2 km of the coastline (Natural Earth 1:10m), not only on the signature's coast flag.
 - v13 | 2026-11-08 | CC | WO-08 B5. New `S8.3`: "The point lies just outside the basin data and was moved {d} m to the nearest basin." Speaks only when the profile script moved the point (within 1 km of a basin and inside none); silent otherwise.
 - v12 | 2026-11-08 | CC | S1.3 (the next ecoregion and its distance) dropped at Karl's decision: it describes neither the place nor its basin, and the basin's own ecoregions are S1.4. Removed `S1.3`, `S1.3.near` and `{S1.3}` from `S1.frame` and `nobasin.frame`. `S1.4.one` is now the key that switches the ecoregion feature on. S1.4 limit: 10% of the basin (Karl).
 - v11 | 2026-11-08 | CC | WO-08 B3, B4 (limits provisional, Karl chooses). New `S1.3` (nearest other ecoregion and its distance), `S1.3.near` (under a kilometre), `S1.4.one` and `S1.4.many` (the basin's other ecoregions, a list when there are several; the WO's single `S1.4` with an optional "and" is split because the verb agrees with the count).
@@ -58,7 +60,7 @@ S2.4: Its aridity index of {ai} falls in the UNEP {class} class.
 S4.frame: Across the basin, the land is {S4.1a}, with topsoil that averages {S4.1b}. The underlying rock is mostly {S4.2}. {S4.3}
 S5.frame: Around 2000, {S5.1a} and {S5.1b}; {S5.1c}. {S5.2}
 S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.5}
-S7.frame: {S7.1a} {S7.2} {S7.3}
+S7.frame: {S7.2} {S7.3}
 S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3}
 S9.frame: {S9.1} [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
 
@@ -198,6 +200,7 @@ cmp.gwdepth.bottom: the shallowest water table
 Coast.
 
 S7.2: Its basin touches the sea.
+S7.3: The nearest edge of its basin is the seacoast.
 
 About these figures. `{parts}`: the statements below, joined by full stops. `{n}`: the number of measures. `{list}`: their readable names (WO-05), not internal field names.
 

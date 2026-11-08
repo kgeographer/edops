@@ -1,4 +1,4 @@
-"""WO-08 new units: S2.1b when the rain falls, S3.4 lakes and wetlands, S1.4 the basin's other ecoregions, S8.3 the snap. Wording lives in profile_templates.md; each feature switches on when the
+"""WO-08 new units: S2.1b when the rain falls, S3.4 lakes and wetlands, S1.4 the basin's other ecoregions, S8.3 the snap, S7.3 the seacoast. Wording lives in profile_templates.md; each feature switches on when the
 template has its trigger key (see KEYS_BY_TRIGGER, read by wo04_fill.check_keys)."""
 from scripts.edop.whg import missing
 
@@ -6,7 +6,8 @@ from scripts.edop.whg import missing
 KEYS_BY_TRIGGER = {'S3.4.lakes': {'S3.4', 'S3.4.lakes', 'S3.4.wetlands'},
                    'S2.1b.strong': {'S2.1b.even', 'S2.1b.moderate', 'S2.1b.clear', 'S2.1b.strong'},
                    'S1.4.one': {'S1.4.one', 'S1.4.many'},
-                   'S8.3': {'S8.3'}}
+                   'S8.3': {'S8.3'},
+                   'S7.3': {'S7.3'}}
 
 MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 SEASON_CUTS = (0.15, 0.35, 0.60)   # precipitation concentration classes of the Seasonality tab (sandbox.html, renderSeasonality)
@@ -177,3 +178,47 @@ def snap_point(conn, lat, lon):
         if r[4]:
             return int(r[0]), float(r[1]), float(r[2]), float(r[3])
     return None
+
+
+# ---- S7.3: the coastline (gaz.ne_coastline_10m, Natural Earth 1:10m; loaded by wo08_load_coastline.py) ----
+# The Caspian is gid 958 (a closed ring) plus the island rings inside it. Natural Earth treats it as coast; whether a
+# profile does is a switch (CASPIAN_IS_COAST); Karl decided it does (8 Nov).
+CASPIAN_IS_COAST = True
+CASPIAN_SQL = "(k.gid = 958 OR ST_Within(k.geom, (SELECT ST_MakePolygon(geom) FROM gaz.ne_coastline_10m WHERE gid = 958)))"
+COAST_WHERE = {True: 'TRUE', False: 'NOT ' + CASPIAN_SQL}
+COAST_NEAR_DEG = 5.0   # prefilter for the outline tests below (they only ask 'within COAST_TOUCH_KM?')
+COAST_TOUCH_KM = 2.0   # the basin's outline (S7.2) or its edge nearest the point (S7.3) counts as the seacoast within this (Karl, 8 Nov)
+
+
+# S7.1a (distance to the seacoast) was dropped, Karl 8 Nov; coast_km stays for the evidence cells of wo08_new_units.ipynb.
+def coast_km(conn, lat, lon, caspian=None):
+    """Distance in km from the point to the nearest coastline, however far; None only if the table is empty. The five
+    nearest lines by planar distance are measured on the sphere, which is enough to find the nearest."""
+    caspian = CASPIAN_IS_COAST if caspian is None else caspian
+    r = conn.execute(f"""SELECT min(ST_Distance(t.geom::geography, t.g::geography)) / 1000.0 FROM (
+        SELECT k.geom, p.g FROM gaz.ne_coastline_10m k, (SELECT ST_SetSRID(ST_MakePoint(%s, %s), 4326) AS g) p
+        WHERE {COAST_WHERE[caspian]} ORDER BY k.geom <-> p.g LIMIT 5) t""", (lon, lat)).fetchone()
+    return None if r[0] is None else float(r[0])
+
+
+def basin_coast(conn, hid, lat, lon, caspian=None):
+    """(km from the basin's outline to the nearest coastline, km from the point's nearest outline spot to the nearest
+    coastline); each None when the coastline is further than COAST_NEAR_DEG. The first says the basin touches the coast
+    (S7.2); the second that the edge of the basin nearest the point is the coast (S7.3)."""
+    caspian = CASPIAN_IS_COAST if caspian is None else caspian
+    r = conn.execute(f"""WITH b AS (SELECT ST_Boundary(geom) AS o FROM public.basin06 WHERE hybas_id = %s),
+        n AS (SELECT ST_ClosestPoint(b.o, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) AS g, b.o FROM b)
+        SELECT (SELECT min(ST_Distance(k.geom::geography, n.o::geography)) / 1000.0 FROM gaz.ne_coastline_10m k WHERE ST_DWithin(k.geom, n.o, %s) AND {COAST_WHERE[caspian]}),
+               (SELECT min(ST_Distance(k.geom::geography, n.g::geography)) / 1000.0 FROM gaz.ne_coastline_10m k WHERE ST_DWithin(k.geom, n.g, %s) AND {COAST_WHERE[caspian]})
+        FROM n""", (int(hid), lon, lat, COAST_NEAR_DEG, COAST_NEAR_DEG)).fetchone()
+    return tuple(None if v is None else float(v) for v in r)
+
+
+def fill_coast_units(F, ok, no, val, fmt):
+    """S7.3: the edge of the basin nearest the point is the seacoast (Natural Earth 1:10m, the Caspian counted), within
+    COAST_TOUCH_KM. S7.2 (in wo04_fill) speaks for the signature's coast flag or an outline within COAST_TOUCH_KM, so S7.3
+    never speaks where S7.2 is silent."""
+    c = F.get('coast')
+    if c is not None and c['s'] is not None and c['s'] <= COAST_TOUCH_KM:
+        return {'S7.3': ok(fmt('S7.3', {}), f"nearest edge {c['s']:.1f} km from the coastline")}
+    return {'S7.3': no('the nearest edge of the basin is not the seacoast (optional part not stated)', na=True)}

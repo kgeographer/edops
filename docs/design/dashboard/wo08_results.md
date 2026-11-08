@@ -151,6 +151,34 @@ S8.3 is silent at all ten test places in the regenerated profiles.
 - **Coastal points with no ecoregion polygon at the point** (both moved points). The "lies in the {eco} ecoregion" sentence then falls back to the basin's majority ecoregion, as for any such point; the fill note records it but the reader is not told. Not caused by the snap.
 - **Levuka's basin is 131 separate pieces totalling 175,335 km²**, far above Fiji's land area (about 18,000 km², from memory), so "the basin of about 175,335 km²" would read wrongly for an island place. Cause not looked at (how BasinATLAS groups island basins, or ocean area). Any island basin may show the same. For Opus: a caveat, or silence on S8.1a for multi-part basins.
 
+## B6. S7.2 and S7.3 the seacoast; S7.1a tried and DROPPED (Karl, 8 Nov)
+
+**Coastline dataset.** Natural Earth 1:10m coastline (v5.0.0-pre9, 4,133 lines, in `data/ne_10m_coastline`), loaded into the local `cedop` as `gaz.ne_coastline_10m` with a GiST index (`scripts/edop/whg/wo08_load_coastline.py`; additive; prod untouched). Chosen because it was already to hand, is adequate for "within 2 km" tests at basin scale, and loads in seconds. GSHHG and OSM land polygons were not tried. The file holds no lake other than the Caspian (one closed 6,253 km ring, gid 958, plus the island rings inside it); the Black Sea and Azov are in it as ocean-connected seas. The Aral Sea, Dead Sea, Great Salt Lake and Lake Urmia are not in it, and the basins at their centres carry `endo` = 1 (inland sink) in the signature.
+
+**Rules (template v15; code `wo08_units.py`, `COAST_TOUCH_KM = 2.0`).**
+- `S7.2` "Its basin touches the sea." (wording unchanged) speaks when the signature's coast flag is 1 **or** the basin's outline lies within 2 km of the coastline.
+- `S7.3` "The nearest edge of its basin is the seacoast." speaks when the edge of the basin nearest the point lies within 2 km of the coastline; so it never speaks where S7.2 is silent. "Seacoast", not "coast", because the Caspian counts (Karl).
+- Caspian: counted as coast (Karl), a switch, `CASPIAN_IS_COAST`.
+- Tolerance 2 km (Karl): at 1 km Utqiagvik's nearest edge (1.7 km from the coastline) would not qualify.
+
+**Evidence (Cells 7 and 8; sample 306, WH Cities 254; 560 basins).**
+- *S7.2, flag against the layer ("outline within T km of the coastline"):* flag 1 and layer yes: 151 / 152 / 153 at 1 / 2 / 5 km; flag 1 and layer no: 3 / 2 / 1; flag 0 and layer yes: 67 / 81 / 92; neither: 339 / 325 / 314.
+- *S7.3, WO-03's coast-versus-divide rule against the layer ("nearest outline spot within T km"):* both coast 72 / 95 / 104; WO-03 coast, layer no: 44 / 21 / 12; WO-03 divide, layer coast: 2 / 4 / 14.
+- *The Caspian:* 15 of the 560 basins drain into it (4 sample, 11 WH Cities), plus Tbilisi among the ten; the signature calls every one `endo = 0` (drains to the sea); four of them touch the coast only through the Caspian. 321 of the 16,397 L6 basins drain into it, through 55 terminal basins.
+- *At the ten places* the Caspian changes nothing (Tbilisi's nearest coast is the Black Sea, 251 km). Alexandria and Utqiagvik: flag 1, outline 0.0 km, nearest edge 0.4 and 1.7 km; S7.2 and S7.3 agree there (the WO's check). The other eight are inland on both measures.
+- *Cell 9, six coastal cities:* Aktau (S7.2, S7.3 speak), Stockholm (both), Baku (S7.2 only; nearest edge 2.19 km), Porto, Rotterdam, Hamburg (S7.2 only).
+
+**Tbilisi and open item R3.** Unchanged: the Water section keeps the source's "drains to the sea about 664 km beyond its outlet" (the Kura runs to the Caspian, which the signature treats as sea). The Caspian is the one inland sea treated as ocean in both the signature and the coastline layer, so the two agree. Caveat for Opus: hydrologically the Caspian is an inland (endorheic) lake.
+
+**S7.1a, "{name} is about {d} km from the seacoast.", dropped (Karl).** Built and run (distances uncapped: Timbuktu 1,261 km, Santa Fe 830, Chaco Canyon 719, Lviv 595, Kaifeng 446, Poltava 332, Tbilisi 251, Alexandria and Utqiagvik 2). Dropped because it largely repeats the Water section (S3.2 "meets the sea at its outlet", S3.5 "drains ... to the sea about N km beyond its outlet"), can seem to contradict it (Tbilisi: 251 km from the nearest coast, the Black Sea, but its river runs to the Caspian), and overstates proximity at estuary ports. It was the only place-level (not basin-level) coastal statement; parked for Opus.
+
+**Anomalies found (not fixed; we report sources).**
+- **The signature's coast flag misses about a third of the basins that touch the sea.** Of the 81 basins with flag 0 whose outline lies within 2 km of the coastline, 77 are terminal basins (`next_down` = 0, flow distance to the sea 0 km) and none has a coastal basin downstream; they include Rotterdam, Hamburg, Stockholm, Porto, Bordeaux, Philadelphia, Saint Petersburg, Riga and Quito (Pacific side). The catalog calls the flag "Basin touches coast"; why it misses them is not verified (guess: it counts only open-coast contact, not river mouths or estuaries). Hence the "flag or layer" rule for S7.2.
+- **Two the other way** (flag 1, layer no): a 0.1 km² islet in the Sea of Japan (41.0 N, 139.0 E), 61 km from the nearest line (too small for 1:10m); and a 253 km² southern New Zealand basin whose outline is 2.17 km from the coastline, just past the 2 km tolerance.
+- **The coastline follows tidal estuaries.** Hamburg: the nearest line point is up the Elbe (53.54 N, 9.83 E), 11 km away, whereas Cuxhaven (the river mouth) is 83 km further along the line and the open coast about 93 km away in a straight line. Likely cases in the WH Cities (from the heuristic's list and my own knowledge; unverified): Quebec City, Philadelphia, Fray Bentos, Bath, Rotterdam, Bordeaux, London. A heuristic (coastline across water under 10 km wide) could not separate estuaries from legitimate harbours and bays (it flagged Rio de Janeiro, Kotor, Valletta, Macau) and missed Hamburg, so it is not a result. Other coastline datasets (GSHHG, OSM) follow estuaries too. Consequence: S7.2 "touches the sea" is true to the data for such ports; for them S7.2 does not say the open sea is near.
+- **Cell 8's first version counted missing values as changes** (the "125 points whose distance changes" line was wrong); fixed. The real changes if the Caspian were not coast: Aktau (2 km to none), Baku (4 km to none), Goris (227 km to none within the search window).
+- **My 5-degree search cap** in the first S7.1a made 92 sample points and 20 WH Cities read "none"; removed (nearest-line search with no limit).
+
 ## Issues found along the way
 
 - **S5.1a and S5.1b (WO-04) read the engine's `outside_active_domain` flag as "none recorded"; it is a percentile guard, not a zero. FIXED (Karl, 8 Nov).** The flag hides a value of at most 1%: of 1,589 flagged basin-by-variable rows in the ring table, 1,396 are 0 and 193 are 1% (122 cropland, 71 pasture), read from `basin06`. Of the 258 flagged core basins, 32 have a positive share, so "no cropland is recorded" was false for them. Now both units state the value when it is above zero, whatever the status ("about 1% of the basin is cropland" at Chaco Canyon, the only one of the ten places that changes), and say "no ... recorded" only at zero; the fill note records the flag. Sample-wide rate of the old error: about 32 of 258 core basins in the ring table.
@@ -158,4 +186,4 @@ S8.3 is silent at all ten test places in the regenerated profiles.
 
 ## Still to do
 
-A5 (the river-name gate); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
+A5 (the river-name gate). Then the ten filled_profiles, the summary and the commit.
