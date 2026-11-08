@@ -27,9 +27,9 @@ MEAS = {'precip': 'precip_yr', 'temp': 'temp_yr', 'aridity': 'aridity', 'elev': 
         'gwdepth': 'gw_table_depth'}
 # which measures each sentence draws on, in the order they are tried (an editorial choice, to be adjusted)
 L_S23 = ['precip', 'temp', 'aridity']
-L_S52 = ['cropland', 'pasture']                    # population density and human footprint are left out: places are where people are
+L_S52 = ['cropland', 'pasture', 'forest']           # population density and human footprint are left out: places are where people are
 L_S63 = ['elev', 'precip', 'temp', 'aridity']      # only measures with an adjective ("all higher")
-L_S65 = ['elev', 'relief', 'slope', 'forest', 'karst', 'sand', 'silt', 'clay', 'runoff', 'permafrost', 'gwdepth']
+L_S65 = ['elev', 'relief', 'slope', 'karst', 'sand', 'silt', 'clay', 'runoff', 'permafrost', 'gwdepth']
 L_UNSTATED = {'popdens': 'population density', 'footprint': 'human footprint'}   # compared, kept in the fill notes only
 
 
@@ -47,7 +47,8 @@ def ring_keys():
 
 def ring_optional():
     """Middle counts ("less than three of the five"): they speak only while the template carries these lines."""
-    return {'S2.3.count', 'S2.3.count.precip', 'S5.2.count'}
+    return {'S2.3.count', 'S2.3.count.precip', 'S5.2.count', 'S2.3.counts', 'S2.3.counts.item', 'S2.3.counts.item.precip',
+            'S5.2.counts', 'S5.2.counts.item'}
 
 
 
@@ -166,37 +167,69 @@ def _cmps(slugs, V, core, nbs):
     return out
 
 
-def _stated(slugs, cap, key_ext, key_abo, key_cnt, V, core, nbs):
-    """The sentence for S2.3 or S5.2: the extremes (up to cap) in one sentence, else an "all but one", else (while the
-    template has the count lines) the most one-sided count; plus a trace. A count not stated is kept in `unstated`."""
+def _one(slugs_cm, key_abo, key_cnt):
+    """A single measure standing among the neighbours, as one sentence of its own (the earlier wording)."""
+    s, c = slugs_cm
+    if c['abo']:
+        return W.fmt(_frame(key_abo, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), m=_nums(c['m'])[0])), 'allbutone'
+    k, m = _nums(c['k'], c['m'])
+    return W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k, m=m)), 'count'
+
+
+def _stated(slugs, cap, key_ext, key_abo, key_cnt, key_cnts, V, core, nbs):
+    """The sentences for S2.3 or S5.2, plus a trace: the extremes (up to cap) in one sentence; then every other measure
+    that stands out (all but one, or more than half the set) -- alone in its own sentence (key_abo, key_cnt), or, when
+    there are two or more and the template has key_cnts, together in one sentence. A count not stated (the template has
+    no line for it, or it is not more than half) is kept in `unstated`."""
     cm = _cmps(slugs, V, core, nbs)
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]
-    if ext:
-        used = ext[:cap]
+    used, texts, kinds, unstated = ext[:cap], [], [], []
+    if used:
         groups = {}          # extremes over the same set of basins share one sentence
         for s, d in used:
             groups.setdefault(cm[s]['m'] + 1, []).append(W.fmt(f'cmp.{s}.{d}', {}))
-        text = ' '.join(W.fmt(key_ext, dict(cmp=_join_phrases(ws), n=W.numword(n))) for n, ws in groups.items())
-        return text, dict(kind='extreme', ext=ext, used=used, unstated='')
-    abo = [(s, c) for s, c in cm.items() if c and c['abo']]
-    if abo:
-        s, c = abo[0]
-        text = W.fmt(_frame(key_abo, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), m=_nums(c['m'])[0]))
-        return text, dict(kind='allbutone', ext=[], used=[(s, c['side'])], unstated='')
-    live = [(s, c) for s, c in cm.items() if c]
-    if not live:
-        return None, dict(kind='none', ext=[], used=[], unstated='')
-    firm = [(s, c) for s, c in live if 2 * c['k'] > c['m']]     # a count is stated only when it is more than half the set
-    if not firm:
-        s, c = max(live, key=lambda sc: sc[1]['k'])
-        k, m = _nums(c['k'], c['m'])
-        return None, dict(kind='count_unstated', ext=[], used=[], unstated=f'{s} {c["side"]} than {k} of {m}, not more than half')
-    s, c = max(firm, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
-    k, m = _nums(c['k'], c['m'])
-    if _has(key_cnt):
-        text = W.fmt(_frame(key_cnt, s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k, m=m))
-        return text, dict(kind='count', ext=[], used=[(s, c['side'])], unstated='')
-    return None, dict(kind='count_unstated', ext=[], used=[], unstated=f'{s} {c["side"]} than {k} of {m}')
+        texts.append(' '.join(W.fmt(key_ext, dict(cmp=_join_phrases(ws), n=W.numword(n))) for n, ws in groups.items()))
+        kinds.append('extreme')
+    isext = {s for s, _ in ext}
+    live = [(s, c) for s, c in cm.items() if c and s not in isext]
+    firm = [(s, c) for s, c in live if c['abo'] or 2 * c['k'] > c['m']]     # a count is stated only when more than half the set
+    for s, c in live:
+        if (s, c) not in firm:
+            k, m = _nums(c['k'], c['m'])
+            unstated.append(f'{s} {c["side"]} than {k} of {m}, not more than half')
+    stated = []
+    if len(firm) >= 2 and _has(key_cnts):
+        groups = {}          # measures over the same number of neighbours share the sentence
+        for s, c in firm:
+            groups.setdefault(c['m'], []).append((s, c))
+        for m, items in groups.items():
+            parts = []
+            for s, c in items:
+                k = 'all but one' if c['abo'] else _nums(c['k'], c['m'])[0]
+                parts.append(W.fmt(_frame(key_cnts + '.item', s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k)))
+            texts.append(W.fmt(key_cnts, dict(m=_nums(m)[0], list=W.join_and(parts))))
+        kinds.append('counts')
+        stated = [(s, c['side']) for s, c in firm]
+    elif firm:
+        abo = [(s, c) for s, c in firm if c['abo']]
+        if abo:
+            pick = abo[0]
+        elif _has(key_cnt):
+            pick = max(firm, key=lambda sc: abs(sc[1]['less'] - sc[1]['more']))   # first of equals, in list order
+        else:
+            pick = None
+        for s, c in firm:
+            if pick is None or (s, c) != pick:
+                k, m = _nums(c['k'], c['m'])
+                unstated.append(f'{s} {c["side"]} than {k} of {m}')
+        if pick is not None:
+            t, kd = _one(pick, key_abo, key_cnt)
+            texts.append(t); kinds.append(kd); stated = [(pick[0], pick[1]['side'])]
+    if not texts:
+        kind = 'count_unstated' if unstated else 'none'
+    else:
+        kind = '+'.join(kinds)
+    return (' '.join(texts) or None), dict(kind=kind, ext=ext, used=used + stated, unstated='; '.join(unstated))
 
 
 def _standing(slug, c):
@@ -234,11 +267,11 @@ def fill_ring_units(F, ok, no):
         U['S6.ring'] = ok('', f'{len(nbs)} neighbours; ring rules silent')
         return U
 
-    for uid, slugs, ck, kx, ka, kc in (('S2.3', L_S23, 'S2_3', 'S2.3.extreme', 'S2.3.allbutone', 'S2.3.count'),
-                                       ('S5.2', L_S52, 'S5_2', 'S5.2.extreme', 'S5.2.allbutone', 'S5.2.count')):
-        text, tr = _stated(slugs, CAP[ck], kx, ka, kc, V, core, nbs)
+    for uid, slugs, ck, kx, ka, kc, kn in (('S2.3', L_S23, 'S2_3', 'S2.3.extreme', 'S2.3.allbutone', 'S2.3.count', 'S2.3.counts'),
+                                           ('S5.2', L_S52, 'S5_2', 'S5.2.extreme', 'S5.2.allbutone', 'S5.2.count', 'S5.2.counts')):
+        text, tr = _stated(slugs, CAP[ck], kx, ka, kc, kn, V, core, nbs)
         if text:
-            U[uid] = ok(text, f'{tr["kind"]}: ' + ', '.join(f'{s} {d}' for s, d in tr['used']))
+            U[uid] = ok(text, f'{tr["kind"]}: ' + ', '.join(f'{s} {d}' for s, d in tr['used']) + (f' | not stated: {tr["unstated"]}' if tr['unstated'] else ''))
         elif tr['unstated']:
             U[uid] = no(f'count not stated: {tr["unstated"]}', na=True)
         else:
