@@ -1,11 +1,12 @@
-"""WO-08 new units: S2.1b when the rain falls, S3.4 lakes and wetlands, S1.3 the next ecoregion, S1.4 the basin's other ecoregions. Wording lives in profile_templates.md; each feature switches on when the
+"""WO-08 new units: S2.1b when the rain falls, S3.4 lakes and wetlands, S1.4 the basin's other ecoregions, S8.3 the snap. Wording lives in profile_templates.md; each feature switches on when the
 template has its trigger key (see KEYS_BY_TRIGGER, read by wo04_fill.check_keys)."""
 from scripts.edop.whg import missing
 
 # trigger key in the template -> every key the feature reads
 KEYS_BY_TRIGGER = {'S3.4.lakes': {'S3.4', 'S3.4.lakes', 'S3.4.wetlands'},
                    'S2.1b.strong': {'S2.1b.even', 'S2.1b.moderate', 'S2.1b.clear', 'S2.1b.strong'},
-                   'S1.3.near': {'S1.3', 'S1.3.near', 'S1.4.one', 'S1.4.many'}}
+                   'S1.4.one': {'S1.4.one', 'S1.4.many'},
+                   'S8.3': {'S8.3'}}
 
 MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 SEASON_CUTS = (0.15, 0.35, 0.60)   # precipitation concentration classes of the Seasonality tab (sandbox.html, renderSeasonality)
@@ -78,7 +79,7 @@ def fill_season_unit(F, ok, no, val, fmt):
     return {'S2.1b': ok(fmt('S2.1b.' + k, {'month': MONTHS[wet]}), f'concentration {conc:.2f} ({k}); wettest month {MONTHS[wet]} ({pre[wet]:.0f} mm)')}
 
 
-# ---- S1.3 and S1.4: ecoregions (gaz."Ecoregions2017": eco_id, eco_name, geom) --------------------------------------
+# ---- S1.4: ecoregions (gaz."Ecoregions2017": eco_id, eco_name, geom) --------------------------------------
 _INVALID = []
 
 
@@ -99,6 +100,7 @@ ORDER BY km LIMIT 1"""
 SEARCH_DEG = 4.0   # prefilter in degrees (about 440 km of latitude; 150 km of longitude at 70 degrees north)
 
 
+# S1.3 was dropped (Karl, 8 Nov); kept only for the evidence cells of wo08_new_units.ipynb.
 def next_ecoregion(conn, lat, lon, own_eco_id):
     """(eco_id, name, km) of the nearest ecoregion polygon other than `own_eco_id`, measured from the point; None when
     there is none within the search window. Distance to the polygon, so an ecoregion that adjoins the point's is 0 km."""
@@ -121,27 +123,15 @@ def eco_shares(conn, hid):
     return sorted(((int(a), b, float(c)) for a, b, c in rows if c and c > 0), key=lambda r: -r[2])
 
 
-# PROVISIONAL limits: the WO leaves them to Karl, who chooses after the results at 25, 50 and 100 km (S1.3) and 5, 10
-# and 20% (S1.4) are reported (wo08_results.md). Until then the ten filled_profiles use these.
-NEXT_ECO_KM = 50.0
+# Share of the basin an ecoregion must cover to be named (Karl chose 10% after the 5, 10 and 20% results, wo08_results.md).
 OTHER_ECO_SHARE = 0.10
 
 
 def fill_ecoregion_units(F, ok, no, val, fmt):
-    """S1.3: the nearest ecoregion other than the one at the point (or the basin's majority where the point is in none),
-    with its distance, when it is within NEXT_ECO_KM. S1.4: the ecoregions other than the point's, the signature's and
-    the largest by area that cover at least OTHER_ECO_SHARE of the basin. Both silent where they have nothing to say."""
+    """S1.4: the ecoregions other than the point's, the signature's and the largest by area that cover at least
+    OTHER_ECO_SHARE of the basin. Silent where there are none."""
     U = {}
     own = F['pt_eco_id'] if F['pt_eco_id'] is not None else (None if val(F, 'eco_id') is None else int(val(F, 'eco_id')))
-    nx = F.get('next_eco')
-    if own is None or nx is None:
-        U['S1.3'] = no('no ecoregion at the point or in the basin to measure from, or none within the search window', na=True)
-    elif nx[2] > NEXT_ECO_KM:
-        U['S1.3'] = no(f'the nearest other ecoregion ({nx[1]}) is {nx[2]:.0f} km away, beyond {NEXT_ECO_KM:g} km', na=True)
-    else:
-        d = nx[2]
-        text = fmt('S1.3.near', {'eco': nx[1]}) if d < 1 else fmt('S1.3', {'eco': nx[1], 'd': f'{d:.0f}'})
-        U['S1.3'] = ok(text, f'{nx[1]} at {d:.1f} km')
     sh = F.get('eco_shares') or []
     skip = {own, F['pt_eco_id'], (None if val(F, 'eco_id') is None else int(val(F, 'eco_id'))), sh[0][0] if sh else None}
     other = [(n, v) for e, n, v in sh if e not in skip and v >= OTHER_ECO_SHARE]
@@ -158,3 +148,32 @@ def fill_ecoregion_units(F, ok, no, val, fmt):
 def join_and(items):
     """'a', 'a and b', 'a, b and c'"""
     return items[0] if len(items) == 1 else ', '.join(items[:-1]) + ' and ' + items[-1]
+
+
+# ---- S8.3: the snap (profile scripts only; the engine and the public API still answer no_basin) ---------------------
+SNAP_M = 1000.0   # a point this close to a basin and inside none is moved to it (WO-03 D10)
+SNAP_NUDGES_M = (3.0, 30.0, 300.0)   # how far inside the edge the moved point is put, so that ST_Contains holds
+
+SNAP_SQL = """
+WITH p AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326) AS g),
+n AS (SELECT b.hybas_id, b.geom, p.g, ST_Distance(b.geom::geography, p.g::geography) AS d
+      FROM public.basin06 b, p WHERE ST_DWithin(b.geom::geography, p.g::geography, %(m)s)
+      ORDER BY b.geom <-> p.g LIMIT 1),
+c AS (SELECT hybas_id, geom, d, ST_ClosestPoint(geom, g) AS e, ST_PointOnSurface(geom) AS i FROM n)
+SELECT hybas_id, d,
+       ST_Y(ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0)))),
+       ST_X(ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0)))),
+       ST_Contains(geom, ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0))))
+FROM c"""
+
+
+def snap_point(conn, lat, lon):
+    """(hybas_id, metres moved, lat, lon of a point just inside that basin) for a point that lies in no basin but within
+    SNAP_M of one; None otherwise (the point is inside a basin, or nothing is near: no_basin stays no_basin)."""
+    for nudge in SNAP_NUDGES_M:
+        r = conn.execute(SNAP_SQL, dict(lat=lat, lon=lon, m=SNAP_M, nudge=nudge)).fetchone()
+        if r is None or r[1] == 0:
+            return None
+        if r[4]:
+            return int(r[0]), float(r[1]), float(r[2]), float(r[3])
+    return None

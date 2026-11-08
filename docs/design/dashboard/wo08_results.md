@@ -102,32 +102,54 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 **Not done, by the WO's instruction:** wetland classes are not grouped or relabelled; "seasonal wetlands" (S3.X1) needs the class legend and is not attempted.
 
-## B3 and B4. S1.3 the next ecoregion, S1.4 the basin's other ecoregions (built; cutoff evidence pending Karl's run of Cells 3 to 5; Karl chooses the limits)
+## B3. S1.3 the next ecoregion: tried, DROPPED (Karl, 8 Nov)
 
-**Built (template v11).** `S1.3`: "The {eco} ecoregion begins about {d} km away." (`S1.3.near` under a kilometre). The distance is from the point to the nearest polygon of an ecoregion other than the one at the point (when the point is in no polygon, the basin's majority ecoregion is the one measured from; when there is neither, silent). Names are the Ecoregions2017 `eco_name` (one authoritative dataset; the garbled names of open item E3 are in `lu_tec`, not here). `S1.4`: ecoregions other than the point's, the signature's and the largest by area that cover at least a share of the basin; `S1.4.one` and `S1.4.many` (the WO's single `S1.4` is split because the verb agrees with the count). Shares are the WO-03 Q3 method (intersection area with `basin06`, invalid geometries through `ST_MakeValid`); distances are geodesic (`ST_Distance` on geography). Code: `wo08_units.py` (`next_ecoregion`, `eco_shares`, `fill_ecoregion_units`); both are computed live per point (about 1 to 2 s added to a profile).
+**Decision.** S1.3 ("The {eco} ecoregion begins about {d} km away.") is not in the profile. Karl's reasoning: the profile says which ecoregion the place sits in and which others its basin takes in (S1.2, S1.4); an ecoregion that lies beyond the basin, within some number of kilometres, describes neither the place nor its basin, and the WO gave no purpose for it. Template v12 removes `S1.3`, `S1.3.near` and the `{S1.3}` slot from `S1.frame` and `nobasin.frame`; the code no longer computes it.
 
-**Provisional limits in the code, until Karl chooses:** S1.3 speaks within 50 km (`NEXT_ECO_KM`), S1.4 lists ecoregions at 10% or more (`OTHER_ECO_SHARE`). The ten filled_profiles use these. The evidence for 25, 50 and 100 km and for 5, 10 and 20% comes from Cells 3 to 5 of the notebook (sample of 306 and the ten places).
+**What was tried (kept as the record).** Distance from the point to the nearest polygon of another ecoregion, geodesic, over the ten places and the 306 sample basins (Cells 3 and 4 of `wo08_new_units.ipynb`, which still run; `next_ecoregion` stays in `wo08_units.py` for them). 304 of 306 have an ecoregion to measure from; 284 have another within the 4-degree search window. Distance, km: median 34, mean 59, 25th percentile 10, 75th 86, 90th 144, max 396.
 
-**At the ten places (provisional limits):**
-
-| Place | S1.3 | S1.4 |
+| Limit | Speaks (of 306) | Of the ten places |
 |---|---|---|
-| Timbuktu | Inner Niger Delta flooded savanna, about 4 km | silent |
-| Tbilisi | Caucasus mixed forests, about 3 km | Eastern Anatolian montane steppe |
-| Santa Fe | Colorado Rockies forests, about 4 km | Colorado Rockies forests and Arizona Mountains forests |
-| Kaifeng | silent (nearest 54 km) | silent |
-| Lviv | Carpathian montane forests, about 26 km | silent |
-| Poltava | Pontic steppe, about 49 km | silent |
-| Chaco Canyon | silent (nearest 64 km) | Arizona Mountains forests |
-| Alexandria | North Saharan Xeric Steppe and Woodland, about 31 km | Nile Delta flooded savanna |
-| Utqiagvik | silent (nearest 137 km) | silent |
-| Tristan da Cunha | no basin; its point lies in no ecoregion polygon (the nearest polygon is 0.4 km away) | not applicable |
+| 25 km | 123 (40%) | Timbuktu, Tbilisi, Santa Fe |
+| 50 km | 167 (55%) | + Lviv, Alexandria, Poltava |
+| 100 km | 226 (74%) | + Kaifeng, Chaco Canyon |
 
-**Observations for Karl and Opus.**
+Utqiagvik (137 km) is silent at all three. At 50 km the sentence fires for over half of all basins, so it says little that is particular to the place. The nearest other ecoregion is also the basin's largest-share ecoregion (already named by S1.2c) at only 13 of 306 basins.
 
-- **S1.3 can repeat S1.2c.** At Timbuktu and Tbilisi the nearest other ecoregion is the basin's majority ecoregion that S1.2c has just named ("Most of its basin lies in the Caucasus mixed forests ecoregion. The Caucasus mixed forests ecoregion begins about 3 km away."). True, and the distance is new, but it reads as repetition. Cell 4 counts how often the two coincide over the sample. One possible rule: where S1.2c already names it, say nothing more or fold the distance into S1.2c; not applied.
-- **S1.3 and S1.4 can name the same ecoregion** (Santa Fe: the Colorado Rockies forests are the nearest other ecoregion and also part of the basin). They say different things (near the point; part of the basin) but a reader sees the name twice.
-- **Distance to the polygon is distance to the ecoregion's edge**, which for a point beside a large basin-spanning ecoregion can be a few kilometres; the sentence "begins about 3 km away" is accurate but does not say in what direction (no compass words, per WO-03).
+## B4. S1.4 the basin's other ecoregions (done; share limit 10%, Karl's choice, 8 Nov)
+
+**Built (template v11, key `S1.4.one` now the trigger).** `S1.4.one` / `S1.4.many`: "Its basin also takes in parts of the {eco} ecoregion[s]." Ecoregions other than the point's, the signature's and the basin's largest by area, covering at least a share of the basin. Shares are the WO-03 Q3 method (intersection area with `basin06`, invalid geometries through `ST_MakeValid`). Code: `wo08_units.py` (`eco_shares`, `fill_ecoregion_units`); computed live per point. **Limit: 10% (`OTHER_ECO_SHARE`), chosen by Karl after the results below.**
+
+**Evidence (Cell 5).** 298 of the 306 sample basins have ecoregion shares (the other 8 are silent). Other ecoregions per basin (0 / 1 / 2 / 3 or more), and how many basins the sentence speaks for:
+
+| Share limit | 0 / 1 / 2 / 3+ | Speaks (of 298) |
+|---|---|---|
+| 5% | 153 / 113 / 27 / 5 | 145 (49%) |
+| 10% | 177 / 99 / 20 / 2 | 121 (41%) |
+| 20% | 211 / 81 / 6 / 0 | 87 (29%) |
+
+Most basins that speak name one ecoregion; three or more is rare. At the ten places the limit matters little: Tbilisi (16%) and Alexandria (11%) speak at 5% and 10% and not at 20%; Santa Fe names 3, 2 and 1 ecoregions at 5, 10 and 20%; Chaco Canyon's Arizona Mountains forests sits at 10%. 5% would name minor slivers; 20% would drop Tbilisi and Alexandria.
+
+**At the ten places (10%):** Tbilisi, Eastern Anatolian montane steppe; Santa Fe, Colorado Rockies forests and Arizona Mountains forests; Chaco Canyon, Arizona Mountains forests; Alexandria, Nile Delta flooded savanna; silent at Timbuktu, Kaifeng, Lviv, Poltava, Utqiagvik. Tristan da Cunha has no basin.
+
+## B5. S8.3 the snap (done)
+
+**Built (template v13).** `S8.3`: "The point lies just outside the basin data and was moved {d} m to the nearest basin." Speaks only when a move happened. Rule (`wo08_units.snap_point`, profile scripts only; the engine and the public API still answer `no_basin`): a point inside no basin but within 1 km of one (`SNAP_M`) is moved to just inside the nearest basin's edge (3 m inside, widening to 30 or 300 m only if the point still falls outside the polygon). The move is used only to find the basin; the ecoregion at the point, the river and the elevation stay with the original point. After the move the API must return the aimed-for basin, otherwise the point stays `no_basin`.
+
+**Edge cases (database and API probe, then the full profile in Cell 6).**
+
+| Point | Nearest basin | Moved | Result |
+|---|---|---|---|
+| Akureyri | 2060058000 | 195 m | S8.3 "moved 195 m"; elevation 7 m; basin 6,554 km² |
+| Levuka | 5060081550 | 4 m | S8.3 "moved 4 m"; elevation 31 m; basin 175,335 km² |
+| Tristan da Cunha | none within range | none | stays `no_basin` |
+| Timbuktu (control) | inside its basin | none | S8.3 silent |
+
+S8.3 is silent at all ten test places in the regenerated profiles.
+
+**Issues found (not fixed; we report sources).**
+- **Coastal points with no ecoregion polygon at the point** (both moved points). The "lies in the {eco} ecoregion" sentence then falls back to the basin's majority ecoregion, as for any such point; the fill note records it but the reader is not told. Not caused by the snap.
+- **Levuka's basin is 131 separate pieces totalling 175,335 km²**, far above Fiji's land area (about 18,000 km², from memory), so "the basin of about 175,335 km²" would read wrongly for an island place. Cause not looked at (how BasinATLAS groups island basins, or ocean area). Any island basin may show the same. For Opus: a caveat, or silence on S8.1a for multi-part basins.
 
 ## Issues found along the way
 
@@ -136,4 +158,4 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 ## Still to do
 
-A5 (the river-name gate); B3 and B4: Karl's choice of limits after the notebook evidence (Cells 3 to 5); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
+A5 (the river-name gate); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.

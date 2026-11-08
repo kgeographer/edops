@@ -48,7 +48,6 @@ NEED = {
     'S7.1a': 'coastline data (no distance-to-coast field)',
     'S7.3': 'edge kind from the point (live layer)',
     'S8.1b': 'glossary of dataset years',
-    'S8.3': 'snap (not built)',
     'S9.1': 'URL scheme from WHG into EDOPS',
 }
 
@@ -243,7 +242,15 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables; ring is
     wo06_rings.load_table() ({core hybas_id: rows}), needed only once the template carries the ring comparison lines."""
     pub, ar = fetch_point(lat, lon)
-    F = dict(lat=lat, lon=lon, pub=pub, areas=ar, hid=None)
+    snap = None
+    if pub is None and has('S8.3'):   # a point just outside the basin data is moved to the nearest basin (WO-08 B5)
+        from scripts.edop.whg import wo08_units
+        snap = wo08_units.snap_point(conn, lat, lon)
+        if snap:
+            pub, ar = fetch_point(snap[2], snap[3])
+            if ar is None or int(ar['scope']['hybas_id']) != snap[0]:
+                pub, ar, snap = None, None, None
+    F = dict(lat=lat, lon=lon, pub=pub, areas=ar, hid=None, snap_m=None if snap is None else snap[1])
     if rivers is not None:
         from scripts.edop.whg import wo07_rivers
         F['river'] = rivers.get(wo07_rivers.key(lat, lon))
@@ -273,9 +280,7 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     F['zone'] = wo07_classes.zone(conn, hid)
     from scripts.edop.whg import wo08_units
     F['lake_pct'] = wo08_units.lake_pct(conn, hid)
-    if has('S1.3.near'):   # the next ecoregion and the basin's other ecoregions (WO-08 B3, B4)
-        own = F['pt_eco_id'] if F['pt_eco_id'] is not None else (int(val(F, 'eco_id')) if val(F, 'eco_id') is not None else None)
-        F['next_eco'] = wo08_units.next_ecoregion(conn, lat, lon, own) if own is not None else None
+    if has('S1.4.one'):   # the basin's other ecoregions (WO-08 B4)
         F['eco_shares'] = wo08_units.eco_shares(conn, hid)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
@@ -406,7 +411,7 @@ def fill_units(F):
     if has('S3.4.lakes'):   # lakes and wetlands (WO-08 B2)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_water_units(F, ok, no, val, fmt))
-    if has('S1.3.near'):   # the next ecoregion and the basin's other ecoregions (WO-08 B3, B4)
+    if has('S1.4.one'):   # the basin's other ecoregions (WO-08 B4)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_ecoregion_units(F, ok, no, val, fmt))
     if has('S2.1b.strong'):   # when the rain falls (WO-08 B1)
@@ -425,6 +430,8 @@ def fill_units(F):
     else:
         U['S6.2'] = ok(fmt('S6.2', f))
     U['S7.2'] = ok(fmt('S7.2', {})) if coast == 1 else no('basin does not touch the sea (optional part not stated)', na=True)
+    if has('S8.3'):
+        U['S8.3'] = ok(fmt('S8.3', {'d': f"{max(1, round(F['snap_m'])):,}"}), f"moved {F['snap_m']:.1f} m") if F.get('snap_m') is not None else no('the point is inside a basin', na=True)
     U['S8.1a'] = ok(f"{F['sub_area']:,.0f}") if F['sub_area'] else no('no area')
 
     bad = [(r['variable'], r['status']) for r in F['areas']['rows'] if r['status'] != 'ok']
@@ -448,7 +455,7 @@ def render_filled_profile(name, F, U):
     """The filled_profile as markdown: yes units filled, maybe units as visible placeholders. Wording: profile_templates.md."""
     L = [f'## {name}: environmental profile', '']
     if F['pub'] is None:
-        stub = {uid: PH(uid) for uid in ('S1.1b', 'S1.3', 'S9.1')}
+        stub = {uid: PH(uid) for uid in ('S1.1b', 'S9.1')}
         L += [fmt('nobasin.text', {}), '', fmt('nobasin.frame', stub), '']
         return '\n'.join(L)
     t = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
@@ -464,7 +471,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.3', 'S1.4'} if has('S1.3.near') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.4'} if has('S1.4.one') else set()) | ({'S8.3'} if has('S8.3') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''

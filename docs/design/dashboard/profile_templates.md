@@ -6,7 +6,7 @@ This file is the product of the WO-04 to WO-07 work: the wording of the Environm
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 11
+Version: 13
 
 ## Changes
 
@@ -15,6 +15,8 @@ Version: 11
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 - v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v13 | 2026-11-08 | CC | WO-08 B5. New `S8.3`: "The point lies just outside the basin data and was moved {d} m to the nearest basin." Speaks only when the profile script moved the point (within 1 km of a basin and inside none); silent otherwise.
+- v12 | 2026-11-08 | CC | S1.3 (the next ecoregion and its distance) dropped at Karl's decision: it describes neither the place nor its basin, and the basin's own ecoregions are S1.4. Removed `S1.3`, `S1.3.near` and `{S1.3}` from `S1.frame` and `nobasin.frame`. `S1.4.one` is now the key that switches the ecoregion feature on. S1.4 limit: 10% of the basin (Karl).
 - v11 | 2026-11-08 | CC | WO-08 B3, B4 (limits provisional, Karl chooses). New `S1.3` (nearest other ecoregion and its distance), `S1.3.near` (under a kilometre), `S1.4.one` and `S1.4.many` (the basin's other ecoregions, a list when there are several; the WO's single `S1.4` with an optional "and" is split because the verb agrees with the count).
 - v10 | 2026-11-08 | CC | WO-08 B1. New `S2.1b.even`, `S2.1b.moderate`, `S2.1b.clear`, `S2.1b.strong`: the Seasonality tab's four classes on precipitation concentration (cutoffs 0.15, 0.35, 0.60, reused), with the wettest month named where the rain is not even. Not the WO's `S2.1b.season`, `.spread`, `.two` (a window of months and a two-season class were dropped at Karl's decision: the payload carries the monthly values for a chart instead). The wettest month, not the tab's circular "peak month", which differs from it by a month or more in about half the basins.
 - v9 | 2026-11-08 | CC | WO-08 B2. New `S3.4`, `S3.4.lakes`, `S3.4.wetlands` (lakes from HydroLAKES limnicity, wetlands from the GLWD group excluding lakes, reservoirs and rivers; each part only where its share is above zero, silent when both are zero).
@@ -40,7 +42,7 @@ Slots are unit ids. `{S1.2c}`, `{S3.2}`, `{S5.1a}` and `{S5.1b}` are built from 
 
 Setting speaks about the place. `{S1.1b}` is the elevation at the point; `{S1.5a}` and `{S1.5b}` are the lowest and highest elevation in the basin that contains it; `{S1.2a}` is the ecoregion at the point.
 
-S1.frame: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.2c} {S1.3} {S1.4}
+S1.frame: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.2c} {S1.4}
 
 The other sections speak about the basin and say so.
 
@@ -65,8 +67,7 @@ S9.frame: {S9.1} [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
 Setting. `{eco}`: the basin's majority ecoregion. S1.2c appears only when it differs from the point's.
 
 S1.2c: Most of its basin lies in the {eco} ecoregion.
-S1.3: The {eco} ecoregion begins about {d} km away.
-S1.3.near: The {eco} ecoregion begins less than a kilometre away.
+S8.3: The point lies just outside the basin data and was moved {d} m to the nearest basin.
 S1.4.one: Its basin also takes in parts of the {eco1} ecoregion.
 S1.4.many: Its basin also takes in parts of the {list} ecoregions.
 
@@ -215,4 +216,4 @@ status.not_areal: not defined for an area
 A point inside no basin.
 
 nobasin.text: No basin contains this point (structured response `no_basin`; nearest basin: see WO-03 Q6). Every basin-keyed unit is empty.
-nobasin.frame: {S1.1b} {S1.3} {S9.1}
+nobasin.frame: {S1.1b} {S9.1}
