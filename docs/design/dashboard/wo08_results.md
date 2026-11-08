@@ -1,6 +1,6 @@
 # WO-08 results (running file)
 
-2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 9 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
+2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 10 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
 
 ## Decisions taken in discussion before the build (Karl, 8 Nov)
 
@@ -73,6 +73,20 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 **Observation.** Precipitation and aridity often qualify together ("receives less precipitation than five … and is more arid than five"); they are different facts, but a reader may find the pair repetitive. For the stakeholders.
 
+## B1. S2.1b, when the rain falls
+
+**Rule.** The Seasonality tab's four classes on precipitation concentration, with its own cutoffs (0.15, 0.35, 0.60; `sandbox.html`, `renderSeasonality`), reused unchanged: **even** (under 0.15), **moderate**, **clear**, **strong** (0.60 and over). The three uneven classes name the **wettest month**; "even" names none. Wording (template v10, slot in "rainfall averages about {S2.1a} mm a year, {S2.1b}"): "spread fairly evenly through the year"; "moderately seasonal, with {month} the wettest month"; "clearly seasonal, ..."; "strongly concentrated, ...". No new cutoff and no new rule.
+
+**Differences from the WO (Karl's decisions, 8 Nov).** No "between {m1} and {m2}" window and no two-season class (`S2.1b.season`, `.spread`, `.two` are not used); the payload for WHG should carry the twelve monthly precipitation and temperature values so WHG can draw its own chart.
+
+**Wettest month, not the tab's "peak month".** The tab's peak month is the direction of the circular mean of the monthly weights, not the wettest month. Over the 306 sample basins, where a month would be named (202 basins), the two differ by one month or more at 44 of 81 moderate, 44 of 75 clear and 20 of 46 strong basins, and by two months or more at 26 of 202 (for example circular peak July, wettest month September). A sentence "peaking in July" beside a WHG chart whose tallest bar is September would read as a contradiction, so the sentence uses the wettest month (a plain fact; the first month where two tie). **This departs from the Sandbox tab, which says "peaks in" the circular month;** switching is one line in `wo08_units.fill_season_unit`.
+
+**Rates over the 306 sample basins:** even 103, moderate 81, clear 75, strong 46, no monthly precipitation 1 (placeholder).
+
+**At the ten places:** Timbuktu "strongly concentrated, with August the wettest month" (the WO expected July to September); Tbilisi moderately seasonal, May; Santa Fe moderately seasonal, August; Kaifeng clearly seasonal, July (198 mm, as in the Sandbox chart); Lviv moderately seasonal, July; Poltava even; Chaco Canyon moderately seasonal, August; Alexandria strongly concentrated, December; Utqiagvik clearly seasonal, August.
+
+**Observation.** The concentration class and the wettest month describe one rainy season; a basin with two (a bimodal regime) reads as "moderately seasonal" with one month named. The monthly values in the payload would show the second.
+
 ## B2. S3.4, lakes and wetlands
 
 **Sources, from the provider's own pages** (`app/static/basinatlas_pages/H04.pdf`, `L06.pdf`):
@@ -95,4 +109,4 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 ## Still to do
 
-A5 (the river-name gate); B1 (when the rain falls); B3 and B4 (the next ecoregion and the basin's other ecoregions, with cutoff results at 25, 50, 100 km and 5, 10, 20%); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
+A5 (the river-name gate); B3 and B4 (the next ecoregion and the basin's other ecoregions, with cutoff results at 25, 50, 100 km and 5, 10, 20%); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.

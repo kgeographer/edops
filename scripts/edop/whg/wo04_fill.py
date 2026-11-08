@@ -402,6 +402,9 @@ def fill_units(F):
     if has('S3.4.lakes'):   # lakes and wetlands (WO-08 B2)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_water_units(F, ok, no, val, fmt))
+    if has('S2.1b.strong'):   # when the rain falls (WO-08 B1)
+        from scripts.edop.whg import wo08_units
+        U.update(wo08_units.fill_season_unit(F, ok, no, val, fmt))
 
     n = F['n_nb']
     rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)

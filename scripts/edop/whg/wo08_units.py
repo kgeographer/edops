@@ -1,9 +1,13 @@
-"""WO-08 new units: S3.4 lakes and wetlands. Wording lives in profile_templates.md; each feature switches on when the
+"""WO-08 new units: S2.1b when the rain falls, S3.4 lakes and wetlands. Wording lives in profile_templates.md; each feature switches on when the
 template has its trigger key (see KEYS_BY_TRIGGER, read by wo04_fill.check_keys)."""
 from scripts.edop.whg import missing
 
 # trigger key in the template -> every key the feature reads
-KEYS_BY_TRIGGER = {'S3.4.lakes': {'S3.4', 'S3.4.lakes', 'S3.4.wetlands'}}
+KEYS_BY_TRIGGER = {'S3.4.lakes': {'S3.4', 'S3.4.lakes', 'S3.4.wetlands'},
+                   'S2.1b.strong': {'S2.1b.even', 'S2.1b.moderate', 'S2.1b.clear', 'S2.1b.strong'}}
+
+MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+SEASON_CUTS = (0.15, 0.35, 0.60)   # precipitation concentration classes of the Seasonality tab (sandbox.html, renderSeasonality)
 
 
 def unit_keys(text):
@@ -54,3 +58,20 @@ def fill_water_units(F, ok, no, val, fmt):
     else:
         U['S3.4'] = ok(fmt('S3.4.wetlands', {'w': parts['wetlands']}), note)
     return U
+
+
+def season_class(conc):
+    """The Seasonality tab's four classes on precipitation concentration (0 even to 1 all in one month)."""
+    return 'even' if conc < SEASON_CUTS[0] else 'moderate' if conc < SEASON_CUTS[1] else 'clear' if conc < SEASON_CUTS[2] else 'strong'
+
+
+def fill_season_unit(F, ok, no, val, fmt):
+    """S2.1b: the tab's concentration class, and the wettest month where the rain is not even. The wettest month, not the
+    tab's circular "peak month", which differs from it by a month or more in about half the basins and by two or more in
+    about one in eight, and would contradict the bars of a chart drawn from the monthly values."""
+    conc, pre = val(F, 'pre_concentration'), val(F, 'pre_mm_monthly')
+    if conc is None or not pre or len(pre) != 12:
+        return {'S2.1b': no('no monthly precipitation')}
+    k = season_class(conc)
+    wet = max(range(12), key=lambda i: pre[i])      # the first of equals
+    return {'S2.1b': ok(fmt('S2.1b.' + k, {'month': MONTHS[wet]}), f'concentration {conc:.2f} ({k}); wettest month {MONTHS[wet]} ({pre[wet]:.0f} mm)')}
