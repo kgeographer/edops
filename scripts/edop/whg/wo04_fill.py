@@ -273,6 +273,10 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     F['zone'] = wo07_classes.zone(conn, hid)
     from scripts.edop.whg import wo08_units
     F['lake_pct'] = wo08_units.lake_pct(conn, hid)
+    if has('S1.3.near'):   # the next ecoregion and the basin's other ecoregions (WO-08 B3, B4)
+        own = F['pt_eco_id'] if F['pt_eco_id'] is not None else (int(val(F, 'eco_id')) if val(F, 'eco_id') is not None else None)
+        F['next_eco'] = wo08_units.next_ecoregion(conn, lat, lon, own) if own is not None else None
+        F['eco_shares'] = wo08_units.eco_shares(conn, hid)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
@@ -402,6 +406,9 @@ def fill_units(F):
     if has('S3.4.lakes'):   # lakes and wetlands (WO-08 B2)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_water_units(F, ok, no, val, fmt))
+    if has('S1.3.near'):   # the next ecoregion and the basin's other ecoregions (WO-08 B3, B4)
+        from scripts.edop.whg import wo08_units
+        U.update(wo08_units.fill_ecoregion_units(F, ok, no, val, fmt))
     if has('S2.1b.strong'):   # when the rain falls (WO-08 B1)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_season_unit(F, ok, no, val, fmt))
@@ -457,7 +464,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.3', 'S1.4'} if has('S1.3.near') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''

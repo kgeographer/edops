@@ -1,6 +1,6 @@
 # WO-08 results (running file)
 
-2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 10 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
+2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 11 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; notebook `notebooks/edop/whg/wo08_new_units.ipynb`; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
 
 ## Decisions taken in discussion before the build (Karl, 8 Nov)
 
@@ -102,6 +102,33 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 **Not done, by the WO's instruction:** wetland classes are not grouped or relabelled; "seasonal wetlands" (S3.X1) needs the class legend and is not attempted.
 
+## B3 and B4. S1.3 the next ecoregion, S1.4 the basin's other ecoregions (built; cutoff evidence pending Karl's run of Cells 3 to 5; Karl chooses the limits)
+
+**Built (template v11).** `S1.3`: "The {eco} ecoregion begins about {d} km away." (`S1.3.near` under a kilometre). The distance is from the point to the nearest polygon of an ecoregion other than the one at the point (when the point is in no polygon, the basin's majority ecoregion is the one measured from; when there is neither, silent). Names are the Ecoregions2017 `eco_name` (one authoritative dataset; the garbled names of open item E3 are in `lu_tec`, not here). `S1.4`: ecoregions other than the point's, the signature's and the largest by area that cover at least a share of the basin; `S1.4.one` and `S1.4.many` (the WO's single `S1.4` is split because the verb agrees with the count). Shares are the WO-03 Q3 method (intersection area with `basin06`, invalid geometries through `ST_MakeValid`); distances are geodesic (`ST_Distance` on geography). Code: `wo08_units.py` (`next_ecoregion`, `eco_shares`, `fill_ecoregion_units`); both are computed live per point (about 1 to 2 s added to a profile).
+
+**Provisional limits in the code, until Karl chooses:** S1.3 speaks within 50 km (`NEXT_ECO_KM`), S1.4 lists ecoregions at 10% or more (`OTHER_ECO_SHARE`). The ten filled_profiles use these. The evidence for 25, 50 and 100 km and for 5, 10 and 20% comes from Cells 3 to 5 of the notebook (sample of 306 and the ten places).
+
+**At the ten places (provisional limits):**
+
+| Place | S1.3 | S1.4 |
+|---|---|---|
+| Timbuktu | Inner Niger Delta flooded savanna, about 4 km | silent |
+| Tbilisi | Caucasus mixed forests, about 3 km | Eastern Anatolian montane steppe |
+| Santa Fe | Colorado Rockies forests, about 4 km | Colorado Rockies forests and Arizona Mountains forests |
+| Kaifeng | silent (nearest 54 km) | silent |
+| Lviv | Carpathian montane forests, about 26 km | silent |
+| Poltava | Pontic steppe, about 49 km | silent |
+| Chaco Canyon | silent (nearest 64 km) | Arizona Mountains forests |
+| Alexandria | North Saharan Xeric Steppe and Woodland, about 31 km | Nile Delta flooded savanna |
+| Utqiagvik | silent (nearest 137 km) | silent |
+| Tristan da Cunha | no basin; its point lies in no ecoregion polygon (the nearest polygon is 0.4 km away) | not applicable |
+
+**Observations for Karl and Opus.**
+
+- **S1.3 can repeat S1.2c.** At Timbuktu and Tbilisi the nearest other ecoregion is the basin's majority ecoregion that S1.2c has just named ("Most of its basin lies in the Caucasus mixed forests ecoregion. The Caucasus mixed forests ecoregion begins about 3 km away."). True, and the distance is new, but it reads as repetition. Cell 4 counts how often the two coincide over the sample. One possible rule: where S1.2c already names it, say nothing more or fold the distance into S1.2c; not applied.
+- **S1.3 and S1.4 can name the same ecoregion** (Santa Fe: the Colorado Rockies forests are the nearest other ecoregion and also part of the basin). They say different things (near the point; part of the basin) but a reader sees the name twice.
+- **Distance to the polygon is distance to the ecoregion's edge**, which for a point beside a large basin-spanning ecoregion can be a few kilometres; the sentence "begins about 3 km away" is accurate but does not say in what direction (no compass words, per WO-03).
+
 ## Issues found along the way
 
 - **S5.1a and S5.1b (WO-04) read the engine's `outside_active_domain` flag as "none recorded"; it is a percentile guard, not a zero. FIXED (Karl, 8 Nov).** The flag hides a value of at most 1%: of 1,589 flagged basin-by-variable rows in the ring table, 1,396 are 0 and 193 are 1% (122 cropland, 71 pasture), read from `basin06`. Of the 258 flagged core basins, 32 have a positive share, so "no cropland is recorded" was false for them. Now both units state the value when it is above zero, whatever the status ("about 1% of the basin is cropland" at Chaco Canyon, the only one of the ten places that changes), and say "no ... recorded" only at zero; the fill note records the flag. Sample-wide rate of the old error: about 32 of 258 core basins in the ring table.
@@ -109,4 +136,4 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 ## Still to do
 
-A5 (the river-name gate); B3 and B4 (the next ecoregion and the basin's other ecoregions, with cutoff results at 25, 50, 100 km and 5, 10, 20%); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
+A5 (the river-name gate); B3 and B4: Karl's choice of limits after the notebook evidence (Cells 3 to 5); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
