@@ -12,8 +12,9 @@ FAO_SLOPE = [(1, 'level'), (2, 'very gently sloping'), (5, 'gently sloping'),
 UNEP = [(0.05, 'hyper-arid'), (0.2, 'arid'), (0.5, 'semi-arid'), (0.65, 'dry sub-humid'), (math.inf, 'humid')]
 GLC_CULTIVATED = 16   # GLC2000 "Cultivated and managed areas"
 DEG_STEP = 0.05       # slope is stored to 0.1 degree
+COLD_ZONES = (1, 2, 3, 4, 6)   # GEnS zones named Arctic or Extremely cold: no UNEP aridity sentence there (WO-08 A2)
 
-KEYS = {'S4.1a', 'S4.1b', 'S4.1b.texture', 'S4.3.karst', 'S4.3.permafrost', 'S5.1c', 'S2.4'}
+KEYS = {'S4.1a', 'S4.1a.under', 'S4.1b', 'S4.1b.texture', 'S4.3.karst', 'S4.3.permafrost', 'S5.1c', 'S2.4'}
 
 
 def class_keys():
@@ -98,6 +99,13 @@ def glc_shares(conn, hid):
     return sorted(((row[i], int(i + 1), lab[str(i + 1)]) for i in range(22) if row[i]), reverse=True) if row else []
 
 
+def zone(conn, hid):
+    """(GEnS zone code, name) of the basin, or (None, None) where missing."""
+    code = missing.clean(conn.execute('SELECT clz_cl_smj FROM public.basin06 WHERE hybas_id = %s', (hid,)).fetchone()[0])
+    name = conn.execute('SELECT genz_name FROM public.lu_clz WHERE genz_id = %s', (int(code),)).fetchone() if code is not None else None
+    return (int(code), name[0]) if name else (None, None)
+
+
 def lower(label):
     return label[0].lower() + label[1:]
 
@@ -119,7 +127,8 @@ def fill_class_units(F, ok, no, val, fmt, tidy):
     else:
         name, p, edge = slope_class(deg)
         shown = f'{p:.1f}' if p < 10 else f'{p:.0f}'
-        U['S4.1a'] = ok(fmt('S4.1a', {'class': name, 'pct': shown}),
+        text = fmt('S4.1a.under', {'class': name}) if p < 0.1 else fmt('S4.1a', {'class': name, 'pct': shown})
+        U['S4.1a'] = ok(text,
                         f'mean slope {deg} degrees = {p:.2f}%' + ('; the 0.1 degree storage step straddles a class boundary' if edge else ''))
     sand, silt, clay = (val(F, k) for k in ('pct_sand', 'pct_silt', 'pct_clay'))
     if None in (sand, silt, clay) or sand + silt + clay == 0:
@@ -148,8 +157,11 @@ def fill_class_units(F, ok, no, val, fmt, tidy):
         U['S5.1c'] = ok(fmt('S5.1c', {'label': lower(o[1]), 'share': f'{o[0]:.0f}'}),
                         f'GLC2000 largest class: {top[2]} {top[0]:.0f}%; largest other than cultivated: {o[1]} {o[0]:.0f}%')
     ai = val(F, 'aridity')
+    zc, zn = F.get('zone', (None, None))
     if ai is None:
         U['S2.4'] = no('no aridity index')
+    elif zc in COLD_ZONES:
+        U['S2.4'] = no(f'GEnS zone {zc} ({zn}): the UNEP classes were drawn for drylands and mislead in cold climates', na=True)
     else:
         name, idx, edge = aridity_class(ai)
         U['S2.4'] = ok(fmt('S2.4', {'ai': f'{idx:.2f}', 'class': name}),

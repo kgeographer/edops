@@ -266,6 +266,7 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     F['wiki_url'] = w[0] if w and w[0] else None
     from scripts.edop.whg import wo07_classes
     F['glc'] = wo07_classes.glc_shares(conn, hid)
+    F['zone'] = wo07_classes.zone(conn, hid)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
@@ -442,7 +443,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S4.3', 'S5.1c'} if has('S4.1a') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
