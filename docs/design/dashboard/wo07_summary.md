@@ -18,6 +18,25 @@
 4. **Alexandria karst "up to about 100%"** beside "unconsolidated sediments"; a source pattern, left as is.
 5. The -9999 leak found in Part B probably also affects older units; take up with open item I-3.
 
+## Still to try: maybes not yet attempted (for the next WO)
+
+Of the 28 maybes in `wo04a_results.md`, 13 are filled (S1.1b, S1.1c folded into S4.1a, S2.3, S3.1a, S3.1b, S3.3, S4.1a, S4.1b, S4.3, S5.1c, S5.2, S6.3b, S6.5), 1 was resolved by dropping it (S6.4), and **14 have not been tried**: the 11 units below and 3 example rows. None of the maybes tried so far has turned out to be a no. The 7 nos are untouched by design.
+
+| Unit | Says | What it needs | Kind |
+|---|---|---|---|
+| S2.1b | when the rain falls | monthly array (in the signature); a "mostly in {months}" rule; the Seasonality tab already has one with cutoffs (concentration 0.15, 0.35, 0.60) | rule, data in hand |
+| S3.4 | lakes and wetlands share | `lka_pc_sse` is in basin06 but not in a payload; wetland shares are in the rows | rule, small read from the DB |
+| S1.3 | next ecoregion, distance | distance from the point to the next ecoregion polygon (computable); direction dropped (compass words unreliable) | rule, live layer |
+| S1.4 | basin also takes parts of other ecoregions | WO-03 shares (146 of 298 sample basins have one ecoregion at 5%, 111 two, 41 three or more); needs a share cutoff | rule plus a cutoff decision |
+| S7.1a, S7.3 | distance to the coast; nearest basin edge is the coast | no coast-distance field (`dist_sink` is along the river); needs a coastline layer (Natural Earth or GSHHG); WO-03 Q6 edge kind (for 84 of 254 WH Cities the nearest edge is the coast) | one new layer, two units |
+| S6.2c | description of a neighbouring basin | basins have no names; describe by character (ring rules) or by main river | design, medium |
+| S1.2b | one-line ecoregion gist | stored gist per ecoregion (first sentence of the Wikipedia summary, or a reviewed line); 26 of 847 have no text; the Wikipedia text is not safe as it stands (129 of 847 links flagged) | decision on source, then lookup |
+| S8.1b | data years | a glossary of years per dataset (Karl's data-source docs) | documentation |
+| S8.3 | point moved N m | snap not built (about 1 km would catch the edge cases only) | build, small |
+| S9.1 | link into EDOPS | a URL scheme, needs WHG agreement | decision with WHG |
+
+Example rows from the mockup, also untried: S3.X1 (seasonal wetlands; needs S3.4 and the wetland class legend), S4.X1 (largely covered now by S4.1a and S4.2), S6.X1 ("a narrow corridor"; needs a shape measure and a cutoff).
+
 **Parked, untouched:** I-3, R1, R2, E3 and the open-items file `WHG-profile_open-tems-post-WO7.md` (WO-07 cites it as `profile_open_items.md`); the "wetter" wording of S3.2b; point elevation depends on a live service (no local DEM); Wikipedia text is not safe for the payload (129 of 847 links flagged).
 
 **Not decided:** pushing the branch.
