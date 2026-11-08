@@ -1,6 +1,6 @@
 # WO-08 results (running file)
 
-2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 8 so far). Code: `scripts/edop/whg/` (`missing.py` new; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
+2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 9 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
 
 ## Decisions taken in discussion before the build (Karl, 8 Nov)
 
@@ -73,6 +73,25 @@ The "extreme + another" column counts basins that have an extreme and also a sin
 
 **Observation.** Precipitation and aridity often qualify together ("receives less precipitation than five … and is more arid than five"); they are different facts, but a reader may find the pair repetitive. For the stakeholders.
 
+## B2. S3.4, lakes and wetlands
+
+**Sources, from the provider's own pages** (`app/static/basinatlas_pages/H04.pdf`, `L06.pdf`):
+
+- **Lakes:** `lka_pc_sse`, HydroLAKES limnicity (Messager et al. 2016; lakes and reservoirs of at least 10 ha). **Stored multiplied by 10** (a stored 10 means 1%), so the script divides by 10. In `basin06` but in no payload, so it is read directly (through the missing-value rule).
+- **Wetlands:** the GLWD (Lehner and Döll 2004) groupings in the payload. Group 1 is all classes 1 to 12 *including lakes, reservoirs and rivers*; **group 2 is classes 4 to 12, excluding lakes, reservoirs and rivers**. Group 2 is used (`wet_pct_grp2`, the source's own grouping, not relabelled), because group 1 would count lakes a second time beside the HydroLAKES figure (the two correlate at 0.85 once lakes are removed from group 1).
+
+**Rule.** Each part is stated when its share is above zero, **judged by its value** (see the issue below: the engine's `outside_active_domain` flag is about percentiles, not about the value being zero); silent when both are zero. Lake shares show one decimal below 10% (stored to 0.1%), whole numbers above. Wording: `S3.4` (both), `S3.4.lakes`, `S3.4.wetlands` (template v9). The wetland share is stored as a whole percent, so its smallest stated value is 1%.
+
+**At the ten places.** Timbuktu "Lakes cover about 0.4% of the basin and wetlands about 37%"; Tbilisi, Kaifeng, Lviv, Poltava lakes only (0.5%, 0.1%, 0.6%, 0.5%); Santa Fe and Chaco Canyon "Lakes cover about 0.1% of the basin and wetlands about 1%"; Alexandria 1% and 2%; Utqiagvik "Lakes cover about 14% of the basin and wetlands about 67%".
+
+**Rates over the 306 sample basins:** lakes only 93, wetlands only 50, both 56, silent (both zero) 107 (35%). Lakes are under 1% at 98 basins (so many sentences say "about 0.1%" to "about 0.9%"); wetlands are 50% or more at 4; lakes 10% or more at 4. Over all 16,397 basins: lakes above zero at 9,151, wetlands above zero at 7,886 (none below 1%), both zero at 4,195 (26%).
+
+**Not done, by the WO's instruction:** wetland classes are not grouped or relabelled; "seasonal wetlands" (S3.X1) needs the class legend and is not attempted.
+
+## Issues found along the way
+
+- **S5.1a and S5.1b (WO-04) read `outside_active_domain` as "none recorded", but the flag means the variable is near zero across most of the data (a percentile guard), not that this basin's value is zero.** At Chaco Canyon the source records cropland at **1%** and the profile says "no cropland is recorded" (also seen on the status for Tbilisi permafrost 1%, Santa Fe and Chaco Canyon wetlands 1%; S4.3 and S3.4 use the value and are right). Of the ten places this affects one sentence, but over the sample the number is unmeasured. Proposed fix: S5.1a and S5.1b state the value when it is above zero, whatever the status, and say "no ... recorded" only at zero. Awaiting Karl.
+
 ## Still to do
 
-A5 (the river-name gate); B1 (when the rain falls); B2 (lakes and wetlands); B3 and B4 (the next ecoregion and the basin's other ecoregions, with cutoff results at 25, 50, 100 km and 5, 10, 20%); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.
+A5 (the river-name gate); B1 (when the rain falls); B3 and B4 (the next ecoregion and the basin's other ecoregions, with cutoff results at 25, 50, 100 km and 5, 10, 20%); B5 (the snap); B6 (the coastline, with the Caspian question). Then the ten filled_profiles, the summary and the commit.

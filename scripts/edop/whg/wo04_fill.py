@@ -85,6 +85,9 @@ def check_keys(text):
         from scripts.edop.whg import wo07_rivers
         required |= wo07_rivers.river_keys()
         known |= wo07_rivers.river_keys()
+    from scripts.edop.whg import wo08_units   # WO-08 units: each feature's keys are required once its trigger key is present
+    required |= wo08_units.unit_keys(text)
+    known |= wo08_units.all_keys()
     if 'S4.1a' in text:   # class words (WO-07 part B)
         from scripts.edop.whg import wo07_classes
         required |= wo07_classes.class_keys()
@@ -187,7 +190,7 @@ def label(key):
 
 
 def templates_stamp():
-    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script, wo06_rings.py, wo07_rivers.py and wo07_classes.py."""
+    """Which wording and which rules made a generated file: template version, and last commit and edited-since for the template file, this script, wo06_rings.py, wo07_rivers.py, wo07_classes.py and wo08_units.py."""
     git = lambda *a: subprocess.run(['git', '-C', str(ROOT), *a], capture_output=True, text=True).stdout.strip()
 
     def state(path):
@@ -197,7 +200,8 @@ def templates_stamp():
             f'script {Path(__file__).name} ({state(Path(__file__).resolve())}); '
             f'script wo06_rings.py ({state(Path(__file__).resolve().parent / "wo06_rings.py")}); '
             f'script wo07_rivers.py ({state(Path(__file__).resolve().parent / "wo07_rivers.py")}); '
-            f'script wo07_classes.py ({state(Path(__file__).resolve().parent / "wo07_classes.py")})')
+            f'script wo07_classes.py ({state(Path(__file__).resolve().parent / "wo07_classes.py")}); '
+            f'script wo08_units.py ({state(Path(__file__).resolve().parent / "wo08_units.py")})')
 
 
 def PH(uid, extra=''):
@@ -267,6 +271,8 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     from scripts.edop.whg import wo07_classes
     F['glc'] = wo07_classes.glc_shares(conn, hid)
     F['zone'] = wo07_classes.zone(conn, hid)
+    from scripts.edop.whg import wo08_units
+    F['lake_pct'] = wo08_units.lake_pct(conn, hid)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     return F
@@ -392,6 +398,10 @@ def fill_units(F):
         from scripts.edop.whg import wo07_classes
         U.update(wo07_classes.fill_class_units(F, ok, no, val, fmt, tidy))
 
+    if has('S3.4.lakes'):   # lakes and wetlands (WO-08 B2)
+        from scripts.edop.whg import wo08_units
+        U.update(wo08_units.fill_water_units(F, ok, no, val, fmt))
+
     n = F['n_nb']
     rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)
     U['S6.1a'] = ok(numword(n + 1) if rings else f'{n + 1}', 'empty ring: needs its own wording' if n == 0 else None)
@@ -443,7 +453,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set())
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
