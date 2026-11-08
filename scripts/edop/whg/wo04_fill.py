@@ -16,6 +16,8 @@ from pathlib import Path
 
 import numpy as np
 
+from scripts.edop.whg import missing
+
 BASE = 'http://localhost:8000'
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES_PATH = ROOT / 'docs' / 'design' / 'dashboard' / 'profile_templates.md'
@@ -228,6 +230,11 @@ def sigval(pub, key):
     return None
 
 
+def val(F, key):
+    """sigval, except None where the engine marks the row no_data (see missing.py)."""
+    return missing.row_value(F.get('rows'), key, sigval(F['pub'], key))
+
+
 def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     """Everything the units read, for one point. pairs and flow are the saved WO-03 ring and flow tables; ring is
     wo06_rings.load_table() ({core hybas_id: rows}), needed only once the template carries the ring comparison lines."""
@@ -254,7 +261,7 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     fl = flow[flow['core_id'] == hid].drop_duplicates('nb_id')
     F['flow_nb'] = {int(a): b for a, b in zip(fl['nb_id'], fl['flow_real'])}
     F['ring'] = ring.get(hid) if ring is not None else None
-    eco_id = sigval(pub, 'eco_id')
+    eco_id = val(F, 'eco_id')
     w = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (int(eco_id),)).fetchone() if eco_id is not None else None
     F['wiki_url'] = w[0] if w and w[0] else None
     from scripts.edop.whg import wo07_classes
@@ -268,11 +275,11 @@ def provenance(F):
     """The Analysis tab's water provenance class (sandbox.html renderAnalysis), ported as is."""
     pub = F['pub']
     up = F['up_area']
-    dist, coast, endo = sigval(pub, 'dist_sink'), sigval(pub, 'coast_flag'), sigval(pub, 'endorheic')
+    dist, coast, endo = val(F, 'dist_sink'), val(F, 'coast_flag'), val(F, 'endorheic')
     ratio = lambda a, b: (a / b) if (a and b) else None
-    pr = ratio(sigval(pub, 'precip_yr_upstream'), sigval(pub, 'precip_yr'))
-    ar = ratio(sigval(pub, 'aridity_upstream'), sigval(pub, 'aridity'))
-    tr = ratio(sigval(pub, 'temp_yr_upstream'), sigval(pub, 'temp_yr'))
+    pr = ratio(val(F, 'precip_yr_upstream'), val(F, 'precip_yr'))
+    ar = ratio(val(F, 'aridity_upstream'), val(F, 'aridity'))
+    tr = ratio(val(F, 'temp_yr_upstream'), val(F, 'temp_yr'))
     small = up is not None and up < 500
     if endo:
         return 'Endorheic', pr, ar, tr
@@ -302,7 +309,7 @@ def fill_units(F):
     no = lambda why, na=False: dict(ok=False, text=None, why=why, na=na)
 
     A = has('S1.2c')   # framing A: the Setting speaks about the place (templates v2 and later)
-    eco = sigval(pub, 'ecoregion')
+    eco = val(F, 'ecoregion')
     if not A:
         U['S1.2a'] = ok(eco, "the basin's majority ecoregion; the template means the point's") if eco else no('no ecoregion')
     else:
@@ -311,19 +318,19 @@ def fill_units(F):
             U['S1.2a'] = ok(peco, 'the ecoregion at the point')
         else:
             U['S1.2a'] = ok(eco, "no ecoregion polygon at the point; the basin's majority used") if eco else no('no ecoregion')
-        differs = bool(peco) and F['pt_eco_id'] != sigval(pub, 'eco_id')
+        differs = bool(peco) and F['pt_eco_id'] != val(F, 'eco_id')
         U['S1.2c'] = ok(fmt('S1.2c', {'eco': eco})) if differs else ok('', 'point and basin ecoregions agree')
-        el = sigval(pub, 'elev_point')
+        el = val(F, 'elev_point')
         U['S1.1b'] = ok(f'{el:,.0f}', f"{pub.get('elev_dataset')}, {pub.get('elev_resolution_m')} m, via {pub.get('elev_source')}") if el is not None else no('no elevation from the live service')
         for uid, key in (('S1.5a', 'elev_min'), ('S1.5b', 'elev_max')):
-            ev = sigval(pub, key)
+            ev = val(F, key)
             U[uid] = ok(f'{ev:,.0f}') if ev is not None else no('no value')
 
-    v = sigval(pub, 'precip_yr')
+    v = val(F, 'precip_yr')
     U['S2.1a'] = ok(f'{v:.0f}') if v is not None else no('no value')
-    v = sigval(pub, 'temp_yr')
+    v = val(F, 'temp_yr')
     U['S2.2a'] = ok(f'{v:.1f}') if v is not None else no('no value')
-    m = sigval(pub, 'tmp_dc_monthly')
+    m = val(F, 'tmp_dc_monthly')
     if m and len(m) == 12:
         lo, hi = int(np.argmin(m)), int(np.argmax(m))
         U['S2.2bc'] = ok(fmt('S2.2bc', dict(lo_temp=f'{m[lo]:.1f}', lo_month=MONTHS[lo], hi_temp=f'{m[hi]:.1f}', hi_month=MONTHS[hi])))
@@ -352,7 +359,7 @@ def fill_units(F):
         t32 = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
         U['S3.2'] = ok(fmt('S3.2.' + slug, {'S3.2a': t32('S3.2a'), 'S3.2b': t32('S3.2b')}), f'class {cls}')
 
-    endo, dist, coast = sigval(pub, 'endorheic'), sigval(pub, 'dist_sink'), sigval(pub, 'coast_flag')
+    endo, dist, coast = val(F, 'endorheic'), val(F, 'dist_sink'), val(F, 'coast_flag')
     if dist is None:
         U['S3.5'] = no('no distance to the sink')
     elif endo == 2:
@@ -364,17 +371,17 @@ def fill_units(F):
     else:
         U['S3.5'] = ok(fmt('S3.5.sea', dict(km=f'{dist:,.0f}')), 'endo=0')
 
-    lith = sigval(pub, 'lith_class')
+    lith = val(F, 'lith_class')
     U['S4.2'] = ok(re.sub(r'\s*\([A-Z]{2}\)$', '', lith).lower()) if lith else no('no lithology')   # GLiM label in lower case (WO-07)
 
     for uid, var, key, word in (('S5.1a', 'cropland_extent', 'cropland_extent', 'cropland'), ('S5.1b', 'pasture_extent', 'pasture_extent', 'pasture')):
-        val, st = sigval(pub, key), rows.get(var, {}).get('status')
+        share, st = val(F, key), rows.get(var, {}).get('status')
         if st == 'outside_active_domain':
             U[uid] = ok(fmt(uid + '.none', {}), 'zero here (outside active domain)')
-        elif val is None or st == 'no_data':
+        elif share is None or st == 'no_data':
             U[uid] = no('no data')
         else:
-            U[uid] = ok(fmt(uid + '.some', dict(value=f'{val:.0f}%')))
+            U[uid] = ok(fmt(uid + '.some', dict(value=f'{share:.0f}%')))
 
     if has('S3.1.named'):   # nearest river and a much larger one nearby (WO-07 part C)
         from scripts.edop.whg import wo07_rivers
@@ -382,7 +389,7 @@ def fill_units(F):
 
     if has('S4.1a'):   # class words (WO-07 part B)
         from scripts.edop.whg import wo07_classes
-        U.update(wo07_classes.fill_class_units(F, ok, no, sigval, fmt, tidy))
+        U.update(wo07_classes.fill_class_units(F, ok, no, val, fmt, tidy))
 
     n = F['n_nb']
     rings = has('S6.2.in_none')   # ring comparison rules (templates v5 and later)
@@ -425,13 +432,13 @@ def render_filled_profile(name, F, U):
     t = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
     s = F['pub']
     pct = lambda v: 'n/a' if v is None else f'{v}%'
-    sand, silt, clay = sigval(s, 'pct_sand'), sigval(s, 'pct_silt'), sigval(s, 'pct_clay')
+    sand, silt, clay = val(F, 'pct_sand'), val(F, 'pct_silt'), val(F, 'pct_clay')
     comp = f'{sand:.0f}% sand, {silt:.0f}% silt, {clay:.0f}% clay' if None not in (sand, silt, clay) else 'composition missing'
     lc = F['rows'].get('land_cover_name', {}).get('representative_raw')
     extra = {'S4.1b': f'composition: {comp}',
-             'S4.3': f'karst {pct(sigval(s, "karst"))}, permafrost {pct(sigval(s, "permafrost_extent"))}',
+             'S4.3': f'karst {pct(val(F, "karst"))}, permafrost {pct(val(F, "permafrost_extent"))}',
              'S5.1c': f'GLC2000 majority: {lc}',
-             'S5.2': 'population density ' + '{:,.1f}'.format(sigval(s, 'pop_density')) + ' per km²'}
+             'S5.2': 'population density ' + ('n/a' if val(F, 'pop_density') is None else '{:,.1f} per km²'.format(val(F, 'pop_density')))}
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))

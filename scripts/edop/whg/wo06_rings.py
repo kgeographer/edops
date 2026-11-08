@@ -10,6 +10,7 @@ basins a basin is more or less than, "all of them". Ties are never ranked. Wordi
 """
 import pandas as pd
 
+from scripts.edop.whg import missing
 from scripts.edop.whg import wo04_fill as W
 
 RING_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo06_ring_values.csv'
@@ -76,7 +77,7 @@ def fetch_ring_rows(lat, lon, conn):
                 out.append({**base, 'variable': x['variable'], 'value': raw if _num(raw) else None, 'status': x['status']})
         e, f, _ = ex[hid]
         for var, v in (('elev_mean', e), ('forest_extent', f)):
-            good = v is not None and v >= 0     # -9999 is the source's NoData
+            good = not missing.is_missing(v)     # -9999 is the source's NoData
             out.append({**base, 'variable': var, 'value': float(v) if good else None, 'status': 'ok' if good else 'no_data'})
     return out
 

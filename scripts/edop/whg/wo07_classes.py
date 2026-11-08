@@ -2,6 +2,8 @@
 land cover (S5.1c) and the aridity class (S2.4). Wording lives in profile_templates.md; the sources' own classes are here."""
 import math
 
+from scripts.edop.whg import missing
+
 # FAO Guidelines for soil description (2006), Table 7, slope gradient classes: (upper limit in percent, name).
 # The table's three classes under 1% (flat, level, nearly level) are merged into 'level': the words are near-synonyms and slope is stored only to 0.1 degree (0.17%)
 FAO_SLOPE = [(1, 'level'), (2, 'very gently sloping'), (5, 'gently sloping'),
@@ -91,6 +93,7 @@ def glc_shares(conn, hid):
     """[(share %, GLC2000 label)] for the basin, largest first."""
     cols = ', '.join(f'glc_pc_s{i:02d}' for i in range(1, 23))
     row = conn.execute(f'SELECT {cols} FROM public.basin06 WHERE hybas_id = %s', (hid,)).fetchone()
+    row = None if row is None else [missing.clean(v) for v in row]
     lab = dict(conn.execute('SELECT * FROM public.lu_glc').fetchall())
     return sorted(((row[i], int(i + 1), lab[str(i + 1)]) for i in range(22) if row[i]), reverse=True) if row else []
 
@@ -107,19 +110,19 @@ def glc_other(shares):
     return None
 
 
-def fill_class_units(F, ok, no, sigval, fmt, tidy):
+def fill_class_units(F, ok, no, val, fmt, tidy):
     pub = F['pub']
     U = {}
-    deg = sigval(pub, 'slope_avg')
-    if deg is None or deg < 0:   # BasinATLAS NoData (-9999) can arrive scaled; no real value is negative
+    deg = val(F, 'slope_avg')
+    if deg is None:   # missing as the engine decides it (missing.py)
         U['S4.1a'] = no('no mean slope')
     else:
         name, p, edge = slope_class(deg)
         shown = f'{p:.1f}' if p < 10 else f'{p:.0f}'
         U['S4.1a'] = ok(fmt('S4.1a', {'class': name, 'pct': shown}),
                         f'mean slope {deg} degrees = {p:.2f}%' + ('; the 0.1 degree storage step straddles a class boundary' if edge else ''))
-    sand, silt, clay = (sigval(pub, k) for k in ('pct_sand', 'pct_silt', 'pct_clay'))
-    if None in (sand, silt, clay) or min(sand, silt, clay) < 0 or sand + silt + clay == 0:
+    sand, silt, clay = (val(F, k) for k in ('pct_sand', 'pct_silt', 'pct_clay'))
+    if None in (sand, silt, clay) or sand + silt + clay == 0:
         U['S4.1b'] = no('no soil composition')
     else:
         (s, t, c), tot = normalise(sand, silt, clay)
@@ -130,7 +133,7 @@ def fill_class_units(F, ok, no, sigval, fmt, tidy):
         else:
             U['S4.1b'] = ok(fmt('S4.1b.texture', {'sand': s, 'silt': t, 'clay': c, 'texture': tx}),
                             note + f'; USDA class {tx}' + ('; a half-point change in a share gives another class' if edge else ''))
-    kar, prm = (v if v is not None and v >= 0 else None for v in (sigval(pub, 'karst'), sigval(pub, 'permafrost_extent')))
+    kar, prm = val(F, 'karst'), val(F, 'permafrost_extent')
     parts = []
     if kar:
         parts.append(fmt('S4.3.karst', {'k': f'{kar:.0f}'}))
@@ -144,8 +147,8 @@ def fill_class_units(F, ok, no, sigval, fmt, tidy):
         top = F['glc'][0]
         U['S5.1c'] = ok(fmt('S5.1c', {'label': lower(o[1]), 'share': f'{o[0]:.0f}'}),
                         f'GLC2000 largest class: {top[2]} {top[0]:.0f}%; largest other than cultivated: {o[1]} {o[0]:.0f}%')
-    ai = sigval(pub, 'aridity')
-    if ai is None or ai < 0:
+    ai = val(F, 'aridity')
+    if ai is None:
         U['S2.4'] = no('no aridity index')
     else:
         name, idx, edge = aridity_class(ai)
