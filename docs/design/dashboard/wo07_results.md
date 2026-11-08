@@ -1,8 +1,42 @@
 # WO-07 results (running file)
 
-2026-11-07. Sections are added as each part is done. Part A (WO-06 adjustments) and Part B (class words) are still to be written up; Part C's decisions and its open issue are recorded below so they are not lost.
+2026-11-08. One section per part (A, B, C), then issues for Karl and Opus. Read `wo07_summary.md` first.
 
-Template under construction: `profile_templates_v6_target.md` (becomes the live file at the end of the WO). Code: `scripts/edop/whg/wo07_rivers.py`, `wo06_rings.py`, `wo04_fill.py`. Notebook: `notebooks/edop/whg/wo07_adjust_classes_rivers.ipynb`.
+Template: `profile_templates.md` v6. Code: `scripts/edop/whg/wo07_classes.py` (B), `wo07_rivers.py` (C), `wo06_rings.py` (A), `wo04_fill.py`. Notebook: `notebooks/edop/whg/wo07_adjust_classes_rivers.ipynb`.
+
+## Part A: adjustments to the WO-06 sentences
+
+**Rules now.** A ring sentence states, in this order, an extreme (highest or lowest of the set), "all", "all but one" (needs at least five basins with a value), and only if none of those holds, a count, and only when more than half the set (floor `2k > m`). Counts stay in at Karl's decision (Opus's draft dropped them); removing `S2.3.count`, `S2.3.count.precip` and `S5.2.count` switches them off, the content then staying in the fill notes. Other changes: S6.4 and its slot in the Surroundings frame are removed (a value outside the neighbours' range is being highest or lowest, which S6.5 names); S6.5 draws on 11 measures (elevation, relief, slope, forest, karst, sand, silt, clay, runoff, permafrost, water-table depth) with a cap of three sentences; population density and human footprint are left out of the sentences and recorded in the fill note (people's measures are close to circular for gazetteer places); precipitation is never "driest" (aridity is a different fact; "arid/humid" is used for aridity only); S2.3's extreme is one sentence ("Of the n basins that meet here, it receives the least precipitation and is the most arid"); S5.2 opens "Among the n basins"; S6.2 reads "Its water flows on through n of them"; S3.2 headwater and S5.1b "some" as Opus worded them.
+
+**Rates over the 306-basin sample** (Cell 4; basins with fewer than three neighbours get no comparison): S2.3 speaks at 262, S5.2 at 161, S6.2 at 298, S6.3 at 105, S6.5 at 159; the S6.5 cap bites at 35 of those 159. 98% of basins with three or more neighbours get at least one comparison sentence.
+
+**Kaifeng "Its water flows on through two of them".** A basin whose next basin downstream also has a further one at its border drains into both, but not by two outlets. The sentence is true of the adjacency data and may read as two outlets; reviewers may want it reworded.
+
+## Part B: class words
+
+All six units fill at every place that has a basin (`wo07_classes.py`; wording keys `S4.1a`, `S4.1b`, `S4.1b.texture`, `S4.3.karst`, `S4.3.permafrost`, `S5.1c`, `S2.4`). Rates over the 306 sample basins are from Cells 7 and 8.
+
+| Unit | Rule | Source | Sample result |
+|---|---|---|---|
+| S4.1a terrain | FAO slope class on the mean slope in percent, "on average", percent shown. Classes under 1% merged as "level". | FAO Guidelines for soil description 2006, Table 7 (primary quoted in `wo04_schemes.md`) | 246 with data: gently sloping 62, sloping 42, level 42, moderately steep 41, very gently sloping 25, strongly sloping 21, steep 13. 10 sit where the 0.1 degree storage could change the class. |
+| S4.1b soil | Sand, silt, clay normalised to 100, plus the USDA texture class | USDA Soil Survey Manual ch. 3, pp. 122 to 124 (`bibliography/`; checked: every one of the 5,151 integer triples falls in exactly one class) | 253 with data: loam 119, sandy loam 66, sandy clay loam 44, clay loam 12, silt loam 7, loamy sand 4, clay 1; 20 change class with a half-point change. Totals: 168 sum to 100, 85 to 99 or 101. |
+| S4.2 rock | GLiM label, lower case | basin06 | unchanged except case |
+| S5.1c land cover | Largest GLC2000 class other than cultivated and managed areas, with its share | basin06 `glc_pc_s*`, `lu_glc` | The second class is under 10% at 7 of 306 and under 5% at 1, so a floor would rarely matter. Commonest other class: snow and ice 66, bare areas 49, sparse herbaceous or shrub 37. |
+| S4.3 karst, permafrost | Share, silent at zero; karst "up to" | basin06 | karst speaks at 83 (100% at 7), permafrost at 108 (90% or more at 28) |
+| S2.4 aridity | UNEP class on the index (stored x 100), index shown; placed before S2.3 so "most arid" follows the class | bands from Wikipedia (secondary; no primary found) | humid 188, arid 38, semi-arid 38, hyper-arid 26, dry sub-humid 16; 8 of 306 on a boundary within the integer rounding |
+
+The terrain word is removed from Setting (S1.frame).
+
+**Findings and caveats**
+
+- **"Flat", "level", "nearly level" merged** (Karl): near-synonyms, and slope is stored to 0.1 degree (0.17%), so the data cannot separate them. This departs from Table 7. "Mountainous" is not used (no support in the table).
+- **NoData leak (found and fixed).** On Greenland ice basins the payload gives slope -999.9 and sand, silt, clay -9999, which my first version turned into "very steep (573%)" and "34% sand, 33% silt, 33% clay (clay loam)". Part B units now treat a negative value as no data and print a placeholder. 60 sample basins have no slope and 53 no soil. The older units may leak the same way: check when open item I-3 is taken up.
+- **Alexandria karst "up to about 100%".** All five neighbours and the Nile basin are 92 to 100%; 379 of 16,397 basins worldwide are at 100%; its majority rock is unconsolidated sediments, so the two sentences sit awkwardly together. A data pattern (karst-capable carbonate mapped under cover), not a rule fault. Left as is; open item D1.
+- **Utqiagvik is "dry sub-humid"** (index 0.63 on a tundra basin with 97% permafrost). The index is precipitation over potential evapotranspiration, so cold places read humid or sub-humid; correct on the index, odd to a reader. For Opus.
+- **Alexandria's aridity index of 0.05** is exactly the hyper-arid and arid boundary and the stored integer cannot separate them.
+- **"Today" in Land cover.** GLC2000 is year 2000 and HYDE cropland and pasture belong to another year, so "Today" and the section title "Land cover today" are wrong. Karl prefers a stated date; the wording is for Karl and Opus. The frame is unchanged.
+- **Land-cover labels are the source's own** and some are long ("shrub cover, closed-open, deciduous (with or without sparse tree layer)"). Karl: do not shorten.
+- **Basin means hide mixed basins.** "Moderately steep on average" for Tbilisi's basin (22%) is true of the mean and not of the city's site.
 
 ## Part C: the nearest river (S3.1) and a much larger river nearby (S3.3)
 
