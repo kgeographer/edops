@@ -110,12 +110,12 @@ def load_table(path=RING_CSV):
 # ---- the rules -----------------------------------------------------------------------------------------------
 
 def member_values(df):
-    """{variable: {member: float}}. Zero extents (outside_active_domain) count as 0; no data or low coverage is left out."""
+    """{variable: {member: float}}. Flagged extents (outside_active_domain) count at their stored value, 0 if empty; no data or low coverage is left out."""
     v = {}
     for r in df.itertuples(index=False):
         x = r.value
         if r.status == 'outside_active_domain':
-            x = 0.0
+            x = 0.0 if pd.isna(x) else x     # the table carries the 0 or 1 of basin06 (wo09_patch_ring); 0 if a table was never patched
         elif r.status != 'ok' or pd.isna(x):
             continue
         v.setdefault(r.variable, {})[int(r.member)] = float(x)

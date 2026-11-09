@@ -45,8 +45,6 @@ These are the four units the ten profiles still show as `⟦...⟧`. The goal is
 
 **R5. Wetland groups and other flagged measures.** The engine's `outside_active_domain` flag hides a value of at most 1%. WO-08 made S5.1a and S5.1b state the value; WO-09 stopped the About list calling a flagged measure zero when its value is above zero. The same flag may hide a 1% in karst, permafrost and wetland groups, where nothing states it. *Found:* WO-08, WO-09. *When:* only if a unit starts to read those measures.
 
-**R6. The ring table counts flagged rows as 0.** About 193 of 3,486 member rows are really about 1%, so S5.2 cropland and pasture comparisons tie where they should not. *Found:* WO-08. *Next:* rebuild the table (about 40 minutes) and report which sentences change. *When:* WO-09 item 1, last.
-
 ## Data to check
 
 **D1. Alexandria's karst at 100%.** Consistent with its neighbours in the loaded data (92 to 100%; 379 of 16,397 basins sit at 100%), but not checked against the source file, which is not local; it sits awkwardly beside "unconsolidated sediments". *Found:* WO-04, WO-05, WO-07. *Next:* check against the source download. *When:* later; not shown as a karst word until checked.
@@ -97,6 +95,7 @@ These are the four units the ten profiles still show as `⟦...⟧`. The goal is
 
 ## Closed
 
+- **R6. The ring table counted flagged rows as 0** (WO-09 item 1, 9 Nov): fixed by patching the table from `basin06` (`wo09_patch_ring.py`, 13,617 rows; 1,346 are really 1%). One sentence changed, at Timbuktu.
 - **R2. The "no percentile" list** (WO-09 item 4, 9 Nov): flow distance and wetland class left out, a measure named once when its upstream version is also zero, a flagged measure with a value above zero not called zero, singular wording for one measure. Template v16 and v17.
 - **S1.3, the next ecoregion** (WO-08 B3, 8 Nov): tried and dropped.
 - **S1.4, the basin's other ecoregions** (WO-08 B4, 8 Nov): built, share limit 10%.
