@@ -9,6 +9,16 @@
 - **Data added** (additive, in `gaz`): `ne_coastline_10m`, `ne_rivers_10m` (Natural Earth copy with the Colorado ids corrected; the shapefile is untouched), `osm_river_lines`.
 - **Gate.** Ten profiles regenerate from v15; the river names for Timbuktu, Tbilisi and Kaifeng survive the OSM check; 93 of 97 names shown on the test points, WH Cities and the sample pass, and three of the four blocks were right.
 
+## Where we stand: placeholders remaining
+
+The goal is to fill the template's placeholders. At the WO-04c baseline 22 units were placeholders; in the ten profiles at v15, **4 remain**. 16 are filled (several speak only where the data qualify, and are silent otherwise) and 2 were tried and dropped (S1.3, S7.1a). In WO-08 alone: filled S2.1b, S3.4, S1.4, S8.3, S7.3 (plus S7.2); dropped S1.3 and S7.1a.
+
+The four that remain, each blocked on something outside the rules:
+- **S1.2b**, a one-line ecoregion gist: needs stored summaries that are reliable (many were made from the wrong Wikipedia article; 7 are refusals; open items E1, E2).
+- **S6.2c**, a description of a neighbouring basin: needs ring rules and wording.
+- **S8.1b**, the years of the datasets: needs the glossary.
+- **S9.1**, the link into EDOPS: needs the URL scheme from WHG.
+
 ## Decisions waiting for Karl
 
 1. **OpenStreetMap attribution (ODbL).** Anything that shows an OSM-gated river name needs "contains information from OpenStreetMap, ODbL" on the page. Where does it go?
