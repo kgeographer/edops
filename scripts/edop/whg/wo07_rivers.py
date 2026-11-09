@@ -246,6 +246,7 @@ def fill_river_units(F, ok, no):
         return {'S3.1': no('no river row for this point'), 'S3.3': no('no river row for this point', na=True)}
     U = {}
     used = None             # the reach S3.1 spoke about
+    osm = False             # a river name was shown (it passed the OpenStreetMap check): WO-09 item 5, the credit
     nm_ = '{name}'          # the place's name is put in by the renderer
     named = [(row[f'{p}_km'], p, _name(row, p)) for p in NAMED_LIMITS if _val(row, f'{p}_km') is not None and _name(row, p)]
     named = [t for t in named if t[0] <= NAMED_LIMITS[t[1]]]
@@ -253,6 +254,7 @@ def fill_river_units(F, ok, no):
     if named:                                   # tier 1: a named river is close
         km, p, nm = min(named)
         used = int(row[f'{p}_reach'])
+        osm = True
         text = W.fmt('S3.1.on' if km <= ON_KM else 'S3.1.named', dict(name=nm_, d=_km(km), river=nm))
         U['S3.1'] = ok(text, f'tier 1: class {int(row[p + "_ord"])} reach {int(row[p + "_reach"])}, {km:.1f} km, {row[p + "_dis"]:.1f} m3/s; named {nm} (line {row[p + "_name_km"]:.1f} km from the reach)')
     elif k6 is not None and k6 <= NEAR_KM:      # tier 2: an unnamed river is truly close
@@ -270,6 +272,7 @@ def fill_river_units(F, ok, no):
         U['S3.3'] = no(f'the nearest much larger river is {big_km:.0f} km away (more than {USE_D})', na=True)
     else:
         nm = _name(row, 'big')
+        osm = osm or bool(nm)
         same = used is not None and used == int(row['big_reach'])   # S3.1 already spoke of this river
         if same:
             text = W.fmt('S3.3.same.named', dict(river=nm)) if nm else W.fmt('S3.3.same', {})
@@ -277,6 +280,8 @@ def fill_river_units(F, ok, no):
             text = W.fmt('S3.3.named', dict(d=_km(big_km), river=nm)) if nm else W.fmt('S3.3.unnamed', dict(d=_km(big_km)))
         U['S3.3'] = ok(text, f'own basin largest class {int(row["own_min"])}; class {int(row["big_ord"])} reach {int(row["big_reach"])}, {big_km:.1f} km, {row["big_dis"]:.0f} m3/s; '
                        + ('the same reach as S3.1; ' if same else '') + (f'named {nm}' if nm else 'unnamed'))
+    if W.has('S8.osm'):
+        U['S8.osm'] = ok(W.fmt('S8.osm', {})) if osm else no('no river name is shown, so no OpenStreetMap credit', na=True)
     return U
 
 

@@ -6,7 +6,7 @@ This file is the product of the WO-04 to WO-07 work: the wording of the Environm
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 15
+Version: 18
 
 ## Changes
 
@@ -15,6 +15,9 @@ Version: 15
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 - v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v18 | 2026-11-09 | CC | OneEarth button. New `S9.4` (the URL of the ecoregion's page at oneearth.org/ecoregions/, from the slug stored with the ecoregion; 845 of 846 have one, and all 845 pages answered 200 on 9 Nov). `S9.frame` and `S9.frame.nowiki` gain `[Ecoregion on OneEarth: {S9.4}]` before the Wikipedia button, which stays (hidden where flagged). The button opens in a new tab (`target="_blank"`). The data are CC BY-NC 4.0, cite One Earth; their page text is not reproduced (permission asked separately).
+- v17 | 2026-11-09 | CC | WO-09 item 4, singular wording. New `S8.2.zero.one` ("{list} is zero here and so has no percentile") and `S8.2.other.one` ("1 has no value: {list}"), used when only one measure is listed ("1 measures are zero" read badly at Santa Fe and Chaco Canyon). The zero list also no longer names a flagged measure whose value is above zero (script only).
+- v16 | 2026-11-09 | CC | WO-09 items 3 to 7, 10. `S5.1b.some_full` ("{value} of the basin is pasture", used when cropland is zero), `S5.both_none` and `S5.both_none.bare` with `S5.frame.both_none` (both shares zero: Utqiaġvik reads "neither cropland nor pasture is recorded; the commonest cover is ..."); `S8.osm` (credit, shown only when a river name passed the OpenStreetMap check) and `S8.point` (where the point comes from) added to `S8.frame`; `S7.frame` is `{S7.2}` only (S7.3 silenced, code kept); `S9.frame.nowiki` for a flagged Wikipedia link. Item 4 (the no-percentile list) is script only.
 - v15 | 2026-11-08 | CC | S7.1a (distance to the seacoast) dropped at Karl's decision: it largely repeats the Water section, can seem to contradict it (Tbilisi: 251 km from the nearest coast, the Black Sea, but its river runs to the Caspian), and overstates proximity at estuary ports (Hamburg). Removed `S7.1a`, `S7.1a.on` and `{S7.1a}` from `S7.frame`. `S7.3` is now the key that switches the seacoast feature on.
 - v14 | 2026-11-08 | CC | WO-08 B6. New `S7.1a` ("{name} is about {d} km from the seacoast."), `S7.1a.on` (under a kilometre) and `S7.3` ("The nearest edge of its basin is the seacoast."). "Seacoast" because the Caspian counts (Karl); the WO's "coast" would read oddly for Baku. `S7.2` is unchanged in wording; it now also speaks when the basin's outline lies within 2 km of the coastline (Natural Earth 1:10m), not only on the signature's coast flag.
 - v13 | 2026-11-08 | CC | WO-08 B5. New `S8.3`: "The point lies just outside the basin data and was moved {d} m to the nearest basin." Speaks only when the profile script moved the point (within 1 km of a basin and inside none); silent otherwise.
@@ -60,9 +63,11 @@ S2.4: Its aridity index of {ai} falls in the UNEP {class} class.
 S4.frame: Across the basin, the land is {S4.1a}, with topsoil that averages {S4.1b}. The underlying rock is mostly {S4.2}. {S4.3}
 S5.frame: Around 2000, {S5.1a} and {S5.1b}; {S5.1c}. {S5.2}
 S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.5}
-S7.frame: {S7.2} {S7.3}
-S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3}
-S9.frame: {S9.1} [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
+S7.frame: {S7.2}
+S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3} {S8.point} {S8.osm}
+S9.frame: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
+S9.frame.nowiki: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Data as JSON: always]
+S5.frame.both_none: Around 2000, {S5.both_none}. {S5.2}
 
 ## Phrases
 
@@ -70,6 +75,8 @@ Setting. `{eco}`: the basin's majority ecoregion. S1.2c appears only when it dif
 
 S1.2c: Most of its basin lies in the {eco} ecoregion.
 S8.3: The point lies just outside the basin data and was moved {d} m to the nearest basin.
+S8.point: Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.
+S8.osm: River names contain information from OpenStreetMap, available under the ODbL.
 S1.4.one: Its basin also takes in parts of the {eco1} ecoregion.
 S1.4.many: Its basin also takes in parts of the {list} ecoregions.
 
@@ -113,6 +120,9 @@ Land cover. `{value}`: the share, as a whole-number percentage.
 S5.1a.some: about {value} of the basin is cropland
 S5.1a.none: no cropland is recorded
 S5.1b.some: {value} is pasture
+S5.1b.some_full: {value} of the basin is pasture
+S5.both_none: neither cropland nor pasture is recorded; the commonest cover is {label}, at about {share}%
+S5.both_none.bare: neither cropland nor pasture is recorded
 S5.1b.none: no pasture is recorded
 S5.1c: the commonest other cover is {label}, at about {share}%
 
@@ -207,7 +217,9 @@ About these figures. `{parts}`: the statements below, joined by full stops. `{n}
 S8.2: {parts}.
 label.upstream: {label} (upstream)
 S8.2.zero: {n} measures are zero here and so have no percentile: {list}
+S8.2.zero.one: {list} is zero here and so has no percentile
 S8.2.other: {n} have no value: {list}
+S8.2.other.one: 1 has no value: {list}
 
 Reasons a measure has no value (inserted in the list of the line above, in brackets).
 

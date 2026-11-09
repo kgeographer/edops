@@ -285,6 +285,8 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
         F['coast'] = dict(o=o, s=nearest)
     wp = conn.execute('SELECT wiki_url FROM public.eco_wikitext WHERE eco_id = %s', (F['pt_eco_id'],)).fetchone() if F['pt_eco_id'] is not None else None
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
+    slug = lambda i: (lambda r: r[0] if r and r[0] else None)(conn.execute('SELECT oneearth_slug FROM gaz."Ecoregions2017" WHERE eco_id = %s LIMIT 1', (int(i),)).fetchone()) if i is not None else None
+    F['oe_slug'], F['oe_slug_pt'] = slug(eco_id), slug(F['pt_eco_id'])   # OneEarth page of the basin's and the point's ecoregion (v18)
     return F
 
 
@@ -310,6 +312,18 @@ def provenance(F):
         return 'Undetermined', pr, ar, tr
     near = lambda r: r is None or 0.9 <= r <= 1.1
     return ('Catchment-uniform' if near(pr) and near(ar) and near(tr) else 'Local-dominant'), pr, ar, tr
+
+
+NOT_A_SHARE = {'dist_sink', 'wetland_class'}   # WO-09 item 4: left out of "have no percentile" (a distance, and a category)
+_SUSPECT = {}
+
+
+def suspect_wiki_ids():
+    """Ids of the ecoregions whose Wikipedia link wo05_wikilinks.csv flags (a stopgap until the links are repaired)."""
+    if not _SUSPECT:
+        with open(ROOT / 'docs' / 'design' / 'dashboard' / 'wo05_wikilinks.csv', newline='') as f:
+            _SUSPECT['ids'] = {int(r['eco_id']) for r in csv.DictReader(f) if r['suspect'] == 'True'}
+    return _SUSPECT['ids']
 
 
 def fill_units(F):
@@ -398,17 +412,24 @@ def fill_units(F):
         elif not share:   # zero, by value; the engine's outside_active_domain flag is a percentile guard, not a zero (it hides 1%)
             U[uid] = ok(fmt(uid + '.none', {}), 'zero' + (' (flagged outside active domain)' if st == 'outside_active_domain' else ''))
         else:
-            U[uid] = ok(fmt(uid + '.some', dict(value=f'{share:.0f}%')),
+            crop_zero = uid == 'S5.1b' and U['S5.1a']['ok'] and not val(F, 'cropland_extent') and has('S5.1b.some_full')   # "28% of the basin is pasture" once no cropland has been named
+            U[uid] = ok(fmt(uid + ('.some_full' if crop_zero else '.some'), dict(value=f'{share:.0f}%')),
                         '1%, flagged outside active domain by the engine (a percentile guard)' if st == 'outside_active_domain' else None)
 
     if has('S3.1.named'):   # nearest river and a much larger one nearby (WO-07 part C)
         from scripts.edop.whg import wo07_rivers
         U.update(wo07_rivers.fill_river_units(F, ok, no))
+    if has('S8.osm') and 'S8.osm' not in U:
+        U['S8.osm'] = no('no river row, so no OpenStreetMap credit', na=True)
 
     if has('S4.1a'):   # class words (WO-07 part B)
         from scripts.edop.whg import wo07_classes
         U.update(wo07_classes.fill_class_units(F, ok, no, val, fmt, tidy))
 
+    if has('S5.both_none') and U['S5.1a']['ok'] and U['S5.1b']['ok'] and not val(F, 'cropland_extent') and not val(F, 'pasture_extent'):   # WO-09 item 3
+        from scripts.edop.whg import wo07_classes as C
+        o = C.glc_other(F['glc']) if F.get('glc') else None
+        U['S5.both_none'] = ok(fmt('S5.both_none', {'label': C.lower(o[1]), 'share': f'{o[0]:.0f}'}) if o else fmt('S5.both_none.bare', {}), 'cropland and pasture both zero')
     if has('S3.4.lakes'):   # lakes and wetlands (WO-08 B2)
         from scripts.edop.whg import wo08_units
         U.update(wo08_units.fill_water_units(F, ok, no, val, fmt))
@@ -442,18 +463,31 @@ def fill_units(F):
 
     bad = [(r['variable'], r['status']) for r in F['areas']['rows'] if r['status'] != 'ok']
     zero = [v for v, st in bad if st == 'outside_active_domain']
+    if has('S8.point'):   # WO-09 item 4: only shares and extents; a measure and its upstream version, both zero, are named once
+        zero = [v for v in zero if v not in NOT_A_SHARE and not (val(F, v) or 0) > 0]   # a flagged measure whose value is above zero (the engine hides up to 1%) is stated elsewhere, not called zero
+        pairs_ = {v: catalog_labels().get(v, (None, False)) for v in zero}
+        zero = [v for v in zero if not (pairs_[v][1] and (pairs_[v][0], False) in pairs_.values())]
     other = [(v, st) for v, st in bad if st != 'outside_active_domain']
-    if bad:
+    if zero or other:
         txt = []
         if zero:
-            txt.append(fmt('S8.2.zero', dict(n=len(zero), list=', '.join(label(v) for v in zero))))
+            txt.append(fmt('S8.2.zero.one' if len(zero) == 1 and has('S8.2.zero.one') else 'S8.2.zero', dict(n=len(zero), list=', '.join(label(v) for v in zero))))
         if other:
-            txt.append(fmt('S8.2.other', dict(n=len(other), list='; '.join(f'{label(v)} ({templates()["text"].get("status." + st, st)})' for v, st in other))))
+            txt.append(fmt('S8.2.other.one' if len(other) == 1 and has('S8.2.other.one') else 'S8.2.other', dict(n=len(other), list='; '.join(f'{label(v)} ({templates()["text"].get("status." + st, st)})' for v, st in other))))
         U['S8.2'] = ok(fmt('S8.2', dict(parts='. '.join(txt))))
     else:
-        U['S8.2'] = no('every measure has a value (optional part not stated)', na=True)
+        U['S8.2'] = no('every measure has a value (optional part not stated)' if not bad else 'every measure that is zero is a class or a distance, or has a value (optional part not stated)', na=True)
     wiki = (F['wiki_url_pt'] or F['wiki_url']) if A and F['pt_eco_id'] is not None else F['wiki_url']
-    U['S9.2'] = ok(wiki) if wiki else no('no Wikipedia text for this ecoregion')
+    eco_used = F['pt_eco_id'] if A and F['pt_eco_id'] is not None else val(F, 'eco_id')
+    if has('S9.frame.nowiki') and wiki and eco_used is not None and int(eco_used) in suspect_wiki_ids():   # WO-09 item 10 (stopgap): hide a flagged link
+        U['S9.2'] = dict(no('the ecoregion\'s Wikipedia link is flagged as unreliable in wo05_wikilinks.csv; button hidden', na=True), hidden=True)
+    else:
+        U['S9.2'] = ok(wiki) if wiki else no('no Wikipedia text for this ecoregion')
+    if '{S9.4}' in templates()['text'].get('S9.frame', ''):   # v18: the OneEarth page of the ecoregion; the button opens in a new tab (target="_blank")
+        oe = (F['oe_slug_pt'] or F['oe_slug']) if A and F['pt_eco_id'] is not None else F['oe_slug']
+        U['S9.4'] = ok(f'https://www.oneearth.org/ecoregions/{oe}/', 'OneEarth button opens in a new tab (target="_blank")') if oe else no('no OneEarth page for this ecoregion; button left out')
+    if has('S8.point'):   # WO-09 item 6: where the point comes from, whenever an elevation or a distance is stated
+        U['S8.point'] = ok(fmt('S8.point', {})) if any(U.get(k, {}).get('ok') for k in ('S1.1b', 'S3.1', 'S3.3')) else no('no point elevation or distance stated', na=True)
     return U
 
 
@@ -477,7 +511,7 @@ def render_filled_profile(name, F, U):
     vals = {'name': name}
     for uid in NEED:
         vals[uid] = PH(uid, extra.get(uid, ''))
-    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.4'} if has('S1.4.one') else set()) | ({'S8.3'} if has('S8.3') else set()) | ({'S7.2', 'S7.3'} if has('S7.3') else set())
+    ring_silent = ({'S2.3', 'S5.2', 'S6.2', 'S6.3', 'S6.5'} if has('S6.2.in_none') else set()) | ({'S3.1', 'S3.3'} if has('S3.1.named') else set()) | ({'S2.4', 'S4.3', 'S5.1c'} if has('S4.1a') else set()) | ({'S3.4'} if has('S3.4.lakes') else set()) | ({'S1.4'} if has('S1.4.one') else set()) | ({'S8.3'} if has('S8.3') else set()) | ({'S7.2', 'S7.3'} if has('S7.3') else set()) | ({'S8.point', 'S8.osm'} & {k for k in ('S8.point', 'S8.osm') if has(k)})
     for uid in U:
         if U[uid]['ok'] or uid not in NEED:
             vals[uid] = t(uid) if (U[uid]['ok'] or not (uid in ring_silent and U[uid].get('na'))) else ''
@@ -493,7 +527,14 @@ def render_filled_profile(name, F, U):
         if k_ != 'name' and isinstance(v_, str) and '{name}' in v_:
             vals[k_] = v_.replace('{name}', name)      # units that open with the place's name (S3.1)
     for sec in SECTIONS:
-        body = tidy(fmt(sec + '.frame', vals))
+        frame = sec + '.frame'
+        if sec == 'S5' and U.get('S5.both_none', {}).get('ok'):
+            frame = 'S5.frame.both_none'
+        elif sec == 'S9' and U.get('S9.2', {}).get('hidden'):
+            frame = 'S9.frame.nowiki'
+        body = tidy(fmt(frame, vals))
+        if sec == 'S9' and not U.get('S9.4', {}).get('ok', True):
+            body = tidy(re.sub(r'\[Ecoregion on OneEarth: [^\]]*\]', '', body))
         if body.strip():   # a section with nothing true to say (Coast and reach, inland) has no heading either
             L += [f'### {fmt(sec + ".title", {})}', body, '']
     notes = [f'- {k}: {v["note"]}' for k, v in U.items() if v.get('note')]
