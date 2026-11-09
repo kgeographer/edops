@@ -1,7 +1,7 @@
 """WO-07 part C: the nearest river (S3.1) and a much larger river nearby (S3.3).
 
 `gaz.rivers` (HydroRIVERS) gives presence, size and distance; its `ord_flow` is a discharge class (1 the largest, 10 the
-smallest; 5 = 10 to 99.99 m3/s, 6 = 1 to 9.99). Natural Earth rivers (data/ne_10m_rivers_lake_centerlines_scale_rank)
+smallest; 5 = 10 to 99.99 m3/s, 6 = 1 to 9.99). Natural Earth rivers (gaz.ne_rivers_10m, a copy of data/ne_10m_rivers_lake_centerlines_scale_rank with corrected ids)
 give a name only where they have a line near the reach. For every point the table holds what each cutoff would give, so a
 cutoff can be chosen (and changed) without querying again: the nearest reach at class 5 and at class 6, the largest class
 in the place's own basin, and the nearest reach at least STEP classes larger than that. Read-only.
@@ -13,13 +13,13 @@ from scripts.edop.whg import wo04_fill as W
 
 RIVERS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_rivers.csv'
 LABELS_CSV = W.ROOT / 'output' / 'edop' / 'whg' / 'wo07_river_labels.csv'
-NE_SHP = W.ROOT / 'data' / 'ne_10m_rivers_lake_centerlines_scale_rank' / 'ne_10m_rivers_lake_centerlines_scale_rank.shp'
 
 CLASSES = (4, 5, 6)       # minimum size of the nearest river tried: ord_flow at or below 4 (100 m3/s), 5 (10 m3/s) or 6 (1 m3/s)
 STEP = 2                  # "much larger": this many discharge classes (a factor of 10 each) above the largest in the own basin
 D_KM = (10, 25, 50)       # distances tried for "nearby"
 # the values the sentences use now; the table keeps every value tried, so changing them needs no new query
 USE_CLASS, USE_D, NAME_KM = 5, 25, 5.0
+OSM_GATE_KM = 3.0  # WO-08 A5: the OpenStreetMap line of the named river must pass this close to the reach
 NAMED_LIMITS = {'r4': 25.0}   # S3.1 tier 1: only a river of class 4 or larger (100 m3/s and up) is named, out to this distance; smaller rivers are never named (see wo07_results.md, river names)
 ON_KM = 1.5               # ... and within this distance the place is 'on' it
 NEAR_KM = 3.0             # S3.1: no named river, but a river of class 5 or larger within this distance is mentioned (tier 2); beyond, silence
@@ -56,10 +56,20 @@ def key(lat, lon):
     return f'{lat:.5f},{lon:.5f}'
 
 
+def _ne_table():
+    """gaz.ne_rivers_10m (wo08_load_ne_rivers): the Natural Earth rivers with their corrected Wikidata ids, as a GeoDataFrame."""
+    import geopandas as gpd
+    from shapely import wkb
+    from app.db.connection import db_connect
+    with db_connect() as conn:
+        rows = conn.execute('SELECT featurecla, name, name_en, wikidataid, ST_AsBinary(geom) FROM gaz.ne_rivers_10m ORDER BY gid').fetchall()
+    return gpd.GeoDataFrame({'featurecla': [r[0] for r in rows], 'name': [r[1] for r in rows], 'name_en': [r[2] for r in rows],
+                             'wikidataid': [r[3] for r in rows]}, geometry=[wkb.loads(bytes(r[4])) for r in rows], crs=4326)
+
+
 def _ne():
     if not _NE:
-        import geopandas as gpd
-        G = gpd.read_file(NE_SHP)
+        G = _ne_table()
         G['label_name'] = G['name_en'].where(G['name_en'].notna(), G['name'])
         ok = G['featurecla'].isin(['River', 'River (Intermittent)']) & G['label_name'].notna()
         NE = G[ok].reset_index(drop=True)
@@ -183,15 +193,43 @@ def labels():
     return _LABELS
 
 
+_OSM = {}
+
+
+def osm_km(q, lon, lat):
+    """Distance in km from a point to the OpenStreetMap line of the river with Wikidata id q (gaz.osm_river_lines, wo08_osm_rivers);
+    None when OSM has no line for that id. The table is read once."""
+    if not _OSM:
+        from shapely import wkb
+        from app.db.connection import db_connect
+        with db_connect() as conn:
+            _OSM.update({r[0]: wkb.loads(bytes(r[1])) for r in conn.execute('SELECT qid, ST_AsBinary(geom) FROM gaz.osm_river_lines')})
+        _OSM.setdefault('', None)
+    g = _OSM.get(q)
+    if g is None:
+        return None
+    from shapely.geometry import Point
+    from shapely.ops import nearest_points
+    n = nearest_points(g, Point(lon, lat))[0]
+    dx = (n.x - lon) * 111.32 * np.cos(np.radians(lat))
+    dy = (n.y - lat) * 110.57
+    return float(np.hypot(dx, dy))
+
+
 def _name(row, prefix):
     """The river's name (its Wikidata label) only when a Natural Earth line with an id and a label lies within NAME_KM of
-    the reach and no line of a different river does (two close rivers are ambiguous, so the sentence says 'a river')."""
+    the reach and no line of a different river does (two close rivers are ambiguous, so the sentence says 'a river'), and
+    the OpenStreetMap line of that river passes within OSM_GATE_KM of the reach (a missing OSM line also says 'a river')."""
     nm, km, q, nm2, km2, q2 = (_val(row, f'{prefix}_{x}') for x in ('name', 'name_km', 'qid', 'name2', 'name2_km', 'qid2'))
     if not isinstance(q, str) or not q or km is None or not (km <= NAME_KM) or q not in labels():
         return ''
     if km2 is not None and km2 <= NAME_KM and (nm2 or q2) and q2 != q:
         return ''
     if not agrees(nm, labels()[q]):
+        return ''
+    cx, cy = _val(row, f'{prefix}_cx'), _val(row, f'{prefix}_cy')
+    d = osm_km(q, cx, cy) if cx is not None and cy is not None else None
+    if d is None or d > OSM_GATE_KM:
         return ''
     return labels()[q]
 
@@ -250,8 +288,7 @@ WD_AGENT = 'EDOPS-research/0.4 (https://edops.computingplace.org; karl.geog@gmai
 
 def ne_ids():
     """The distinct Wikidata ids on Natural Earth's named river lines, with the Natural Earth names that carry each."""
-    import geopandas as gpd
-    G = gpd.read_file(NE_SHP)
+    G = _ne_table()
     R = G[G['featurecla'].isin(['River', 'River (Intermittent)']) & G['wikidataid'].notna()]
     return R.groupby('wikidataid').agg(ne_names=('name_en', lambda s: '; '.join(sorted({x for x in s if isinstance(x, str)}))),
                                        lines=('name_en', 'size')).reset_index()

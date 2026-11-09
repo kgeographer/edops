@@ -1,6 +1,6 @@
 # WO-08 results (running file)
 
-2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 11 so far). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; notebook `notebooks/edop/whg/wo08_new_units.ipynb`; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
+2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 15). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; notebook `notebooks/edop/whg/wo08_new_units.ipynb`; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
 
 ## Decisions taken in discussion before the build (Karl, 8 Nov)
 
@@ -55,6 +55,29 @@ New key `S4.1a.under`: "level on average (a mean slope under 0.1%)" where the sl
 **I-3 (the marker stored as a class).** The class-id frame that carried it is in the WO-03 Q1 research notebook (frozen as a record). No live profile script builds such a frame; the wetland class is not read. The fix for any use from here is `missing.class_label`, tested.
 
 **Not covered:** the check ran over the 103 sample basins, not over all 16,397; columns with the marker that the profile does not read (stream gradient, soil carbon, moisture index, snow cover) are not guarded and will need the helper when a unit first reads them.
+
+## A5. River names need two sources (done; gate 3 km, Karl's choice, 9 Nov)
+
+**Rule.** S3.1 and S3.3 name a river only when two sources agree: Natural Earth names a line within 5 km of the reach (the WO-07 rule, unchanged) **and** the OpenStreetMap line of the same river (matched by Wikidata id) passes within 3 km of the reach. Otherwise the sentence says "a river" (or S3.1 stays silent, as before). A river with no OpenStreetMap line is also unnamed. Code: `osm_km()`, `OSM_GATE_KM` and the check in `_name` in `wo07_rivers.py`; test `tests/test_whg_rivers.py`.
+
+**Data.** One query per river by Wikidata id (`rel["wikidata"="Q"]["waterway"]`) on the public Overpass server, for the 118 rivers the profile can name (S3.1 candidates plus the S3.3 big rivers); `wo08_osm_rivers.py`, resumable, about 35 s a river. `gaz.osm_river_lines` holds 115 rivers (simplified to about 50 m); 7 queried returned no OSM relation (Chico River, Ahuriri, Mearim, Paraná River, Pembuang, Saint Paul, Weir). No fetch errors. The lines are OpenStreetMap data (ODbL): the page must carry the attribution "contains information from OpenStreetMap, ODbL" before anything goes out.
+
+**Evidence.** Of 97 names the old rule would show (10 test places and extra points, WH Cities, 306 sample basins), 93 survive the 3 km gate and 4 are blocked: Tuo (Dujiangyan; OSM line 76 km away, a different river), Vorma (64 km), Snake (8.7 km) and Lek (Rotterdam, 9.3 km); each is examined below. At 2 km the gate kept 88 of 97; the 3 km choice recovers Volga at Kazan (2.89 km), Namhan (2.18), Kem (2.40) and Iriri (2.07), and the Colorado fix below recovers the Grand Canyon basin. Distances for rivers that pass are 0.01 to 1.71 km; the next group is 2.07 to 2.89 km (probably the right rivers; wide valleys, reach point off the OSM centreline), then nothing until 8.7 km. So 3 km sits in the only empty stretch above the pass group; it is a choice, not a natural break. Test places: Timbuktu, Tbilisi and Kaifeng keep their names (S3.1; Kaifeng S3.3 too). WH Cities: S3.1 40 of 42, S3.3 5 of 5. Sample basins: S3.1 39 of 41, S3.3 5 of 5. The ten profiles have not been regenerated yet (end of WO).
+
+**The four blocked names, examined (9 Nov).** Three blocks are right and one is wrong.
+- *Tuo, Dujiangyan (OSM line 76 km away):* right. A different river.
+- *Lek, Rotterdam (9.3 km):* right, a real catch. Natural Earth's Lek line runs to the reach (0.18 km), but the OSM Lek ends at 4.62 E, 9.3 km east of it. By my own knowledge, not checked in the data: that is where it becomes the Nieuwe Maas, which Rotterdam sits on. The same river passes for Amsterdam's S3.3 (0.1 km).
+- *Vorma, a sample basin at 59.60 N, 11.09 E (64 km):* probably right. Natural Earth has a Vorma line 0.52 km from the reach; the OSM relation (2 ways) covers only 60.14 to 60.40 N. By my own knowledge, not checked: the Vorma ends at the Glomma near Nes, so the reach is most likely the Glomma.
+- *Snake, a sample basin in southeast Washington (8.7 km):* wrong. Natural Earth (1.85 km) and HydroRIVERS agree it is the Snake. The OSM relation has 412 ways but none along the lower Snake near the reach; its nearest point is the mouth, 8.7 km away. The relation has a gap there (cause not examined; perhaps the reservoirs are mapped as water areas). The cost is one true name silenced as "a river".
+Net on this sample: the gate removes three wrong names (Tuo, Lek, Vorma) and one right one (Snake); its errors are silences, not wrong names, as long as the OSM line is where the river is.
+
+**Natural Earth's Colorado ids, fixed in our copy.** The gate's first false block was the Grand Canyon sample basin: Natural Earth's 11 US Colorado lines carry Q270627, the Argentine Colorado's id (the 4 Argentine lines are right; the US river is Q1265), so the OSM check fetched the wrong river (8,916 km away). Karl's decision: never edit the downloaded source; correct a copy in the database. `gaz.ne_rivers_10m` (`wo08_load_ne_rivers.py`) holds all 4,224 Natural Earth river lines, identical to the shapefile in names and geometry except the 11 corrected ids; `wikidataid_src` keeps the source value and `fixed` marks the changes. `wo07_rivers.py` now reads this table, not the shapefile. The 4 US rows of `wo07_rivers.csv` were recomputed. The fix is a hand correction found only because it produced a wrong block; a wrong id whose OSM line happens to be near the reach would pass the gate unseen.
+
+**Limits.**
+- The gate checks that the named river is near the reach, not that the reach is that river's course; a tributary within 3 km of a large river's line would take its name. The pilot's WO-07 course check stays the stronger test where used.
+- Coverage: 7 of the rivers queried have no OSM relation; those places read "a river".
+- World-scale (v1) build: about 500 rivers, a few hours of Overpass queries; the public server is slow (30 to 90 s a river, occasional 502). Needs a polite User-Agent with a real contact, not Karl's address in the headers of an unrelated service.
+- New tables (additive, in `gaz`): `ne_rivers_10m`, `osm_river_lines`.
 
 ## A6. Counts for every measure that qualifies
 
@@ -172,6 +195,8 @@ S8.3 is silent at all ten test places in the regenerated profiles.
 
 **S7.1a, "{name} is about {d} km from the seacoast.", dropped (Karl).** Built and run (distances uncapped: Timbuktu 1,261 km, Santa Fe 830, Chaco Canyon 719, Lviv 595, Kaifeng 446, Poltava 332, Tbilisi 251, Alexandria and Utqiagvik 2). Dropped because it largely repeats the Water section (S3.2 "meets the sea at its outlet", S3.5 "drains ... to the sea about N km beyond its outlet"), can seem to contradict it (Tbilisi: 251 km from the nearest coast, the Black Sea, but its river runs to the Caspian), and overstates proximity at estuary ports. It was the only place-level (not basin-level) coastal statement; parked for Opus.
 
+**For Opus (discussion, Karl 8 Nov): the place's point is often a centroid.** A gazetteer point for a city can lie some distance from its port or shore, and the world varies too much in this to catch every case, so precision about the coast at the point is largely illusory. This is a further reason S7.1a was dropped. S7.2 is a basin fact and does not depend on where the point sits. S7.3 ("the nearest edge of its basin is the seacoast") does: a few km of offset can flip it (Baku sits at 2.19 km against the 2 km tolerance). It is kept as built (silent unless clearly true). Other point-based units share the exposure (elevation, ecoregion at the point, river distances S3.1 and S3.3, the S8.3 snap); the point's accuracy is the gazetteer's, not ours. Question for Opus: whether to keep S7.3 and how point-based statements should be worded when the point may be a centroid.
+
 **Anomalies found (not fixed; we report sources).**
 - **The signature's coast flag misses about a third of the basins that touch the sea.** Of the 81 basins with flag 0 whose outline lies within 2 km of the coastline, 77 are terminal basins (`next_down` = 0, flow distance to the sea 0 km) and none has a coastal basin downstream; they include Rotterdam, Hamburg, Stockholm, Porto, Bordeaux, Philadelphia, Saint Petersburg, Riga and Quito (Pacific side). The catalog calls the flag "Basin touches coast"; why it misses them is not verified (guess: it counts only open-coast contact, not river mouths or estuaries). Hence the "flag or layer" rule for S7.2.
 - **Two the other way** (flag 1, layer no): a 0.1 km² islet in the Sea of Japan (41.0 N, 139.0 E), 61 km from the nearest line (too small for 1:10m); and a 253 km² southern New Zealand basin whose outline is 2.17 km from the coastline, just past the 2 km tolerance.
@@ -186,4 +211,4 @@ S8.3 is silent at all ten test places in the regenerated profiles.
 
 ## Still to do
 
-A5 (the river-name gate). Then the ten filled_profiles, the summary and the commit.
+Nothing in the work order. Open decisions are in `wo08_summary.md`. The ten profiles in `wo08_filled_profiles.md` were regenerated on 9 Nov (Cell 2, v15).
