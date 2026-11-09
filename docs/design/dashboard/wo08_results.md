@@ -1,6 +1,6 @@
 # WO-08 results (running file)
 
-2026-11-08. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 15). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; notebook `notebooks/edop/whg/wo08_new_units.ipynb`; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
+8 to 9 Nov 2026. One section per numbered item of `wo08_wo07-decisions-new-units-coastline.md`, added as each closes. Template: `profile_templates.md` (version 15). Code: `scripts/edop/whg/` (`missing.py` and `wo08_units.py` new; notebook `notebooks/edop/whg/wo08_new_units.ipynb`; `wo04_fill.py`, `wo06_rings.py`, `wo07_classes.py` changed). Items still to do are listed at the end.
 
 ## Decisions taken in discussion before the build (Karl, 8 Nov)
 
