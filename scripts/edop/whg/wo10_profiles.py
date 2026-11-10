@@ -84,7 +84,7 @@ def build_record(name, F, U, generated):
     rec = dict(place=name, slug=slug, lat=F['lat'], lon=F['lon'], hybas_id=F.get('hid'), generated=generated,
                template_version=W.templates()['version'], provenance=W.templates_stamp(), no_basin=F['pub'] is None)
     if F['pub'] is None:
-        rec.update(message=W.fmt('nobasin.text', {}), sections=[], buttons=[], units={}, notes=[])
+        rec.update(message=W.fmt('nobasin.text', {}), sections=[], buttons_title=None, buttons=[], units={}, notes=[])
         return rec
     vals = W.profile_vals(name, F, U)
     text = W.templates()['text']
@@ -98,6 +98,7 @@ def build_record(name, F, U, generated):
             sections.append(dict(id=sec, title=W.fmt(sec + '.title', {}), filled=filled,
                                  template=_segments(text[frame], U, vals)))
     rec['sections'] = sections
+    rec['buttons_title'] = W.fmt('S9.title', {})
     rec['buttons'] = _buttons(slug, U)
     rec['units'] = {uid: dict(scope='point' if uid in POINT_UNITS else 'basin', ok=u['ok'], text=u['text'], why=u['why'],
                               na=bool(u.get('na')), note=u.get('note'), lines=[_clean(ln) for ln in u.get('lines', [])])

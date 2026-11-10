@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Environmental Profiles (sample) | Computing Place</title>
+  <link rel="stylesheet" href="/static/css/site.css?v={{ static_v('css/site.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/profiles.css?v={{ static_v('css/profiles.css') }}">
+  {% include "_ga.html" %}
+</head>
+<body>
+
+<header class="mb-2">
+  <div class="d-flex align-items-center justify-content-between py-2 border-bottom flex-wrap gap-2">
+    <div class="d-flex align-items-center">
+      <a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height:60px;" class="me-2"></a>
+      <h4 class="mb-0">Environmental Profiles (sample)</h4>
+    </div>
+    <div class="edops-page-pills-wrap">
+      <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
+        <li class="nav-item"><a class="nav-link" href="/sandbox">Sandbox</a></li>
+        <li class="nav-item"><a class="nav-link" href="/workbench">Workbench</a></li>
+        <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<main id="pf-main">
+  <ul class="nav nav-pills pf-places" id="pf-places" aria-label="Places"></ul>
+
+  <section id="pf-intro">
+    <!-- Draft text, for Karl to rewrite. -->
+    <p class="pf-draft">Draft wording</p>
+    <p>This is a sample of the environmental profile a place portal could carry. Each profile was generated ahead of time, by fixed rules, from global datasets; no one wrote it by hand and no language model wrote it. The text of each statement comes from a template, and the rules choose which statements are true of the place.</p>
+    <p><strong>How to read a profile.</strong> <em>Setting</em> describes the place itself. The other sections describe the drainage basin that contains it, and say so. A statement appears only where the data support it; silence is deliberate.</p>
+    <p>Sources: <a href="https://www.hydrosheds.org/" target="_blank" rel="noopener">HydroSHEDS</a> (BasinATLAS, HydroRIVERS), <a href="https://www.oneearth.org/bioregions/" target="_blank" rel="noopener">One Earth Bioregions</a>, <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> and Wikipedia.</p>
+    <p class="pf-meta" id="pf-meta"></p>
+  </section>
+
+  <div class="pf-toolbar">
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pf-toggle" aria-pressed="false">Show template</button>
+    <span class="pf-legend" id="pf-legend" hidden>Each line the rules chose is shown as written in the template file, with its <code>{slots}</code> unfilled; the small label is the line's key.</span>
+  </div>
+
+  <div id="pf-profile" tabindex="0" aria-live="polite"></div>
+</main>
+
+<script>
+  const PLACES = {{ places|tojson }};   // [{place, slug, no_basin}], in display order
+  const qs = new URLSearchParams(location.search);
+  const state = { slug: PLACES.some(p => p.slug === qs.get('place')) ? qs.get('place') : PLACES[0].slug,
+                  template: qs.get('view') === 'template', rec: null };
+  const el = id => document.getElementById(id);
+  const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+  function drawPills() {
+    const ul = el('pf-places');
+    ul.replaceChildren(...PLACES.map(p => {
+      const li = mk('li', 'nav-item'), a = mk('a', 'nav-link' + (p.slug === state.slug ? ' active' : ''), p.place);
+      a.href = '?place=' + p.slug + (state.template ? '&view=template' : '');
+      a.addEventListener('click', e => { e.preventDefault(); select(p.slug); });
+      li.append(a);
+      return li;
+    }));
+  }
+
+  // A template line with its {slots} marked, then its parts (phrases the rules put inside it).
+  function lineNode(line) {
+    const span = mk('span', 'pf-tline');
+    span.append(mk('small', 'pf-tkey', line.key), ' ');
+    line.raw.split(/(\{[^}]+\})/).forEach(piece => span.append(/^\{[^}]+\}$/.test(piece) ? mk('code', 'pf-tslot', piece) : piece));
+    if (line.parts && line.parts.length) {
+      const parts = mk('span', 'pf-tparts');
+      line.parts.forEach(p => parts.append(lineNode(p), ' '));
+      span.append(' ', parts);
+    }
+    return span;
+  }
+
+  function templateBody(sec) {
+    const p = mk('p', 'pf-template');
+    let last = null;
+    sec.template.forEach(s => {
+      if (s.type === 'text') p.append(s.text);
+      else if (s.type === 'slot') p.append(mk('code', 'pf-tslot', '{' + s.slot + '}'));
+      else { if (last && last.type === 'line') p.append(' '); p.append(lineNode(s)); }
+      last = s;
+    });
+    return p;
+  }
+
+  function draw() {
+    const rec = state.rec, box = el('pf-profile');
+    el('pf-meta').textContent = 'Template version ' + rec.template_version + ', generated ' + rec.generated + '.';
+    el('pf-legend').hidden = !state.template;
+    const nodes = [];
+    if (rec.no_basin) {
+      nodes.push(mk('h3', 'pf-nobasin', rec.message));
+    } else {
+      rec.sections.forEach(sec => {
+        nodes.push(mk('h5', 'pf-sec', sec.title), state.template ? templateBody(sec) : mk('p', null, sec.filled));
+      });
+      if (rec.buttons.length) {
+        const row = mk('div', 'pf-buttons');
+        rec.buttons.forEach(b => { const a = mk('a', 'btn btn-sm btn-outline-secondary', b.label); a.href = b.url; a.target = b.target; a.rel = 'noopener'; row.append(a); });
+        nodes.push(mk('h5', 'pf-sec', rec.buttons_title || 'Buttons'), row);
+      }
+    }
+    box.replaceChildren(...nodes);
+    box.scrollTop = 0;
+  }
+
+  function url() { const q = new URLSearchParams({ place: state.slug }); if (state.template) q.set('view', 'template'); return '?' + q; }
+
+  async function select(slug) {
+    state.slug = slug;
+    history.replaceState(null, '', url());
+    drawPills();
+    const r = await fetch('/static/profiles/' + slug + '.json');
+    state.rec = await r.json();
+    draw();
+  }
+
+  el('pf-toggle').addEventListener('click', () => {
+    state.template = !state.template;
+    el('pf-toggle').textContent = state.template ? 'Show text' : 'Show template';
+    el('pf-toggle').setAttribute('aria-pressed', state.template);
+    history.replaceState(null, '', url());
+    drawPills();
+    draw();
+  });
+  if (state.template) { el('pf-toggle').textContent = 'Show text'; el('pf-toggle').setAttribute('aria-pressed', 'true'); }
+  select(state.slug);
+</script>
+</body>
+</html>

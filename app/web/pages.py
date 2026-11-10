@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
@@ -81,6 +82,13 @@ def edops(request: Request):
 @router.get("/polities")
 def polities(request: Request):
     return _render(request, "cliopatria.html")
+
+
+@router.get("/profiles")
+def profiles(request: Request):
+    """Sample environmental profiles for review (WO-10); stored records in static/profiles, not linked from the other pages."""
+    places = json.loads((STATIC_DIR / "profiles" / "index.json").read_text())
+    return _render(request, "profiles.html", places=places)
 
 @router.get("/workbench")
 def workbench(request: Request):
