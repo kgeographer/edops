@@ -1,0 +1,1228 @@
+{
+ "place": "Poltava",
+ "slug": "poltava",
+ "lat": 49.59,
+ "lon": 34.55,
+ "hybas_id": 2060459130,
+ "generated": "2026-11-10",
+ "template_version": 20,
+ "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "filled": "Poltava sits at about 165 m above sea level, in a basin that runs from about 61 m to 256 m. It lies in the East European forest steppe ecoregion.",
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " sits at about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.1b"
+    },
+    {
+     "type": "text",
+     "text": " m above sea level, in a basin that runs from about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5a"
+    },
+    {
+     "type": "text",
+     "text": " m to "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5b"
+    },
+    {
+     "type": "text",
+     "text": " m. It lies in the "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.2a"
+    },
+    {
+     "type": "text",
+     "text": " ecoregion. "
+    },
+    {
+     "type": "text",
+     "text": " "
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "filled": "Across the surrounding basin of about 14,512 km², rainfall averages about 565 mm a year, spread fairly evenly through the year. Temperatures there average 7.2 °C, from -6.7 °C in January to 20.2 °C in July. Its aridity index of 0.73 falls in the UNEP humid class. Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three.",
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the surrounding basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km², rainfall averages about "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.1a"
+    },
+    {
+     "type": "text",
+     "text": " mm a year, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.1b",
+     "key": "S2.1b.even",
+     "raw": "spread fairly evenly through the year",
+     "vals": {
+      "month": "July"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". Temperatures there average "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.2a"
+    },
+    {
+     "type": "text",
+     "text": " °C, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.2bc",
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "-6.7",
+      "lo_month": "January",
+      "hi_temp": "20.2",
+      "hi_month": "July"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S2.4",
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.73",
+      "class": "humid"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S2.3",
+     "key": "S2.3.counts",
+     "raw": "Compared with the {m} basins around it, its basin {list}.",
+     "vals": {
+      "m": "four",
+      "list": "receives more precipitation than three and is more humid than three"
+     },
+     "parts": [
+      {
+       "key": "S2.3.counts.item.precip",
+       "raw": "receives {cmp} precipitation than {k}",
+       "vals": {
+        "cmp": "more",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.precip.more",
+         "raw": "more",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "more humid",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.aridity.more",
+         "raw": "more humid",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "filled": "A river runs about 3 km from Poltava. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 516 km beyond its outlet.",
+   "template": [
+    {
+     "type": "line",
+     "unit": "S3.1",
+     "key": "S3.1.unnamed",
+     "raw": "A river runs about {d} km from {name}.",
+     "vals": {
+      "name": "{name}",
+      "d": "3"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.2",
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.4",
+     "key": "S3.4.lakes",
+     "raw": "Lakes cover about {l}% of the basin.",
+     "vals": {
+      "l": "0.5"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " The basin drains "
+    },
+    {
+     "type": "line",
+     "unit": "S3.5",
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "516"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "filled": "Across the basin, the land is gently sloping on average (a mean slope of 2.6%), with topsoil that averages 33% sand, 45% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly mixed sedimentary rocks.",
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the basin, the land is "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1a",
+     "key": "S4.1a",
+     "raw": "{class} on average (a mean slope of {pct}%)",
+     "vals": {
+      "class": "gently sloping",
+      "pct": "2.6"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ", with topsoil that averages "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1b",
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "33",
+      "silt": "45",
+      "clay": "22",
+      "texture": "loam"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". The underlying rock is mostly "
+    },
+    {
+     "type": "slot",
+     "slot": "S4.2"
+    },
+    {
+     "type": "text",
+     "text": ". "
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "filled": "Around 2000, about 64% of the basin is cropland and 12% is pasture; the commonest other cover is mosaic: cropland/shrub and/or herbaceous cover, at about 12%. Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three.",
+   "template": [
+    {
+     "type": "text",
+     "text": "Around 2000, "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1a",
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "64%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " and "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1b",
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "12%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "; "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1c",
+     "key": "S5.1c",
+     "raw": "the commonest other cover is {label}, at about {share}%",
+     "vals": {
+      "label": "mosaic: cropland/shrub and/or herbaceous cover",
+      "share": "12"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S5.2",
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "four",
+      "list": "less cropland than three, less pasture than three and more forest than three"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less cropland",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.cropland.less",
+         "raw": "less cropland",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less pasture",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.less",
+         "raw": "less pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more forest",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.forest.more",
+         "raw": "more forest",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "filled": "Poltava's basin is one of five that meet here. None of them drains into it. It drains into one of them.",
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": "'s basin is one of "
+    },
+    {
+     "type": "slot",
+     "slot": "S6.1a"
+    },
+    {
+     "type": "text",
+     "text": " that meet here. "
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.out_one",
+     "raw": "It drains into one of them.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "filled": "The elevation and ecoregion under Setting are for Poltava itself. The other figures describe the basin of about 14,512 km² that contains it, from global datasets. 4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "template": [
+    {
+     "type": "text",
+     "text": "The elevation and ecoregion under Setting are for "
+    },
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " itself. The other figures describe the basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km² that contains it, from global datasets. "
+    },
+    {
+     "type": "line",
+     "unit": "S8.2",
+     "key": "S8.2",
+     "raw": "{parts}.",
+     "vals": {
+      "parts": "4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+     },
+     "parts": [
+      {
+       "key": "S8.2.zero",
+       "raw": "{n} measures are zero here and so have no percentile: {list}",
+       "vals": {
+        "n": "4",
+        "list": "Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+       },
+       "parts": []
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S8.point",
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    }
+   ]
+  }
+ ],
+ "buttons": [
+  {
+   "id": "S9.4",
+   "label": "Ecoregion on OneEarth",
+   "url": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/",
+   "target": "_blank"
+  },
+  {
+   "id": "S9.2",
+   "label": "Ecoregion on Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/East_European_forest_steppe",
+   "target": "_blank"
+  },
+  {
+   "id": "S9.3",
+   "label": "Data as JSON",
+   "url": "/static/profiles/poltava.json",
+   "target": "_blank"
+  }
+ ],
+ "units": {
+  "S1.2a": {
+   "scope": "point",
+   "ok": true,
+   "text": "East European forest steppe",
+   "why": null,
+   "na": false,
+   "note": "the ecoregion at the point",
+   "lines": []
+  },
+  "S1.2c": {
+   "scope": "point",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "point and basin ecoregions agree",
+   "lines": []
+  },
+  "S1.1b": {
+   "scope": "point",
+   "ok": true,
+   "text": "165",
+   "why": null,
+   "na": false,
+   "note": "mapzen, 30 m, via opentopodata",
+   "lines": []
+  },
+  "S1.5a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "61",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S1.5b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "256",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "565",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "7.2",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2bc": {
+   "scope": "basin",
+   "ok": true,
+   "text": "from -6.7 °C in January to 20.2 °C in July",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "-6.7",
+      "lo_month": "January",
+      "hi_temp": "20.2",
+      "hi_month": "July"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "1.0",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S3.2b": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S3.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "No other basin drains into this one: its rivers rise within it.",
+   "why": null,
+   "na": false,
+   "note": "class Catchment-uniform",
+   "lines": [
+    {
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.5": {
+   "scope": "basin",
+   "ok": true,
+   "text": "to the sea about 516 km beyond its outlet",
+   "why": null,
+   "na": false,
+   "note": "endo=0",
+   "lines": [
+    {
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "516"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "mixed sedimentary rocks",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S5.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "about 64% of the basin is cropland",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "64%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S5.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "12% is pasture",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "12%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.1": {
+   "scope": "point",
+   "ok": true,
+   "text": "A river runs about 3 km from {name}.",
+   "why": null,
+   "na": false,
+   "note": "tier 2: class 5 reach 20384304, 2.9 km, 32.2 m3/s; no name (nearest line: Dnieper, 100.4 km)",
+   "lines": [
+    {
+     "key": "S3.1.unnamed",
+     "raw": "A river runs about {d} km from {name}.",
+     "vals": {
+      "name": "{name}",
+      "d": "3"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.3": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "no reach within 50 km that is 2 classes above the largest in the own basin (class 5)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.osm": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "no river name is shown, so no OpenStreetMap credit",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S4.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "gently sloping on average (a mean slope of 2.6%)",
+   "why": null,
+   "na": false,
+   "note": "mean slope 1.5 degrees = 2.62%",
+   "lines": [
+    {
+     "key": "S4.1a",
+     "raw": "{class} on average (a mean slope of {pct}%)",
+     "vals": {
+      "class": "gently sloping",
+      "pct": "2.6"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "33% sand, 45% silt and 22% clay (USDA texture class: loam)",
+   "why": null,
+   "na": false,
+   "note": "raw 33/45/22, total 100; USDA class loam",
+   "lines": [
+    {
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "33",
+      "silt": "45",
+      "clay": "22",
+      "texture": "loam"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "no karst and no permafrost recorded",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S5.1c": {
+   "scope": "basin",
+   "ok": true,
+   "text": "the commonest other cover is mosaic: cropland/shrub and/or herbaceous cover, at about 12%",
+   "why": null,
+   "na": false,
+   "note": "GLC2000 largest class: Cultivated and managed areas 60%; largest other than cultivated: Mosaic: cropland/shrub and/or herbaceous cover 12%",
+   "lines": [
+    {
+     "key": "S5.1c",
+     "raw": "the commonest other cover is {label}, at about {share}%",
+     "vals": {
+      "label": "mosaic: cropland/shrub and/or herbaceous cover",
+      "share": "12"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Its aridity index of 0.73 falls in the UNEP humid class.",
+   "why": null,
+   "na": false,
+   "note": "index x 100 = 73",
+   "lines": [
+    {
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.73",
+      "class": "humid"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Lakes cover about 0.5% of the basin.",
+   "why": null,
+   "na": false,
+   "note": "lakes 0.5% (HydroLAKES), wetlands 0% (GLWD group 2: classes 4 to 12)",
+   "lines": [
+    {
+     "key": "S3.4.lakes",
+     "raw": "Lakes cover about {l}% of the basin.",
+     "vals": {
+      "l": "0.5"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S1.4": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "no other ecoregion covers 10% of the basin or more",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S2.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "spread fairly evenly through the year",
+   "why": null,
+   "na": false,
+   "note": "concentration 0.11 (even); wettest month July (68 mm)",
+   "lines": [
+    {
+     "key": "S2.1b.even",
+     "raw": "spread fairly evenly through the year",
+     "vals": {
+      "month": "July"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S6.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "five",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S6.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "None of them drains into it. It drains into one of them.",
+   "why": null,
+   "na": false,
+   "note": "in 0, out 1",
+   "lines": [
+    {
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "key": "S6.2.out_one",
+     "raw": "It drains into one of them.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three.",
+   "why": null,
+   "na": false,
+   "note": "counts: precip more, aridity more | not stated: temp more than two of four, not more than half",
+   "lines": [
+    {
+     "key": "S2.3.counts",
+     "raw": "Compared with the {m} basins around it, its basin {list}.",
+     "vals": {
+      "m": "four",
+      "list": "receives more precipitation than three and is more humid than three"
+     },
+     "parts": [
+      {
+       "key": "S2.3.counts.item.precip",
+       "raw": "receives {cmp} precipitation than {k}",
+       "vals": {
+        "cmp": "more",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.precip.more",
+         "raw": "more",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "more humid",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.aridity.more",
+         "raw": "more humid",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S5.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three.",
+   "why": null,
+   "na": false,
+   "note": "counts: cropland less, pasture less, forest more",
+   "lines": [
+    {
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "four",
+      "list": "less cropland than three, less pasture than three and more forest than three"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less cropland",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.cropland.less",
+         "raw": "less cropland",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less pasture",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.less",
+         "raw": "less pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more forest",
+        "k": "three"
+       },
+       "parts": [
+        {
+         "key": "cmp.forest.more",
+         "raw": "more forest",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S6.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "no measure on which all, or all but one of, the 3 basins across its divides lie on one side",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S6.5": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "the basin is the highest or lowest of the set on none of the terrain, forest, karst, soil, runoff, permafrost or water-table measures",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S6.ring": {
+   "scope": "basin",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "4 neighbours; areas km2 core 14,512, neighbours 2,431 to 23,122; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 2 of 4, human footprint more than 2 of 4",
+   "lines": []
+  },
+  "S7.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "the nearest edge of the basin is not the seacoast (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S7.2": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "basin does not touch the sea (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.3": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "the point is inside a basin",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "14,512",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S8.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.2",
+     "raw": "{parts}.",
+     "vals": {
+      "parts": "4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+     },
+     "parts": [
+      {
+       "key": "S8.2.zero",
+       "raw": "{n} measures are zero here and so have no percentile: {list}",
+       "vals": {
+        "n": "4",
+        "list": "Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+       },
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S9.2": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://en.wikipedia.org/wiki/East_European_forest_steppe",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S9.4": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/",
+   "why": null,
+   "na": false,
+   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "lines": []
+  },
+  "S8.point": {
+   "scope": "point",
+   "ok": true,
+   "text": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    }
+   ]
+  }
+ },
+ "notes": [
+  "S1.2a: the ecoregion at the point",
+  "S1.2c: point and basin ecoregions agree",
+  "S1.1b: mapzen, 30 m, via opentopodata",
+  "S3.2: class Catchment-uniform",
+  "S3.5: endo=0",
+  "S3.1: tier 2: class 5 reach 20384304, 2.9 km, 32.2 m3/s; no name (nearest line: Dnieper, 100.4 km)",
+  "S4.1a: mean slope 1.5 degrees = 2.62%",
+  "S4.1b: raw 33/45/22, total 100; USDA class loam",
+  "S5.1c: GLC2000 largest class: Cultivated and managed areas 60%; largest other than cultivated: Mosaic: cropland/shrub and/or herbaceous cover 12%",
+  "S2.4: index x 100 = 73",
+  "S3.4: lakes 0.5% (HydroLAKES), wetlands 0% (GLWD group 2: classes 4 to 12)",
+  "S2.1b: concentration 0.11 (even); wettest month July (68 mm)",
+  "S6.2: in 0, out 1",
+  "S2.3: counts: precip more, aridity more | not stated: temp more than two of four, not more than half",
+  "S5.2: counts: cropland less, pasture less, forest more",
+  "S6.ring: 4 neighbours; areas km2 core 14,512, neighbours 2,431 to 23,122; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 2 of 4, human footprint more than 2 of 4",
+  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 5))",
+  "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",
+  "S4.3: not applicable (no karst and no permafrost recorded)",
+  "S1.4: not applicable (no other ecoregion covers 10% of the basin or more)",
+  "S6.3: not applicable (no measure on which all, or all but one of, the 3 basins across its divides lie on one side)",
+  "S6.5: not applicable (the basin is the highest or lowest of the set on none of the terrain, forest, karst, soil, runoff, permafrost or water-table measures)",
+  "S7.3: not applicable (the nearest edge of the basin is not the seacoast (optional part not stated))",
+  "S7.2: not applicable (basin does not touch the sea (optional part not stated))",
+  "S8.3: not applicable (the point is inside a basin)"
+ ]
+}

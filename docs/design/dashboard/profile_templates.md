@@ -6,7 +6,7 @@ This file is the product of the WO-04 to WO-07 work: the wording of the Environm
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 19
+Version: 20
 
 ## Changes
 
@@ -15,6 +15,7 @@ Version: 19
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 - v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v20 | 2026-11-10 | CC | WO-10, for the sample page, which hides a unit not built yet. New `S1.frame.nogist` (Setting without the ecoregion gist S1.2b, which would leave "ecoregion, .") and `S8.frame.noyears` (About these figures without the dataset years S8.1b: "from global datasets."). The page's record builder uses them only while S1.2b and S8.1b are not built; the ordinary frames stay and the markdown profiles are unchanged. Karl accepted the wording, to be revisited with the live page.
 - v19 | 2026-11-09 | CC | `S5.2.counts` takes the verb ("its basin has {list}") and `S5.2.counts.item` loses it ("{cmp} than {k}"), so two measures read "has less cropland than three and less pasture than three" and not "has ... and has ...". `S2.3.counts` is unchanged: its items need different verbs ("is", "receives").
 - v18 | 2026-11-09 | CC | OneEarth button. New `S9.4` (the URL of the ecoregion's page at oneearth.org/ecoregions/, from the slug stored with the ecoregion; 845 of 846 have one, and all 845 pages answered 200 on 9 Nov). `S9.frame` and `S9.frame.nowiki` gain `[Ecoregion on OneEarth: {S9.4}]` before the Wikipedia button, which stays (hidden where flagged). The button opens in a new tab (`target="_blank"`). The data are CC BY-NC 4.0, cite One Earth; their page text is not reproduced (permission asked separately).
 - v17 | 2026-11-09 | CC | WO-09 item 4, singular wording. New `S8.2.zero.one` ("{list} is zero here and so has no percentile") and `S8.2.other.one` ("1 has no value: {list}"), used when only one measure is listed ("1 measures are zero" read badly at Santa Fe and Chaco Canyon). The zero list also no longer names a flagged measure whose value is above zero (script only).
@@ -49,6 +50,7 @@ Slots are unit ids. `{S1.2c}`, `{S3.2}`, `{S5.1a}` and `{S5.1b}` are built from 
 Setting speaks about the place. `{S1.1b}` is the elevation at the point; `{S1.5a}` and `{S1.5b}` are the lowest and highest elevation in the basin that contains it; `{S1.2a}` is the ecoregion at the point.
 
 S1.frame: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.2c} {S1.4}
+S1.frame.nogist: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion. {S1.2c} {S1.4}
 
 The other sections speak about the basin and say so.
 
@@ -66,6 +68,7 @@ S5.frame: Around 2000, {S5.1a} and {S5.1b}; {S5.1c}. {S5.2}
 S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.5}
 S7.frame: {S7.2}
 S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3} {S8.point} {S8.osm}
+S8.frame.noyears: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets. {S8.2} {S8.3} {S8.point} {S8.osm}
 S9.frame: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
 S9.frame.nowiki: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Data as JSON: always]
 S5.frame.both_none: Around 2000, {S5.both_none}. {S5.2}

@@ -1,0 +1,52 @@
+[
+ {
+  "place": "Timbuktu",
+  "slug": "timbuktu",
+  "no_basin": false
+ },
+ {
+  "place": "Tbilisi",
+  "slug": "tbilisi",
+  "no_basin": false
+ },
+ {
+  "place": "Santa Fe",
+  "slug": "santa-fe",
+  "no_basin": false
+ },
+ {
+  "place": "Kaifeng",
+  "slug": "kaifeng",
+  "no_basin": false
+ },
+ {
+  "place": "Lviv",
+  "slug": "lviv",
+  "no_basin": false
+ },
+ {
+  "place": "Poltava",
+  "slug": "poltava",
+  "no_basin": false
+ },
+ {
+  "place": "Chaco Canyon",
+  "slug": "chaco-canyon",
+  "no_basin": false
+ },
+ {
+  "place": "Alexandria",
+  "slug": "alexandria",
+  "no_basin": false
+ },
+ {
+  "place": "Utqiagvik",
+  "slug": "utqiagvik",
+  "no_basin": false
+ },
+ {
+  "place": "Tristan da Cunha",
+  "slug": "tristan-da-cunha",
+  "no_basin": true
+ }
+]

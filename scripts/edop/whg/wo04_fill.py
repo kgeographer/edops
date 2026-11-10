@@ -4,6 +4,7 @@ Fills every 'yes' unit of modal_dummy_annotated.md from real data for a point; l
 'no' unit as a visible placeholder naming what is missing. Read-only: GETs on the local server, SELECTs
 on the local database, and the saved WO-03 ring and flow tables. Used by notebooks/edop/whg/wo04c_fill.ipynb.
 """
+import contextvars
 import csv
 import json
 import re
@@ -125,6 +126,39 @@ def templates():
 
 _SLOT = re.compile(r'\{([A-Za-z0-9_.]+)\}')
 
+# While fill_units runs, every fmt call is recorded here (key, raw line, slot values, output). A call whose output sits inside a
+# later call's slot values is that call's part (a phrase inside a sentence). ok() and no() take what was recorded since the last
+# unit, so each unit knows which template lines the rules chose for it.
+_COLLECT = contextvars.ContextVar('wo04_template_lines', default=None)
+
+
+def _record(key, tpl, vals, out):
+    c = _COLLECT.get()
+    if c is None:
+        return
+    sv = [str(v) for v in vals.values()]
+    rec = dict(key=key, raw=tpl, vals={k: str(v) for k, v in vals.items()}, out=out, parts=[])
+    keep = []
+    for r in c:
+        (rec['parts'] if r['out'] and any(r['out'] in v for v in sv) else keep).append(r)
+    c[:] = keep + [rec]
+
+
+def _drop():
+    """Forget the lines recorded since the last unit (a unit that does not speak keeps none)."""
+    _take()
+    return []
+
+
+def _take():
+    """The template lines recorded since the last unit (and forget them)."""
+    c = _COLLECT.get()
+    if c is None:
+        return []
+    out = list(c)
+    c.clear()
+    return out
+
 
 def fmt(key, vals):
     """Fill template `key` from profile_templates.md; a slot the code does not supply stops the run."""
@@ -136,7 +170,9 @@ def fmt(key, vals):
         if m.group(1) not in vals:
             raise KeyError(f'{TEMPLATES_PATH.name}, "{key}": the slot {{{m.group(1)}}} is not one the generator supplies')
         return str(vals[m.group(1)])
-    return _SLOT.sub(sub, tpl)
+    out = _SLOT.sub(sub, tpl)
+    _record(key, tpl, vals, out)
+    return out
 
 
 def has(key):
@@ -327,17 +363,26 @@ def suspect_wiki_ids():
 
 
 def fill_units(F):
-    """One entry per yes unit: dict(ok, text, why). ok False means it could not be filled (why says why)."""
+    """One entry per yes unit: dict(ok, text, why, lines). ok False means it could not be filled (why says why); lines are the template
+    lines the rules chose for the unit (see _COLLECT)."""
+    token = _COLLECT.set([])
+    try:
+        return _fill_units(F)
+    finally:
+        _COLLECT.reset(token)
+
+
+def _fill_units(F):
     U = {}
     pub = F['pub']
     if pub is None:
         for uid in ('S1.2a', 'S2.1a', 'S2.2a', 'S2.2bc', 'S3.2a', 'S3.2b', 'S3.5', 'S4.2', 'S5.1a', 'S5.1b', 'S6.1a',
                     'S6.2', 'S7.2', 'S8.1a', 'S8.2', 'S9.2'):
-            U[uid] = dict(ok=False, text=None, why='no basin')
+            U[uid] = dict(ok=False, text=None, why='no basin', lines=[])
         return U
     rows = F['rows']
-    ok = lambda text, note=None: dict(ok=True, text=text, why=None, note=note)
-    no = lambda why, na=False: dict(ok=False, text=None, why=why, na=na)
+    ok = lambda text, note=None: dict(ok=True, text=text, why=None, note=note, lines=_take())
+    no = lambda why, na=False: dict(ok=False, text=None, why=why, na=na, lines=_drop())
 
     A = has('S1.2c')   # framing A: the Setting speaks about the place (templates v2 and later)
     eco = val(F, 'ecoregion')
@@ -491,13 +536,8 @@ def fill_units(F):
     return U
 
 
-def render_filled_profile(name, F, U):
-    """The filled_profile as markdown: yes units filled, maybe units as visible placeholders. Wording: profile_templates.md."""
-    L = [f'## {name}: environmental profile', '']
-    if F['pub'] is None:
-        stub = {uid: PH(uid) for uid in ('S1.1b', 'S9.1')}
-        L += [fmt('nobasin.text', {}), '', fmt('nobasin.frame', stub), '']
-        return '\n'.join(L)
+def profile_vals(name, F, U):
+    """The slot values of the profile's frames: a filled unit's text, a visible placeholder for a unit not built, '' for a unit that is silent."""
     t = lambda uid: U[uid]['text'] if U[uid]['ok'] else f'⟦{uid}: {U[uid]["why"]}⟧'
     s = F['pub']
     pct = lambda v: 'n/a' if v is None else f'{v}%'
@@ -526,6 +566,17 @@ def render_filled_profile(name, F, U):
     for k_, v_ in list(vals.items()):
         if k_ != 'name' and isinstance(v_, str) and '{name}' in v_:
             vals[k_] = v_.replace('{name}', name)      # units that open with the place's name (S3.1)
+    return vals
+
+
+def render_filled_profile(name, F, U):
+    """The filled_profile as markdown: yes units filled, maybe units as visible placeholders. Wording: profile_templates.md."""
+    L = [f'## {name}: environmental profile', '']
+    if F['pub'] is None:
+        stub = {uid: PH(uid) for uid in ('S1.1b', 'S9.1')}
+        L += [fmt('nobasin.text', {}), '', fmt('nobasin.frame', stub), '']
+        return '\n'.join(L)
+    vals = profile_vals(name, F, U)
     for sec in SECTIONS:
         frame = sec + '.frame'
         if sec == 'S5' and U.get('S5.both_none', {}).get('ok'):

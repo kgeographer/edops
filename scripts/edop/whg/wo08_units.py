@@ -12,7 +12,9 @@ KEYS_BY_TRIGGER = {'S3.4.lakes': {'S3.4', 'S3.4.lakes', 'S3.4.wetlands'},
                    'S8.2.zero.one': {'S8.2.zero.one', 'S8.2.other.one'},
                    'S8.osm': {'S8.osm'},
                    'S8.point': {'S8.point'},
-                   'S9.frame.nowiki': {'S9.frame.nowiki'}}
+                   'S9.frame.nowiki': {'S9.frame.nowiki'},
+                   'S1.frame.nogist': {'S1.frame.nogist'},   # WO-10: frames for a hidden unit not built yet
+                   'S8.frame.noyears': {'S8.frame.noyears'}}
 
 MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 SEASON_CUTS = (0.15, 0.35, 0.60)   # precipitation concentration classes of the Seasonality tab (sandbox.html, renderSeasonality)
