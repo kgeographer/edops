@@ -5,8 +5,8 @@
  "lon": 24.03,
  "hybas_id": 2060376210,
  "generated": "2026-11-10",
- "template_version": 22,
- "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 23,
+ "provenance": "profile_templates.md v23 (last commit 4630b73; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 4630b73; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {

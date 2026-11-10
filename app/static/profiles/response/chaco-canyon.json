@@ -4,7 +4,7 @@
  "lon": -107.96,
  "hybas_id": 7060618200,
  "generated": "2026-11-10",
- "template_version": 22,
+ "template_version": 23,
  "no_basin": false,
  "sections": [
   {
@@ -34,10 +34,10 @@
   {
    "id": "S2",
    "title": "Climate",
-   "text": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it.",
+   "text": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
    "runs": [
     {
-     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it."
+     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four."
     }
    ]
   },

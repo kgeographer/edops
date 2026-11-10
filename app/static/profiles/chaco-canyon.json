@@ -5,8 +5,8 @@
  "lon": -107.96,
  "hybas_id": 7060618200,
  "generated": "2026-11-10",
- "template_version": 22,
- "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 23,
+ "provenance": "profile_templates.md v23 (last commit 4630b73; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 4630b73; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -92,10 +92,10 @@
   {
    "id": "S2",
    "title": "Climate",
-   "filled": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it.",
+   "filled": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
    "runs": [
     {
-     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it."
+     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four."
     }
    ],
    "template": [
@@ -176,11 +176,13 @@
     {
      "type": "line",
      "unit": "S2.3",
-     "key": "S2.3.extreme",
-     "raw": "Of the {n} basins that meet here, it {cmp}.",
+     "key": "S2.3.extreme.counts",
+     "raw": "Of the {n} basins that meet here, it {cmp}; of the other {m}, it {list}.",
      "vals": {
       "cmp": "receives the least precipitation and is the most arid",
-      "n": "eight"
+      "n": "eight",
+      "m": "seven",
+      "list": "is warmer than four"
      },
      "parts": [
       {
@@ -194,25 +196,22 @@
        "raw": "is the most arid",
        "vals": {},
        "parts": []
-      }
-     ]
-    },
-    {
-     "type": "line",
-     "unit": "S2.3",
-     "key": "S2.3.count",
-     "raw": "Its basin is {cmp} than {k} of the {m} basins around it.",
-     "vals": {
-      "cmp": "warmer",
-      "k": "four",
-      "m": "seven"
-     },
-     "parts": [
+      },
       {
-       "key": "cmp.temp.more",
-       "raw": "warmer",
-       "vals": {},
-       "parts": []
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "warmer",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.more",
+         "raw": "warmer",
+         "vals": {},
+         "parts": []
+        }
+       ]
       }
      ]
     }
@@ -1050,17 +1049,19 @@
   "S2.3": {
    "scope": "basin",
    "ok": true,
-   "text": "Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it.",
+   "text": "Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
    "why": null,
    "na": false,
-   "note": "extreme+count: precip bottom, aridity bottom, temp more",
+   "note": "extreme+counts: precip bottom, aridity bottom, temp more",
    "lines": [
     {
-     "key": "S2.3.extreme",
-     "raw": "Of the {n} basins that meet here, it {cmp}.",
+     "key": "S2.3.extreme.counts",
+     "raw": "Of the {n} basins that meet here, it {cmp}; of the other {m}, it {list}.",
      "vals": {
       "cmp": "receives the least precipitation and is the most arid",
-      "n": "eight"
+      "n": "eight",
+      "m": "seven",
+      "list": "is warmer than four"
      },
      "parts": [
       {
@@ -1074,23 +1075,22 @@
        "raw": "is the most arid",
        "vals": {},
        "parts": []
-      }
-     ]
-    },
-    {
-     "key": "S2.3.count",
-     "raw": "Its basin is {cmp} than {k} of the {m} basins around it.",
-     "vals": {
-      "cmp": "warmer",
-      "k": "four",
-      "m": "seven"
-     },
-     "parts": [
+      },
       {
-       "key": "cmp.temp.more",
-       "raw": "warmer",
-       "vals": {},
-       "parts": []
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "warmer",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.more",
+         "raw": "warmer",
+         "vals": {},
+         "parts": []
+        }
+       ]
       }
      ]
     }
@@ -1323,7 +1323,7 @@
   "S1.4: Arizona Mountains forests 10%",
   "S2.1b: concentration 0.24 (moderate); wettest month August (40 mm)",
   "S6.2: in 0, out 1",
-  "S2.3: extreme+count: precip bottom, aridity bottom, temp more",
+  "S2.3: extreme+counts: precip bottom, aridity bottom, temp more",
   "S5.2: counts: pasture more, forest less | not stated: cropland less than three of seven, not more than half",
   "S6.3: all: precip more; 6 across a divide",
   "S6.5: slope bottom",

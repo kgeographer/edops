@@ -52,3 +52,45 @@ def test_response_for_a_place_with_no_basin():
     rec = json.loads((PROFILES / 'tristan-da-cunha.json').read_text())
     out = P.to_response(rec)
     assert out['no_basin'] is True and out['message'] and 'sections' not in out
+
+
+def stated(V, nbs, slugs=('precip', 'temp', 'aridity')):
+    return R._stated(list(slugs), 2, 'S2.3.extreme', 'S2.3.allbutone', 'S2.3.count', 'S2.3.counts', V, 0, nbs)[0]
+
+
+def test_extremes_and_counts_about_the_same_basins_are_one_sentence():
+    nbs = list(range(1, 8))     # Chaco Canyon's shape: lowest rainfall, most arid, warmer than four of the seven
+    V = dict(precip_yr={0: 1, **{i: 10 + i for i in nbs}},
+             aridity={0: 0.1, **{i: 0.5 + i / 10 for i in nbs}},
+             temp_yr={0: 5, **dict(zip(nbs, [1, 2, 3, 4, 6, 7, 8]))})
+    assert stated(V, nbs) == ('Of the eight basins that meet here, it receives the least precipitation and is the most arid; '
+                              'of the other seven, it is warmer than four.')
+
+
+def test_several_counts_after_one_extreme():
+    nbs = [1, 2, 3]             # Utqiagvik's shape: lowest rainfall; cooler than two and more arid than two of the other three
+    V = dict(precip_yr={0: 1, 1: 5, 2: 6, 3: 7}, temp_yr={0: 5, 1: 4, 2: 6, 3: 7}, aridity={0: 0.5, 1: 0.4, 2: 0.6, 3: 0.7})
+    assert stated(V, nbs) == ('Of the four basins that meet here, it receives the least precipitation; '
+                              'of the other three, it is cooler than two and is more arid than two.')
+
+
+def test_counts_alone_still_use_the_around_it_sentence():
+    nbs = [1, 2, 3, 4, 5, 6, 7]
+    V = dict(precip_yr={0: 5, **dict(zip(nbs, [1, 2, 3, 4, 6, 7, 8]))}, temp_yr={0: 5, **dict(zip(nbs, [1, 2, 3, 4, 6, 7, 8]))},
+             aridity={0: 5, **dict(zip(nbs, [1, 2, 3, 4, 6, 7, 8]))})
+    t = stated(V, nbs)
+    assert t.startswith('Compared with the seven basins around it') and 'of the other' not in t
+
+
+def test_a_folded_sentence_records_only_the_lines_it_uses():
+    nbs = list(range(1, 8))
+    V = dict(precip_yr={0: 1, **{i: 10 + i for i in nbs}}, aridity={0: 0.1, **{i: 0.5 + i / 10 for i in nbs}},
+             temp_yr={0: 5, **dict(zip(nbs, [1, 2, 3, 4, 6, 7, 8]))})
+    tok = W._COLLECT.set([])
+    try:
+        text = stated(V, nbs)
+        lines = W._take()
+    finally:
+        W._COLLECT.reset(tok)
+    assert [ln['key'] for ln in lines] == ['S2.3.extreme.counts'] and lines[0]['out'] == text
+    assert sorted(p['key'] for p in lines[0]['parts']) == ['S2.3.counts.item', 'cmp.aridity.bottom', 'cmp.precip.bottom']

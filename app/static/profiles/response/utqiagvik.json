@@ -4,7 +4,7 @@
  "lon": -156.79,
  "hybas_id": 8060007840,
  "generated": "2026-11-10",
- "template_version": 22,
+ "template_version": 23,
  "no_basin": false,
  "sections": [
   {
@@ -27,10 +27,10 @@
   {
    "id": "S2",
    "title": "Climate",
-   "text": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation. Compared with the three basins around it, its basin is cooler than two and is more arid than two.",
+   "text": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation; of the other three, it is cooler than two and is more arid than two.",
    "runs": [
     {
-     "t": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation. Compared with the three basins around it, its basin is cooler than two and is more arid than two."
+     "t": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation; of the other three, it is cooler than two and is more arid than two."
     }
    ]
   },

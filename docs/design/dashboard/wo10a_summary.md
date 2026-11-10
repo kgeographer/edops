@@ -1,6 +1,6 @@
 # WO-10a summary: adjustments to the sample profile page
 
-Spec: `wo10a_profile-page-adjustments.md`. Branch `whg-profile-page`, local only: not pushed, not deployed, not merged. Template version 22. The 38 WHG and page tests pass. The records and the ten response files were regenerated (Cell 2) under v22. Karl has yet to check the chart ticks and the "Profile as JSON" button in the browser, and to take the Chaco Canyon full-page screenshot.
+Spec: `wo10a_profile-page-adjustments.md`. Branch `whg-profile-page`, local only: not pushed, not deployed, not merged. Template version 23. The 38 WHG and page tests pass. The records and the ten response files were regenerated (Cell 2) under v23. Karl has yet to check the chart ticks and the "Profile as JSON" button in the browser, and to take the Chaco Canyon full-page screenshot.
 
 ## Done, by item
 
@@ -13,6 +13,7 @@ Spec: `wo10a_profile-page-adjustments.md`. Branch `whg-profile-page`, local only
   - Decision (Karl): the OSM/ODbL credit stays a sentence in the About section's text, not a separate field.
 - **3. Monthly arrays.** `monthly` carries `scope: "basin"`, `level: 6`, `source`, `units` (`precip_mm`: millimetres per month; `temp_c`: degrees Celsius, monthly mean), a note that it describes the basin and not the point, and the 12 + 12 values the chart draws.
 - **6a. Kaifeng flow sentence (v21).** Cause: Kaifeng has one basin directly downstream and a second three steps further down; the template counted them together as "two". New `S6.2.out_chain`: "It drains into one of them, and its water then passes through one more." It applies where there is exactly one direct downstream neighbour and others beyond; only Kaifeng among the ten. "Flows on through {n} of them" stays for other cases of more than one. Opus's "a second" would read better when the count is one; not done (needs a special case).
+- **6d. Counts folded into the extremes sentence (v23, from Opus's reading of Chaco Canyon).** "Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it." counted the same set two ways. New `S2.3.extreme.counts` and `S5.2.extreme.counts`: "Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four." Used only when the extremes and the counts are about the same set of basins; otherwise the two sentences stay. Of the ten places it changes Chaco Canyon and Utqiagvik ("…of the other three, it is cooler than two and is more arid than two"); the others have no extreme and read as before. Opus's own wording put "of the other seven" last ("it is warmer than four of the other seven"); I put it first so that two counts do not read ambiguously.
 - **6b. Chart ticks.** Round steps (1, 2, 2.5, 5, 10 × a power of ten) on both axes; the precipitation axis ends on a tick, so Kaifeng's reads 0, 100, 200.
 - **6c. Sources line.** No action.
 

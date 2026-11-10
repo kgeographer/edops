@@ -48,7 +48,7 @@ def ring_keys():
 def ring_optional():
     """Middle counts ("less than three of the five"): they speak only while the template carries these lines."""
     return {'S2.3.count', 'S2.3.count.precip', 'S5.2.count', 'S2.3.counts', 'S2.3.counts.item', 'S2.3.counts.item.precip',
-            'S5.2.counts', 'S5.2.counts.item'}
+            'S5.2.counts', 'S5.2.counts.item', 'S2.3.extreme.counts', 'S5.2.extreme.counts'}
 
 
 
@@ -184,12 +184,6 @@ def _stated(slugs, cap, key_ext, key_abo, key_cnt, key_cnts, V, core, nbs):
     cm = _cmps(slugs, V, core, nbs)
     ext = [(s, 'top' if c['top'] else 'bottom') for s, c in cm.items() if c and (c['top'] or c['bottom'])]
     used, texts, kinds, unstated = ext[:cap], [], [], []
-    if used:
-        groups = {}          # extremes over the same set of basins share one sentence
-        for s, d in used:
-            groups.setdefault(cm[s]['m'] + 1, []).append(W.fmt(f'cmp.{s}.{d}', {}))
-        texts.append(' '.join(W.fmt(key_ext, dict(cmp=_join_phrases(ws), n=W.numword(n))) for n, ws in groups.items()))
-        kinds.append('extreme')
     isext = {s for s, _ in ext}
     live = [(s, c) for s, c in cm.items() if c and s not in isext]
     firm = [(s, c) for s, c in live if c['abo'] or 2 * c['k'] > c['m']]     # a count is stated only when more than half the set
@@ -198,16 +192,28 @@ def _stated(slugs, cap, key_ext, key_abo, key_cnt, key_cnts, V, core, nbs):
             k, m = _nums(c['k'], c['m'])
             unstated.append(f'{s} {c["side"]} than {k} of {m}, not more than half')
     stated = []
-    if len(firm) >= 2 and _has(key_cnts):
+    item = lambda s, c: W.fmt(_frame(key_cnts + '.item', s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}),
+                                                                 k='all but one' if c['abo'] else _nums(c['k'], c['m'])[0]))
+    ms = {cm[s]['m'] for s, _ in used}
+    fold = bool(used) and bool(firm) and _has(key_ext + '.counts') and _has(key_cnts) and len(ms) == 1 and {c['m'] for _, c in firm} == ms
+    if used and not fold:   # (formatted only here: a line the fold does not use must not be recorded)
+        groups = {}          # extremes over the same set of basins share one sentence
+        for s, d in used:
+            groups.setdefault(cm[s]['m'] + 1, []).append(W.fmt(f'cmp.{s}.{d}', {}))
+        texts.append(' '.join(W.fmt(key_ext, dict(cmp=_join_phrases(ws), n=W.numword(n))) for n, ws in groups.items()))
+        kinds.append('extreme')
+    if fold:             # the extremes and the counts are about the same basins: one sentence, one count of them
+        m = ms.pop()
+        texts = [W.fmt(key_ext + '.counts', dict(cmp=_join_phrases([W.fmt(f'cmp.{s}.{d}', {}) for s, d in used]), n=W.numword(m + 1),
+                                                m=_nums(m)[0], list=W.join_and([item(s, c) for s, c in firm])))]
+        kinds = ['extreme+counts']
+        stated = [(s, c['side']) for s, c in firm]
+    elif len(firm) >= 2 and _has(key_cnts):
         groups = {}          # measures over the same number of neighbours share the sentence
         for s, c in firm:
             groups.setdefault(c['m'], []).append((s, c))
         for m, items in groups.items():
-            parts = []
-            for s, c in items:
-                k = 'all but one' if c['abo'] else _nums(c['k'], c['m'])[0]
-                parts.append(W.fmt(_frame(key_cnts + '.item', s), dict(cmp=W.fmt(f'cmp.{s}.{c["side"]}', {}), k=k)))
-            texts.append(W.fmt(key_cnts, dict(m=_nums(m)[0], list=W.join_and(parts))))
+            texts.append(W.fmt(key_cnts, dict(m=_nums(m)[0], list=W.join_and([item(s, c) for s, c in items]))))
         kinds.append('counts')
         stated = [(s, c['side']) for s, c in firm]
     elif firm:
