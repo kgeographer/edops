@@ -20,8 +20,8 @@ Options:
 
 CC suggests the first two together.
 
-**2. "Permafrost extent is zero here and so has no percentile" (About these figures).**
-The page shows no percentiles, so the sentence refers to nothing the reader can see. To check: whether it is a leftover from the full modal text, and whether it should appear at all in this profile.
+**2. S8.2 explains percentiles the page never shows.**
+S8.2 lists the measures that are zero and so have no percentile, for example (Kaifeng): "3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2." Two problems for a reader of this profile: the profile shows no percentiles, so "no percentile" explains an absence nobody can see; and "Wetland extent group 1" and "group 2" are catalog variable names, not plain language. Options: drop S8.2 from the profile; or reword it ("Some measures are zero here, so they are not described: …") with plain names, which needs the friendly-name crosswalk (the separate work order noted in CLAUDE.md).
 
 ## Open questions for Opus
 

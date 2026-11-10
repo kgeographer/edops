@@ -7,7 +7,7 @@ Spec: `wo10_sample-profile-page.md`. Findings and questions for Opus: `wo10_resu
 - **`/profiles`**: a standalone page in the manner of the polity page. Logo, title, Sandbox / Workbench / Data Explorer pills; `<meta name="robots" content="noindex">`; no other page links to it (tested).
 - **Place pills** for the ten WO-09 places, in order. `?place=timbuktu` selects one; a missing or unknown value falls back to Timbuktu. Switching does not reload the page.
 - **Intro block** (draft wording, marked in dark red for Karl to rewrite): sample, generated ahead of time by rules, the Setting-versus-basin rule, sources, template version and date.
-- **Profile** in a scrolling box, a subtitle per section, no accordions. Bootstrap. Works at phone width by design (pills wrap, the box stops scrolling inside itself, the chart scales); the phone-width check is Karl's.
+- **Profile** with a subtitle per section, no accordions. Bootstrap. The page scrolls as a whole (no inner scroll box, so a full-page screenshot captures everything) and is full width. Checked at phone width by Karl: pills wrap, chart scales.
 - **Ecoregion names are links** to their OneEarth pages (new tab) wherever they appear: the point's ecoregion (S1.2a), the basin's majority ecoregion (S1.2c) and the other ecoregions (S1.4).
 - **Climate chart** under Climate: monthly precipitation (bars) and temperature (line) of the basin, after the Sandbox's Walter-Lieth chart, drawn from the record's `monthly` values. Text view only.
 - **Buttons** under a rule, no heading: Profile as JSON (the stored record), Full signature (JSON) (`/api/signature?scope=basin&level=6&lat=…&lon=…`) and Ecoregion on Wikipedia where the link is not flagged. All open in a new tab.
@@ -45,13 +45,12 @@ For a future store of all L6 basins: selection is separate from rendering (a uni
 
 ## Wording problems found
 
-In `wo10_results.md`: the land cover percentages that can add up to more than 100% (S5), and the permafrost-percentile sentence under About these figures (S8, to check).
+In `wo10_results.md`: the land cover percentages that can add up to more than 100% (S5), and the S8.2 sentence under About these figures, which explains percentiles the page does not show and uses catalog variable names.
 
 ## Decisions waiting
 
 - Wording changes (v21): the S5 sentence; the S8 percentile sentence; the S9 frame, which still lists a OneEarth button; the intro text and the Tristan message are drafts for Karl.
 - The shape of the `/whgmodal` response, monthly arrays in it, point versus basin units, the permalink (`wo10_results.md`, A to E). For Opus.
-- Phone-width check and the Tristan pill: Karl.
 - Remaining placeholders in the profiles: S1.2b (One Earth reply), S6.2c (Opus), S8.1b (Karl's date range), S9.1 (WHG URL scheme).
 
 ## Not done
