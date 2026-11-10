@@ -103,6 +103,38 @@
     return p;
   }
 
+  // Monthly precipitation (bars) and temperature (line), after the Sandbox's Walter-Lieth chart.
+  function climateFigure(m) {
+    const pre = m.precip_mm, tmp = m.temp_c, months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const W = 460, H = 240, PAD = { t: 16, r: 50, b: 36, l: 50 }, iW = W - PAD.l - PAD.r, iH = H - PAD.t - PAD.b;
+    const preMax = Math.max(...pre), tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp), barW = iW / 12;
+    const pY = v => iH - (v / (preMax * 1.1)) * iH, tY = v => iH - ((v - (tmpMin - 3)) / (tmpMax - tmpMin + 6)) * iH;
+    let bars = '', pts = '', xl = '', yp = '', yt = '';
+    for (let i = 0; i < 12; i++) {
+      const x = PAD.l + i * barW, tx = (PAD.l + (i + 0.5) * barW).toFixed(1);
+      bars += `<rect x="${(x + 1.5).toFixed(1)}" y="${(PAD.t + pY(pre[i])).toFixed(1)}" width="${(barW - 3).toFixed(1)}" height="${(iH - pY(pre[i])).toFixed(1)}" fill="#5b8dc4" opacity="0.65"/>`;
+      pts += `${tx},${(PAD.t + tY(tmp[i])).toFixed(1)} `;
+      xl += `<text x="${tx}" y="${H - 8}" font-size="11" text-anchor="middle">${months[i]}</text>`;
+    }
+    for (const v of [0, Math.round(preMax / 2), Math.round(preMax)]) {
+      const y = (PAD.t + pY(v)).toFixed(1);
+      yp += `<text x="${PAD.l - 5}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${v}</text><line x1="${PAD.l}" y1="${y}" x2="${PAD.l + iW}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
+    }
+    for (const v of [Math.round(tmpMin), Math.round((tmpMin + tmpMax) / 2), Math.round(tmpMax)]) {
+      yt += `<text x="${PAD.l + iW + 5}" y="${(PAD.t + tY(v)).toFixed(1)}" font-size="11" fill="#c0392b" dominant-baseline="middle">${v}°</text>`;
+    }
+    const lx = PAD.l / 2, rx = W - PAD.r / 2 + 8, cy = PAD.t + iH / 2;
+    const fig = mk('figure', 'pf-fig');
+    fig.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly precipitation and temperature of the basin" style="width:100%;max-width:${W}px;overflow:visible">
+      <rect x="${PAD.l}" y="${PAD.t}" width="${iW}" height="${iH}" fill="#f8f9fa" rx="2"/>${yp}${bars}
+      <polyline points="${pts.trim()}" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${yt}${xl}
+      <text x="${lx}" y="${cy}" font-size="11" fill="#5b8dc4" text-anchor="middle" transform="rotate(-90,${lx},${cy})">Precip (mm)</text>
+      <text x="${rx}" y="${cy}" font-size="11" fill="#c0392b" text-anchor="middle" transform="rotate(90,${rx},${cy})">Temp (°C)</text></svg>`;
+    fig.append(mk('figcaption', null, 'Monthly precipitation and temperature of the basin, not the point (' + m.source + ').'));
+    fig.append(mk('figcaption', 'pf-draft', 'Draft wording: a place portal can draw a chart like this from the 24 monthly values, which a data call would return with their units.'));
+    return fig;
+  }
+
   function draw() {
     const rec = state.rec, box = el('pf-profile');
     el('pf-meta').textContent = 'Template version ' + rec.template_version + ', generated ' + rec.generated + '.';
@@ -113,6 +145,7 @@
     } else {
       rec.sections.forEach(sec => {
         nodes.push(mk('h5', 'pf-sec', sec.title), state.template ? templateBody(sec) : filledBody(sec));
+        if (sec.id === 'S2' && !state.template && rec.monthly) nodes.push(climateFigure(rec.monthly));
       });
       if (rec.buttons.length) {
         const row = mk('div', 'pf-buttons');

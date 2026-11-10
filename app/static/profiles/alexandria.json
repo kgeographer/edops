@@ -6,7 +6,7 @@
  "hybas_id": 1060034170,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -688,12 +688,45 @@
    ]
   }
  ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "precip_mm": [
+   17.0,
+   13.0,
+   5.0,
+   2.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   3.0,
+   14.0,
+   19.0
+  ],
+  "temp_c": [
+   12.5,
+   13.4,
+   15.7,
+   18.9,
+   22.9,
+   25.5,
+   26.4,
+   26.6,
+   24.9,
+   22.5,
+   18.4,
+   14.1
+  ]
+ },
  "buttons_title": "Buttons",
  "buttons": [
   {
-   "id": "S9.2",
-   "label": "Ecoregion on Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Mediterranean_dry_woodlands_and_steppe",
+   "id": "S9.3",
+   "label": "Profile as JSON",
+   "url": "/static/profiles/alexandria.json",
    "target": "_blank"
   },
   {
@@ -703,9 +736,9 @@
    "target": "_blank"
   },
   {
-   "id": "S9.3",
-   "label": "Data as JSON",
-   "url": "/static/profiles/alexandria.json",
+   "id": "S9.2",
+   "label": "Ecoregion on Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/Mediterranean_dry_woodlands_and_steppe",
    "target": "_blank"
   }
  ],

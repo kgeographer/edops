@@ -6,7 +6,7 @@
  "hybas_id": 7060674070,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -625,12 +625,45 @@
    ]
   }
  ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "precip_mm": [
+   19.0,
+   20.0,
+   23.0,
+   19.0,
+   22.0,
+   24.0,
+   58.0,
+   64.0,
+   39.0,
+   31.0,
+   21.0,
+   21.0
+  ],
+  "temp_c": [
+   -0.7,
+   1.7,
+   4.8,
+   9.2,
+   14.1,
+   19.3,
+   21.6,
+   20.3,
+   16.6,
+   10.9,
+   4.3,
+   -0.1
+  ]
+ },
  "buttons_title": "Buttons",
  "buttons": [
   {
-   "id": "S9.2",
-   "label": "Ecoregion on Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+   "id": "S9.3",
+   "label": "Profile as JSON",
+   "url": "/static/profiles/santa-fe.json",
    "target": "_blank"
   },
   {
@@ -640,9 +673,9 @@
    "target": "_blank"
   },
   {
-   "id": "S9.3",
-   "label": "Data as JSON",
-   "url": "/static/profiles/santa-fe.json",
+   "id": "S9.2",
+   "label": "Ecoregion on Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
    "target": "_blank"
   }
  ],

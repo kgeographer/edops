@@ -98,13 +98,21 @@ def _runs(text, links):
 
 
 def _buttons(slug, U, lat, lon):
-    """Wikipedia where present; the full signature of the basin (the public API, relative to the site); the JSON of the record. (The OneEarth page is linked from the ecoregion name; S9.1, the link into EDOPS, is not built.)"""
-    out = []
+    """The stored record, the full signature of the basin (the public API, relative to the site), and Wikipedia where present.
+    (The OneEarth page is linked from the ecoregion name; S9.1, the link into EDOPS, is not built.)"""
+    out = [dict(id='S9.3', label='Profile as JSON', url=f'/static/profiles/{slug}.json', target='_blank'),
+           dict(id='signature', label='Full signature (JSON)', url=f'/api/signature?scope=basin&level=6&lat={lat}&lon={lon}', target='_blank')]
     if U.get('S9.2', {}).get('ok'):
         out.append(dict(id='S9.2', label='Ecoregion on Wikipedia', url=U['S9.2']['text'], target='_blank'))
-    out.append(dict(id='signature', label='Full signature (JSON)', url=f'/api/signature?scope=basin&level=6&lat={lat}&lon={lon}', target='_blank'))
-    out.append(dict(id='S9.3', label='Data as JSON', url=f'/static/profiles/{slug}.json', target='_blank'))
     return out
+
+
+def _monthly(F):
+    """Monthly precipitation (mm) and temperature (deg C) of the basin, 12 values each, for the climate figure; None if either is missing."""
+    pre, tmp = W.val(F, 'pre_mm_monthly'), W.val(F, 'tmp_dc_monthly')
+    if not pre or not tmp or len(pre) != 12 or len(tmp) != 12:
+        return None
+    return dict(scope='basin', level=6, source='BasinATLAS monthly climatology', precip_mm=[float(v) for v in pre], temp_c=[float(v) for v in tmp])
 
 
 def build_record(name, F, U, generated):
@@ -113,7 +121,7 @@ def build_record(name, F, U, generated):
     rec = dict(place=name, slug=slug, lat=F['lat'], lon=F['lon'], hybas_id=F.get('hid'), generated=generated,
                template_version=W.templates()['version'], provenance=W.templates_stamp(), no_basin=F['pub'] is None)
     if F['pub'] is None:
-        rec.update(message=W.fmt('nobasin.text', {}), sections=[], buttons_title=None, buttons=[], units={}, notes=[])
+        rec.update(message=W.fmt('nobasin.text', {}), sections=[], monthly=None, buttons_title=None, buttons=[], units={}, notes=[])
         return rec
     vals = W.profile_vals(name, F, U)
     text = W.templates()['text']
@@ -128,6 +136,7 @@ def build_record(name, F, U, generated):
             sections.append(dict(id=sec, title=W.fmt(sec + '.title', {}), filled=filled, runs=_runs(filled, links),
                                  template=_segments(text[frame], U, vals)))
     rec['sections'] = sections
+    rec['monthly'] = _monthly(F)
     rec['buttons_title'] = W.fmt('S9.title', {})
     rec['buttons'] = _buttons(slug, U, F['lat'], F['lon'])
     rec['units'] = {uid: dict(scope='point' if uid in POINT_UNITS else 'basin', ok=u['ok'], text=u['text'], why=u['why'],
