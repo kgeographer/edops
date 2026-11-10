@@ -2,6 +2,8 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
+from app.settings import settings
+
 router = APIRouter(include_in_schema=False)
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
@@ -21,6 +23,7 @@ def _static_mtime(relpath: str) -> int:
 # Available in every template as static_v('css/site.css') -> mtime int, for
 # ?v= cache-busting on tracked CSS/JS (StaticFiles sends no Cache-Control).
 templates.env.globals["static_v"] = _static_mtime
+templates.env.globals["mapbox_token"] = settings.MAPBOX_TOKEN or ""
 
 
 def _render(request: Request, name: str, **context):

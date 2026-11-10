@@ -16,6 +16,7 @@ class Settings:
     """
     def __init__(self):
         self.WHG_API_TOKEN = os.getenv("WHG_API_TOKEN")
+        self.MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN")   # public pk. token for the Sandbox terrain tiles
 
 
 settings = Settings()
