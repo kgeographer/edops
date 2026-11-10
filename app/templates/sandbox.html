@@ -4431,20 +4431,25 @@
   const _pmProtocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', _pmProtocol.tile);
 
-  // Local Protomaps style underneath; a terrain raster goes on top once a probe tile loads.
-  // The 'awmc' layer ids stay. It now serves Mapbox/Natural Earth terrain (z1-z7; no finer detail exists).
-  // To restore AWMC: uncomment the Iowa URL and attribution, comment out the Mapbox ones.
-  // const _AWMC_TILE = 'https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png';  // restore when Iowa AWMC service returns
+  // Local Protomaps style underneath; AWMC historical terrain goes on top once a probe tile loads.
+  // If AWMC is down, Mapbox/Natural Earth terrain (z1-z7, token in .env) takes its place; without a token, the plain basemap.
+  const _AWMC_TILE = 'https://cawm.lib.uiowa.edu/tiles/{z}/{x}/{y}.png';
   const _MAPBOX_TOKEN = {{ mapbox_token|tojson }};   // MAPBOX_TOKEN in .env
-  const _AWMC_TILE = _MAPBOX_TOKEN ? `https://api.mapbox.com/styles/v1/kgeographer/ckidglq8l2nra19nzzbl995ue/tiles/256/{z}/{x}/{y}?access_token=${_MAPBOX_TOKEN}` : '';
+  const _TERRAIN_TILE = _MAPBOX_TOKEN ? `https://api.mapbox.com/styles/v1/kgeographer/ckidglq8l2nra19nzzbl995ue/tiles/256/{z}/{x}/{y}?access_token=${_MAPBOX_TOKEN}` : '';
   const _baseStyle = pmLightStyle();
+  _baseStyle.sources.pm.attribution = '';   // terrain covers the Protomaps base; credit only what shows
   _baseStyle.sources.awmc = {
-    type: 'raster', tiles: [_AWMC_TILE || 'data:,'], tileSize: 256, minzoom: 1, maxzoom: 7,
-    // maxzoom: 11,   // AWMC
-    // attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
-    attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a>, Natural Earth',
+    type: 'raster', tiles: [_AWMC_TILE], tileSize: 256, minzoom: 1, maxzoom: 11,
+    attribution: '&copy; <a href="https://cawm.lib.uiowa.edu">AWMC</a>',
   };
   _baseStyle.layers.push({ id: 'awmc-layer', type: 'raster', source: 'awmc', layout: { visibility: 'none' } });
+  if (_TERRAIN_TILE) {
+    _baseStyle.sources.terrain = {
+      type: 'raster', tiles: [_TERRAIN_TILE], tileSize: 256, minzoom: 1, maxzoom: 7,
+      attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a>, Natural Earth',
+    };
+    _baseStyle.layers.push({ id: 'terrain-layer', type: 'raster', source: 'terrain', layout: { visibility: 'none' } });
+  }
 
   const map = window._v3map = new maplibregl.Map({
     container: 'v3-map',
@@ -4456,21 +4461,20 @@
 
   function _setAwmc(on) {
     if (map.getLayer('awmc-layer')) map.setLayoutProperty('awmc-layer', 'visibility', on ? 'visible' : 'none');
-    // Fallback note disabled: its text said "historical", which the Mapbox terrain is not.
-    // let note = document.getElementById('v3-basemap-note');
-    // if (!on && !note) {
-    //   note = document.createElement('div');
-    //   note.id = 'v3-basemap-note';
-    //   note.textContent = 'Historical terrain basemap unavailable; showing a modern basemap';
-    //   note.style.cssText = 'position:absolute; left:10px; bottom:34px; z-index:2; font-size:0.75rem; '
-    //     + 'font-style:italic; background:rgba(255,255,255,0.8); padding:1px 6px; border-radius:3px;';
-    //   map.getContainer().appendChild(note);
-    // } else if (on && note) note.remove();
+    if (map.getLayer('terrain-layer')) map.setLayoutProperty('terrain-layer', 'visibility', on ? 'none' : 'visible');
+    let note = document.getElementById('v3-basemap-note');
+    if (!on && !note) {
+      note = document.createElement('div');
+      note.id = 'v3-basemap-note';
+      note.textContent = 'Historical terrain basemap unavailable; showing ' + (_TERRAIN_TILE ? 'a modern terrain basemap' : 'a modern basemap');
+      note.style.cssText = 'position:absolute; left:10px; bottom:34px; z-index:2; font-size:0.75rem; '
+        + 'font-style:italic; background:rgba(255,255,255,0.8); padding:1px 6px; border-radius:3px;';
+      map.getContainer().appendChild(note);
+    } else if (on && note) note.remove();
   }
   // Probe one AWMC tile (4 s) after page load, so a hung server can't hold the load event open.
   function _probeAwmc() {
     new Promise(res => {
-      if (!_AWMC_TILE) return res(false);   // no token configured
       const img = new Image();
       const t = setTimeout(() => { img.src = ''; res(false); }, 4000);
       img.onload  = () => { clearTimeout(t); res(true); };

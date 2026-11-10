@@ -127,6 +127,6 @@ variables.
 - **World Heritage Cities** — Workbench's WH Cities corpus, compiled from the member-city list of
   the **[Organisation of World Heritage Cities (OVPM)](https://www.ovpm.org)**, via Wikipedia.
 - **[Ancient World Mapping Center (AWMC)](https://cawm.lib.uiowa.edu)** — the historical basemap
-  tiles under Sandbox's map. The AWMC tile service is offline for now (Iowa expects to restore it); until
-  then Sandbox shows a terrain basemap made from **[Natural Earth](https://www.naturalearthdata.com)**
-  shaded relief, served through **[Mapbox](https://www.mapbox.com/)**.
+  tiles under Sandbox's map. If the AWMC tile service is unreachable, Sandbox
+  falls back to a modern terrain basemap made from **[Natural Earth](https://www.naturalearthdata.com)** shaded relief,
+  served through **[Mapbox](https://www.mapbox.com/)**.
