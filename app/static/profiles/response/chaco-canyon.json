@@ -1,0 +1,147 @@
+{
+ "place": "Chaco Canyon",
+ "lat": 36.06,
+ "lon": -107.96,
+ "hybas_id": 7060618200,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the Colorado Plateau shrublands ecoregion. Its basin also takes in parts of the Arizona Mountains forests ecoregion.",
+   "runs": [
+    {
+     "t": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the "
+    },
+    {
+     "t": "Colorado Plateau shrublands",
+     "href": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Arizona Mountains forests",
+     "href": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 1% of the basin is cropland and 66% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one.",
+   "runs": [
+    {
+     "t": "Around 2000, about 1% of the basin is cropland and 66% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   16.0,
+   13.0,
+   17.0,
+   12.0,
+   13.0,
+   11.0,
+   34.0,
+   40.0,
+   28.0,
+   27.0,
+   17.0,
+   18.0
+  ],
+  "temp_c": [
+   -2.3,
+   0.9,
+   4.4,
+   8.8,
+   13.9,
+   19.4,
+   22.4,
+   21.1,
+   17.0,
+   10.7,
+   3.9,
+   -1.4
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Colorado Plateau shrublands",
+    "url": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+   },
+   {
+    "name": "Arizona Mountains forests",
+    "url": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=36.06&lon=-107.96"
+ }
+}

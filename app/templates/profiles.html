@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Environmental Profiles (sample) | Computing Place</title>
+  <link rel="stylesheet" href="/static/css/site.css?v={{ static_v('css/site.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/profiles.css?v={{ static_v('css/profiles.css') }}">
+  {% include "_ga.html" %}
+</head>
+<body>
+
+<header class="mb-2">
+  <div class="d-flex align-items-center justify-content-between py-2 border-bottom flex-wrap gap-2">
+    <div class="d-flex align-items-center">
+      <a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height:60px;" class="me-2"></a>
+      <h4 class="mb-0">Environmental Profiles (sample)</h4>
+    </div>
+    <div class="edops-page-pills-wrap">
+      <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
+        <li class="nav-item"><a class="nav-link" href="/sandbox">Sandbox</a></li>
+        <li class="nav-item"><a class="nav-link" href="/workbench">Workbench</a></li>
+        <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<main id="pf-main">
+  <ul class="nav nav-pills pf-places" id="pf-places" aria-label="Places"></ul>
+
+  <section id="pf-intro">
+    <!-- Draft text, for Karl to rewrite. -->
+    <p class="pf-draft">Draft wording</p>
+    <p>This is a sample of the environmental profile a place portal could carry. Each profile was generated ahead of time, by fixed rules, from global datasets; no one wrote it by hand and no language model wrote it. The text of each statement comes from a template, and the rules choose which statements are true of the place.</p>
+    <p><strong>How to read a profile.</strong> <em>Setting</em> describes the place itself. The other sections describe the drainage basin that contains it, and say so. A statement appears only where the data support it; silence is deliberate.</p>
+    <p>Sources: <a href="https://www.hydrosheds.org/" target="_blank" rel="noopener">HydroSHEDS</a> (BasinATLAS, HydroRIVERS), <a href="https://www.oneearth.org/bioregions/" target="_blank" rel="noopener">One Earth Bioregions</a>, <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> and Wikipedia.</p>
+    <p class="pf-meta" id="pf-meta"></p>
+  </section>
+
+  <div class="pf-toolbar">
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pf-toggle" aria-pressed="false">Show template</button>
+    <span class="pf-legend" id="pf-legend" hidden>Each line the rules chose is shown as written in the template file, with its <code>{slots}</code> unfilled; the small label is the line's key.</span>
+  </div>
+
+  <div id="pf-profile" tabindex="0" aria-live="polite"></div>
+</main>
+
+<script>
+  const PLACES = {{ places|tojson }};   // [{place, slug, no_basin}], in display order
+  const qs = new URLSearchParams(location.search);
+  const state = { slug: PLACES.some(p => p.slug === qs.get('place')) ? qs.get('place') : PLACES[0].slug,
+                  template: qs.get('view') === 'template', rec: null };
+  const el = id => document.getElementById(id);
+  const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+  function drawPills() {
+    const ul = el('pf-places');
+    ul.replaceChildren(...PLACES.map(p => {
+      const li = mk('li', 'nav-item'), a = mk('a', 'nav-link' + (p.slug === state.slug ? ' active' : ''), p.place);
+      a.href = '?place=' + p.slug + (state.template ? '&view=template' : '');
+      a.addEventListener('click', e => { e.preventDefault(); select(p.slug); });
+      li.append(a);
+      return li;
+    }));
+  }
+
+  // A template line with its {slots} marked, then its parts (phrases the rules put inside it).
+  function lineNode(line) {
+    const span = mk('span', 'pf-tline');
+    span.append(mk('small', 'pf-tkey', line.key), ' ');
+    line.raw.split(/(\{[^}]+\})/).forEach(piece => span.append(/^\{[^}]+\}$/.test(piece) ? mk('code', 'pf-tslot', piece) : piece));
+    if (line.parts && line.parts.length) {
+      const parts = mk('span', 'pf-tparts');
+      line.parts.forEach(p => parts.append(lineNode(p), ' '));
+      span.append(' ', parts);
+    }
+    return span;
+  }
+
+  function templateBody(sec) {
+    const p = mk('p', 'pf-template');
+    let last = null;
+    sec.template.forEach(s => {
+      if (s.type === 'text') p.append(s.text);
+      else if (s.type === 'slot') p.append(mk('code', 'pf-tslot', '{' + s.slot + '}'));
+      else { if (last && last.type === 'line') p.append(' '); p.append(lineNode(s)); }
+      last = s;
+    });
+    return p;
+  }
+
+  // Filled text as the record's runs; an ecoregion name carries its OneEarth page.
+  function filledBody(sec) {
+    const p = mk('p');
+    sec.runs.forEach(r => {
+      if (!r.href) return p.append(r.t);
+      const a = mk('a', null, r.t); a.href = r.href; a.target = '_blank'; a.rel = 'noopener'; p.append(a);
+    });
+    return p;
+  }
+
+  // A round tick step (1, 2, 2.5, 5 or 10 times a power of ten) at or above raw.
+  function niceStep(raw) {
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    return pow * [1, 2, 2.5, 5, 10].find(f => f * pow >= raw - 1e-9);
+  }
+
+  // Monthly precipitation (bars) and temperature (line), after the Sandbox's Walter-Lieth chart.
+  function climateFigure(m) {
+    const pre = m.precip_mm, tmp = m.temp_c, months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const W = 460, H = 240, PAD = { t: 16, r: 50, b: 36, l: 50 }, iW = W - PAD.l - PAD.r, iH = H - PAD.t - PAD.b;
+    const tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp), barW = iW / 12;
+    const pStep = niceStep(Math.max(...pre) / 3), pTop = Math.ceil(Math.max(...pre) / pStep) * pStep;   // precipitation axis ends on a round tick
+    const tLo = tmpMin - 3, tHi = tmpMax + 3, tStep = niceStep((tHi - tLo) / 4);
+    const pY = v => iH - (v / pTop) * iH, tY = v => iH - ((v - tLo) / (tHi - tLo)) * iH;
+    let bars = '', pts = '', xl = '', yp = '', yt = '';
+    for (let i = 0; i < 12; i++) {
+      const x = PAD.l + i * barW, tx = (PAD.l + (i + 0.5) * barW).toFixed(1);
+      bars += `<rect x="${(x + 1.5).toFixed(1)}" y="${(PAD.t + pY(pre[i])).toFixed(1)}" width="${(barW - 3).toFixed(1)}" height="${(iH - pY(pre[i])).toFixed(1)}" fill="#5b8dc4" opacity="0.65"/>`;
+      pts += `${tx},${(PAD.t + tY(tmp[i])).toFixed(1)} `;
+      xl += `<text x="${tx}" y="${H - 8}" font-size="11" text-anchor="middle">${months[i]}</text>`;
+    }
+    for (let v = 0; v <= pTop + 1e-9; v += pStep) {
+      const y = (PAD.t + pY(v)).toFixed(1);
+      yp += `<text x="${PAD.l - 5}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${+v.toFixed(2)}</text><line x1="${PAD.l}" y1="${y}" x2="${PAD.l + iW}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
+    }
+    for (let v = Math.ceil(tLo / tStep) * tStep; v <= tHi + 1e-9; v += tStep) {
+      yt += `<text x="${PAD.l + iW + 5}" y="${(PAD.t + tY(v)).toFixed(1)}" font-size="11" fill="#c0392b" dominant-baseline="middle">${+v.toFixed(2)}°</text>`;
+    }
+    const lx = PAD.l / 2, rx = W - PAD.r / 2 + 8, cy = PAD.t + iH / 2;
+    const fig = mk('figure', 'pf-fig');
+    fig.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly precipitation and temperature of the basin" style="width:100%;max-width:${W}px;overflow:visible">
+      <rect x="${PAD.l}" y="${PAD.t}" width="${iW}" height="${iH}" fill="#f8f9fa" rx="2"/>${yp}${bars}
+      <polyline points="${pts.trim()}" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${yt}${xl}
+      <text x="${lx}" y="${cy}" font-size="11" fill="#5b8dc4" text-anchor="middle" transform="rotate(-90,${lx},${cy})">Precip (mm)</text>
+      <text x="${rx}" y="${cy}" font-size="11" fill="#c0392b" text-anchor="middle" transform="rotate(90,${rx},${cy})">Temp (°C)</text></svg>`;
+    fig.append(mk('figcaption', null, 'Monthly precipitation and temperature of the basin, not the point (' + m.source + ').'));
+    fig.append(mk('figcaption', 'pf-draft', 'Draft wording: a place portal can draw a chart like this from the 24 monthly values, which a data call would return with their units.'));
+    return fig;
+  }
+
+  function draw() {
+    const rec = state.rec, box = el('pf-profile');
+    el('pf-meta').textContent = 'Template version ' + rec.template_version + ', generated ' + rec.generated + '.';
+    el('pf-legend').hidden = !state.template;
+    const nodes = [];
+    if (rec.no_basin) {
+      nodes.push(mk('h3', 'pf-nobasin', rec.message));
+    } else {
+      rec.sections.forEach(sec => {
+        nodes.push(mk('h5', 'pf-sec', sec.title), state.template ? templateBody(sec) : filledBody(sec));
+        if (sec.id === 'S2' && !state.template && rec.monthly) nodes.push(climateFigure(rec.monthly));
+      });
+      if (rec.buttons.length) {
+        const row = mk('div', 'pf-buttons');
+        rec.buttons.forEach(b => { const a = mk('a', 'btn btn-sm btn-outline-secondary', b.label); a.href = b.url; a.target = b.target; a.rel = 'noopener'; row.append(a); });
+        nodes.push(mk('hr'), row);
+      }
+    }
+    box.replaceChildren(...nodes);
+    box.scrollTop = 0;
+  }
+
+  function url() { const q = new URLSearchParams({ place: state.slug }); if (state.template) q.set('view', 'template'); return '?' + q; }
+
+  async function select(slug) {
+    state.slug = slug;
+    history.replaceState(null, '', url());
+    drawPills();
+    const r = await fetch('/static/profiles/' + slug + '.json');
+    state.rec = await r.json();
+    draw();
+  }
+
+  el('pf-toggle').addEventListener('click', () => {
+    state.template = !state.template;
+    el('pf-toggle').textContent = state.template ? 'Show text' : 'Show template';
+    el('pf-toggle').setAttribute('aria-pressed', state.template);
+    history.replaceState(null, '', url());
+    drawPills();
+    draw();
+  });
+  if (state.template) { el('pf-toggle').textContent = 'Show text'; el('pf-toggle').setAttribute('aria-pressed', 'true'); }
+  select(state.slug);
+</script>
+</body>
+</html>

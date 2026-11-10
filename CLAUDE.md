@@ -13,7 +13,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
-- **Active phase — Dashboard:** `docs/edop/dashboard/`; sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/`
+- **Active phase — Dashboard:** `docs/edop/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -75,9 +75,34 @@ unlinked, not in the nav). It will borrow heavily from `sandbox.html` and less f
 → work orders → CC implements; experiments are notebooks under `notebooks/edop/dashboard/`. No further UI until
 the first design stages are done.
 
-**Next:** non-global (regional) temporal datasets — significant implications for the data model, API and
-dashboard UX; deferred until the dashboard is stubbed. Seed docs (not merged) are on remote branch
-`claude/remote-phone-file-access-hvttai`: `docs/edop/regional/{regional_layers_framing,drought_atlas_memo}.md`.
+**Design material (tracked since 2026-10-31):** `docs/design/dashboard/` (text only; the PDF, the generated
+`edops_docs_for_opus.md` and `.DS_Store` stay ignored). `sandbox_cheatsheet.md` — the code-cited map of what the
+Sandbox does, written for Opus; reconciled with v0.4.2 on 2026-10-29 (`wo01_reconcile docs and cheat sheet.md`,
+`wo01_report.md`); **update it in the same step as any app change that alters documented behaviour.**
+`main_changes_log.md` is closed (that housekeeping shipped as v0.4.2). `examples/` — 9 trimmed responses; refresh
+them and re-check citations with `scripts/edop/dashboard/{make_cheatsheet_examples,check_cheatsheet_citations}.py`
+after material changes to `sandbox.html` or `engine.py`. `edops_docs_for_opus.md` is `docsite/` concatenated
+(`make_docs_markdown.py`).
+
+**WO-02 — statement inventory, tier 1 (complete 2026-10-31; Opus is reviewing).** Question: what true statements
+can be derived by rule from one `/api/areas` payload? **Start with `docs/design/dashboard/wo02_summary.md`**, then
+`notebooks/edop/dashboard/wo02_master_table.csv` (54 statement types in 9 families, one row each) and
+`wo02_results.md` (family sections, issues 1 to 8). Rules `scripts/edop/dashboard/wo02_rules_*.py`; notebooks
+`wo02_step2_*` and `wo02_s3_01..09`; payloads and manifests in `output/edop/dashboard/wo02/` (gitignored; 
+`wo02_harvest.py` regenerates, local server only). Karl runs notebook cells; after editing a rules module restart the
+kernel and re-run the cells feeding cell 9, or the master table keeps stale text. Findings that shape the
+dashboard: buffers cause a disproportionate share of anomalies; 18 of 54 statements need per-variable knowledge the
+payload lacks (the friendly-name crosswalk is a separate, not yet written work order); wording that needs a cutoff
+flips under sweeps, so most fall back to stating the number alone; HYDE grazing is not pasture plus rangeland in the
+source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus). `wo02_comprehension_check.md`
+(10 questions and key) is for testing Opus only if it struggles.
+
+**Next (dashboard):** Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
+source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
+LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
+Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Then non-global (regional)
+temporal datasets (significant implications for the data model, API and dashboard UX); seed docs (not merged) are on
+remote branch `claude/remote-phone-file-access-hvttai`: `docs/edop/regional/{regional_layers_framing,drought_atlas_memo}.md`.
 
 **Production:** v0.4 only. `edops-v4.service` :8004, tree `/var/www/edops-v4` (branch `main`), venv
 `/home/karlg/envs/cedop-v4`; serves `edops.computingplace.org`, `computingplace.org`, `edops04.computingplace.org`.
@@ -200,6 +225,7 @@ docs/edop/engine/        #   Work-order specs (tracked)
 docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
 docs/edop/demo/          #   Demo tracker + findings (tracked)
 docs/edop/dashboard/     #   Dashboard phase (tracked) ← active
+docs/design/dashboard/   #   Dashboard design material (tracked since 2026-10-31, text only): Sandbox cheat sheet, WO-01/WO-02 files, examples
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
 docs/edop/pageload_explorer.txt  # per-page pseudocode reference (gitignored) — Explorer done,
@@ -395,6 +421,7 @@ working under `notebooks/`. Consult it before writing or editing any cell.
 ## Testing
 
 ```bash
+uvicorn app.main:app --reload      # local dev server, http://localhost:8000 (activate the `cedop` venv first)
 curl http://localhost:8000/api/health
 curl "http://localhost:8000/api/signature?scope=basin&lat=16.8167&lon=-2.9833"  # Timbuktu
 python -m pytest tests/                        # full suite (app + engine)

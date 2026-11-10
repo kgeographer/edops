@@ -67,12 +67,21 @@ docs/edop/*
 !docs/edop/workbench/**
 !docs/edop/api_shape/
 !docs/edop/api_shape/**
+!docs/edop/dashboard/
+!docs/edop/dashboard/**
 !docs/cdop/
 docs/cdop/*
 !docs/cdop/pilot/
 !docs/cdop/pilot/**
 !docs/cdop/citykin/
 !docs/cdop/citykin/**
+!docs/design/
+docs/design/*
+!docs/design/dashboard/
+docs/design/dashboard/*.pdf
+docs/design/dashboard/.DS_Store
+docs/design/dashboard/edops_docs_for_opus.md
+docs/design/dashboard/EDOPS v1 plan 31Oct.md
 
 # Office temp/lock files
 ~$*

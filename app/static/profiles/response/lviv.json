@@ -1,0 +1,136 @@
+{
+ "place": "Lviv",
+ "lat": 49.84,
+ "lon": 24.03,
+ "hybas_id": 2060376210,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Lviv sits at about 283 m above sea level, in a basin that runs from about 128 m to 476 m. It lies in the Central European mixed forests ecoregion.",
+   "runs": [
+    {
+     "t": "Lviv sits at about 283 m above sea level, in a basin that runs from about 128 m to 476 m. It lies in the "
+    },
+    {
+     "t": "Central European mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/central-european-mixed-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 16,336 km², rainfall averages about 588 mm a year, moderately seasonal, with July the wettest month. Temperatures there average 7.5 °C, from -4.5 °C in January to 18.1 °C in July. Its aridity index of 0.79 falls in the UNEP humid class. Its basin is warmer than 10 of the 12 basins around it.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 16,336 km², rainfall averages about 588 mm a year, moderately seasonal, with July the wettest month. Temperatures there average 7.5 °C, from -4.5 °C in January to 18.1 °C in July. Its aridity index of 0.79 falls in the UNEP humid class. Its basin is warmer than 10 of the 12 basins around it."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.6% of the basin. The basin drains to the sea about 710 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.6% of the basin. The basin drains to the sea about 710 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is very gently sloping on average (a mean slope of 1.9%), with topsoil that averages 43% sand, 39% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly carbonate sedimentary rocks.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is very gently sloping on average (a mean slope of 1.9%), with topsoil that averages 43% sand, 39% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly carbonate sedimentary rocks."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 44% of the basin is cropland and 13% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7.",
+   "runs": [
+    {
+     "t": "Around 2000, about 44% of the basin is cropland and 13% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Lviv's basin is one of 13 that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Lviv's basin is one of 13 that meet here. None of them drains into it. It drains into one of them."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   28.0,
+   29.0,
+   33.0,
+   43.0,
+   63.0,
+   76.0,
+   81.0,
+   65.0,
+   55.0,
+   38.0,
+   39.0,
+   38.0
+  ],
+  "temp_c": [
+   -4.5,
+   -3.1,
+   1.3,
+   8.3,
+   13.5,
+   16.6,
+   18.1,
+   17.4,
+   13.3,
+   8.3,
+   2.6,
+   -2.1
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Central European mixed forests",
+    "url": "https://www.oneearth.org/ecoregions/central-european-mixed-forests/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Central_European_mixed_forests",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=49.84&lon=24.03"
+ }
+}

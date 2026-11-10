@@ -1,0 +1,848 @@
+eco_id,eco_name,wiki_title,wiki_url,similarity,title_words_in_name,suspect
+0,Rock and Ice,Rock and Ice Club,https://en.wikipedia.org/wiki/Rock_and_Ice_Club,0.83,False,False
+1,Albertine Rift montane forests,Albertine Rift montane forests,https://en.wikipedia.org/wiki/Albertine_Rift_montane_forests,1.0,True,False
+2,Cameroon Highlands forests,Cameroon,https://en.wikipedia.org/wiki/Cameroon,0.47,True,True
+3,Central Congolian lowland forests,Central Congolian lowland forests,https://en.wikipedia.org/wiki/Central_Congolian_lowland_forests,1.0,True,False
+4,Comoros forests,Comoros forests,https://en.wikipedia.org/wiki/Comoros_forests,1.0,True,False
+5,Congolian coastal forests,Northwestern Congolian lowland forests,https://en.wikipedia.org/wiki/Northwestern_Congolian_lowland_forests,0.63,False,False
+6,Cross-Niger transition forests,Cross–Niger transition forests,https://en.wikipedia.org/wiki/Cross%E2%80%93Niger_transition_forests,0.98,False,False
+7,Cross-Sanaga-Bioko coastal forests,Cross–Sanaga–Bioko coastal forests,https://en.wikipedia.org/wiki/Cross%E2%80%93Sanaga%E2%80%93Bioko_coastal_forests,0.97,False,False
+8,East African montane forests,East African montane forests,https://en.wikipedia.org/wiki/East_African_montane_forests,1.0,True,False
+9,Eastern Arc forests,Eastern Arc forests,https://en.wikipedia.org/wiki/Eastern_Arc_forests,1.0,True,False
+10,Eastern Congolian swamp forests,Eastern Congolian swamp forests,https://en.wikipedia.org/wiki/Eastern_Congolian_swamp_forests,1.0,True,False
+11,Eastern Guinean forests,Eastern Guinean forests,https://en.wikipedia.org/wiki/Eastern_Guinean_forests,1.0,True,False
+12,Ethiopian montane forests,Ethiopian montane forests,https://en.wikipedia.org/wiki/Ethiopian_montane_forests,1.0,True,False
+13,Granitic Seychelles forests,Granitic Seychelles,https://en.wikipedia.org/wiki/Granitic_Seychelles,0.83,True,True
+14,Guinean montane forests,Guinean montane forests,https://en.wikipedia.org/wiki/Guinean_montane_forests,1.0,True,False
+15,Knysna-Amatole montane forests,Knysna–Amatole montane forests,https://en.wikipedia.org/wiki/Knysna%E2%80%93Amatole_montane_forests,0.98,False,False
+16,Kwazulu Natal-Cape coastal forests,KwaZulu–Cape coastal forest mosaic,https://en.wikipedia.org/wiki/KwaZulu%E2%80%93Cape_coastal_forest_mosaic,0.81,False,False
+17,Madagascar humid forests,Madagascar subhumid forests,https://en.wikipedia.org/wiki/Madagascar_subhumid_forests,0.94,False,False
+18,Madagascar subhumid forests,Madagascar subhumid forests,https://en.wikipedia.org/wiki/Madagascar_subhumid_forests,1.0,True,False
+19,Maputaland coastal forests and woodlands,Maputaland coastal forest mosaic,https://en.wikipedia.org/wiki/Maputaland_coastal_forest_mosaic,0.75,False,False
+20,Mascarene forests,Mascarene Islands,https://en.wikipedia.org/wiki/Mascarene_Islands,0.71,False,False
+21,Mount Cameroon and Bioko montane forests,Mount Cameroon and Bioko montane forests,https://en.wikipedia.org/wiki/Mount_Cameroon_and_Bioko_montane_forests,1.0,True,False
+22,Niger Delta swamp forests,Niger Delta swamp forests,https://en.wikipedia.org/wiki/Niger_Delta_swamp_forests,1.0,True,False
+23,Nigerian lowland forests,Nigerian lowland forests,https://en.wikipedia.org/wiki/Nigerian_lowland_forests,1.0,True,False
+24,Northeast Congolian lowland forests,Northeastern Congolian lowland forests,https://en.wikipedia.org/wiki/Northeastern_Congolian_lowland_forests,0.96,False,False
+25,Northern Swahili coastal forests,Swahili,https://en.wikipedia.org/wiki/Swahili,0.36,True,True
+26,Northwest Congolian lowland forests,Northwestern Congolian lowland forests,https://en.wikipedia.org/wiki/Northwestern_Congolian_lowland_forests,0.96,False,False
+27,"São Tomé, Príncipe, and Annobón forests","São Tomé, Príncipe, and Annobón forests","https://en.wikipedia.org/wiki/S%C3%A3o_Tom%C3%A9,_Pr%C3%ADncipe,_and_Annob%C3%B3n_forests",1.0,True,False
+28,Southern Swahili coastal forests and woodlands,Southern Zanzibar–Inhambane coastal forest mosaic,https://en.wikipedia.org/wiki/Southern_Zanzibar%E2%80%93Inhambane_coastal_forest_mosaic,0.6,False,False
+29,Western Congolian swamp forests,Western Congolian swamp forests,https://en.wikipedia.org/wiki/Western_Congolian_swamp_forests,1.0,True,False
+30,Western Guinean lowland forests,Western Guinean lowland forests,https://en.wikipedia.org/wiki/Western_Guinean_lowland_forests,1.0,True,False
+31,Cape Verde Islands dry forests,Cape Verde Islands dry forests,https://en.wikipedia.org/wiki/Cape_Verde_Islands_dry_forests,1.0,True,False
+32,Madagascar dry deciduous forests,Madagascar dry deciduous forests,https://en.wikipedia.org/wiki/Madagascar_dry_deciduous_forests,1.0,True,False
+33,Zambezian evergreen dry forests,Zambezian evergreen dry forests,https://en.wikipedia.org/wiki/Zambezian_evergreen_dry_forests,1.0,True,False
+34,Angolan mopane woodlands,Angolan mopane woodlands,https://en.wikipedia.org/wiki/Angolan_mopane_woodlands,1.0,True,False
+35,Angolan scarp savanna and woodlands,Angolan Scarp savanna and woodlands,https://en.wikipedia.org/wiki/Angolan_Scarp_savanna_and_woodlands,1.0,True,False
+36,Angolan wet miombo woodlands,Angolan miombo woodlands,https://en.wikipedia.org/wiki/Angolan_miombo_woodlands,0.92,True,False
+37,Ascension scrub and grasslands,Ascension scrub and grasslands,https://en.wikipedia.org/wiki/Ascension_scrub_and_grasslands,1.0,True,False
+38,Central bushveld,Bushveld,https://en.wikipedia.org/wiki/Bushveld,0.67,True,True
+39,Central Zambezian wet miombo woodlands,Central Zambezian miombo woodlands,https://en.wikipedia.org/wiki/Central_Zambezian_miombo_woodlands,0.94,True,False
+40,Drakensberg Escarpment savanna and thicket,,,,False,False
+41,Drakensberg grasslands,Drakensberg,https://en.wikipedia.org/wiki/Drakensberg,0.67,True,True
+42,Dry miombo woodlands,Dry miombo woodlands,https://en.wikipedia.org/wiki/Dry_miombo_woodlands,1.0,True,False
+43,East Sudanian savanna,East Sudanian savanna,https://en.wikipedia.org/wiki/East_Sudanian_savanna,1.0,True,False
+44,Guinean forest-savanna,Guinean forest–savanna mosaic,https://en.wikipedia.org/wiki/Guinean_forest%E2%80%93savanna_mosaic,0.84,False,False
+45,Horn of Africa xeric bushlands,,,,False,False
+46,Itigi-Sumbu thicket,Itigi–Sumbu thicket,https://en.wikipedia.org/wiki/Itigi%E2%80%93Sumbu_thicket,0.97,False,False
+47,Kalahari Acacia woodlands,Kalahari acacia–baikiaea woodlands,https://en.wikipedia.org/wiki/Kalahari_acacia%E2%80%93baikiaea_woodlands,0.86,False,False
+48,Limpopo lowveld,Limpopo,https://en.wikipedia.org/wiki/Limpopo,0.64,True,True
+49,Mandara Plateau woodlands,Mandara Plateau mosaic,https://en.wikipedia.org/wiki/Mandara_Plateau_mosaic,0.77,False,False
+50,Masai xeric grasslands and shrublands,Masai xeric grasslands and shrublands,https://en.wikipedia.org/wiki/Masai_xeric_grasslands_and_shrublands,1.0,True,False
+51,Northern Acacia-Commiphora bushlands and thickets,Northern Acacia–Commiphora bushlands and thickets,https://en.wikipedia.org/wiki/Northern_Acacia%E2%80%93Commiphora_bushlands_and_thickets,0.99,False,False
+52,Northern Congolian Forest-Savanna,Northern Congolian forest–savanna mosaic,https://en.wikipedia.org/wiki/Northern_Congolian_forest%E2%80%93savanna_mosaic,0.89,False,False
+53,Sahelian Acacia savanna,Sahel,https://en.wikipedia.org/wiki/Sahel,0.36,False,True
+54,Serengeti volcanic grasslands,Serengeti volcanic grasslands,https://en.wikipedia.org/wiki/Serengeti_volcanic_grasslands,1.0,True,False
+55,Somali Acacia-Commiphora bushlands and thickets,Somali Acacia–Commiphora bushlands and thickets,https://en.wikipedia.org/wiki/Somali_Acacia%E2%80%93Commiphora_bushlands_and_thickets,0.99,False,False
+56,"South Arabian fog woodlands, shrublands, and dune","South Arabian fog woodlands, shrublands, and dune","https://en.wikipedia.org/wiki/South_Arabian_fog_woodlands,_shrublands,_and_dune",1.0,True,False
+57,Southern Acacia-Commiphora bushlands and thickets,Southern Acacia–Commiphora bushlands and thickets,https://en.wikipedia.org/wiki/Southern_Acacia%E2%80%93Commiphora_bushlands_and_thickets,0.99,False,False
+58,Southern Congolian forest-savanna,Southern Congolian forest–savanna mosaic,https://en.wikipedia.org/wiki/Southern_Congolian_forest%E2%80%93savanna_mosaic,0.89,False,False
+59,Southwest Arabian montane woodlands and grasslands,Southwestern Arabian montane woodlands,https://en.wikipedia.org/wiki/Southwestern_Arabian_montane_woodlands,0.8,False,False
+60,St. Helena scrub and woodlands,Saint Helena scrub and woodlands,https://en.wikipedia.org/wiki/Saint_Helena_scrub_and_woodlands,0.95,False,False
+61,Victoria Basin forest-savanna,Victoria Basin forest–savanna mosaic,https://en.wikipedia.org/wiki/Victoria_Basin_forest%E2%80%93savanna_mosaic,0.88,False,False
+62,West Sudanian savanna,West Sudanian savanna,https://en.wikipedia.org/wiki/West_Sudanian_savanna,1.0,True,False
+63,Western Congolian forest-savanna,Western Congolian forest–savanna mosaic,https://en.wikipedia.org/wiki/Western_Congolian_forest%E2%80%93savanna_mosaic,0.89,False,False
+64,Zambezian Baikiaea woodlands,Zambezian Baikiaea woodlands,https://en.wikipedia.org/wiki/Zambezian_Baikiaea_woodlands,1.0,True,False
+65,Zambezian mopane woodlands,Zambezian and mopane woodlands,https://en.wikipedia.org/wiki/Zambezian_and_mopane_woodlands,0.93,False,False
+66,Zambezian-Limpopo mixed woodlands,Dry miombo woodlands,https://en.wikipedia.org/wiki/Dry_miombo_woodlands,0.49,False,True
+67,Amsterdam-Saint Paul Islands temperate grasslands,Amsterdam and Saint-Paul Islands temperate grasslands,https://en.wikipedia.org/wiki/Amsterdam_and_Saint-Paul_Islands_temperate_grasslands,0.96,False,False
+68,Tristan Da Cunha-Gough Islands shrub and grasslands,Tristan da Cunha–Gough Islands shrub and grasslands,https://en.wikipedia.org/wiki/Tristan_da_Cunha%E2%80%93Gough_Islands_shrub_and_grasslands,0.99,False,False
+69,East African halophytics,Lake Natron,https://en.wikipedia.org/wiki/Lake_Natron,0.29,False,True
+70,Etosha Pan halophytics,Etosha Pan,https://en.wikipedia.org/wiki/Etosha_Pan,0.62,True,True
+71,Inner Niger Delta flooded savanna,Inner Niger Delta,https://en.wikipedia.org/wiki/Inner_Niger_Delta,0.68,True,True
+72,Lake Chad flooded savanna,Lake Chad flooded savanna,https://en.wikipedia.org/wiki/Lake_Chad_flooded_savanna,1.0,True,False
+73,Makgadikgadi halophytics,Makgadikgadi Pan,https://en.wikipedia.org/wiki/Makgadikgadi_Pan,0.7,False,False
+74,Sudd flooded grasslands,Sudd,https://en.wikipedia.org/wiki/Sudd,0.3,True,True
+75,Zambezian coastal flooded savanna,Zambezian coastal flooded savanna,https://en.wikipedia.org/wiki/Zambezian_coastal_flooded_savanna,1.0,True,False
+76,Zambezian flooded grasslands,Zambezian flooded grasslands,https://en.wikipedia.org/wiki/Zambezian_flooded_grasslands,1.0,True,False
+77,Angolan montane forest-grassland,Angolan montane forest–grassland mosaic,https://en.wikipedia.org/wiki/Angolan_montane_forest%E2%80%93grassland_mosaic,0.89,False,False
+78,East African montane moorlands,East African montane moorlands,https://en.wikipedia.org/wiki/East_African_montane_moorlands,1.0,True,False
+79,Ethiopian montane grasslands and woodlands,Ethiopian montane grasslands and woodlands,https://en.wikipedia.org/wiki/Ethiopian_montane_grasslands_and_woodlands,1.0,True,False
+80,Ethiopian montane moorlands,Ethiopian montane moorlands,https://en.wikipedia.org/wiki/Ethiopian_montane_moorlands,1.0,True,False
+81,Highveld grasslands,Highveld,https://en.wikipedia.org/wiki/Highveld,0.59,True,True
+82,Jos Plateau forest-grassland,Jos Plateau,https://en.wikipedia.org/wiki/Jos_Plateau,0.56,True,True
+83,Madagascar ericoid thickets,Madagascar ericoid thickets,https://en.wikipedia.org/wiki/Madagascar_ericoid_thickets,1.0,True,False
+84,Mulanje Montane forest-grassland,South Malawi montane forest–grassland mosaic,https://en.wikipedia.org/wiki/South_Malawi_montane_forest%E2%80%93grassland_mosaic,0.72,False,False
+85,Nyanga-Chimanimani Montane forest-grassland,,,,False,False
+86,Rwenzori-Virunga montane moorlands,Rwenzori–Virunga montane moorlands,https://en.wikipedia.org/wiki/Rwenzori%E2%80%93Virunga_montane_moorlands,0.99,False,False
+87,Southern Rift Montane forest-grassland,Southern Rift montane forest–grassland mosaic,https://en.wikipedia.org/wiki/Southern_Rift_montane_forest%E2%80%93grassland_mosaic,0.9,False,False
+88,Albany thickets,Albany thickets,https://en.wikipedia.org/wiki/Albany_thickets,1.0,True,False
+89,Fynbos shrubland,Fynbos,https://en.wikipedia.org/wiki/Fynbos,0.55,True,True
+90,Renosterveld shrubland,,,,False,False
+91,Aldabra Island xeric scrub,Aldabra,https://en.wikipedia.org/wiki/Aldabra,0.42,True,True
+92,Djibouti xeric shrublands,Djibouti xeric shrublands,https://en.wikipedia.org/wiki/Djibouti_xeric_shrublands,1.0,True,False
+93,Eritrean coastal desert,Eritrean coastal desert,https://en.wikipedia.org/wiki/Eritrean_coastal_desert,1.0,True,False
+94,Gariep Karoo,,,,False,False
+95,Hobyo grasslands and shrublands,Hobyo grasslands and shrublands,https://en.wikipedia.org/wiki/Hobyo_grasslands_and_shrublands,1.0,True,False
+96,Ile Europa and Bassas da India xeric scrub,Europa Island,https://en.wikipedia.org/wiki/Europa_Island,0.36,False,True
+97,Kalahari xeric savanna,Kalahari Desert,https://en.wikipedia.org/wiki/Kalahari_Desert,0.59,False,True
+98,Kaokoveld desert,Kaokoveld,https://en.wikipedia.org/wiki/Kaokoveld,0.72,True,True
+99,Madagascar spiny thickets,Madagascar spiny forests,https://en.wikipedia.org/wiki/Madagascar_spiny_forests,0.82,False,False
+100,Madagascar succulent woodlands,Madagascar succulent woodlands,https://en.wikipedia.org/wiki/Madagascar_succulent_woodlands,1.0,True,False
+101,Nama Karoo shrublands,Nama Karoo,https://en.wikipedia.org/wiki/Nama_Karoo,0.65,True,True
+102,Namaqualand-Richtersveld steppe,,,,False,False
+103,Namib Desert,Namib,https://en.wikipedia.org/wiki/Namib,0.59,True,True
+104,Namibian savanna woodlands,Namibian savanna woodlands,https://en.wikipedia.org/wiki/Namibian_savanna_woodlands,1.0,True,False
+105,Socotra Island xeric shrublands,Socotra Island xeric shrublands,https://en.wikipedia.org/wiki/Socotra_Island_xeric_shrublands,1.0,True,False
+106,Somali montane xeric woodlands,Somali montane xeric woodlands,https://en.wikipedia.org/wiki/Somali_montane_xeric_woodlands,1.0,True,False
+107,Southwest Arabian coastal xeric shrublands,Arabian Peninsula coastal fog desert,https://en.wikipedia.org/wiki/Arabian_Peninsula_coastal_fog_desert,0.46,False,True
+108,Southwest Arabian Escarpment shrublands and woodlands,Southwestern Arabian foothills savanna,https://en.wikipedia.org/wiki/Southwestern_Arabian_foothills_savanna,0.53,False,True
+109,Southwest Arabian highland xeric scrub,Southwestern Arabian foothills savanna,https://en.wikipedia.org/wiki/Southwestern_Arabian_foothills_savanna,0.61,False,False
+110,Succulent Karoo xeric shrublands,Succulent Karoo,https://en.wikipedia.org/wiki/Succulent_Karoo,0.64,True,True
+111,Central African mangroves,Central African mangroves,https://en.wikipedia.org/wiki/Central_African_mangroves,1.0,True,False
+112,East African mangroves,East African mangroves,https://en.wikipedia.org/wiki/East_African_mangroves,1.0,True,False
+113,Guinean mangroves,Guinean mangroves,https://en.wikipedia.org/wiki/Guinean_mangroves,1.0,True,False
+114,Madagascar mangroves,Madagascar mangroves,https://en.wikipedia.org/wiki/Madagascar_mangroves,1.0,True,False
+115,Red Sea mangroves,Red Sea mangroves,https://en.wikipedia.org/wiki/Red_Sea_mangroves,1.0,True,False
+116,Southern Africa mangroves,Southern Africa mangroves,https://en.wikipedia.org/wiki/Southern_Africa_mangroves,1.0,True,False
+117,Adelie Land tundra,,,,False,False
+118,Central South Antarctic Peninsula tundra,Antarctic Peninsula,https://en.wikipedia.org/wiki/Antarctic_Peninsula,0.64,True,True
+119,Dronning Maud Land tundra,,,,False,False
+120,East Antarctic tundra,East Antarctica,https://en.wikipedia.org/wiki/East_Antarctica,0.83,False,False
+121,Ellsworth Land tundra,Ellsworth Land,https://en.wikipedia.org/wiki/Ellsworth_Land,0.8,True,True
+122,Ellsworth Mountains tundra,Ellsworth Land,https://en.wikipedia.org/wiki/Ellsworth_Land,0.65,False,False
+123,Enderby Land tundra,,,,False,False
+124,Marie Byrd Land tundra,,,,False,False
+125,North Victoria Land tundra,Tundra of North America,https://en.wikipedia.org/wiki/Tundra_of_North_America,0.37,False,True
+126,Northeast Antarctic Peninsula tundra,Antarctic Peninsula,https://en.wikipedia.org/wiki/Antarctic_Peninsula,0.69,True,True
+127,Northwest Antarctic Peninsula tundra,Tundra,https://en.wikipedia.org/wiki/Tundra,0.29,True,True
+128,Prince Charles Mountains tundra,,,,False,False
+129,Scotia Sea Islands tundra,Scotia Sea Islands tundra,https://en.wikipedia.org/wiki/Scotia_Sea_Islands_tundra,1.0,True,False
+130,South Antarctic Peninsula tundra,Antarctic Peninsula,https://en.wikipedia.org/wiki/Antarctic_Peninsula,0.75,True,True
+131,South Orkney Islands tundra,South Orkney Islands,https://en.wikipedia.org/wiki/South_Orkney_Islands,0.85,True,True
+132,South Victoria Land tundra,Victoria Land,https://en.wikipedia.org/wiki/Victoria_Land,0.67,True,True
+133,Southern Indian Ocean Islands tundra,Southern Indian Ocean Islands tundra,https://en.wikipedia.org/wiki/Southern_Indian_Ocean_Islands_tundra,1.0,True,False
+134,Transantarctic Mountains tundra,Tundra,https://en.wikipedia.org/wiki/Tundra,0.32,True,True
+135,Admiralty Islands lowland rain forests,Admiralty Islands,https://en.wikipedia.org/wiki/Admiralty_Islands,0.62,True,True
+136,Banda Sea Islands moist deciduous forests,Banda Sea Islands moist deciduous forests,https://en.wikipedia.org/wiki/Banda_Sea_Islands_moist_deciduous_forests,1.0,True,False
+137,Biak-Numfoor rain forests,Biak–Numfoor rain forests,https://en.wikipedia.org/wiki/Biak%E2%80%93Numfoor_rain_forests,0.98,False,False
+138,Buru rain forests,Buru,https://en.wikipedia.org/wiki/Buru,0.38,True,True
+139,Central Range Papuan montane rain forests,Central Range montane rain forests,https://en.wikipedia.org/wiki/Central_Range_montane_rain_forests,0.91,True,False
+140,Halmahera rain forests,Halmahera rain forests,https://en.wikipedia.org/wiki/Halmahera_rain_forests,1.0,True,False
+141,Huon Peninsula montane rain forests,Huon Peninsula montane rain forests,https://en.wikipedia.org/wiki/Huon_Peninsula_montane_rain_forests,1.0,True,False
+142,Lord Howe Island subtropical forests,Lord Howe Island,https://en.wikipedia.org/wiki/Lord_Howe_Island,0.62,True,True
+143,Louisiade Archipelago rain forests,Louisiade Archipelago,https://en.wikipedia.org/wiki/Louisiade_Archipelago,0.76,True,True
+144,New Britain-New Ireland lowland rain forests,New Britain–New Ireland lowland rain forests,https://en.wikipedia.org/wiki/New_Britain%E2%80%93New_Ireland_lowland_rain_forests,0.99,False,False
+145,New Britain-New Ireland montane rain forests,New Britain–New Ireland montane rain forests,https://en.wikipedia.org/wiki/New_Britain%E2%80%93New_Ireland_montane_rain_forests,0.99,False,False
+146,New Caledonia rain forests,New Caledonia rain forests,https://en.wikipedia.org/wiki/New_Caledonia_rain_forests,1.0,True,False
+147,Norfolk Island subtropical forests,Norfolk Island,https://en.wikipedia.org/wiki/Norfolk_Island,0.58,True,True
+148,Northern New Guinea lowland rain and freshwater swamp forests,Northern New Guinea lowland rain and freshwater swamp forests,https://en.wikipedia.org/wiki/Northern_New_Guinea_lowland_rain_and_freshwater_swamp_forests,1.0,True,False
+149,Northern New Guinea montane rain forests,Northern New Guinea montane rain forests,https://en.wikipedia.org/wiki/Northern_New_Guinea_montane_rain_forests,1.0,True,False
+150,Queensland tropical rain forests,Queensland tropical rain forests,https://en.wikipedia.org/wiki/Queensland_tropical_rain_forests,1.0,True,False
+151,Seram rain forests,Seram rain forests,https://en.wikipedia.org/wiki/Seram_rain_forests,1.0,True,False
+152,Solomon Islands rain forests,Solomon Islands rain forests,https://en.wikipedia.org/wiki/Solomon_Islands_rain_forests,1.0,True,False
+153,Southeast Papuan rain forests,Yapen rain forests,https://en.wikipedia.org/wiki/Yapen_rain_forests,0.68,False,False
+154,Southern New Guinea freshwater swamp forests,Southern New Guinea freshwater swamp forests,https://en.wikipedia.org/wiki/Southern_New_Guinea_freshwater_swamp_forests,1.0,True,False
+155,Southern New Guinea lowland rain forests,Southern New Guinea lowland rain forests,https://en.wikipedia.org/wiki/Southern_New_Guinea_lowland_rain_forests,1.0,True,False
+156,Sulawesi lowland rain forests,Sulawesi lowland rain forests,https://en.wikipedia.org/wiki/Sulawesi_lowland_rain_forests,1.0,True,False
+157,Sulawesi montane rain forests,Sulawesi montane rain forests,https://en.wikipedia.org/wiki/Sulawesi_montane_rain_forests,1.0,True,False
+158,Trobriand Islands rain forests,Trobriand Islands rain forests,https://en.wikipedia.org/wiki/Trobriand_Islands_rain_forests,1.0,True,False
+159,Vanuatu rain forests,Vanuatu rain forests,https://en.wikipedia.org/wiki/Vanuatu_rain_forests,1.0,True,False
+160,Vogelkop montane rain forests,Vogelkop montane rain forests,https://en.wikipedia.org/wiki/Vogelkop_montane_rain_forests,1.0,True,False
+161,Vogelkop-Aru lowland rain forests,Vogelkop–Aru lowland rain forests,https://en.wikipedia.org/wiki/Vogelkop%E2%80%93Aru_lowland_rain_forests,0.98,False,False
+162,Yapen rain forests,Yapen rain forests,https://en.wikipedia.org/wiki/Yapen_rain_forests,1.0,True,False
+163,Lesser Sundas deciduous forests,Lesser Sundas deciduous forests,https://en.wikipedia.org/wiki/Lesser_Sundas_deciduous_forests,1.0,True,False
+164,New Caledonia dry forests,New Caledonia dry forests,https://en.wikipedia.org/wiki/New_Caledonia_dry_forests,1.0,True,False
+165,Sumba deciduous forests,Sumba,https://en.wikipedia.org/wiki/Sumba,0.36,True,True
+166,Timor and Wetar deciduous forests,Timor and Wetar deciduous forests,https://en.wikipedia.org/wiki/Timor_and_Wetar_deciduous_forests,1.0,True,False
+167,Chatham Island temperate forests,Chatham Islands,https://en.wikipedia.org/wiki/Chatham_Islands,0.64,False,False
+168,Eastern Australian temperate forests,Eastern Australian temperate forests,https://en.wikipedia.org/wiki/Eastern_Australian_temperate_forests,1.0,True,False
+169,Fiordland temperate forests,Fiordland,https://en.wikipedia.org/wiki/Fiordland,0.5,True,True
+170,Nelson Coast temperate forests,Nelson Coast temperate forests,https://en.wikipedia.org/wiki/Nelson_Coast_temperate_forests,1.0,True,False
+171,New Zealand North Island temperate forests,North Island temperate forests,https://en.wikipedia.org/wiki/North_Island_temperate_forests,0.83,True,True
+172,New Zealand South Island temperate forests,North Island temperate forests,https://en.wikipedia.org/wiki/North_Island_temperate_forests,0.81,False,False
+173,Northland temperate kauri forests,Northland temperate kauri forests,https://en.wikipedia.org/wiki/Northland_temperate_kauri_forests,1.0,True,False
+174,Rakiura Island temperate forests,Stewart Island,https://en.wikipedia.org/wiki/Stewart_Island,0.35,False,True
+175,Richmond temperate forests,Richmond temperate forests,https://en.wikipedia.org/wiki/Richmond_temperate_forests,1.0,True,False
+176,Southeast Australia temperate forests,Southeast Australia temperate forests,https://en.wikipedia.org/wiki/Southeast_Australia_temperate_forests,1.0,True,False
+177,Tasmanian Central Highland forests,Tasmanian Central Highland forests,https://en.wikipedia.org/wiki/Tasmanian_Central_Highland_forests,1.0,True,False
+178,Tasmanian temperate forests,Tasmanian temperate forests,https://en.wikipedia.org/wiki/Tasmanian_temperate_forests,1.0,True,False
+179,Tasmanian temperate rain forests,Tasmanian temperate forests,https://en.wikipedia.org/wiki/Tasmanian_temperate_forests,0.92,True,False
+180,Westland temperate forests,Westland temperate forests,https://en.wikipedia.org/wiki/Westland_temperate_forests,1.0,True,False
+181,Arnhem Land tropical savanna,Arnhem Land tropical savanna,https://en.wikipedia.org/wiki/Arnhem_Land_tropical_savanna,1.0,True,False
+182,Brigalow tropical savanna,Brigalow Belt,https://en.wikipedia.org/wiki/Brigalow_Belt,0.53,False,True
+183,Cape York Peninsula tropical savanna,Cape York Peninsula tropical savanna,https://en.wikipedia.org/wiki/Cape_York_Peninsula_tropical_savanna,1.0,True,False
+184,Carpentaria tropical savanna,Carpentaria tropical savanna,https://en.wikipedia.org/wiki/Carpentaria_tropical_savanna,1.0,True,False
+185,Einasleigh upland savanna,Einasleigh Uplands,https://en.wikipedia.org/wiki/Einasleigh_Uplands,0.84,False,False
+186,Kimberly tropical savanna,Kimberley tropical savanna,https://en.wikipedia.org/wiki/Kimberley_tropical_savanna,0.98,False,False
+187,Mitchell Grass Downs,Mitchell Grass Downs,https://en.wikipedia.org/wiki/Mitchell_Grass_Downs,1.0,True,False
+188,Trans Fly savanna and grasslands,Trans-Fly savanna and grasslands,https://en.wikipedia.org/wiki/Trans-Fly_savanna_and_grasslands,1.0,True,False
+189,Victoria Plains tropical savanna,Victoria Plains tropical savanna,https://en.wikipedia.org/wiki/Victoria_Plains_tropical_savanna,1.0,True,False
+190,Canterbury-Otago tussock grasslands,Canterbury–Otago tussock grasslands,https://en.wikipedia.org/wiki/Canterbury%E2%80%93Otago_tussock_grasslands,0.99,False,False
+191,Eastern Australia mulga shrublands,Mulga Lands,https://en.wikipedia.org/wiki/Mulga_Lands,0.49,False,True
+192,Southeast Australia temperate savanna,Southeast Australia temperate savanna,https://en.wikipedia.org/wiki/Southeast_Australia_temperate_savanna,1.0,True,False
+193,Australian Alps montane grasslands,Australian Alps montane grasslands,https://en.wikipedia.org/wiki/Australian_Alps_montane_grasslands,1.0,True,False
+194,New Zealand South Island montane grasslands,Tussock grasslands of New Zealand,https://en.wikipedia.org/wiki/Tussock_grasslands_of_New_Zealand,0.29,False,True
+195,Papuan Central Range sub-alpine grasslands,Central Range sub-alpine grasslands,https://en.wikipedia.org/wiki/Central_Range_sub-alpine_grasslands,0.91,True,False
+196,Antipodes Subantarctic Islands tundra,Antipodes Subantarctic Islands tundra,https://en.wikipedia.org/wiki/Antipodes_Subantarctic_Islands_tundra,1.0,True,False
+197,Coolgardie woodlands,Coolgardie woodlands,https://en.wikipedia.org/wiki/Coolgardie_woodlands,1.0,True,False
+198,Esperance mallee,Esperance mallee,https://en.wikipedia.org/wiki/Esperance_mallee,1.0,True,False
+199,Eyre and York mallee,Eyre Yorke Block,https://en.wikipedia.org/wiki/Eyre_Yorke_Block,0.61,False,False
+200,Flinders-Lofty montane woodlands,,,,False,False
+201,Hampton mallee and woodlands,Hampton bioregion,https://en.wikipedia.org/wiki/Hampton_bioregion,0.44,False,True
+202,Jarrah-Karri forest and shrublands,Warren bioregion,https://en.wikipedia.org/wiki/Warren_bioregion,0.36,False,True
+203,Murray-Darling woodlands and mallee,Murray Darling Depression,https://en.wikipedia.org/wiki/Murray_Darling_Depression,0.57,False,True
+204,Naracoorte woodlands,Naracoorte woodlands,https://en.wikipedia.org/wiki/Naracoorte_woodlands,1.0,True,False
+205,Southwest Australia savanna,Southwest Australia savanna,https://en.wikipedia.org/wiki/Southwest_Australia_savanna,1.0,True,False
+206,Southwest Australia woodlands,Southwest Australia,https://en.wikipedia.org/wiki/Southwest_Australia,0.79,True,True
+207,Carnarvon xeric shrublands,Carnarvon xeric shrublands,https://en.wikipedia.org/wiki/Carnarvon_xeric_shrublands,1.0,True,False
+208,Central Ranges xeric scrub,Central Ranges xeric scrub,https://en.wikipedia.org/wiki/Central_Ranges_xeric_scrub,1.0,True,False
+209,Gibson desert,Gibson Desert,https://en.wikipedia.org/wiki/Gibson_Desert,1.0,True,False
+210,Great Sandy-Tanami desert,Great Sandy–Tanami desert,https://en.wikipedia.org/wiki/Great_Sandy%E2%80%93Tanami_desert,0.98,False,False
+211,Great Victoria desert,Great Victoria Desert,https://en.wikipedia.org/wiki/Great_Victoria_Desert,1.0,True,False
+212,Nullarbor Plains xeric shrublands,Nullarbor Plain,https://en.wikipedia.org/wiki/Nullarbor_Plain,0.62,False,False
+213,Pilbara shrublands,Pilbara shrublands,https://en.wikipedia.org/wiki/Pilbara_shrublands,1.0,True,False
+214,Simpson desert,Simpson Desert,https://en.wikipedia.org/wiki/Simpson_Desert,1.0,True,False
+215,Tirari-Sturt stony desert,Tirari–Sturt stony desert,https://en.wikipedia.org/wiki/Tirari%E2%80%93Sturt_stony_desert,0.98,False,False
+216,Western Australian Mulga shrublands,Western Australian mulga shrublands,https://en.wikipedia.org/wiki/Western_Australian_mulga_shrublands,1.0,True,False
+217,New Guinea mangroves,New Guinea mangroves,https://en.wikipedia.org/wiki/New_Guinea_mangroves,1.0,True,False
+218,Andaman Islands rain forests,Andaman Islands,https://en.wikipedia.org/wiki/Andaman_Islands,0.7,True,True
+219,Borneo lowland rain forests,Borneo lowland rain forests,https://en.wikipedia.org/wiki/Borneo_lowland_rain_forests,1.0,True,False
+220,Borneo montane rain forests,Borneo montane rain forests,https://en.wikipedia.org/wiki/Borneo_montane_rain_forests,1.0,True,False
+221,Borneo peat swamp forests,Borneo peat swamp forests,https://en.wikipedia.org/wiki/Borneo_peat_swamp_forests,1.0,True,False
+222,Brahmaputra Valley semi-evergreen forests,Brahmaputra Valley semi-evergreen forests,https://en.wikipedia.org/wiki/Brahmaputra_Valley_semi-evergreen_forests,1.0,True,False
+223,Cardamom Mountains rain forests,Cardamom Mountains rain forests,https://en.wikipedia.org/wiki/Cardamom_Mountains_rain_forests,1.0,True,False
+224,Chao Phraya freshwater swamp forests,Chao Phraya freshwater swamp forests,https://en.wikipedia.org/wiki/Chao_Phraya_freshwater_swamp_forests,1.0,True,False
+225,Chao Phraya lowland moist deciduous forests,Chao Phraya lowland moist deciduous forests,https://en.wikipedia.org/wiki/Chao_Phraya_lowland_moist_deciduous_forests,1.0,True,False
+226,Chin Hills-Arakan Yoma montane forests,Chin Hills–Arakan Yoma montane forests,https://en.wikipedia.org/wiki/Chin_Hills%E2%80%93Arakan_Yoma_montane_forests,0.99,False,False
+227,Christmas and Cocos Islands tropical forests,Christmas and Cocos Islands tropical forests,https://en.wikipedia.org/wiki/Christmas_and_Cocos_Islands_tropical_forests,1.0,True,False
+228,East Deccan moist deciduous forests,South Deccan Plateau dry deciduous forests,https://en.wikipedia.org/wiki/South_Deccan_Plateau_dry_deciduous_forests,0.75,False,False
+229,Eastern Java-Bali montane rain forests,Eastern Java–Bali montane rain forests,https://en.wikipedia.org/wiki/Eastern_Java%E2%80%93Bali_montane_rain_forests,0.99,False,False
+230,Eastern Java-Bali rain forests,Eastern Java–Bali rain forests,https://en.wikipedia.org/wiki/Eastern_Java%E2%80%93Bali_rain_forests,0.98,False,False
+231,Greater Negros-Panay rain forests,Greater Negros–Panay rain forests,https://en.wikipedia.org/wiki/Greater_Negros%E2%80%93Panay_rain_forests,0.98,False,False
+232,Hainan Island monsoon rain forests,Hainan Island monsoon rain forests,https://en.wikipedia.org/wiki/Hainan_Island_monsoon_rain_forests,1.0,True,False
+233,Himalayan subtropical broadleaf forests,Himalayan subtropical broadleaf forests,https://en.wikipedia.org/wiki/Himalayan_subtropical_broadleaf_forests,1.0,True,False
+234,Irrawaddy freshwater swamp forests,Irrawaddy freshwater swamp forests,https://en.wikipedia.org/wiki/Irrawaddy_freshwater_swamp_forests,1.0,True,False
+235,Irrawaddy moist deciduous forests,Irrawaddy moist deciduous forests,https://en.wikipedia.org/wiki/Irrawaddy_moist_deciduous_forests,1.0,True,False
+236,Jian Nan subtropical evergreen forests,Jiang Nan subtropical evergreen forests,https://en.wikipedia.org/wiki/Jiang_Nan_subtropical_evergreen_forests,0.99,False,False
+237,Kayah-Karen montane rain forests,Kayah–Karen montane rain forests,https://en.wikipedia.org/wiki/Kayah%E2%80%93Karen_montane_rain_forests,0.98,False,False
+238,Lower Gangetic Plains moist deciduous forests,Lower Gangetic Plains moist deciduous forests,https://en.wikipedia.org/wiki/Lower_Gangetic_Plains_moist_deciduous_forests,1.0,True,False
+239,Luang Prabang montane rain forests,Luang Prabang montane rain forests,https://en.wikipedia.org/wiki/Luang_Prabang_montane_rain_forests,1.0,True,False
+240,Luzon montane rain forests,Luzon montane rain forests,https://en.wikipedia.org/wiki/Luzon_montane_rain_forests,1.0,True,False
+241,Luzon rain forests,Luzon rain forests,https://en.wikipedia.org/wiki/Luzon_rain_forests,1.0,True,False
+242,Malabar Coast moist forests,Malabar Coast moist forests,https://en.wikipedia.org/wiki/Malabar_Coast_moist_forests,1.0,True,False
+243,Maldives-Lakshadweep-Chagos Archipelago tropical moist forests,Maldives–Lakshadweep–Chagos Archipelago tropical moist forests,https://en.wikipedia.org/wiki/Maldives%E2%80%93Lakshadweep%E2%80%93Chagos_Archipelago_tropical_moist_forests,0.98,False,False
+244,Meghalaya subtropical forests,Meghalaya subtropical forests,https://en.wikipedia.org/wiki/Meghalaya_subtropical_forests,1.0,True,False
+245,Mentawai Islands rain forests,Mentawai Islands rain forests,https://en.wikipedia.org/wiki/Mentawai_Islands_rain_forests,1.0,True,False
+246,Mindanao montane rain forests,Mindanao montane rain forests,https://en.wikipedia.org/wiki/Mindanao_montane_rain_forests,1.0,True,False
+247,Mindanao-Eastern Visayas rain forests,Mindanao–Eastern Visayas rain forests,https://en.wikipedia.org/wiki/Mindanao%E2%80%93Eastern_Visayas_rain_forests,0.99,False,False
+248,Mindoro rain forests,Mindoro rain forests,https://en.wikipedia.org/wiki/Mindoro_rain_forests,1.0,True,False
+249,Mizoram-Manipur-Kachin rain forests,Mizoram–Manipur–Kachin rain forests,https://en.wikipedia.org/wiki/Mizoram%E2%80%93Manipur%E2%80%93Kachin_rain_forests,0.97,False,False
+250,Myanmar coastal rain forests,Myanmar coastal rain forests,https://en.wikipedia.org/wiki/Myanmar_coastal_rain_forests,1.0,True,False
+251,Nansei Islands subtropical evergreen forests,Nansei Islands subtropical evergreen forests,https://en.wikipedia.org/wiki/Nansei_Islands_subtropical_evergreen_forests,1.0,True,False
+252,Nicobar Islands rain forests,Nicobar Islands rain forests,https://en.wikipedia.org/wiki/Nicobar_Islands_rain_forests,1.0,True,False
+253,North Western Ghats moist deciduous forests,North Western Ghats moist deciduous forests,https://en.wikipedia.org/wiki/North_Western_Ghats_moist_deciduous_forests,1.0,True,False
+254,North Western Ghats montane rain forests,North Western Ghats montane rain forests,https://en.wikipedia.org/wiki/North_Western_Ghats_montane_rain_forests,1.0,True,False
+255,Northern Annamites rain forests,Northern Annamites rain forests,https://en.wikipedia.org/wiki/Northern_Annamites_rain_forests,1.0,True,False
+256,Northern Indochina subtropical forests,Northern Indochina subtropical forests,https://en.wikipedia.org/wiki/Northern_Indochina_subtropical_forests,1.0,True,False
+257,Northern Khorat Plateau moist deciduous forests,Northern Khorat Plateau moist deciduous forests,https://en.wikipedia.org/wiki/Northern_Khorat_Plateau_moist_deciduous_forests,1.0,True,False
+258,Northern Thailand-Laos moist deciduous forests,Northern Thailand–Laos moist deciduous forests,https://en.wikipedia.org/wiki/Northern_Thailand%E2%80%93Laos_moist_deciduous_forests,0.99,False,False
+259,Northern Triangle subtropical forests,Northern Triangle subtropical forests,https://en.wikipedia.org/wiki/Northern_Triangle_subtropical_forests,1.0,True,False
+260,Northern Vietnam lowland rain forests,Northern Vietnam lowland rain forests,https://en.wikipedia.org/wiki/Northern_Vietnam_lowland_rain_forests,1.0,True,False
+261,Orissa semi-evergreen forests,Odisha semi-evergreen forests,https://en.wikipedia.org/wiki/Odisha_semi-evergreen_forests,0.93,False,False
+262,Palawan rain forests,Palawan rain forests,https://en.wikipedia.org/wiki/Palawan_rain_forests,1.0,True,False
+263,Peninsular Malaysian montane rain forests,Peninsular Malaysian montane rain forests,https://en.wikipedia.org/wiki/Peninsular_Malaysian_montane_rain_forests,1.0,True,False
+264,Peninsular Malaysian peat swamp forests,Peninsular Malaysian peat swamp forests,https://en.wikipedia.org/wiki/Peninsular_Malaysian_peat_swamp_forests,1.0,True,False
+265,Peninsular Malaysian rain forests,Peninsular Malaysian rain forests,https://en.wikipedia.org/wiki/Peninsular_Malaysian_rain_forests,1.0,True,False
+266,Red River freshwater swamp forests,Red River freshwater swamp forests,https://en.wikipedia.org/wiki/Red_River_freshwater_swamp_forests,1.0,True,False
+267,South China Sea Islands,South China Sea Islands,https://en.wikipedia.org/wiki/South_China_Sea_Islands,1.0,True,False
+268,South China-Vietnam subtropical evergreen forests,South China–Vietnam subtropical evergreen forests,https://en.wikipedia.org/wiki/South_China%E2%80%93Vietnam_subtropical_evergreen_forests,0.99,False,False
+269,South Taiwan monsoon rain forests,South Taiwan monsoon rain forests,https://en.wikipedia.org/wiki/South_Taiwan_monsoon_rain_forests,1.0,True,False
+270,South Western Ghats moist deciduous forests,South Western Ghats moist deciduous forests,https://en.wikipedia.org/wiki/South_Western_Ghats_moist_deciduous_forests,1.0,True,False
+271,South Western Ghats montane rain forests,South Western Ghats montane rain forests,https://en.wikipedia.org/wiki/South_Western_Ghats_montane_rain_forests,1.0,True,False
+272,Southern Annamites montane rain forests,Southern Annamites montane rain forests,https://en.wikipedia.org/wiki/Southern_Annamites_montane_rain_forests,1.0,True,False
+273,Southwest Borneo freshwater swamp forests,Southwest Borneo freshwater swamp forests,https://en.wikipedia.org/wiki/Southwest_Borneo_freshwater_swamp_forests,1.0,True,False
+274,Sri Lanka lowland rain forests,Sri Lanka lowland rain forests,https://en.wikipedia.org/wiki/Sri_Lanka_lowland_rain_forests,1.0,True,False
+275,Sri Lanka montane rain forests,Sri Lanka montane rain forests,https://en.wikipedia.org/wiki/Sri_Lanka_montane_rain_forests,1.0,True,False
+276,Sulu Archipelago rain forests,Sulu Archipelago rain forests,https://en.wikipedia.org/wiki/Sulu_Archipelago_rain_forests,1.0,True,False
+277,Sumatran freshwater swamp forests,Sumatran freshwater swamp forests,https://en.wikipedia.org/wiki/Sumatran_freshwater_swamp_forests,1.0,True,False
+278,Sumatran lowland rain forests,Sumatran lowland rain forests,https://en.wikipedia.org/wiki/Sumatran_lowland_rain_forests,1.0,True,False
+279,Sumatran montane rain forests,Sumatran montane rain forests,https://en.wikipedia.org/wiki/Sumatran_montane_rain_forests,1.0,True,False
+280,Sumatran peat swamp forests,Sumatran peat swamp forests,https://en.wikipedia.org/wiki/Sumatran_peat_swamp_forests,1.0,True,False
+281,Sundaland heath forests,Sundaland heath forests,https://en.wikipedia.org/wiki/Sundaland_heath_forests,1.0,True,False
+282,Sundarbans freshwater swamp forests,Sundarbans,https://en.wikipedia.org/wiki/Sundarbans,0.44,True,True
+283,Taiwan subtropical evergreen forests,Taiwan subtropical evergreen forests,https://en.wikipedia.org/wiki/Taiwan_subtropical_evergreen_forests,1.0,True,False
+284,Tenasserim-South Thailand semi-evergreen rain forests,Tenasserim–South Thailand semi-evergreen rain forests,https://en.wikipedia.org/wiki/Tenasserim%E2%80%93South_Thailand_semi-evergreen_rain_forests,0.99,False,False
+285,Tonle Sap freshwater swamp forests,Tonle Sap freshwater swamp forests,https://en.wikipedia.org/wiki/Tonle_Sap_freshwater_swamp_forests,1.0,True,False
+286,Tonle Sap-Mekong peat swamp forests,Tonle Sap–Mekong peat swamp forests,https://en.wikipedia.org/wiki/Tonle_Sap%E2%80%93Mekong_peat_swamp_forests,0.99,False,False
+287,Upper Gangetic Plains moist deciduous forests,Upper Gangetic Plains moist deciduous forests,https://en.wikipedia.org/wiki/Upper_Gangetic_Plains_moist_deciduous_forests,1.0,True,False
+288,Western Java montane rain forests,Western Java montane rain forests,https://en.wikipedia.org/wiki/Western_Java_montane_rain_forests,1.0,True,False
+289,Western Java rain forests,Western Java rain forests,https://en.wikipedia.org/wiki/Western_Java_rain_forests,1.0,True,False
+290,Central Deccan Plateau dry deciduous forests,Central Deccan Plateau dry deciduous forests,https://en.wikipedia.org/wiki/Central_Deccan_Plateau_dry_deciduous_forests,1.0,True,False
+291,Central Indochina dry forests,Central Indochina dry forests,https://en.wikipedia.org/wiki/Central_Indochina_dry_forests,1.0,True,False
+292,Chhota-Nagpur dry deciduous forests,Chota Nagpur Plateau,https://en.wikipedia.org/wiki/Chota_Nagpur_Plateau,0.55,False,True
+293,East Deccan dry-evergreen forests,East Deccan dry evergreen forests,https://en.wikipedia.org/wiki/East_Deccan_dry_evergreen_forests,1.0,True,False
+294,Irrawaddy dry forests,Irrawaddy dry forests,https://en.wikipedia.org/wiki/Irrawaddy_dry_forests,1.0,True,False
+295,Khathiar-Gir dry deciduous forests,Khathiar–Gir dry deciduous forests,https://en.wikipedia.org/wiki/Khathiar%E2%80%93Gir_dry_deciduous_forests,0.99,False,False
+296,Narmada Valley dry deciduous forests,Narmada Valley dry deciduous forests,https://en.wikipedia.org/wiki/Narmada_Valley_dry_deciduous_forests,1.0,True,False
+297,North Deccan dry deciduous forests,South Deccan Plateau dry deciduous forests,https://en.wikipedia.org/wiki/South_Deccan_Plateau_dry_deciduous_forests,0.84,False,False
+298,South Deccan Plateau dry deciduous forests,South Deccan Plateau dry deciduous forests,https://en.wikipedia.org/wiki/South_Deccan_Plateau_dry_deciduous_forests,1.0,True,False
+299,Southeast Indochina dry evergreen forests,Southeastern Indochina dry evergreen forests,https://en.wikipedia.org/wiki/Southeastern_Indochina_dry_evergreen_forests,0.96,False,False
+300,Southern Vietnam lowland dry forests,Southern Vietnam lowland dry forests,https://en.wikipedia.org/wiki/Southern_Vietnam_lowland_dry_forests,1.0,True,False
+301,Sri Lanka dry-zone dry evergreen forests,Sri Lanka dry-zone dry evergreen forests,https://en.wikipedia.org/wiki/Sri_Lanka_dry-zone_dry_evergreen_forests,1.0,True,False
+302,Himalayan subtropical pine forests,Himalayan subtropical pine forests,https://en.wikipedia.org/wiki/Himalayan_subtropical_pine_forests,1.0,True,False
+303,Luzon tropical pine forests,Luzon tropical pine forests,https://en.wikipedia.org/wiki/Luzon_tropical_pine_forests,1.0,True,False
+304,Northeast India-Myanmar pine forests,Northeast India–Myanmar pine forests,https://en.wikipedia.org/wiki/Northeast_India%E2%80%93Myanmar_pine_forests,0.99,False,False
+305,Sumatran tropical pine forests,Sumatran tropical pine forests,https://en.wikipedia.org/wiki/Sumatran_tropical_pine_forests,1.0,True,False
+306,Eastern Himalayan broadleaf forests,Eastern Himalayan broadleaf forests,https://en.wikipedia.org/wiki/Eastern_Himalayan_broadleaf_forests,1.0,True,False
+307,Northern Triangle temperate forests,Northern Triangle temperate forests,https://en.wikipedia.org/wiki/Northern_Triangle_temperate_forests,1.0,True,False
+308,Western Himalayan broadleaf forests,Western Himalayan broadleaf forests,https://en.wikipedia.org/wiki/Western_Himalayan_broadleaf_forests,1.0,True,False
+309,Eastern Himalayan subalpine conifer forests,Eastern Himalayan subalpine conifer forests,https://en.wikipedia.org/wiki/Eastern_Himalayan_subalpine_conifer_forests,1.0,True,False
+310,Western Himalayan subalpine conifer forests,Western Himalayan subalpine conifer forests,https://en.wikipedia.org/wiki/Western_Himalayan_subalpine_conifer_forests,1.0,True,False
+311,Terai-Duar savanna and grasslands,Terai–Duar savanna and grasslands,https://en.wikipedia.org/wiki/Terai%E2%80%93Duar_savanna_and_grasslands,0.98,False,False
+312,Rann of Kutch seasonal salt marsh,Rann of Kutch,https://en.wikipedia.org/wiki/Rann_of_Kutch,0.57,True,True
+313,Kinabalu montane alpine meadows,Mount Kinabalu,https://en.wikipedia.org/wiki/Mount_Kinabalu,0.36,False,True
+314,Aravalli west thorn scrub forests,Aravalli West Thorn Scrub Forests,https://en.wikipedia.org/wiki/Aravalli_West_Thorn_Scrub_Forests,1.0,True,False
+315,Deccan thorn scrub forests,Deccan thorn scrub forests,https://en.wikipedia.org/wiki/Deccan_thorn_scrub_forests,1.0,True,False
+316,Godavari-Krishna mangroves,Godavari–Krishna mangroves,https://en.wikipedia.org/wiki/Godavari%E2%80%93Krishna_mangroves,0.98,False,False
+317,Indus Valley desert,Indus Valley Desert,https://en.wikipedia.org/wiki/Indus_Valley_Desert,1.0,True,False
+318,Thar desert,Thar Desert,https://en.wikipedia.org/wiki/Thar_Desert,1.0,True,False
+319,Indochina mangroves,Indochina mangroves,https://en.wikipedia.org/wiki/Indochina_mangroves,1.0,True,False
+320,Indus River Delta-Arabian Sea mangroves,Indus River Delta–Arabian Sea mangroves,https://en.wikipedia.org/wiki/Indus_River_Delta%E2%80%93Arabian_Sea_mangroves,0.99,False,False
+321,Myanmar Coast mangroves,Myanmar Coast mangroves,https://en.wikipedia.org/wiki/Myanmar_Coast_mangroves,1.0,True,False
+322,Sunda Shelf mangroves,Sunda Shelf mangroves,https://en.wikipedia.org/wiki/Sunda_Shelf_mangroves,1.0,True,False
+323,Sundarbans mangroves,Sundarbans,https://en.wikipedia.org/wiki/Sundarbans,0.67,True,True
+324,Sonoran-Sinaloan subtropical dry forest,Sonoran–Sinaloan transition subtropical dry forest,https://en.wikipedia.org/wiki/Sonoran%E2%80%93Sinaloan_transition_subtropical_dry_forest,0.86,False,False
+325,Bermuda subtropical conifer forests,Bermuda,https://en.wikipedia.org/wiki/Bermuda,0.33,True,True
+326,Sierra Madre Occidental pine-oak forests,Sierra Madre Occidental,https://en.wikipedia.org/wiki/Sierra_Madre_Occidental,0.73,True,True
+327,Sierra Madre Oriental pine-oak forests,Sierra Madre Oriental,https://en.wikipedia.org/wiki/Sierra_Madre_Oriental,0.71,True,True
+328,Allegheny Highlands forests,Allegheny Highlands forests,https://en.wikipedia.org/wiki/Allegheny_Highlands_forests,1.0,True,False
+329,Appalachian mixed mesophytic forests,Appalachian mixed mesophytic forests,https://en.wikipedia.org/wiki/Appalachian_mixed_mesophytic_forests,1.0,True,False
+330,Appalachian Piedmont forests,Appalachian Highlands,https://en.wikipedia.org/wiki/Appalachian_Highlands,0.61,False,False
+331,Appalachian-Blue Ridge forests,Appalachian–Blue Ridge forests,https://en.wikipedia.org/wiki/Appalachian%E2%80%93Blue_Ridge_forests,0.98,False,False
+332,East Central Texas forests,East Central Texas forests,https://en.wikipedia.org/wiki/East_Central_Texas_forests,1.0,True,False
+333,Eastern Canadian Forest-Boreal transition,Eastern forest–boreal transition,https://en.wikipedia.org/wiki/Eastern_forest%E2%80%93boreal_transition,0.86,False,False
+334,Eastern Great Lakes lowland forests,Eastern Great Lakes lowland forests,https://en.wikipedia.org/wiki/Eastern_Great_Lakes_lowland_forests,1.0,True,False
+335,Gulf of St. Lawrence lowland forests,Gulf of St. Lawrence lowland forests,https://en.wikipedia.org/wiki/Gulf_of_St._Lawrence_lowland_forests,1.0,True,False
+336,Interior Plateau US Hardwood Forests,Central U.S. hardwood forests,https://en.wikipedia.org/wiki/Central_U.S._hardwood_forests,0.76,False,False
+337,Mississippi lowland forests,Mississippi lowland forests,https://en.wikipedia.org/wiki/Mississippi_lowland_forests,1.0,True,False
+338,New England-Acadian forests,New England–Acadian forests,https://en.wikipedia.org/wiki/New_England%E2%80%93Acadian_forests,0.98,False,False
+339,Northeast US Coastal forests,,,,False,False
+340,Ozark Highlands mixed forests,Ozark Mountain forests,https://en.wikipedia.org/wiki/Ozark_Mountain_forests,0.63,False,False
+341,Ozark Mountain forests,Ozark Mountain forests,https://en.wikipedia.org/wiki/Ozark_Mountain_forests,1.0,True,False
+342,Southern Great Lakes forests,Southern Great Lakes forests,https://en.wikipedia.org/wiki/Southern_Great_Lakes_forests,1.0,True,False
+343,Upper Midwest US forest-savanna transition,,,,False,False
+344,Western Great Lakes forests,Western Great Lakes forests,https://en.wikipedia.org/wiki/Western_Great_Lakes_forests,1.0,True,False
+345,Alberta-British Columbia foothills forests,Alberta–British Columbia foothills forests,https://en.wikipedia.org/wiki/Alberta%E2%80%93British_Columbia_foothills_forests,0.99,False,False
+346,Arizona Mountains forests,Arizona/New Mexico Mountains ecoregion,https://en.wikipedia.org/wiki/Arizona/New_Mexico_Mountains_ecoregion,0.68,False,False
+347,Atlantic coastal pine barrens,Atlantic coastal pine barrens,https://en.wikipedia.org/wiki/Atlantic_coastal_pine_barrens,1.0,True,False
+348,Blue Mountains forests,Blue Ridge Mountains,https://en.wikipedia.org/wiki/Blue_Ridge_Mountains,0.67,False,False
+349,British Columbia coastal conifer forests,British Columbia mainland coastal forests,https://en.wikipedia.org/wiki/British_Columbia_mainland_coastal_forests,0.79,False,False
+350,Central British Columbia Mountain forests,Central British Columbia Mountain forests,https://en.wikipedia.org/wiki/Central_British_Columbia_Mountain_forests,1.0,True,False
+351,Central Pacific Northwest coastal forests,Central Pacific coastal forests,https://en.wikipedia.org/wiki/Central_Pacific_coastal_forests,0.86,True,True
+352,Central-Southern Cascades Forests,,,,False,False
+353,Colorado Rockies forests,Colorado Rockies forests,https://en.wikipedia.org/wiki/Colorado_Rockies_forests,1.0,True,False
+354,Eastern Cascades forests,Eastern Cascades Slopes and Foothills,https://en.wikipedia.org/wiki/Eastern_Cascades_Slopes_and_Foothills,0.66,False,False
+355,Fraser Plateau and Basin conifer forests,Fraser Plateau and Basin complex,https://en.wikipedia.org/wiki/Fraser_Plateau_and_Basin_complex,0.78,False,False
+356,Great Basin montane forests,Great Basin montane forests,https://en.wikipedia.org/wiki/Great_Basin_montane_forests,1.0,True,False
+357,Klamath-Siskiyou forests,Klamath Mountains (ecoregion),https://en.wikipedia.org/wiki/Klamath_Mountains_(ecoregion),0.55,False,True
+358,North Cascades conifer forests,Cascades (ecoregion),https://en.wikipedia.org/wiki/Cascades_(ecoregion),0.54,False,True
+359,Northern California coastal forests,Northern California coastal forests,https://en.wikipedia.org/wiki/Northern_California_coastal_forests,1.0,True,False
+360,Northern Pacific Alaskan coastal forests,Northern Pacific coastal forests,https://en.wikipedia.org/wiki/Northern_Pacific_coastal_forests,0.89,True,True
+361,Northern Rockies conifer forests,North Central Rockies forests,https://en.wikipedia.org/wiki/North_Central_Rockies_forests,0.75,False,False
+362,Okanogan dry forests,Okanagan dry forests,https://en.wikipedia.org/wiki/Okanagan_dry_forests,0.95,False,False
+363,Piney Woods,Piney Woods,https://en.wikipedia.org/wiki/Piney_Woods,1.0,True,False
+364,Puget lowland forests,Puget lowland forests,https://en.wikipedia.org/wiki/Puget_lowland_forests,1.0,True,False
+365,Queen Charlotte Islands conifer forests,,,,False,False
+366,Sierra Nevada forests,Sierra Nevada,https://en.wikipedia.org/wiki/Sierra_Nevada,0.76,True,True
+367,South Central Rockies forests,South Central Rockies forests,https://en.wikipedia.org/wiki/South_Central_Rockies_forests,1.0,True,False
+368,Wasatch and Uinta montane forests,Wasatch and Uinta montane forests,https://en.wikipedia.org/wiki/Wasatch_and_Uinta_montane_forests,1.0,True,False
+369,Alaska Peninsula montane taiga,Alaska Peninsula montane taiga,https://en.wikipedia.org/wiki/Alaska_Peninsula_montane_taiga,1.0,True,False
+370,Central Canadian Shield forests,Central Canadian Shield forests,https://en.wikipedia.org/wiki/Central_Canadian_Shield_forests,1.0,True,False
+371,Cook Inlet taiga,Cook Inlet taiga,https://en.wikipedia.org/wiki/Cook_Inlet_taiga,1.0,True,False
+372,Copper Plateau taiga,Copper Plateau taiga,https://en.wikipedia.org/wiki/Copper_Plateau_taiga,1.0,True,False
+373,Eastern Canadian forests,Eastern Canadian Boreal Forests,https://en.wikipedia.org/wiki/Eastern_Canadian_Boreal_Forests,0.87,False,False
+374,Eastern Canadian Shield taiga,Eastern Canadian Shield taiga,https://en.wikipedia.org/wiki/Eastern_Canadian_Shield_taiga,1.0,True,False
+375,Interior Alaska-Yukon lowland taiga,Interior Alaska–Yukon lowland taiga,https://en.wikipedia.org/wiki/Interior_Alaska%E2%80%93Yukon_lowland_taiga,0.99,False,False
+376,Mid-Canada Boreal Plains forests,Mid-Canada Boreal Plains Forests,https://en.wikipedia.org/wiki/Mid-Canada_Boreal_Plains_Forests,1.0,True,False
+377,Midwest Canadian Shield forests,Midwest Canadian Shield Forests,https://en.wikipedia.org/wiki/Midwest_Canadian_Shield_Forests,1.0,True,False
+378,Muskwa-Slave Lake taiga,Muskwa–Slave Lake Taiga,https://en.wikipedia.org/wiki/Muskwa%E2%80%93Slave_Lake_Taiga,0.98,False,False
+379,Northern Canadian Shield taiga,Northern Canadian Shield taiga,https://en.wikipedia.org/wiki/Northern_Canadian_Shield_taiga,1.0,True,False
+380,Northern Cordillera forests,Northern Cordillera forests,https://en.wikipedia.org/wiki/Northern_Cordillera_forests,1.0,True,False
+381,Northwest Territories taiga,Northwest Territories taiga,https://en.wikipedia.org/wiki/Northwest_Territories_taiga,1.0,True,False
+382,Southern Hudson Bay taiga,Southern Hudson Bay taiga,https://en.wikipedia.org/wiki/Southern_Hudson_Bay_taiga,1.0,True,False
+383,Watson Highlands taiga,,,,False,False
+384,Western Gulf coastal grasslands,Western Gulf coastal grasslands,https://en.wikipedia.org/wiki/Western_Gulf_coastal_grasslands,1.0,True,False
+385,California Central Valley grasslands,California Central Valley grasslands,https://en.wikipedia.org/wiki/California_Central_Valley_grasslands,1.0,True,False
+386,Canadian Aspen forests and parklands,Canadian Aspen Forests and Parklands,https://en.wikipedia.org/wiki/Canadian_Aspen_Forests_and_Parklands,1.0,True,False
+387,Central US forest-grasslands transition,Central forest–grasslands transition,https://en.wikipedia.org/wiki/Central_forest%E2%80%93grasslands_transition,0.95,False,False
+388,Central Tallgrass prairie,Tallgrass prairie,https://en.wikipedia.org/wiki/Tallgrass_prairie,0.81,True,True
+389,Central-Southern US mixed grasslands,,,,False,False
+390,Cross-Timbers savanna-woodland,,,,False,False
+391,Edwards Plateau savanna,Edwards Plateau,https://en.wikipedia.org/wiki/Edwards_Plateau,0.79,True,True
+392,Flint Hills tallgrass prairie,Flint Hills,https://en.wikipedia.org/wiki/Flint_Hills,0.55,True,True
+393,Mid-Atlantic US coastal savannas,Middle Atlantic coastal forests,https://en.wikipedia.org/wiki/Middle_Atlantic_coastal_forests,0.73,False,False
+394,Montana Valley and Foothill grasslands,Montana valley and foothill grasslands,https://en.wikipedia.org/wiki/Montana_valley_and_foothill_grasslands,1.0,True,False
+395,Nebraska Sand Hills mixed grasslands,Sandhills (Nebraska),https://en.wikipedia.org/wiki/Sandhills_(Nebraska),0.3,False,True
+396,Northern Shortgrass prairie,Northern Shortgrass Prairie,https://en.wikipedia.org/wiki/Northern_Shortgrass_Prairie,1.0,True,False
+397,Northern Tallgrass prairie,Tallgrass prairie,https://en.wikipedia.org/wiki/Tallgrass_prairie,0.79,True,True
+398,Palouse prairie,Palouse,https://en.wikipedia.org/wiki/Palouse,0.64,True,True
+399,Southeast US conifer savannas,,,,False,False
+400,Southeast US mixed woodlands and savannas,,,,False,False
+401,Texas blackland prairies,Texas Blackland Prairies,https://en.wikipedia.org/wiki/Texas_Blackland_Prairies,1.0,True,False
+402,Western shortgrass prairie,Western short grasslands,https://en.wikipedia.org/wiki/Western_short_grasslands,0.76,False,False
+403,Willamette Valley oak savanna,Willamette Valley,https://en.wikipedia.org/wiki/Willamette_Valley,0.74,True,True
+404,Ahklun and Kilbuck Upland Tundra,,,,False,False
+405,Alaska-St. Elias Range tundra,Alaska–St. Elias Range tundra,https://en.wikipedia.org/wiki/Alaska%E2%80%93St._Elias_Range_tundra,0.98,False,False
+406,Aleutian Islands tundra,Aleutian Islands,https://en.wikipedia.org/wiki/Aleutian_Islands,0.82,True,True
+407,Arctic coastal tundra,Arctic coastal tundra,https://en.wikipedia.org/wiki/Arctic_coastal_tundra,1.0,True,False
+408,Arctic foothills tundra,Arctic foothills tundra,https://en.wikipedia.org/wiki/Arctic_foothills_tundra,1.0,True,False
+409,Beringia lowland tundra,Beringia lowland tundra,https://en.wikipedia.org/wiki/Beringia_lowland_tundra,1.0,True,False
+410,Beringia upland tundra,Beringia upland tundra,https://en.wikipedia.org/wiki/Beringia_upland_tundra,1.0,True,False
+411,Brooks-British Range tundra,Brooks–British Range tundra,https://en.wikipedia.org/wiki/Brooks%E2%80%93British_Range_tundra,0.98,False,False
+412,Canadian High Arctic tundra,High Arctic tundra,https://en.wikipedia.org/wiki/High_Arctic_tundra,0.8,True,True
+413,Canadian Low Arctic tundra,Canadian Arctic tundra,https://en.wikipedia.org/wiki/Canadian_Arctic_tundra,0.92,True,False
+414,Canadian Middle Arctic Tundra,Tundra,https://en.wikipedia.org/wiki/Tundra,0.34,True,True
+415,Davis Highlands tundra,Davis Highlands tundra,https://en.wikipedia.org/wiki/Davis_Highlands_tundra,1.0,True,False
+416,Interior Yukon-Alaska alpine tundra,Interior Yukon–Alaska alpine tundra,https://en.wikipedia.org/wiki/Interior_Yukon%E2%80%93Alaska_alpine_tundra,0.99,False,False
+417,Kalaallit Nunaat Arctic steppe,Kalaallit Nunaat Arctic Steppe,https://en.wikipedia.org/wiki/Kalaallit_Nunaat_Arctic_Steppe,1.0,True,False
+418,Kalaallit Nunaat High Arctic tundra,High Arctic tundra,https://en.wikipedia.org/wiki/High_Arctic_tundra,0.68,True,True
+419,Ogilvie-MacKenzie alpine tundra,Ogilvie–MacKenzie alpine tundra,https://en.wikipedia.org/wiki/Ogilvie%E2%80%93MacKenzie_alpine_tundra,0.98,False,False
+420,Pacific Coastal Mountain icefields and tundra,Pacific Coastal Mountain icefields and tundra,https://en.wikipedia.org/wiki/Pacific_Coastal_Mountain_icefields_and_tundra,1.0,True,False
+421,Torngat Mountain tundra,Torngat Mountain tundra,https://en.wikipedia.org/wiki/Torngat_Mountain_tundra,1.0,True,False
+422,California coastal sage and chaparral,California coastal sage and chaparral,https://en.wikipedia.org/wiki/California_coastal_sage_and_chaparral,1.0,True,False
+423,California interior chaparral and woodlands,California interior chaparral and woodlands,https://en.wikipedia.org/wiki/California_interior_chaparral_and_woodlands,1.0,True,False
+424,California montane chaparral and woodlands,California montane chaparral and woodlands,https://en.wikipedia.org/wiki/California_montane_chaparral_and_woodlands,1.0,True,False
+425,Santa Lucia Montane Chaparral & Woodlands,California montane chaparral and woodlands,https://en.wikipedia.org/wiki/California_montane_chaparral_and_woodlands,0.8,False,False
+426,Baja California desert,Baja California desert,https://en.wikipedia.org/wiki/Baja_California_desert,1.0,True,False
+427,Central Mexican matorral,Central Mexican matorral,https://en.wikipedia.org/wiki/Central_Mexican_matorral,1.0,True,False
+428,Chihuahuan desert,Chihuahuan Desert,https://en.wikipedia.org/wiki/Chihuahuan_Desert,1.0,True,False
+429,Colorado Plateau shrublands,Colorado Plateau shrublands,https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands,1.0,True,False
+430,Great Basin shrub steppe,Great Basin,https://en.wikipedia.org/wiki/Great_Basin,0.63,True,True
+431,Gulf of California xeric scrub,Gulf of California xeric scrub,https://en.wikipedia.org/wiki/Gulf_of_California_xeric_scrub,1.0,True,False
+432,Meseta Central matorral,Meseta Central matorral,https://en.wikipedia.org/wiki/Meseta_Central_matorral,1.0,True,False
+433,Mojave desert,Mojave Desert,https://en.wikipedia.org/wiki/Mojave_Desert,1.0,True,False
+434,Snake-Columbia shrub steppe,Snake–Columbia shrub steppe,https://en.wikipedia.org/wiki/Snake%E2%80%93Columbia_shrub_steppe,0.98,False,False
+435,Sonoran desert,Sonoran Desert,https://en.wikipedia.org/wiki/Sonoran_Desert,1.0,True,False
+436,Tamaulipan matorral,Tamaulipan matorral,https://en.wikipedia.org/wiki/Tamaulipan_matorral,1.0,True,False
+437,Tamaulipan mezquital,Tamaulipan mezquital,https://en.wikipedia.org/wiki/Tamaulipan_mezquital,1.0,True,False
+438,Wyoming Basin shrub steppe,Wyoming Basin shrub steppe,https://en.wikipedia.org/wiki/Wyoming_Basin_shrub_steppe,1.0,True,False
+439,Alto Paraná Atlantic forests,Alto Paraná Atlantic forests,https://en.wikipedia.org/wiki/Alto_Paran%C3%A1_Atlantic_forests,1.0,True,False
+440,Araucaria moist forests,Araucaria moist forests,https://en.wikipedia.org/wiki/Araucaria_moist_forests,1.0,True,False
+441,Atlantic Coast restingas,Atlantic Coast restingas,https://en.wikipedia.org/wiki/Atlantic_Coast_restingas,1.0,True,False
+442,Bahia coastal forests,Bahia coastal forests,https://en.wikipedia.org/wiki/Bahia_coastal_forests,1.0,True,False
+443,Bahia interior forests,Bahia interior forests,https://en.wikipedia.org/wiki/Bahia_interior_forests,1.0,True,False
+444,Bolivian Yungas,Bolivian Yungas,https://en.wikipedia.org/wiki/Bolivian_Yungas,1.0,True,False
+445,Caatinga Enclaves moist forests,Caatinga,https://en.wikipedia.org/wiki/Caatinga,0.41,True,True
+446,Caqueta moist forests,Caquetá moist forests,https://en.wikipedia.org/wiki/Caquet%C3%A1_moist_forests,0.98,False,False
+447,Catatumbo moist forests,Catatumbo moist forests,https://en.wikipedia.org/wiki/Catatumbo_moist_forests,1.0,True,False
+448,Cauca Valley montane forests,Cauca Valley montane forests,https://en.wikipedia.org/wiki/Cauca_Valley_montane_forests,1.0,True,False
+449,Cayos Miskitos-San Andrés and Providencia moist forests,Cayos Miskitos–San Andrés and Providencia moist forests,https://en.wikipedia.org/wiki/Cayos_Miskitos%E2%80%93San_Andr%C3%A9s_and_Providencia_moist_forests,0.99,False,False
+450,Central American Atlantic moist forests,Central American Atlantic moist forests,https://en.wikipedia.org/wiki/Central_American_Atlantic_moist_forests,1.0,True,False
+451,Central American montane forests,Central American montane forests,https://en.wikipedia.org/wiki/Central_American_montane_forests,1.0,True,False
+452,Chiapas montane forests,Chiapas montane forests,https://en.wikipedia.org/wiki/Chiapas_montane_forests,1.0,True,False
+453,Chimalapas montane forests,Chimalapas montane forests,https://en.wikipedia.org/wiki/Chimalapas_montane_forests,1.0,True,False
+454,Chocó-Darién moist forests,Chocó–Darién moist forests,https://en.wikipedia.org/wiki/Choc%C3%B3%E2%80%93Dari%C3%A9n_moist_forests,0.98,False,False
+455,Cocos Island moist forests,Cocos Island,https://en.wikipedia.org/wiki/Cocos_Island,0.63,True,True
+456,Cordillera La Costa montane forests,Cordillera de la Costa montane forests,https://en.wikipedia.org/wiki/Cordillera_de_la_Costa_montane_forests,0.96,False,False
+457,Cordillera Oriental montane forests,Cordillera Oriental montane forests,https://en.wikipedia.org/wiki/Cordillera_Oriental_montane_forests,1.0,True,False
+458,Costa Rican seasonal moist forests,Costa Rican seasonal moist forests,https://en.wikipedia.org/wiki/Costa_Rican_seasonal_moist_forests,1.0,True,False
+459,Cuban moist forests,Cuban moist forests,https://en.wikipedia.org/wiki/Cuban_moist_forests,1.0,True,False
+460,Eastern Cordillera Real montane forests,Eastern Cordillera Real montane forests,https://en.wikipedia.org/wiki/Eastern_Cordillera_Real_montane_forests,1.0,True,False
+461,Eastern Panamanian montane forests,Eastern Panamanian montane forests,https://en.wikipedia.org/wiki/Eastern_Panamanian_montane_forests,1.0,True,False
+462,Fernando de Noronha-Atol das Rocas moist forests,Fernando de Noronha,https://en.wikipedia.org/wiki/Fernando_de_Noronha,0.57,True,True
+463,Guianan freshwater swamp forests,Guianan moist forests,https://en.wikipedia.org/wiki/Guianan_moist_forests,0.68,False,False
+464,Guianan Highlands moist forests,Guianan Highlands moist forests,https://en.wikipedia.org/wiki/Guianan_Highlands_moist_forests,1.0,True,False
+465,Guianan lowland moist forests,Guianan moist forests,https://en.wikipedia.org/wiki/Guianan_moist_forests,0.84,True,True
+466,Guianan piedmont moist forests,Guianan piedmont and lowland moist forests,https://en.wikipedia.org/wiki/Guianan_piedmont_and_lowland_moist_forests,0.83,False,False
+467,Gurupa várzea,Gurupa várzea,https://en.wikipedia.org/wiki/Gurupa_v%C3%A1rzea,1.0,True,False
+468,Hispaniolan moist forests,Hispaniolan moist forests,https://en.wikipedia.org/wiki/Hispaniolan_moist_forests,1.0,True,False
+469,Iquitos várzea,Iquitos várzea,https://en.wikipedia.org/wiki/Iquitos_v%C3%A1rzea,1.0,True,False
+470,Isthmian-Atlantic moist forests,Isthmian–Atlantic moist forests,https://en.wikipedia.org/wiki/Isthmian%E2%80%93Atlantic_moist_forests,0.98,False,False
+471,Isthmian-Pacific moist forests,Isthmian–Pacific moist forests,https://en.wikipedia.org/wiki/Isthmian%E2%80%93Pacific_moist_forests,0.98,False,False
+472,Jamaican moist forests,Jamaican moist forests,https://en.wikipedia.org/wiki/Jamaican_moist_forests,1.0,True,False
+473,Japurá-Solimões-Negro moist forests,Japurá–Solimões–Negro moist forests,https://en.wikipedia.org/wiki/Japur%C3%A1%E2%80%93Solim%C3%B5es%E2%80%93Negro_moist_forests,0.97,False,False
+474,Juruá-Purus moist forests,Juruá–Purus moist forests,https://en.wikipedia.org/wiki/Juru%C3%A1%E2%80%93Purus_moist_forests,0.98,False,False
+475,Leeward Islands moist forests,Leeward Islands moist forests,https://en.wikipedia.org/wiki/Leeward_Islands_moist_forests,1.0,True,False
+476,Madeira-Tapajós moist forests,Madeira–Tapajós moist forests,https://en.wikipedia.org/wiki/Madeira%E2%80%93Tapaj%C3%B3s_moist_forests,0.98,False,False
+477,Magdalena Valley montane forests,Magdalena Valley montane forests,https://en.wikipedia.org/wiki/Magdalena_Valley_montane_forests,1.0,True,False
+478,Magdalena-Urabá moist forests,Magdalena–Urabá moist forests,https://en.wikipedia.org/wiki/Magdalena%E2%80%93Urab%C3%A1_moist_forests,0.98,False,False
+479,Marañón dry forests,Marañón dry forests,https://en.wikipedia.org/wiki/Mara%C3%B1%C3%B3n_dry_forests,1.0,True,False
+480,Marajó várzea,Marajó várzea,https://en.wikipedia.org/wiki/Maraj%C3%B3_v%C3%A1rzea,1.0,True,False
+481,Mato Grosso tropical dry forests,Mato Grosso tropical dry forests,https://en.wikipedia.org/wiki/Mato_Grosso_tropical_dry_forests,1.0,True,False
+482,Monte Alegre várzea,Monte Alegre várzea,https://en.wikipedia.org/wiki/Monte_Alegre_v%C3%A1rzea,1.0,True,False
+483,Napo moist forests,Napo moist forests,https://en.wikipedia.org/wiki/Napo_moist_forests,1.0,True,False
+484,Negro-Branco moist forests,Negro–Branco moist forests,https://en.wikipedia.org/wiki/Negro%E2%80%93Branco_moist_forests,0.98,False,False
+485,Northeast Brazil restingas,Northeastern Brazil restingas,https://en.wikipedia.org/wiki/Northeastern_Brazil_restingas,0.95,False,False
+486,Northwest Andean montane forests,Northwestern Andean montane forests,https://en.wikipedia.org/wiki/Northwestern_Andean_montane_forests,0.96,False,False
+487,Oaxacan montane forests,Oaxacan montane forests,https://en.wikipedia.org/wiki/Oaxacan_montane_forests,1.0,True,False
+488,Orinoco Delta swamp forests,Orinoco Delta swamp forests,https://en.wikipedia.org/wiki/Orinoco_Delta_swamp_forests,1.0,True,False
+489,Pantanos de Centla,Pantanos de Centla,https://en.wikipedia.org/wiki/Pantanos_de_Centla,1.0,True,False
+490,Pantepui forests & shrublands,,,,False,False
+491,Pernambuco coastal forests,Pernambuco coastal forests,https://en.wikipedia.org/wiki/Pernambuco_coastal_forests,1.0,True,False
+492,Pernambuco interior forests,Pernambuco interior forests,https://en.wikipedia.org/wiki/Pernambuco_interior_forests,1.0,True,False
+493,Peruvian Yungas,Peruvian Yungas,https://en.wikipedia.org/wiki/Peruvian_Yungas,1.0,True,False
+494,Petén-Veracruz moist forests,Petén–Veracruz moist forests,https://en.wikipedia.org/wiki/Pet%C3%A9n%E2%80%93Veracruz_moist_forests,0.98,False,False
+495,Puerto Rican moist forests,Puerto Rican moist forests,https://en.wikipedia.org/wiki/Puerto_Rican_moist_forests,1.0,True,False
+496,Purus várzea,Purus várzea,https://en.wikipedia.org/wiki/Purus_v%C3%A1rzea,1.0,True,False
+497,Purus-Madeira moist forests,Purus–Madeira moist forests,https://en.wikipedia.org/wiki/Purus%E2%80%93Madeira_moist_forests,0.98,False,False
+498,Rio Negro campinarana,Campinarana,https://en.wikipedia.org/wiki/Campinarana,0.69,True,True
+499,Santa Marta montane forests,Santa Marta montane forests,https://en.wikipedia.org/wiki/Santa_Marta_montane_forests,1.0,True,False
+500,Serra do Mar coastal forests,Serra do Mar coastal forests,https://en.wikipedia.org/wiki/Serra_do_Mar_coastal_forests,1.0,True,False
+501,Sierra de los Tuxtlas,Sierra de los Tuxtlas,https://en.wikipedia.org/wiki/Sierra_de_los_Tuxtlas,1.0,True,False
+502,Sierra Madre de Chiapas moist forests,Sierra Madre de Chiapas moist forests,https://en.wikipedia.org/wiki/Sierra_Madre_de_Chiapas_moist_forests,1.0,True,False
+503,Solimões-Japurá moist forests,Solimões–Japurá moist forests,https://en.wikipedia.org/wiki/Solim%C3%B5es%E2%80%93Japur%C3%A1_moist_forests,0.98,False,False
+504,Southern Andean Yungas,Southern Andean Yungas,https://en.wikipedia.org/wiki/Southern_Andean_Yungas,1.0,True,False
+505,Southwest Amazon moist forests,Southwest Amazon moist forests,https://en.wikipedia.org/wiki/Southwest_Amazon_moist_forests,1.0,True,False
+506,Talamancan montane forests,Talamancan montane forests,https://en.wikipedia.org/wiki/Talamancan_montane_forests,1.0,True,False
+507,Tapajós-Xingu moist forests,Tapajós–Xingu moist forests,https://en.wikipedia.org/wiki/Tapaj%C3%B3s%E2%80%93Xingu_moist_forests,0.98,False,False
+508,Tocantins/Pindare moist forests,Tocantins–Araguaia–Maranhão moist forests,https://en.wikipedia.org/wiki/Tocantins%E2%80%93Araguaia%E2%80%93Maranh%C3%A3o_moist_forests,0.74,False,False
+509,Trindade-Martin Vaz Islands tropical forests,Trindade and Martim Vaz,https://en.wikipedia.org/wiki/Trindade_and_Martim_Vaz,0.54,False,True
+510,Trinidad and Tobago moist forest,Trinidad and Tobago,https://en.wikipedia.org/wiki/Trinidad_and_Tobago,0.75,True,True
+511,Uatumã-Trombetas moist forests,Uatuma–Trombetas moist forests,https://en.wikipedia.org/wiki/Uatuma%E2%80%93Trombetas_moist_forests,0.97,False,False
+512,Ucayali moist forests,Ucayali moist forests,https://en.wikipedia.org/wiki/Ucayali_moist_forests,1.0,True,False
+513,Venezuelan Andes montane forests,Venezuelan Andes montane forests,https://en.wikipedia.org/wiki/Venezuelan_Andes_montane_forests,1.0,True,False
+514,Veracruz moist forests,Veracruz moist forests,https://en.wikipedia.org/wiki/Veracruz_moist_forests,1.0,True,False
+515,Veracruz montane forests,Veracruz montane forests,https://en.wikipedia.org/wiki/Veracruz_montane_forests,1.0,True,False
+516,Western Ecuador moist forests,Western Ecuador moist forests,https://en.wikipedia.org/wiki/Western_Ecuador_moist_forests,1.0,True,False
+517,Windward Islands moist forests,Windward Islands moist forests,https://en.wikipedia.org/wiki/Windward_Islands_moist_forests,1.0,True,False
+518,Xingu-Tocantins-Araguaia moist forests,Xingu–Tocantins–Araguaia moist forests,https://en.wikipedia.org/wiki/Xingu%E2%80%93Tocantins%E2%80%93Araguaia_moist_forests,0.97,False,False
+519,Yucatán moist forests,Yucatán moist forests,https://en.wikipedia.org/wiki/Yucat%C3%A1n_moist_forests,1.0,True,False
+520,Apure-Villavicencio dry forests,Apure–Villavicencio dry forests,https://en.wikipedia.org/wiki/Apure%E2%80%93Villavicencio_dry_forests,0.98,False,False
+521,Bajío dry forests,Bajío dry forests,https://en.wikipedia.org/wiki/Baj%C3%ADo_dry_forests,1.0,True,False
+522,Balsas dry forests,Balsas dry forests,https://en.wikipedia.org/wiki/Balsas_dry_forests,1.0,True,False
+523,Bolivian montane dry forests,Bolivian montane dry forests,https://en.wikipedia.org/wiki/Bolivian_montane_dry_forests,1.0,True,False
+524,Brazilian Atlantic dry forests,Atlantic dry forests,https://en.wikipedia.org/wiki/Atlantic_dry_forests,0.8,True,True
+525,Caatinga,Caatinga,https://en.wikipedia.org/wiki/Caatinga,1.0,True,False
+526,Cauca Valley dry forests,Cauca Valley dry forests,https://en.wikipedia.org/wiki/Cauca_Valley_dry_forests,1.0,True,False
+527,Central American dry forests,Central American dry forests,https://en.wikipedia.org/wiki/Central_American_dry_forests,1.0,True,False
+528,Chiapas Depression dry forests,Chiapas Depression dry forests,https://en.wikipedia.org/wiki/Chiapas_Depression_dry_forests,1.0,True,False
+529,Chiquitano dry forests,Chiquitano dry forests,https://en.wikipedia.org/wiki/Chiquitano_dry_forests,1.0,True,False
+530,Cuban dry forests,Cuban dry forests,https://en.wikipedia.org/wiki/Cuban_dry_forests,1.0,True,False
+531,Ecuadorian dry forests,Ecuadorian dry forests,https://en.wikipedia.org/wiki/Ecuadorian_dry_forests,1.0,True,False
+532,Hispaniolan dry forests,Hispaniolan dry forests,https://en.wikipedia.org/wiki/Hispaniolan_dry_forests,1.0,True,False
+533,Islas Revillagigedo dry forests,Revillagigedo Islands,https://en.wikipedia.org/wiki/Revillagigedo_Islands,0.62,False,False
+534,Jalisco dry forests,Jalisco dry forests,https://en.wikipedia.org/wiki/Jalisco_dry_forests,1.0,True,False
+535,Jamaican dry forests,Jamaican dry forests,https://en.wikipedia.org/wiki/Jamaican_dry_forests,1.0,True,False
+536,Lara-Falcón dry forests,Lara–Falcón dry forests,https://en.wikipedia.org/wiki/Lara%E2%80%93Falc%C3%B3n_dry_forests,0.98,False,False
+537,Lesser Antillean dry forests,Lesser Antillean dry forests,https://en.wikipedia.org/wiki/Lesser_Antillean_dry_forests,1.0,True,False
+538,Magdalena Valley dry forests,Magdalena Valley dry forests,https://en.wikipedia.org/wiki/Magdalena_Valley_dry_forests,1.0,True,False
+539,Maracaibo dry forests,Maracaibo dry forests,https://en.wikipedia.org/wiki/Maracaibo_dry_forests,1.0,True,False
+540,Maranhão Babaçu forests,Maranhão Babaçu forests,https://en.wikipedia.org/wiki/Maranh%C3%A3o_Baba%C3%A7u_forests,1.0,True,False
+541,Panamanian dry forests,Panamanian dry forests,https://en.wikipedia.org/wiki/Panamanian_dry_forests,1.0,True,False
+542,Patía valley dry forests,Patía Valley dry forests,https://en.wikipedia.org/wiki/Pat%C3%ADa_Valley_dry_forests,1.0,True,False
+543,Puerto Rican dry forests,Puerto Rican dry forests,https://en.wikipedia.org/wiki/Puerto_Rican_dry_forests,1.0,True,False
+544,Sierra de la Laguna dry forests,Sierra de la Laguna dry forests,https://en.wikipedia.org/wiki/Sierra_de_la_Laguna_dry_forests,1.0,True,False
+545,Sinaloan dry forests,Sinaloan dry forests,https://en.wikipedia.org/wiki/Sinaloan_dry_forests,1.0,True,False
+546,Sinú Valley dry forests,Sinú Valley dry forests,https://en.wikipedia.org/wiki/Sin%C3%BA_Valley_dry_forests,1.0,True,False
+547,Southern Pacific dry forests,Southern Pacific dry forests,https://en.wikipedia.org/wiki/Southern_Pacific_dry_forests,1.0,True,False
+548,Trinidad and Tobago dry forest,Trinidad and Tobago,https://en.wikipedia.org/wiki/Trinidad_and_Tobago,0.78,True,True
+549,Tumbes-Piura dry forests,Tumbes–Piura dry forests,https://en.wikipedia.org/wiki/Tumbes%E2%80%93Piura_dry_forests,0.98,False,False
+550,Veracruz dry forests,Veracruz dry forests,https://en.wikipedia.org/wiki/Veracruz_dry_forests,1.0,True,False
+551,Yucatán dry forests,Yucatán dry forests,https://en.wikipedia.org/wiki/Yucat%C3%A1n_dry_forests,1.0,True,False
+552,Bahamian pineyards,Bahamian pineyards,https://en.wikipedia.org/wiki/Bahamian_pineyards,1.0,True,False
+553,Central American pine-oak forests,Central American pine–oak forests,https://en.wikipedia.org/wiki/Central_American_pine%E2%80%93oak_forests,0.98,False,False
+554,Cuban pine forests,Cuban pine forests,https://en.wikipedia.org/wiki/Cuban_pine_forests,1.0,True,False
+555,Hispaniolan pine forests,Hispaniolan pine forests,https://en.wikipedia.org/wiki/Hispaniolan_pine_forests,1.0,True,False
+556,Sierra de la Laguna pine-oak forests,Sierra de la Laguna,https://en.wikipedia.org/wiki/Sierra_de_la_Laguna,0.69,True,True
+557,Sierra Madre de Oaxaca pine-oak forests,Sierra Madre de Oaxaca,https://en.wikipedia.org/wiki/Sierra_Madre_de_Oaxaca,0.72,True,True
+558,Sierra Madre del Sur pine-oak forests,Sierra Madre del Sur,https://en.wikipedia.org/wiki/Sierra_Madre_del_Sur,0.7,True,True
+559,Trans-Mexican Volcanic Belt pine-oak forests,Trans-Mexican Volcanic Belt,https://en.wikipedia.org/wiki/Trans-Mexican_Volcanic_Belt,0.76,True,True
+560,Juan Fernández Islands temperate forests,Juan Fernández Islands,https://en.wikipedia.org/wiki/Juan_Fern%C3%A1ndez_Islands,0.7,True,True
+561,Magellanic subpolar forests,Magellanic subpolar forests,https://en.wikipedia.org/wiki/Magellanic_subpolar_forests,1.0,True,False
+562,San Félix-San Ambrosio Islands temperate forests,San Félix–San Ambrosio Islands temperate forests,https://en.wikipedia.org/wiki/San_F%C3%A9lix%E2%80%93San_Ambrosio_Islands_temperate_forests,0.99,False,False
+563,Valdivian temperate forests,Valdivian temperate forests,https://en.wikipedia.org/wiki/Valdivian_temperate_forests,1.0,True,False
+564,Belizian pine savannas,Belizean pine forests,https://en.wikipedia.org/wiki/Belizean_pine_forests,0.7,False,False
+565,Beni savanna,Llanos de Moxos,https://en.wikipedia.org/wiki/Llanos_de_Moxos,0.15,False,True
+566,Campos Rupestres montane savanna,Campos rupestres,https://en.wikipedia.org/wiki/Campos_rupestres,0.67,True,True
+567,Cerrado,Cerrado,https://en.wikipedia.org/wiki/Cerrado,1.0,True,False
+568,Clipperton Island shrub and grasslands,Clipperton Island,https://en.wikipedia.org/wiki/Clipperton_Island,0.62,True,True
+569,Dry Chaco,Dry Chaco fat-tailed opossum,https://en.wikipedia.org/wiki/Dry_Chaco_fat-tailed_opossum,0.49,False,True
+570,Guianan savanna,Guianan savanna,https://en.wikipedia.org/wiki/Guianan_savanna,1.0,True,False
+571,Humid Chaco,Humid Chaco,https://en.wikipedia.org/wiki/Humid_Chaco,1.0,True,False
+572,Llanos,Llanos,https://en.wikipedia.org/wiki/Llanos,1.0,True,False
+573,Miskito pine forests,Miskito pine forests,https://en.wikipedia.org/wiki/Miskito_pine_forests,1.0,True,False
+574,Uruguayan savanna,Uruguayan savanna,https://en.wikipedia.org/wiki/Uruguayan_savanna,1.0,True,False
+575,Espinal,Espinal,https://en.wikipedia.org/wiki/Espinal,1.0,True,False
+576,Humid Pampas,Humid Pampas,https://en.wikipedia.org/wiki/Humid_Pampas,1.0,True,False
+577,Low Monte,Argentine Monte,https://en.wikipedia.org/wiki/Argentine_Monte,0.5,False,True
+578,Patagonian steppe,Patagonian Desert,https://en.wikipedia.org/wiki/Patagonian_Desert,0.76,False,False
+579,Cuban wetlands,Cuban wetlands,https://en.wikipedia.org/wiki/Cuban_wetlands,1.0,True,False
+580,Enriquillo wetlands,Enriquillo wetlands,https://en.wikipedia.org/wiki/Enriquillo_wetlands,1.0,True,False
+581,Everglades flooded grasslands,Everglades,https://en.wikipedia.org/wiki/Everglades,0.51,True,True
+582,Guayaquil flooded grasslands,Guayaquil flooded grasslands,https://en.wikipedia.org/wiki/Guayaquil_flooded_grasslands,1.0,True,False
+583,Orinoco wetlands,Orinoco wetlands,https://en.wikipedia.org/wiki/Orinoco_wetlands,1.0,True,False
+584,Pantanal,Pantanal,https://en.wikipedia.org/wiki/Pantanal,1.0,True,False
+585,Paraná flooded savanna,Paraná flooded savanna,https://en.wikipedia.org/wiki/Paran%C3%A1_flooded_savanna,1.0,True,False
+586,Southern Cone Mesopotamian savanna,Southern Cone Mesopotamian savanna,https://en.wikipedia.org/wiki/Southern_Cone_Mesopotamian_savanna,1.0,True,False
+587,Central Andean dry puna,Central Andean dry puna,https://en.wikipedia.org/wiki/Central_Andean_dry_puna,1.0,True,False
+588,Central Andean puna,Central Andean puna,https://en.wikipedia.org/wiki/Central_Andean_puna,1.0,True,False
+589,Central Andean wet puna,Central Andean wet puna,https://en.wikipedia.org/wiki/Central_Andean_wet_puna,1.0,True,False
+590,Cordillera Central páramo,Cordillera Central páramo,https://en.wikipedia.org/wiki/Cordillera_Central_p%C3%A1ramo,1.0,True,False
+591,Cordillera de Merida páramo,Cordillera de Merida páramo,https://en.wikipedia.org/wiki/Cordillera_de_Merida_p%C3%A1ramo,1.0,True,False
+592,High Monte,High Monte,https://en.wikipedia.org/wiki/High_Monte,1.0,True,False
+593,Northern Andean páramo,Northern Andean páramo,https://en.wikipedia.org/wiki/Northern_Andean_p%C3%A1ramo,1.0,True,False
+594,Santa Marta páramo,Santa Marta páramo,https://en.wikipedia.org/wiki/Santa_Marta_p%C3%A1ramo,1.0,True,False
+595,Southern Andean steppe,Southern Andean steppe,https://en.wikipedia.org/wiki/Southern_Andean_steppe,1.0,True,False
+596,Chilean Matorral,Chilean Matorral,https://en.wikipedia.org/wiki/Chilean_Matorral,1.0,True,False
+597,Araya and Paria xeric scrub,Araya and Paria xeric scrub,https://en.wikipedia.org/wiki/Araya_and_Paria_xeric_scrub,1.0,True,False
+598,Atacama desert,Atacama Desert,https://en.wikipedia.org/wiki/Atacama_Desert,1.0,True,False
+599,Caribbean shrublands,La Costa xeric shrublands,https://en.wikipedia.org/wiki/La_Costa_xeric_shrublands,0.67,False,False
+600,Cuban cactus scrub,Cuban cactus scrub,https://en.wikipedia.org/wiki/Cuban_cactus_scrub,1.0,True,False
+601,Galápagos Islands xeric scrub,Galápagos Islands xeric scrub,https://en.wikipedia.org/wiki/Gal%C3%A1pagos_Islands_xeric_scrub,1.0,True,False
+602,Guajira-Barranquilla xeric scrub,Guajira–Barranquilla xeric scrub,https://en.wikipedia.org/wiki/Guajira%E2%80%93Barranquilla_xeric_scrub,0.98,False,False
+603,La Costa xeric shrublands,La Costa xeric shrublands,https://en.wikipedia.org/wiki/La_Costa_xeric_shrublands,1.0,True,False
+604,Malpelo Island xeric scrub,Malpelo Island,https://en.wikipedia.org/wiki/Malpelo_Island,0.7,True,True
+605,Motagua Valley thornscrub,Motagua Valley thornscrub,https://en.wikipedia.org/wiki/Motagua_Valley_thornscrub,1.0,True,False
+606,Paraguaná xeric scrub,Paraguana xeric scrub,https://en.wikipedia.org/wiki/Paraguana_xeric_scrub,0.98,False,False
+607,San Lucan xeric scrub,San Lucan xeric scrub,https://en.wikipedia.org/wiki/San_Lucan_xeric_scrub,1.0,True,False
+608,Sechura desert,Sechura,https://en.wikipedia.org/wiki/Sechura,0.67,True,True
+609,St. Peter and St. Paul Rocks,Paul St. Peter,https://en.wikipedia.org/wiki/Paul_St._Peter,0.41,True,True
+610,Tehuacán Valley matorral,Tehuacán Valley matorral,https://en.wikipedia.org/wiki/Tehuac%C3%A1n_Valley_matorral,1.0,True,False
+611,Amazon-Orinoco-Southern Caribbean mangroves,Amazon–Orinoco–Southern Caribbean mangroves,https://en.wikipedia.org/wiki/Amazon%E2%80%93Orinoco%E2%80%93Southern_Caribbean_mangroves,0.98,False,False
+612,Bahamian-Antillean mangroves,Greater Antilles mangroves,https://en.wikipedia.org/wiki/Greater_Antilles_mangroves,0.7,False,False
+613,Mesoamerican Gulf-Caribbean mangroves,Mesoamerican Gulf–Caribbean mangroves,https://en.wikipedia.org/wiki/Mesoamerican_Gulf%E2%80%93Caribbean_mangroves,0.99,False,False
+614,Northern Mesoamerican Pacific mangroves,Northern Mesoamerican Pacific Coast Mangroves,https://en.wikipedia.org/wiki/Northern_Mesoamerican_Pacific_Coast_Mangroves,0.93,False,False
+615,South American Pacific mangroves,South American Pacific mangroves,https://en.wikipedia.org/wiki/South_American_Pacific_mangroves,1.0,True,False
+616,Southern Atlantic Brazilian mangroves,Bahia mangroves,https://en.wikipedia.org/wiki/Bahia_mangroves,0.5,False,True
+617,Southern Mesoamerican Pacific mangroves,Mexican South Pacific Coast mangroves,https://en.wikipedia.org/wiki/Mexican_South_Pacific_Coast_mangroves,0.61,False,False
+618,Carolines tropical moist forests,Carolines tropical moist forests,https://en.wikipedia.org/wiki/Carolines_tropical_moist_forests,1.0,True,False
+619,Central Polynesian tropical moist forests,Central Polynesian tropical moist forests,https://en.wikipedia.org/wiki/Central_Polynesian_tropical_moist_forests,1.0,True,False
+620,Cook Islands tropical moist forests,Cook Islands tropical moist forests,https://en.wikipedia.org/wiki/Cook_Islands_tropical_moist_forests,1.0,True,False
+621,Eastern Micronesia tropical moist forests,Eastern Micronesia tropical moist forests,https://en.wikipedia.org/wiki/Eastern_Micronesia_tropical_moist_forests,1.0,True,False
+622,Fiji tropical moist forests,Fiji tropical moist forests,https://en.wikipedia.org/wiki/Fiji_tropical_moist_forests,1.0,True,False
+623,Hawai'i tropical moist forests,List of tropical and subtropical moist broadleaf forests ecoregions,https://en.wikipedia.org/wiki/List_of_tropical_and_subtropical_moist_broadleaf_forests_ecoregions,0.52,False,True
+624,Kermadec Islands subtropical moist forests,Kermadec Islands,https://en.wikipedia.org/wiki/Kermadec_Islands,0.55,True,True
+625,Marquesas tropical moist forests,Marquesas tropical moist forests,https://en.wikipedia.org/wiki/Marquesas_tropical_moist_forests,1.0,True,False
+626,Ogasawara subtropical moist forests,Ogasawara subtropical moist forests,https://en.wikipedia.org/wiki/Ogasawara_subtropical_moist_forests,1.0,True,False
+627,Palau tropical moist forests,Palau tropical moist forests,https://en.wikipedia.org/wiki/Palau_tropical_moist_forests,1.0,True,False
+628,Rapa Nui and Sala y Gómez subtropical forests,Easter Island,https://en.wikipedia.org/wiki/Easter_Island,0.21,False,True
+629,Samoan tropical moist forests,Samoan tropical moist forests,https://en.wikipedia.org/wiki/Samoan_tropical_moist_forests,1.0,True,False
+630,Society Islands tropical moist forests,Society Islands tropical moist forests,https://en.wikipedia.org/wiki/Society_Islands_tropical_moist_forests,1.0,True,False
+631,Tongan tropical moist forests,Tongan tropical moist forests,https://en.wikipedia.org/wiki/Tongan_tropical_moist_forests,1.0,True,False
+632,Tuamotu tropical moist forests,Tuamotu tropical moist forests,https://en.wikipedia.org/wiki/Tuamotu_tropical_moist_forests,1.0,True,False
+633,Tubuai tropical moist forests,Tubuai tropical moist forests,https://en.wikipedia.org/wiki/Tubuai_tropical_moist_forests,1.0,True,False
+634,Western Polynesian tropical moist forests,Western Polynesian tropical moist forests,https://en.wikipedia.org/wiki/Western_Polynesian_tropical_moist_forests,1.0,True,False
+635,Fiji tropical dry forests,Fiji tropical dry forests,https://en.wikipedia.org/wiki/Fiji_tropical_dry_forests,1.0,True,False
+636,Hawai'i tropical dry forests,Hawaiian tropical dry forests,https://en.wikipedia.org/wiki/Hawaiian_tropical_dry_forests,0.96,False,False
+637,Marianas tropical dry forests,Marianas tropical dry forests,https://en.wikipedia.org/wiki/Marianas_tropical_dry_forests,1.0,True,False
+638,Yap tropical dry forests,Yap tropical dry forests,https://en.wikipedia.org/wiki/Yap_tropical_dry_forests,1.0,True,False
+639,Hawai'i tropical high shrublands,Hawaiian tropical high shrublands,https://en.wikipedia.org/wiki/Hawaiian_tropical_high_shrublands,0.97,False,False
+640,Hawai'i tropical low shrublands,Hawaiian tropical low shrublands,https://en.wikipedia.org/wiki/Hawaiian_tropical_low_shrublands,0.97,False,False
+641,Northwest Hawai'i scrub,Northwestern Hawaii scrub,https://en.wikipedia.org/wiki/Northwestern_Hawaii_scrub,0.94,False,False
+642,Guizhou Plateau broadleaf and mixed forests,Guizhou Plateau broadleaf and mixed forests,https://en.wikipedia.org/wiki/Guizhou_Plateau_broadleaf_and_mixed_forests,1.0,True,False
+643,Yunnan Plateau subtropical evergreen forests,Yunnan Plateau subtropical evergreen forests,https://en.wikipedia.org/wiki/Yunnan_Plateau_subtropical_evergreen_forests,1.0,True,False
+644,Appenine deciduous montane forests,Apennine deciduous montane forests,https://en.wikipedia.org/wiki/Apennine_deciduous_montane_forests,0.97,False,False
+645,Azores temperate mixed forests,Azores temperate mixed forests,https://en.wikipedia.org/wiki/Azores_temperate_mixed_forests,1.0,True,False
+646,Balkan mixed forests,Balkan mixed forests,https://en.wikipedia.org/wiki/Balkan_mixed_forests,1.0,True,False
+647,Baltic mixed forests,Baltic mixed forests,https://en.wikipedia.org/wiki/Baltic_mixed_forests,1.0,True,False
+648,Cantabrian mixed forests,Cantabrian mixed forests,https://en.wikipedia.org/wiki/Cantabrian_mixed_forests,1.0,True,False
+649,Caspian Hyrcanian mixed forests,Hyrcanian forests,https://en.wikipedia.org/wiki/Hyrcanian_forests,0.71,True,True
+650,Caucasus mixed forests,Caucasus mixed forests,https://en.wikipedia.org/wiki/Caucasus_mixed_forests,1.0,True,False
+651,Celtic broadleaf forests,Celtic broadleaf forests,https://en.wikipedia.org/wiki/Celtic_broadleaf_forests,1.0,True,False
+652,Central Anatolian steppe and woodlands,Central Anatolian deciduous forests,https://en.wikipedia.org/wiki/Central_Anatolian_deciduous_forests,0.58,False,True
+653,Central China Loess Plateau mixed forests,Loess Plateau,https://en.wikipedia.org/wiki/Loess_Plateau,0.48,True,True
+654,Central European mixed forests,Central European mixed forests,https://en.wikipedia.org/wiki/Central_European_mixed_forests,1.0,True,False
+655,Central Korean deciduous forests,Central Korean deciduous forests,https://en.wikipedia.org/wiki/Central_Korean_deciduous_forests,1.0,True,False
+656,Changbai Mountains mixed forests,Changbai Mountains mixed forests,https://en.wikipedia.org/wiki/Changbai_Mountains_mixed_forests,1.0,True,False
+657,Changjiang Plain evergreen forests,Changjiang Plain evergreen forests,https://en.wikipedia.org/wiki/Changjiang_Plain_evergreen_forests,1.0,True,False
+658,Crimean Submediterranean forest complex,Crimean Submediterranean forest complex,https://en.wikipedia.org/wiki/Crimean_Submediterranean_forest_complex,1.0,True,False
+659,Daba Mountains evergreen forests,Daba Mountains evergreen forests,https://en.wikipedia.org/wiki/Daba_Mountains_evergreen_forests,1.0,True,False
+660,Dinaric Mountains mixed forests,Dinaric Mountains mixed forests,https://en.wikipedia.org/wiki/Dinaric_Mountains_mixed_forests,1.0,True,False
+661,East European forest steppe,East European forest steppe,https://en.wikipedia.org/wiki/East_European_forest_steppe,1.0,True,False
+662,Eastern Anatolian deciduous forests,Eastern Anatolian deciduous forests,https://en.wikipedia.org/wiki/Eastern_Anatolian_deciduous_forests,1.0,True,False
+663,English Lowlands beech forests,English Lowlands beech forests,https://en.wikipedia.org/wiki/English_Lowlands_beech_forests,1.0,True,False
+664,European Atlantic mixed forests,Atlantic mixed forests,https://en.wikipedia.org/wiki/Atlantic_mixed_forests,0.83,True,True
+665,Euxine-Colchic broadleaf forests,Euxine–Colchic broadleaf forests,https://en.wikipedia.org/wiki/Euxine%E2%80%93Colchic_broadleaf_forests,0.98,False,False
+666,Hokkaido deciduous forests,Hokkaido deciduous forests,https://en.wikipedia.org/wiki/Hokkaido_deciduous_forests,1.0,True,False
+667,Huang He Plain mixed forests,Huang He Plain mixed forests,https://en.wikipedia.org/wiki/Huang_He_Plain_mixed_forests,1.0,True,False
+668,Madeira evergreen forests,Madeira evergreen forests,https://en.wikipedia.org/wiki/Madeira_evergreen_forests,1.0,True,False
+669,Manchurian mixed forests,Manchurian mixed forests,https://en.wikipedia.org/wiki/Manchurian_mixed_forests,1.0,True,False
+670,Nihonkai evergreen forests,Nihonkai evergreen forests,https://en.wikipedia.org/wiki/Nihonkai_evergreen_forests,1.0,True,False
+671,Nihonkai montane deciduous forests,Nihonkai montane deciduous forests,https://en.wikipedia.org/wiki/Nihonkai_montane_deciduous_forests,1.0,True,False
+672,North Atlantic moist mixed forests,North Atlantic moist mixed forests,https://en.wikipedia.org/wiki/North_Atlantic_moist_mixed_forests,1.0,True,False
+673,Northeast China Plain deciduous forests,Northeast China Plain deciduous forests,https://en.wikipedia.org/wiki/Northeast_China_Plain_deciduous_forests,1.0,True,False
+674,Pannonian mixed forests,Pannonian mixed forests,https://en.wikipedia.org/wiki/Pannonian_mixed_forests,1.0,True,False
+675,Po Basin mixed forests,Po Basin mixed forests,https://en.wikipedia.org/wiki/Po_Basin_mixed_forests,1.0,True,False
+676,Pyrenees conifer and mixed forests,Pyrenees conifer and mixed forests,https://en.wikipedia.org/wiki/Pyrenees_conifer_and_mixed_forests,1.0,True,False
+677,Qin Ling Mountains deciduous forests,Qin Ling Mountains deciduous forests,https://en.wikipedia.org/wiki/Qin_Ling_Mountains_deciduous_forests,1.0,True,False
+678,Rodope montane mixed forests,Rodope montane mixed forests,https://en.wikipedia.org/wiki/Rodope_montane_mixed_forests,1.0,True,False
+679,Sarmatic mixed forests,Sarmatic mixed forests,https://en.wikipedia.org/wiki/Sarmatic_mixed_forests,1.0,True,False
+680,Sichuan Basin evergreen broadleaf forests,Sichuan Basin evergreen broadleaf forests,https://en.wikipedia.org/wiki/Sichuan_Basin_evergreen_broadleaf_forests,1.0,True,False
+681,Southern Korea evergreen forests,Southern Korea evergreen forests,https://en.wikipedia.org/wiki/Southern_Korea_evergreen_forests,1.0,True,False
+682,Taiheiyo evergreen forests,Taiheiyo evergreen forests,https://en.wikipedia.org/wiki/Taiheiyo_evergreen_forests,1.0,True,False
+683,Taiheiyo montane deciduous forests,Taiheiyo montane deciduous forests,https://en.wikipedia.org/wiki/Taiheiyo_montane_deciduous_forests,1.0,True,False
+684,Tarim Basin deciduous forests and steppe,Tarim Basin deciduous forests and steppe,https://en.wikipedia.org/wiki/Tarim_Basin_deciduous_forests_and_steppe,1.0,True,False
+685,Ussuri broadleaf and mixed forests,Ussuri broadleaf and mixed forests,https://en.wikipedia.org/wiki/Ussuri_broadleaf_and_mixed_forests,1.0,True,False
+686,Western European broadleaf forests,Western European broadleaf forests,https://en.wikipedia.org/wiki/Western_European_broadleaf_forests,1.0,True,False
+687,Western Siberian hemiboreal forests,West Siberian broadleaf and mixed forests,https://en.wikipedia.org/wiki/West_Siberian_broadleaf_and_mixed_forests,0.68,False,False
+688,Zagros Mountains forest steppe,Zagros Mountains forest steppe,https://en.wikipedia.org/wiki/Zagros_Mountains_forest_steppe,1.0,True,False
+689,Alps conifer and mixed forests,Alps conifer and mixed forests,https://en.wikipedia.org/wiki/Alps_conifer_and_mixed_forests,1.0,True,False
+690,Altai montane forest and forest steppe,Altai montane forest and forest steppe,https://en.wikipedia.org/wiki/Altai_montane_forest_and_forest_steppe,1.0,True,False
+691,Caledon conifer forests,Caledonian Forest,https://en.wikipedia.org/wiki/Caledonian_Forest,0.75,False,False
+692,Carpathian montane forests,Carpathian montane conifer forests,https://en.wikipedia.org/wiki/Carpathian_montane_conifer_forests,0.87,False,False
+693,Da Hinggan-Dzhagdy Mountains conifer forests,Da Hinggan–Dzhagdy Mountains conifer forests,https://en.wikipedia.org/wiki/Da_Hinggan%E2%80%93Dzhagdy_Mountains_conifer_forests,0.99,False,False
+694,East Afghan montane conifer forests,East Afghan montane conifer forests,https://en.wikipedia.org/wiki/East_Afghan_montane_conifer_forests,1.0,True,False
+695,Elburz Range forest steppe,Elburz Range forest steppe,https://en.wikipedia.org/wiki/Elburz_Range_forest_steppe,1.0,True,False
+696,Helanshan montane conifer forests,Helanshan montane conifer forests,https://en.wikipedia.org/wiki/Helanshan_montane_conifer_forests,1.0,True,False
+697,Hengduan Mountains subalpine conifer forests,Hengduan Mountains subalpine conifer forests,https://en.wikipedia.org/wiki/Hengduan_Mountains_subalpine_conifer_forests,1.0,True,False
+698,Hokkaido montane conifer forests,Hokkaidō montane conifer forests,https://en.wikipedia.org/wiki/Hokkaid%C5%8D_montane_conifer_forests,0.98,False,False
+699,Honshu alpine conifer forests,Honshū alpine conifer forests,https://en.wikipedia.org/wiki/Honsh%C5%AB_alpine_conifer_forests,0.98,False,False
+700,Khangai Mountains conifer forests,Khangai Mountains conifer forests,https://en.wikipedia.org/wiki/Khangai_Mountains_conifer_forests,1.0,True,False
+701,Mediterranean conifer and mixed forests,Mediterranean conifer and mixed forests,https://en.wikipedia.org/wiki/Mediterranean_conifer_and_mixed_forests,1.0,True,False
+702,Northeast Himalayan subalpine conifer forests,Northeastern Himalayan subalpine conifer forests,https://en.wikipedia.org/wiki/Northeastern_Himalayan_subalpine_conifer_forests,0.97,False,False
+703,Northern Anatolian conifer and deciduous forests,Northern Anatolian conifer and deciduous forests,https://en.wikipedia.org/wiki/Northern_Anatolian_conifer_and_deciduous_forests,1.0,True,False
+704,Nujiang Langcang Gorge alpine conifer and mixed forests,Nujiang Lancang Gorge alpine conifer and mixed forests,https://en.wikipedia.org/wiki/Nujiang_Lancang_Gorge_alpine_conifer_and_mixed_forests,0.99,False,False
+705,Qilian Mountains conifer forests,Qilian Mountains conifer forests,https://en.wikipedia.org/wiki/Qilian_Mountains_conifer_forests,1.0,True,False
+706,Qionglai-Minshan conifer forests,Qionglai–Minshan conifer forests,https://en.wikipedia.org/wiki/Qionglai%E2%80%93Minshan_conifer_forests,0.98,False,False
+707,Sayan montane conifer forests,Sayan montane conifer forests,https://en.wikipedia.org/wiki/Sayan_montane_conifer_forests,1.0,True,False
+708,Scandinavian coastal conifer forests,Scandinavian coastal conifer forests,https://en.wikipedia.org/wiki/Scandinavian_coastal_conifer_forests,1.0,True,False
+709,Tian Shan montane conifer forests,Tian Shan montane conifer forests,https://en.wikipedia.org/wiki/Tian_Shan_montane_conifer_forests,1.0,True,False
+710,East Siberian taiga,East Siberian taiga,https://en.wikipedia.org/wiki/East_Siberian_taiga,1.0,True,False
+711,Iceland boreal birch forests and alpine tundra,Iceland boreal birch forests and alpine tundra,https://en.wikipedia.org/wiki/Iceland_boreal_birch_forests_and_alpine_tundra,1.0,True,False
+712,Kamchatka taiga,Kamchatka Taiga,https://en.wikipedia.org/wiki/Kamchatka_Taiga,1.0,True,False
+713,Kamchatka-Kurile meadows and sparse forests,Kamchatka–Kurile meadows and sparse forests,https://en.wikipedia.org/wiki/Kamchatka%E2%80%93Kurile_meadows_and_sparse_forests,0.99,False,False
+714,Northeast Siberian taiga,Northeast Siberian taiga,https://en.wikipedia.org/wiki/Northeast_Siberian_taiga,1.0,True,False
+715,Okhotsk-Manchurian taiga,Okhotsk–Manchurian taiga,https://en.wikipedia.org/wiki/Okhotsk%E2%80%93Manchurian_taiga,0.98,False,False
+716,Sakhalin Island taiga,Sakhalin Island taiga,https://en.wikipedia.org/wiki/Sakhalin_Island_taiga,1.0,True,False
+717,Scandinavian and Russian taiga,Scandinavian and Russian taiga,https://en.wikipedia.org/wiki/Scandinavian_and_Russian_taiga,1.0,True,False
+718,Trans-Baikal conifer forests,Transbaikal conifer forests,https://en.wikipedia.org/wiki/Transbaikal_conifer_forests,0.98,False,False
+719,Urals montane forest and taiga,Urals montane tundra and taiga,https://en.wikipedia.org/wiki/Urals_montane_tundra_and_taiga,0.83,False,False
+720,West Siberian taiga,West Siberian taiga,https://en.wikipedia.org/wiki/West_Siberian_taiga,1.0,True,False
+721,Alai-Western Tian Shan steppe,Alai–Western Tian Shan steppe,https://en.wikipedia.org/wiki/Alai%E2%80%93Western_Tian_Shan_steppe,0.98,False,False
+722,Al-Hajar foothill xeric woodlands and shrublands,,,,False,False
+723,Al-Hajar montane woodlands and shrublands,Al Hajar montane woodlands,https://en.wikipedia.org/wiki/Al_Hajar_montane_woodlands,0.78,True,True
+724,Altai steppe and semi-desert,Altai steppe and semi-desert,https://en.wikipedia.org/wiki/Altai_steppe_and_semi-desert,1.0,True,False
+725,Central Anatolian steppe,Central Anatolian steppe,https://en.wikipedia.org/wiki/Central_Anatolian_steppe,1.0,True,False
+726,Daurian forest steppe,Daurian forest steppe,https://en.wikipedia.org/wiki/Daurian_forest_steppe,1.0,True,False
+727,Eastern Anatolian montane steppe,Eastern Anatolian montane steppe,https://en.wikipedia.org/wiki/Eastern_Anatolian_montane_steppe,1.0,True,False
+728,Emin Valley steppe,Emin Valley,https://en.wikipedia.org/wiki/Emin_Valley,0.76,True,True
+729,Faroe Islands boreal grasslands,Faroe Islands boreal grasslands,https://en.wikipedia.org/wiki/Faroe_Islands_boreal_grasslands,1.0,True,False
+730,Gissaro-Alai open woodlands,Gissaro–Alai open woodlands,https://en.wikipedia.org/wiki/Gissaro%E2%80%93Alai_open_woodlands,0.98,False,False
+731,Kazakh forest steppe,Kazakh forest steppe,https://en.wikipedia.org/wiki/Kazakh_forest_steppe,1.0,True,False
+732,Kazakh steppe,Kazakh forest steppe,https://en.wikipedia.org/wiki/Kazakh_forest_steppe,0.79,False,False
+733,Kazakh upland steppe,Kazakh Steppe,https://en.wikipedia.org/wiki/Kazakh_Steppe,0.79,True,True
+734,Mongolian-Manchurian grassland,Mongolian–Manchurian grassland,https://en.wikipedia.org/wiki/Mongolian%E2%80%93Manchurian_grassland,0.98,False,False
+735,Pontic steppe,Pontic–Caspian steppe,https://en.wikipedia.org/wiki/Pontic%E2%80%93Caspian_steppe,0.79,False,False
+736,Sayan Intermontane steppe,Intermontane,https://en.wikipedia.org/wiki/Intermontane,0.65,True,True
+737,Selenge-Orkhon forest steppe,Selenge–Orkhon forest steppe,https://en.wikipedia.org/wiki/Selenge%E2%80%93Orkhon_forest_steppe,0.98,False,False
+738,South Siberian forest steppe,South Siberian forest steppe,https://en.wikipedia.org/wiki/South_Siberian_forest_steppe,1.0,True,False
+739,Syrian xeric grasslands and shrublands,Middle East steppe,https://en.wikipedia.org/wiki/Middle_East_steppe,0.25,False,True
+740,Tian Shan foothill arid steppe,Tian Shan foothill arid steppe,https://en.wikipedia.org/wiki/Tian_Shan_foothill_arid_steppe,1.0,True,False
+741,Amur meadow steppe,Amur meadow steppe,https://en.wikipedia.org/wiki/Amur_meadow_steppe,1.0,True,False
+742,Bohai Sea saline meadow,Bohai Sea saline meadow,https://en.wikipedia.org/wiki/Bohai_Sea_saline_meadow,1.0,True,False
+743,Nenjiang River grassland,Nenjiang River grassland,https://en.wikipedia.org/wiki/Nenjiang_River_grassland,1.0,True,False
+744,Nile Delta flooded savanna,Nile Delta flooded savanna,https://en.wikipedia.org/wiki/Nile_Delta_flooded_savanna,1.0,True,False
+745,Saharan halophytics,Saharan halophytics,https://en.wikipedia.org/wiki/Saharan_halophytics,1.0,True,False
+746,Suiphun-Khanka meadows and forest meadows,Suiphun–Khanka meadows and forest meadows,https://en.wikipedia.org/wiki/Suiphun%E2%80%93Khanka_meadows_and_forest_meadows,0.99,False,False
+747,Tigris-Euphrates alluvial salt marsh,Mesopotamian Marshes,https://en.wikipedia.org/wiki/Mesopotamian_Marshes,0.39,False,True
+748,Yellow Sea saline meadow,Yellow Sea saline meadow,https://en.wikipedia.org/wiki/Yellow_Sea_saline_meadow,1.0,True,False
+749,Altai alpine meadow and tundra,Altai alpine meadow and tundra,https://en.wikipedia.org/wiki/Altai_alpine_meadow_and_tundra,1.0,True,False
+750,Central Tibetan Plateau alpine steppe,Central Tibetan Plateau alpine steppe,https://en.wikipedia.org/wiki/Central_Tibetan_Plateau_alpine_steppe,1.0,True,False
+751,Eastern Himalayan alpine shrub and meadows,Eastern Himalayan alpine shrub and meadows,https://en.wikipedia.org/wiki/Eastern_Himalayan_alpine_shrub_and_meadows,1.0,True,False
+752,Ghorat-Hazarajat alpine meadow,Ghorat–Hazarajat alpine meadow,https://en.wikipedia.org/wiki/Ghorat%E2%80%93Hazarajat_alpine_meadow,0.98,False,False
+753,Hindu Kush alpine meadow,Hindu Kush alpine meadow,https://en.wikipedia.org/wiki/Hindu_Kush_alpine_meadow,1.0,True,False
+754,Karakoram-West Tibetan Plateau alpine steppe,Tibetan Plateau,https://en.wikipedia.org/wiki/Tibetan_Plateau,0.51,True,True
+755,Khangai Mountains alpine meadow,Khangai Mountains alpine meadow,https://en.wikipedia.org/wiki/Khangai_Mountains_alpine_meadow,1.0,True,False
+756,Kopet Dag woodlands and forest steppe,Kopet Dag woodlands and forest steppe,https://en.wikipedia.org/wiki/Kopet_Dag_woodlands_and_forest_steppe,1.0,True,False
+757,Kuh Rud and Eastern Iran montane woodlands,Kuh Rud and Eastern Iran montane woodlands,https://en.wikipedia.org/wiki/Kuh_Rud_and_Eastern_Iran_montane_woodlands,1.0,True,False
+758,Mediterranean High Atlas juniper steppe,Mediterranean High Atlas juniper steppe,https://en.wikipedia.org/wiki/Mediterranean_High_Atlas_juniper_steppe,1.0,True,False
+759,North Tibetan Plateau-Kunlun Mountains alpine desert,North Tibetan Plateau–Kunlun Mountains alpine desert,https://en.wikipedia.org/wiki/North_Tibetan_Plateau%E2%80%93Kunlun_Mountains_alpine_desert,0.99,False,False
+760,Northwestern Himalayan alpine shrub and meadows,Northwestern Himalayan alpine shrub and meadows,https://en.wikipedia.org/wiki/Northwestern_Himalayan_alpine_shrub_and_meadows,1.0,True,False
+761,Ordos Plateau steppe,Ordos Plateau,https://en.wikipedia.org/wiki/Ordos_Plateau,0.79,True,True
+762,Pamir alpine desert and tundra,Pamir alpine desert and tundra,https://en.wikipedia.org/wiki/Pamir_alpine_desert_and_tundra,1.0,True,False
+763,Qilian Mountains subalpine meadows,Qilian Mountains subalpine meadows,https://en.wikipedia.org/wiki/Qilian_Mountains_subalpine_meadows,1.0,True,False
+764,Sayan alpine meadows and tundra,Sayan alpine meadows and tundra,https://en.wikipedia.org/wiki/Sayan_alpine_meadows_and_tundra,1.0,True,False
+765,Southeast Tibet shrublands and meadows,Southeast Tibet shrub and meadows,https://en.wikipedia.org/wiki/Southeast_Tibet_shrub_and_meadows,0.93,False,False
+766,Sulaiman Range alpine meadows,Sulaiman Range alpine meadows,https://en.wikipedia.org/wiki/Sulaiman_Range_alpine_meadows,1.0,True,False
+767,Tian Shan montane steppe and meadows,Tian Shan montane steppe and meadows,https://en.wikipedia.org/wiki/Tian_Shan_montane_steppe_and_meadows,1.0,True,False
+768,Tibetan Plateau alpine shrublands and meadows,Tibetan Plateau alpine shrublands and meadows,https://en.wikipedia.org/wiki/Tibetan_Plateau_alpine_shrublands_and_meadows,1.0,True,False
+769,Western Himalayan alpine shrub and meadows,Western Himalayan alpine shrub and meadows,https://en.wikipedia.org/wiki/Western_Himalayan_alpine_shrub_and_meadows,1.0,True,False
+770,Yarlung Zanbo arid steppe,Yarlung Tsangpo arid steppe,https://en.wikipedia.org/wiki/Yarlung_Tsangpo_arid_steppe,0.88,False,False
+771,Cherskii-Kolyma mountain tundra,Cherskii–Kolyma mountain tundra,https://en.wikipedia.org/wiki/Cherskii%E2%80%93Kolyma_mountain_tundra,0.98,False,False
+772,Chukchi Peninsula tundra,Chukchi Peninsula tundra,https://en.wikipedia.org/wiki/Chukchi_Peninsula_tundra,1.0,True,False
+773,Kamchatka tundra,Kamchatka mountain tundra and forest tundra,https://en.wikipedia.org/wiki/Kamchatka_mountain_tundra_and_forest_tundra,0.54,False,True
+774,Kola Peninsula tundra,Kola Peninsula tundra,https://en.wikipedia.org/wiki/Kola_Peninsula_tundra,1.0,True,False
+775,Northeast Siberian coastal tundra,Northeast Siberian coastal tundra,https://en.wikipedia.org/wiki/Northeast_Siberian_coastal_tundra,1.0,True,False
+776,Northwest Russian-Novaya Zemlya tundra,Northwest Russian–Novaya Zemlya tundra,https://en.wikipedia.org/wiki/Northwest_Russian%E2%80%93Novaya_Zemlya_tundra,0.99,False,False
+777,Novosibirsk Islands Arctic desert,,,,False,False
+778,Russian Arctic desert,Arctic desert,https://en.wikipedia.org/wiki/Arctic_desert,0.76,True,True
+779,Russian Bering tundra,Bering tundra,https://en.wikipedia.org/wiki/Bering_tundra,0.76,True,True
+780,Scandinavian Montane Birch forest and grasslands,Scandinavian montane birch forest and grasslands,https://en.wikipedia.org/wiki/Scandinavian_montane_birch_forest_and_grasslands,1.0,True,False
+781,Taimyr-Central Siberian tundra,Taimyr–Central Siberian tundra,https://en.wikipedia.org/wiki/Taimyr%E2%80%93Central_Siberian_tundra,0.98,False,False
+782,Trans-Baikal Bald Mountain tundra,Transbaikal Bald Mountain tundra,https://en.wikipedia.org/wiki/Transbaikal_Bald_Mountain_tundra,0.98,False,False
+783,Wrangel Island Arctic desert,Wrangel Island,https://en.wikipedia.org/wiki/Wrangel_Island,0.67,True,True
+784,Yamal-Gydan tundra,Yamal–Gydan tundra,https://en.wikipedia.org/wiki/Yamal%E2%80%93Gydan_tundra,0.97,False,False
+785,Aegean and Western Turkey sclerophyllous and mixed forests,Aegean and Western Turkey sclerophyllous and mixed forests,https://en.wikipedia.org/wiki/Aegean_and_Western_Turkey_sclerophyllous_and_mixed_forests,1.0,True,False
+786,Anatolian conifer and deciduous mixed forests,Anatolian conifer and deciduous mixed forests,https://en.wikipedia.org/wiki/Anatolian_conifer_and_deciduous_mixed_forests,1.0,True,False
+787,Canary Islands dry woodlands and forests,Canary Islands dry woodlands and forests,https://en.wikipedia.org/wiki/Canary_Islands_dry_woodlands_and_forests,1.0,True,False
+788,Corsican montane broadleaf and mixed forests,Corsican montane broadleaf and mixed forests,https://en.wikipedia.org/wiki/Corsican_montane_broadleaf_and_mixed_forests,1.0,True,False
+789,Crete Mediterranean forests,Crete Mediterranean forests,https://en.wikipedia.org/wiki/Crete_Mediterranean_forests,1.0,True,False
+790,Cyprus Mediterranean forests,Cyprus Mediterranean forests,https://en.wikipedia.org/wiki/Cyprus_Mediterranean_forests,1.0,True,False
+791,Eastern Mediterranean conifer-broadleaf forests,Eastern Mediterranean conifer–sclerophyllous–broadleaf forests,https://en.wikipedia.org/wiki/Eastern_Mediterranean_conifer%E2%80%93sclerophyllous%E2%80%93broadleaf_forests,0.86,False,False
+792,Iberian conifer forests,Iberian conifer forests,https://en.wikipedia.org/wiki/Iberian_conifer_forests,1.0,True,False
+793,Iberian sclerophyllous and semi-deciduous forests,Iberian sclerophyllous and semi-deciduous forests,https://en.wikipedia.org/wiki/Iberian_sclerophyllous_and_semi-deciduous_forests,1.0,True,False
+794,Illyrian deciduous forests,Illyrian deciduous forests,https://en.wikipedia.org/wiki/Illyrian_deciduous_forests,1.0,True,False
+795,Italian sclerophyllous and semi-deciduous forests,Italian sclerophyllous and semi-deciduous forests,https://en.wikipedia.org/wiki/Italian_sclerophyllous_and_semi-deciduous_forests,1.0,True,False
+796,Mediterranean Acacia-Argania dry woodlands and succulent thickets,Mediterranean woodlands and forests,https://en.wikipedia.org/wiki/Mediterranean_woodlands_and_forests,0.62,False,False
+797,Mediterranean dry woodlands and steppe,Mediterranean dry woodlands and steppe,https://en.wikipedia.org/wiki/Mediterranean_dry_woodlands_and_steppe,1.0,True,False
+798,Mediterranean woodlands and forests,Mediterranean woodlands and forests,https://en.wikipedia.org/wiki/Mediterranean_woodlands_and_forests,1.0,True,False
+799,Northeast Spain and Southern France Mediterranean forests,Northeastern Spain and Southern France Mediterranean forests,https://en.wikipedia.org/wiki/Northeastern_Spain_and_Southern_France_Mediterranean_forests,0.97,False,False
+800,Northwest Iberian montane forests,Northwest Iberian montane forests,https://en.wikipedia.org/wiki/Northwest_Iberian_montane_forests,1.0,True,False
+801,Pindus Mountains mixed forests,Pindus Mountains mixed forests,https://en.wikipedia.org/wiki/Pindus_Mountains_mixed_forests,1.0,True,False
+802,South Apennine mixed montane forests,South Apennine mixed montane forests,https://en.wikipedia.org/wiki/South_Apennine_mixed_montane_forests,1.0,True,False
+803,Southeast Iberian shrubs and woodlands,Southeastern Iberian shrubs and woodlands,https://en.wikipedia.org/wiki/Southeastern_Iberian_shrubs_and_woodlands,0.96,False,False
+804,Southern Anatolian montane conifer and deciduous forests,Southern Anatolian montane conifer and deciduous forests,https://en.wikipedia.org/wiki/Southern_Anatolian_montane_conifer_and_deciduous_forests,1.0,True,False
+805,Southwest Iberian Mediterranean sclerophyllous and mixed forests,Southwest Iberian Mediterranean sclerophyllous and mixed forests,https://en.wikipedia.org/wiki/Southwest_Iberian_Mediterranean_sclerophyllous_and_mixed_forests,1.0,True,False
+806,Tyrrhenian-Adriatic sclerophyllous and mixed forests,Tyrrhenian–Adriatic sclerophyllous and mixed forests,https://en.wikipedia.org/wiki/Tyrrhenian%E2%80%93Adriatic_sclerophyllous_and_mixed_forests,0.99,False,False
+807,Afghan Mountains semi-desert,Afghan Mountains semi-desert,https://en.wikipedia.org/wiki/Afghan_Mountains_semi-desert,1.0,True,False
+808,Alashan Plateau semi-desert,Alashan Plateau semi-desert,https://en.wikipedia.org/wiki/Alashan_Plateau_semi-desert,1.0,True,False
+809,Arabian desert,Arabian Peninsula coastal fog desert,https://en.wikipedia.org/wiki/Arabian_Peninsula_coastal_fog_desert,0.56,False,True
+810,Arabian sand desert,Arabian Desert,https://en.wikipedia.org/wiki/Arabian_Desert,0.85,True,True
+811,Arabian-Persian Gulf coastal plain desert,Arabian-Persian Gulf Coastal Plain Desert,https://en.wikipedia.org/wiki/Arabian-Persian_Gulf_Coastal_Plain_Desert,1.0,True,False
+812,Azerbaijan shrub desert and steppe,Azerbaijan shrub desert and steppe,https://en.wikipedia.org/wiki/Azerbaijan_shrub_desert_and_steppe,1.0,True,False
+813,Badghyz and Karabil semi-desert,Badghyz and Karabil semi-desert,https://en.wikipedia.org/wiki/Badghyz_and_Karabil_semi-desert,1.0,True,False
+814,Baluchistan xeric woodlands,Baluchistan xeric woodlands,https://en.wikipedia.org/wiki/Baluchistan_xeric_woodlands,1.0,True,False
+815,Caspian lowland desert,Caspian lowland desert,https://en.wikipedia.org/wiki/Caspian_lowland_desert,1.0,True,False
+816,Central Afghan Mountains xeric woodlands,Central Afghan Mountains xeric woodlands,https://en.wikipedia.org/wiki/Central_Afghan_Mountains_xeric_woodlands,1.0,True,False
+817,Central Asian northern desert,Central Asian northern desert,https://en.wikipedia.org/wiki/Central_Asian_northern_desert,1.0,True,False
+818,Central Asian riparian woodlands,Central Asian riparian woodlands,https://en.wikipedia.org/wiki/Central_Asian_riparian_woodlands,1.0,True,False
+819,Central Asian southern desert,Central Asian southern desert,https://en.wikipedia.org/wiki/Central_Asian_southern_desert,1.0,True,False
+820,Central Persian desert basins,Central Persian desert basins,https://en.wikipedia.org/wiki/Central_Persian_desert_basins,1.0,True,False
+821,East Arabian fog shrublands and sand desert,East Arabian fog shrublands and sand desert,https://en.wikipedia.org/wiki/East_Arabian_fog_shrublands_and_sand_desert,1.0,True,False
+822,East Sahara Desert,Sahara,https://en.wikipedia.org/wiki/Sahara,0.5,True,True
+823,East Saharan montane xeric woodlands,East Saharan montane xeric woodlands,https://en.wikipedia.org/wiki/East_Saharan_montane_xeric_woodlands,1.0,True,False
+824,Eastern Gobi desert steppe,Eastern Gobi desert steppe,https://en.wikipedia.org/wiki/Eastern_Gobi_desert_steppe,1.0,True,False
+825,Gobi Lakes Valley desert steppe,Gobi Lakes Valley desert steppe,https://en.wikipedia.org/wiki/Gobi_Lakes_Valley_desert_steppe,1.0,True,False
+826,Great Lakes Basin desert steppe,Great Lakes Basin desert steppe,https://en.wikipedia.org/wiki/Great_Lakes_Basin_desert_steppe,1.0,True,False
+827,Junggar Basin semi-desert,Junggar Basin,https://en.wikipedia.org/wiki/Junggar_Basin,0.68,True,True
+828,Kazakh semi-desert,Kazakh semi-desert,https://en.wikipedia.org/wiki/Kazakh_semi-desert,1.0,True,False
+829,Kopet Dag semi-desert,Kopet Dag semi-desert,https://en.wikipedia.org/wiki/Kopet_Dag_semi-desert,1.0,True,False
+830,Mesopotamian shrub desert,Mesopotamian shrub desert,https://en.wikipedia.org/wiki/Mesopotamian_shrub_desert,1.0,True,False
+831,North Arabian desert,Arabian Desert,https://en.wikipedia.org/wiki/Arabian_Desert,0.82,True,True
+832,North Arabian highland shrublands,,,,False,False
+833,North Saharan Xeric Steppe and Woodland,Woodland,https://en.wikipedia.org/wiki/Woodland,0.34,True,True
+834,Paropamisus xeric woodlands,Paropamisus xeric woodlands,https://en.wikipedia.org/wiki/Paropamisus_xeric_woodlands,1.0,True,False
+835,Qaidam Basin semi-desert,Qaidam Basin,https://en.wikipedia.org/wiki/Qaidam_Basin,0.67,True,True
+836,Red Sea coastal desert,Red Sea coastal desert,https://en.wikipedia.org/wiki/Red_Sea_coastal_desert,1.0,True,False
+837,Red Sea-Arabian Desert shrublands,East Arabian fog shrublands and sand desert,https://en.wikipedia.org/wiki/East_Arabian_fog_shrublands_and_sand_desert,0.58,False,True
+838,Registan-North Pakistan sandy desert,Registan–North Pakistan sandy desert,https://en.wikipedia.org/wiki/Registan%E2%80%93North_Pakistan_sandy_desert,0.99,False,False
+839,Saharan Atlantic coastal desert,Atlantic coastal desert,https://en.wikipedia.org/wiki/Atlantic_coastal_desert,0.85,True,True
+840,South Arabian plains and plateau desert,South Arabian plains and plateau desert,https://en.wikipedia.org/wiki/South_Arabian_plains_and_plateau_desert,1.0,True,False
+841,South Iran Nubo-Sindian desert and semi-desert,South Iran Nubo–Sindian desert and semi-desert,https://en.wikipedia.org/wiki/South_Iran_Nubo%E2%80%93Sindian_desert_and_semi-desert,0.99,False,False
+842,South Sahara desert,Sahara,https://en.wikipedia.org/wiki/Sahara,0.48,True,True
+843,Taklimakan desert,Taklamakan Desert,https://en.wikipedia.org/wiki/Taklamakan_Desert,0.94,False,False
+844,Tibesti-Jebel Uweinat montane xeric woodlands,Tibesti–Jebel Uweinat montane xeric woodlands,https://en.wikipedia.org/wiki/Tibesti%E2%80%93Jebel_Uweinat_montane_xeric_woodlands,0.99,False,False
+845,West Sahara desert,Sahara,https://en.wikipedia.org/wiki/Sahara,0.5,True,True
+846,West Saharan montane xeric woodlands,West Saharan montane xeric woodlands,https://en.wikipedia.org/wiki/West_Saharan_montane_xeric_woodlands,1.0,True,False

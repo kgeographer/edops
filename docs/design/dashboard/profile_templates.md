@@ -1,0 +1,244 @@
+# Profile templates: the wording the filled_profile generator uses
+
+This file is the product of the WO-04 to WO-07 work: the wording of the Environmental Profile as the generator (`scripts/edop/whg/wo04_fill.py`) puts it together. The generator reads this file every time it runs. Edit the wording here; the rules (what is true, which number, which branch) stay in the script.
+
+**How to edit.** Each line is `key: text`. A `{slot}` is replaced by the generator: `{name}` is the place name; `{S2.1a}` and the like are units of `modal_dummy_annotated.md` (a filled value, or a visible placeholder when the unit is not built yet). Other slots in the Phrases part (for example `{km}`) are named in the notes beside them. Keep the slots you want to show; remove one and the value is dropped. A slot the generator does not supply stops the run with the key and the slot named.
+
+**Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
+
+Version: 23
+
+## Changes
+
+- v1 | 2026-11-05 | CC | Wording moved out of wo04_fill.py into this file. No wording changed: the ten filled_profiles regenerate identically.
+- v2 | 2026-11-05 | Opus | Framing A (Karl's decision): Setting speaks about the place; the other sections name the basin they describe. S1.2a now means the point's ecoregion. New units S1.2c (the basin's majority ecoregion, when it differs) and S1.5a, S1.5b (the basin's elevation range); wording for the four water classes other than exogenous; a phrase for a basin that meets the sea at its outlet; S8 says which figures are the place's and which the basin's. Needs WO-05 for the new units and phrases before it runs.
+- v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
+- v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
+- v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v23 | 2026-11-10 | CC | WO-10a, from Opus's reading of the Chaco Canyon page. An extremes sentence and a counts sentence about the same basins counted them two ways ("Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it."). New `S2.3.extreme.counts` and `S5.2.extreme.counts` fold the counts into the extremes sentence: "Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four." They are used only when the counts are about the same set as the extremes; otherwise the two sentences stay as before. Wording is Opus's fold with "of the other seven" put first, so one or several counts read the same way.
+- v22 | 2026-11-10 | CC | WO-10a. `nobasin.text` is plain language: it had read "No basin contains this point (structured response `no_basin`; nearest basin: see WO-03 Q6). Every basin-keyed unit is empty.", which is developer wording and appears on the sample page and in the response for a place outside any basin (Tristan da Cunha). Karl's idea of the sentence: "This place lies outside any basin"; "in the data" and the profile are added so the reader knows what is missing.
+- v21 | 2026-11-10 | CC | WO-10a. `S5.1c` and `S5.both_none` name the land cover map ("in the GLC2000 land cover map, the commonest class other than cultivated land is …"): cropland and pasture are the BasinATLAS land-use extents and the cover class is GLC2000, so the figures can add up to more than 100% (Chaco Canyon 126%, Santa Fe 104%) and the sentence must not read as one partition of the basin. `{S8.2}` leaves `S8.frame` and `S8.frame.noyears`: it explained percentiles the page does not show, with catalog variable names; the unit is still filled and kept in the stored record, and its keys are unchanged. New `S6.2.out_chain` ("It drains into one of them, and its water then passes through {n} more.") for a basin with one direct downstream neighbour and others beyond it (Kaifeng: one, then a second three steps down); "flows on through two of them" had left the reader to wonder how water flows through two basins. `S6.2.out_some` stays for the other cases of more than one.
+- v20 | 2026-11-10 | CC | WO-10, for the sample page, which hides a unit not built yet. New `S1.frame.nogist` (Setting without the ecoregion gist S1.2b, which would leave "ecoregion, .") and `S8.frame.noyears` (About these figures without the dataset years S8.1b: "from global datasets."). The page's record builder uses them only while S1.2b and S8.1b are not built; the ordinary frames stay and the markdown profiles are unchanged. Karl accepted the wording, to be revisited with the live page.
+- v19 | 2026-11-09 | CC | `S5.2.counts` takes the verb ("its basin has {list}") and `S5.2.counts.item` loses it ("{cmp} than {k}"), so two measures read "has less cropland than three and less pasture than three" and not "has ... and has ...". `S2.3.counts` is unchanged: its items need different verbs ("is", "receives").
+- v18 | 2026-11-09 | CC | OneEarth button. New `S9.4` (the URL of the ecoregion's page at oneearth.org/ecoregions/, from the slug stored with the ecoregion; 845 of 846 have one, and all 845 pages answered 200 on 9 Nov). `S9.frame` and `S9.frame.nowiki` gain `[Ecoregion on OneEarth: {S9.4}]` before the Wikipedia button, which stays (hidden where flagged). The button opens in a new tab (`target="_blank"`). The data are CC BY-NC 4.0, cite One Earth; their page text is not reproduced (permission asked separately).
+- v17 | 2026-11-09 | CC | WO-09 item 4, singular wording. New `S8.2.zero.one` ("{list} is zero here and so has no percentile") and `S8.2.other.one` ("1 has no value: {list}"), used when only one measure is listed ("1 measures are zero" read badly at Santa Fe and Chaco Canyon). The zero list also no longer names a flagged measure whose value is above zero (script only).
+- v16 | 2026-11-09 | CC | WO-09 items 3 to 7, 10. `S5.1b.some_full` ("{value} of the basin is pasture", used when cropland is zero), `S5.both_none` and `S5.both_none.bare` with `S5.frame.both_none` (both shares zero: Utqiaġvik reads "neither cropland nor pasture is recorded; the commonest cover is ..."); `S8.osm` (credit, shown only when a river name passed the OpenStreetMap check) and `S8.point` (where the point comes from) added to `S8.frame`; `S7.frame` is `{S7.2}` only (S7.3 silenced, code kept); `S9.frame.nowiki` for a flagged Wikipedia link. Item 4 (the no-percentile list) is script only.
+- v15 | 2026-11-08 | CC | S7.1a (distance to the seacoast) dropped at Karl's decision: it largely repeats the Water section, can seem to contradict it (Tbilisi: 251 km from the nearest coast, the Black Sea, but its river runs to the Caspian), and overstates proximity at estuary ports (Hamburg). Removed `S7.1a`, `S7.1a.on` and `{S7.1a}` from `S7.frame`. `S7.3` is now the key that switches the seacoast feature on.
+- v14 | 2026-11-08 | CC | WO-08 B6. New `S7.1a` ("{name} is about {d} km from the seacoast."), `S7.1a.on` (under a kilometre) and `S7.3` ("The nearest edge of its basin is the seacoast."). "Seacoast" because the Caspian counts (Karl); the WO's "coast" would read oddly for Baku. `S7.2` is unchanged in wording; it now also speaks when the basin's outline lies within 2 km of the coastline (Natural Earth 1:10m), not only on the signature's coast flag.
+- v13 | 2026-11-08 | CC | WO-08 B5. New `S8.3`: "The point lies just outside the basin data and was moved {d} m to the nearest basin." Speaks only when the profile script moved the point (within 1 km of a basin and inside none); silent otherwise.
+- v12 | 2026-11-08 | CC | S1.3 (the next ecoregion and its distance) dropped at Karl's decision: it describes neither the place nor its basin, and the basin's own ecoregions are S1.4. Removed `S1.3`, `S1.3.near` and `{S1.3}` from `S1.frame` and `nobasin.frame`. `S1.4.one` is now the key that switches the ecoregion feature on. S1.4 limit: 10% of the basin (Karl).
+- v11 | 2026-11-08 | CC | WO-08 B3, B4 (limits provisional, Karl chooses). New `S1.3` (nearest other ecoregion and its distance), `S1.3.near` (under a kilometre), `S1.4.one` and `S1.4.many` (the basin's other ecoregions, a list when there are several; the WO's single `S1.4` with an optional "and" is split because the verb agrees with the count).
+- v10 | 2026-11-08 | CC | WO-08 B1. New `S2.1b.even`, `S2.1b.moderate`, `S2.1b.clear`, `S2.1b.strong`: the Seasonality tab's four classes on precipitation concentration (cutoffs 0.15, 0.35, 0.60, reused), with the wettest month named where the rain is not even. Not the WO's `S2.1b.season`, `.spread`, `.two` (a window of months and a two-season class were dropped at Karl's decision: the payload carries the monthly values for a chart instead). The wettest month, not the tab's circular "peak month", which differs from it by a month or more in about half the basins.
+- v9 | 2026-11-08 | CC | WO-08 B2. New `S3.4`, `S3.4.lakes`, `S3.4.wetlands` (lakes from HydroLAKES limnicity, wetlands from the GLWD group excluding lakes, reservoirs and rivers; each part only where its share is above zero, silent when both are zero).
+- v8 | 2026-11-08 | CC | WO-08 A6. New `S2.3.counts`, `S2.3.counts.item`, `S2.3.counts.item.precip`, `S5.2.counts`, `S5.2.counts.item`: when two or more measures stand out among the neighbours (all but one, or more than half the set) and are not already stated as an extreme, one sentence lists them all ("Compared with the nine basins around it, its basin receives less precipitation than five, is cooler than seven and is more humid than six."); one measure alone keeps its own sentence (`S2.3.count`, `S2.3.allbutone` and the like, unchanged); removing the `counts` lines returns to one measure per sentence. Forest moves from S6.5 to S5.2 (land cover; new `cmp.forest.more`, `cmp.forest.less`), so it is not stated twice.
+- v7 | 2026-11-08 | CC | WO-08 A1, A2, A3. `S5.title` and `S5.frame` say "around 2000" (GLC2000, and the cropland and pasture source, EarthStat/Ramankutty et al. 2008, are both circa 2000 per the BasinATLAS pages L08, L09); new `S4.1a.under` ("a mean slope under 0.1%" instead of "0.0%"); S2.4 is left out where the basin's GEnS zone is 1, 2, 3, 4 or 6 (Arctic 1 and 2, Extremely cold and wet 1 and 2, Extremely cold and mesic; no wording change, a rule in the script).
+- v6 | 2026-11-07 | CC | WO-07 part A, from `wo07_...` Opus draft with these changes: ring sentences state an extreme, "all" or "all but one" first and a count only when none of those holds (new `S2.3.allbutone`, `S2.3.allbutone.precip`, `S5.2.allbutone`, `S6.3.allbutone`, `S6.3.allbutone.precip`; the script needs at least five basins with a value for "all but one"); the middle-count lines `S2.3.count`, `S2.3.count.precip` and `S5.2.count` stay in, at Karl's decision (Opus's draft dropped them; the stakeholder review can cut them, and removing those three lines switches the counts off, their content then staying in the fill notes); `S6.4` and its slot in `S6.frame` are removed (a value outside the neighbours' range is being highest or lowest, which S6.5 names); `S6.5` now also draws on runoff, permafrost and water-table depth (new `cmp.runoff.*`, `cmp.permafrost.*`, `cmp.gwdepth.*`); population density and human footprint are left out of the sentences (`cmp.popdens.*` removed); `S2.3.extreme` is one sentence in the form "Of the n basins that meet here, it receives the least precipitation and is the most arid" (the S2.3 `top`/`bottom` words become verb phrases; `S2.3.extreme.precip` removed); `S5.2.extreme` opens "Among the n basins" so that the sections do not repeat one opening; `S6.2.out_some` reads "Its water flows on through n of them" (a basin whose next basin downstream also has a further one at its border drains into both, but not by two outlets); `S3.2.headwater` and `S5.1b.some` as Opus worded them. WO-07 part C: new `S3.1.on`, `S3.1.named`, `S3.1.unnamed_on`, `S3.1.unnamed` (S3.1 is now a sentence of its own and the Water frame no longer opens with the place's name; it names a close river, says there is one when none is named, and is silent when none is close), `S3.3.named`, `S3.3.unnamed`, `S3.3.same`, `S3.3.same.named` (when the much larger river is the one S3.1 already names; the nearest river and a much larger river nearby; the script reads the HydroRIVERS discharge class and Natural Earth names). WO-07 part B: new `S4.1a` (FAO slope class on the mean slope, percent shown), `S4.1b` and `S4.1b.texture` (sand, silt and clay normalised to 100, with the USDA texture class from the Soil Survey Manual, ch. 3), `S4.3.karst` and `S4.3.permafrost` (silent at zero; karst "up to"), `S5.1c` (largest GLC2000 class other than cultivated areas, with its share), `S2.4` (UNEP aridity class, inserted before S2.3 so that "most arid" follows the class); the terrain word is removed from `S1.frame`; `S4.frame` and `S5.frame` reworded.
+
+## Section titles
+
+S1.title: Setting
+S2.title: Climate
+S3.title: Water
+S4.title: Land and geology
+S5.title: Land cover around 2000
+S6.title: Surroundings
+S7.title: Coast and reach
+S8.title: About these figures
+S9.title: Buttons
+
+## Section sentences
+
+Slots are unit ids. `{S1.2c}`, `{S3.2}`, `{S5.1a}` and `{S5.1b}` are built from the phrases further down.
+
+Setting speaks about the place. `{S1.1b}` is the elevation at the point; `{S1.5a}` and `{S1.5b}` are the lowest and highest elevation in the basin that contains it; `{S1.2a}` is the ecoregion at the point.
+
+S1.frame: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion, {S1.2b}. {S1.2c} {S1.4}
+S1.frame.nogist: {name} sits at about {S1.1b} m above sea level, in a basin that runs from about {S1.5a} m to {S1.5b} m. It lies in the {S1.2a} ecoregion. {S1.2c} {S1.4}
+
+The other sections speak about the basin and say so.
+
+S2.frame: Across the surrounding basin of about {S8.1a} km², rainfall averages about {S2.1a} mm a year, {S2.1b}. Temperatures there average {S2.2a} °C, {S2.2bc}. {S2.4} {S2.3}
+S3.frame: {S3.1} {S3.2} {S3.3} {S3.4} The basin drains {S3.5}.
+S4.1a: {class} on average (a mean slope of {pct}%)
+S4.1a.under: {class} on average (a mean slope under 0.1%)
+S4.1b: {sand}% sand, {silt}% silt and {clay}% clay
+S4.1b.texture: {sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})
+S4.3.karst: Karst outcrop covers up to about {k}% of the basin.
+S4.3.permafrost: Permafrost underlies about {p}% of it.
+S2.4: Its aridity index of {ai} falls in the UNEP {class} class.
+S4.frame: Across the basin, the land is {S4.1a}, with topsoil that averages {S4.1b}. The underlying rock is mostly {S4.2}. {S4.3}
+S5.frame: Around 2000, {S5.1a} and {S5.1b}; {S5.1c}. {S5.2}
+S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.5}
+S7.frame: {S7.2}
+S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.3} {S8.point} {S8.osm}
+S8.frame.noyears: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets. {S8.3} {S8.point} {S8.osm}
+S9.frame: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
+S9.frame.nowiki: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Data as JSON: always]
+S5.frame.both_none: Around 2000, {S5.both_none}. {S5.2}
+
+## Phrases
+
+Setting. `{eco}`: the basin's majority ecoregion. S1.2c appears only when it differs from the point's.
+
+S1.2c: Most of its basin lies in the {eco} ecoregion.
+S8.3: The point lies just outside the basin data and was moved {d} m to the nearest basin.
+S8.point: Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.
+S8.osm: River names contain information from OpenStreetMap, available under the ODbL.
+S1.4.one: Its basin also takes in parts of the {eco1} ecoregion.
+S1.4.many: Its basin also takes in parts of the {list} ecoregions.
+
+Climate. `{lo_temp}`, `{lo_month}`, `{hi_temp}`, `{hi_month}`: coldest and warmest month of the monthly temperature curve.
+
+S2.2bc: from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}
+S2.1b.even: spread fairly evenly through the year
+S2.1b.moderate: moderately seasonal, with {month} the wettest month
+S2.1b.clear: clearly seasonal, with {month} the wettest month
+S2.1b.strong: strongly concentrated, with {month} the wettest month
+
+Water. S3.2 takes one form for each class of the Analysis tab's rule. `{S3.2a}`: ratio of the catchment above to the local basin. `{S3.2b}`: the comparison word. `{km}`: distance along the river from the basin's outlet to the sea or inland sink. The four forms other than exogenous are drafts; CC checks each against the rule's definition of its class and reports where the wording claims more than the class means.
+
+S3.2.exogenous: Most of the water passing here falls far upstream: the catchment above is {S3.2a} times the size of the local basin, and {S3.2b} than it.
+S3.2.uniform: The catchment above is {S3.2a} times the size of the local basin, with much the same climate.
+S3.2.headwater: No other basin drains into this one: its rivers rise within it.
+S3.2.local: The catchment above is {S3.2a} times the size of the local basin, in a somewhat different climate from it.
+S3.2.coastal: The basin meets the sea at its outlet, so little water arrives from upstream.
+S3.2.coastal_large: The basin meets the sea at its outlet.
+S3.2.endorheic:
+S3.2.undetermined:
+S3.2b.wetter: wetter
+S3.1.on: {name} is on the {river}.
+S3.1.named: {name} is about {d} km from the {river}.
+S3.1.unnamed_on: {name} is on a river.
+S3.1.unnamed: A river runs about {d} km from {name}.
+S3.3.named: A much larger river, the {river}, runs about {d} km away.
+S3.3.unnamed: A much larger river runs about {d} km away.
+S3.3.same: That river is much larger than any river within the basin.
+S3.3.same.named: The {river} is much larger than any river within the basin.
+S3.4: Lakes cover about {l}% of the basin and wetlands about {w}%.
+S3.4.lakes: Lakes cover about {l}% of the basin.
+S3.4.wetlands: Wetlands cover about {w}% of the basin.
+S3.5.sea: to the sea about {km} km beyond its outlet
+S3.5.sea_zero: directly to the sea
+S3.5.inland: to an inland sink about {km} km beyond its outlet
+S3.5.closed: nowhere: it is a closed basin, an inland sink
+
+Land cover. `{value}`: the share, as a whole-number percentage.
+
+S5.1a.some: about {value} of the basin is cropland
+S5.1a.none: no cropland is recorded
+S5.1b.some: {value} is pasture
+S5.1b.some_full: {value} of the basin is pasture
+S5.both_none: neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is {label}, at about {share}%
+S5.both_none.bare: neither cropland nor pasture is recorded
+S5.1b.none: no pasture is recorded
+S5.1c: in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%
+
+Surroundings. The flow lines say how many of the basins that meet here drain into this basin, and how many this basin drains into (directly or through another basin). `{n}`: that number, as a word up to ten. Wording for this section is WO-06's.
+
+S6.2.in_none: None of them drains into it.
+S6.2.in_one: One of them drains into it.
+S6.2.in_some: {n} of them drain into it.
+S6.2.out_one: It drains into one of them.
+S6.2.out_some: Its water flows on through {n} of them.
+S6.2.out_chain: It drains into one of them, and its water then passes through {n} more.
+S6.2.out_none: It drains into none of them.
+
+## Comparisons with the basins around
+
+How a basin is said to compare with the basins that share a border with it. `{n}`: the basins that meet here, counting this one. `{m}`: the neighbours with a value. `{k}`: how many of them the basin is more or less than. `{cmp}`: a word from the `cmp` lines below. `{list}`: phrases joined by commas and "and". Numbers up to ten are words. A tie is never turned into a rank.
+
+S2.3.extreme: Of the {n} basins that meet here, it {cmp}.
+S2.3.extreme.counts: Of the {n} basins that meet here, it {cmp}; of the other {m}, it {list}.
+S2.3.count: Its basin is {cmp} than {k} of the {m} basins around it.
+S2.3.count.precip: Its basin receives {cmp} precipitation than {k} of the {m} basins around it.
+S2.3.allbutone: Its basin is {cmp} than all but one of the {m} basins around it.
+S2.3.allbutone.precip: Its basin receives {cmp} precipitation than all but one of the {m} basins around it.
+S5.2.extreme: Among the {n} basins that meet here, it has {cmp}.
+S5.2.extreme.counts: Among the {n} basins that meet here, it has {cmp}; of the other {m}, it has {list}.
+S5.2.count: Its basin has {cmp} than {k} of the {m} basins around it.
+S2.3.counts: Compared with the {m} basins around it, its basin {list}.
+S2.3.counts.item: is {cmp} than {k}
+S2.3.counts.item.precip: receives {cmp} precipitation than {k}
+S5.2.counts: Compared with the {m} basins around it, its basin has {list}.
+S5.2.counts.item: {cmp} than {k}
+S5.2.allbutone: Its basin has {cmp} than all but one of the {m} basins around it.
+S6.3.all: The basins across its divides are all {cmp}.
+S6.3.all.precip: The basins across its divides all receive {cmp} precipitation.
+S6.3.allbutone: All but one of the basins across its divides are {cmp}.
+S6.3.allbutone.precip: All but one of the basins across its divides receive {cmp} precipitation.
+S6.5: Of the {n} basins that meet here, it has {list}.
+
+Words for each measure. `top` and `bottom`: the basin is the highest or lowest of the set. `more` and `less`: it is more or less than most of its neighbours (S2.3, S5.2), or, in S6.3, what its neighbours all are.
+
+cmp.precip.top: receives the most precipitation
+cmp.precip.bottom: receives the least precipitation
+cmp.precip.more: more
+cmp.precip.less: less
+cmp.temp.top: is the warmest
+cmp.temp.bottom: is the coolest
+cmp.temp.more: warmer
+cmp.temp.less: cooler
+cmp.aridity.top: is the most humid
+cmp.aridity.bottom: is the most arid
+cmp.aridity.more: more humid
+cmp.aridity.less: more arid
+cmp.elev.top: the highest mean elevation
+cmp.elev.bottom: the lowest mean elevation
+cmp.elev.more: higher
+cmp.elev.less: lower
+cmp.cropland.top: the most cropland
+cmp.cropland.bottom: the least cropland
+cmp.cropland.more: more cropland
+cmp.cropland.less: less cropland
+cmp.pasture.top: the most pasture
+cmp.pasture.bottom: the least pasture
+cmp.pasture.more: more pasture
+cmp.pasture.less: less pasture
+cmp.forest.more: more forest
+cmp.forest.less: less forest
+cmp.relief.top: the most relief
+cmp.relief.bottom: the least relief
+cmp.slope.top: the steepest slopes
+cmp.slope.bottom: the gentlest slopes
+cmp.forest.top: the most forest
+cmp.forest.bottom: the least forest
+cmp.karst.top: the most karst
+cmp.karst.bottom: the least karst
+cmp.sand.top: the most sand
+cmp.sand.bottom: the least sand
+cmp.silt.top: the most silt
+cmp.silt.bottom: the least silt
+cmp.clay.top: the most clay
+cmp.clay.bottom: the least clay
+cmp.runoff.top: the most runoff
+cmp.runoff.bottom: the least runoff
+cmp.permafrost.top: the most permafrost
+cmp.permafrost.bottom: the least permafrost
+cmp.gwdepth.top: the deepest water table
+cmp.gwdepth.bottom: the shallowest water table
+
+Coast.
+
+S7.2: Its basin touches the sea.
+S7.3: The nearest edge of its basin is the seacoast.
+
+About these figures. `{parts}`: the statements below, joined by full stops. `{n}`: the number of measures. `{list}`: their readable names (WO-05), not internal field names.
+
+S8.2: {parts}.
+label.upstream: {label} (upstream)
+S8.2.zero: {n} measures are zero here and so have no percentile: {list}
+S8.2.zero.one: {list} is zero here and so has no percentile
+S8.2.other: {n} have no value: {list}
+S8.2.other.one: 1 has no value: {list}
+
+Reasons a measure has no value (inserted in the list of the line above, in brackets).
+
+status.outside_active_domain: zero here, so no percentile
+status.no_data: no data in the source
+status.low_coverage: low coverage
+status.not_areal: not defined for an area
+
+A point inside no basin.
+
+nobasin.text: This place lies outside any drainage basin in the data, so there is no environmental profile to show.
+nobasin.frame: {S1.1b} {S9.1}

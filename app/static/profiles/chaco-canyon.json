@@ -1,0 +1,1339 @@
+{
+ "place": "Chaco Canyon",
+ "slug": "chaco-canyon",
+ "lat": 36.06,
+ "lon": -107.96,
+ "hybas_id": 7060618200,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "provenance": "profile_templates.md v23 (last commit 4630b73; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 4630b73; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "filled": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the Colorado Plateau shrublands ecoregion. Its basin also takes in parts of the Arizona Mountains forests ecoregion.",
+   "runs": [
+    {
+     "t": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the "
+    },
+    {
+     "t": "Colorado Plateau shrublands",
+     "href": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Arizona Mountains forests",
+     "href": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " sits at about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.1b"
+    },
+    {
+     "type": "text",
+     "text": " m above sea level, in a basin that runs from about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5a"
+    },
+    {
+     "type": "text",
+     "text": " m to "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5b"
+    },
+    {
+     "type": "text",
+     "text": " m. It lies in the "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.2a"
+    },
+    {
+     "type": "text",
+     "text": " ecoregion. "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S1.4",
+     "key": "S1.4.one",
+     "raw": "Its basin also takes in parts of the {eco1} ecoregion.",
+     "vals": {
+      "eco1": "Arizona Mountains forests"
+     },
+     "parts": []
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "filled": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the surrounding basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km², rainfall averages about "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.1a"
+    },
+    {
+     "type": "text",
+     "text": " mm a year, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.1b",
+     "key": "S2.1b.moderate",
+     "raw": "moderately seasonal, with {month} the wettest month",
+     "vals": {
+      "month": "August"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". Temperatures there average "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.2a"
+    },
+    {
+     "type": "text",
+     "text": " °C, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.2bc",
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "-2.3",
+      "lo_month": "January",
+      "hi_temp": "22.4",
+      "hi_month": "July"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S2.4",
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.19",
+      "class": "arid"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S2.3",
+     "key": "S2.3.extreme.counts",
+     "raw": "Of the {n} basins that meet here, it {cmp}; of the other {m}, it {list}.",
+     "vals": {
+      "cmp": "receives the least precipitation and is the most arid",
+      "n": "eight",
+      "m": "seven",
+      "list": "is warmer than four"
+     },
+     "parts": [
+      {
+       "key": "cmp.precip.bottom",
+       "raw": "receives the least precipitation",
+       "vals": {},
+       "parts": []
+      },
+      {
+       "key": "cmp.aridity.bottom",
+       "raw": "is the most arid",
+       "vals": {},
+       "parts": []
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "warmer",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.more",
+         "raw": "warmer",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "filled": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.2",
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.4",
+     "key": "S3.4",
+     "raw": "Lakes cover about {l}% of the basin and wetlands about {w}%.",
+     "vals": {
+      "l": "0.1",
+      "w": "1"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " The basin drains "
+    },
+    {
+     "type": "line",
+     "unit": "S3.5",
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "1,655"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "filled": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the basin, the land is "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1a",
+     "key": "S4.1a",
+     "raw": "{class} on average (a mean slope of {pct}%)",
+     "vals": {
+      "class": "gently sloping",
+      "pct": "4.5"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ", with topsoil that averages "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1b",
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "52",
+      "silt": "32",
+      "clay": "16",
+      "texture": "loam"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". The underlying rock is mostly "
+    },
+    {
+     "type": "slot",
+     "slot": "S4.2"
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S4.3",
+     "key": "S4.3.karst",
+     "raw": "Karst outcrop covers up to about {k}% of the basin.",
+     "vals": {
+      "k": "3"
+     },
+     "parts": []
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "filled": "Around 2000, about 1% of the basin is cropland and 66% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one.",
+   "runs": [
+    {
+     "t": "Around 2000, about 1% of the basin is cropland and 66% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Around 2000, "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1a",
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "1%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " and "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1b",
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "66%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "; "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1c",
+     "key": "S5.1c",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
+     "vals": {
+      "label": "shrub cover, closed-open, deciduous (with or without sparse tree layer)",
+      "share": "59"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S5.2",
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "more pasture than all but one and less forest than all but one"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more pasture",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.more",
+         "raw": "more pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less forest",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.forest.less",
+         "raw": "less forest",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "filled": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ],
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": "'s basin is one of "
+    },
+    {
+     "type": "slot",
+     "slot": "S6.1a"
+    },
+    {
+     "type": "text",
+     "text": " that meet here. "
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.out_one",
+     "raw": "It drains into one of them.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S6.3",
+     "key": "S6.3.all.precip",
+     "raw": "The basins across its divides all receive {cmp} precipitation.",
+     "vals": {
+      "cmp": "more"
+     },
+     "parts": [
+      {
+       "key": "cmp.precip.more",
+       "raw": "more",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S6.5",
+     "key": "S6.5",
+     "raw": "Of the {n} basins that meet here, it has {list}.",
+     "vals": {
+      "n": "eight",
+      "list": "the gentlest slopes"
+     },
+     "parts": [
+      {
+       "key": "cmp.slope.bottom",
+       "raw": "the gentlest slopes",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "filled": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "The elevation and ecoregion under Setting are for "
+    },
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " itself. The other figures describe the basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km² that contains it, from global datasets. "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S8.point",
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "precip_mm": [
+   16.0,
+   13.0,
+   17.0,
+   12.0,
+   13.0,
+   11.0,
+   34.0,
+   40.0,
+   28.0,
+   27.0,
+   17.0,
+   18.0
+  ],
+  "temp_c": [
+   -2.3,
+   0.9,
+   4.4,
+   8.8,
+   13.9,
+   19.4,
+   22.4,
+   21.1,
+   17.0,
+   10.7,
+   3.9,
+   -1.4
+  ]
+ },
+ "buttons_title": "Buttons",
+ "buttons": [
+  {
+   "id": "S9.3",
+   "label": "Profile as JSON",
+   "url": "/static/profiles/response/chaco-canyon.json",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=36.06&lon=-107.96",
+   "target": "_blank"
+  },
+  {
+   "id": "S9.2",
+   "label": "Ecoregion on Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+   "target": "_blank"
+  }
+ ],
+ "units": {
+  "S1.2a": {
+   "scope": "point",
+   "ok": true,
+   "text": "Colorado Plateau shrublands",
+   "why": null,
+   "na": false,
+   "note": "the ecoregion at the point",
+   "lines": []
+  },
+  "S1.2c": {
+   "scope": "point",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "point and basin ecoregions agree",
+   "lines": []
+  },
+  "S1.1b": {
+   "scope": "point",
+   "ok": true,
+   "text": "1,870",
+   "why": null,
+   "na": false,
+   "note": "mapzen, 30 m, via opentopodata",
+   "lines": []
+  },
+  "S1.5a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "1,499",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S1.5b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "2,841",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "246",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "9.9",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2bc": {
+   "scope": "basin",
+   "ok": true,
+   "text": "from -2.3 °C in January to 22.4 °C in July",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "-2.3",
+      "lo_month": "January",
+      "hi_temp": "22.4",
+      "hi_month": "July"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "1.0",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S3.2b": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S3.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "No other basin drains into this one: its rivers rise within it.",
+   "why": null,
+   "na": false,
+   "note": "class Catchment-uniform",
+   "lines": [
+    {
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.5": {
+   "scope": "basin",
+   "ok": true,
+   "text": "to the sea about 1,655 km beyond its outlet",
+   "why": null,
+   "na": false,
+   "note": "endo=0",
+   "lines": [
+    {
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "1,655"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "siliciclastic sedimentary rocks",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S5.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "about 1% of the basin is cropland",
+   "why": null,
+   "na": false,
+   "note": "1%, flagged outside active domain by the engine (a percentile guard)",
+   "lines": [
+    {
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "1%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S5.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "66% is pasture",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "66%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.1": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 70 km)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S3.3": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "no reach within 50 km that is 2 classes above the largest in the own basin (class 6)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.osm": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "no river name is shown, so no OpenStreetMap credit",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S4.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "gently sloping on average (a mean slope of 4.5%)",
+   "why": null,
+   "na": false,
+   "note": "mean slope 2.6 degrees = 4.54%",
+   "lines": [
+    {
+     "key": "S4.1a",
+     "raw": "{class} on average (a mean slope of {pct}%)",
+     "vals": {
+      "class": "gently sloping",
+      "pct": "4.5"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "52% sand, 32% silt and 16% clay (USDA texture class: loam)",
+   "why": null,
+   "na": false,
+   "note": "raw 52/32/16, total 100; USDA class loam; a half-point change in a share gives another class",
+   "lines": [
+    {
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "52",
+      "silt": "32",
+      "clay": "16",
+      "texture": "loam"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Karst outcrop covers up to about 3% of the basin.",
+   "why": null,
+   "na": false,
+   "note": "karst 3, permafrost 0",
+   "lines": [
+    {
+     "key": "S4.3.karst",
+     "raw": "Karst outcrop covers up to about {k}% of the basin.",
+     "vals": {
+      "k": "3"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S5.1c": {
+   "scope": "basin",
+   "ok": true,
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%",
+   "why": null,
+   "na": false,
+   "note": "GLC2000 largest class: Shrub cover, closed-open, deciduous (with or without sparse tree layer) 59%; largest other than cultivated: Shrub cover, closed-open, deciduous (with or without sparse tree layer) 59%",
+   "lines": [
+    {
+     "key": "S5.1c",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
+     "vals": {
+      "label": "shrub cover, closed-open, deciduous (with or without sparse tree layer)",
+      "share": "59"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Its aridity index of 0.19 falls in the UNEP arid class.",
+   "why": null,
+   "na": false,
+   "note": "index x 100 = 19",
+   "lines": [
+    {
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.19",
+      "class": "arid"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Lakes cover about 0.1% of the basin and wetlands about 1%.",
+   "why": null,
+   "na": false,
+   "note": "lakes 0.1% (HydroLAKES), wetlands 1% (GLWD group 2: classes 4 to 12)",
+   "lines": [
+    {
+     "key": "S3.4",
+     "raw": "Lakes cover about {l}% of the basin and wetlands about {w}%.",
+     "vals": {
+      "l": "0.1",
+      "w": "1"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S1.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Its basin also takes in parts of the Arizona Mountains forests ecoregion.",
+   "why": null,
+   "na": false,
+   "note": "Arizona Mountains forests 10%",
+   "lines": [
+    {
+     "key": "S1.4.one",
+     "raw": "Its basin also takes in parts of the {eco1} ecoregion.",
+     "vals": {
+      "eco1": "Arizona Mountains forests"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "moderately seasonal, with August the wettest month",
+   "why": null,
+   "na": false,
+   "note": "concentration 0.24 (moderate); wettest month August (40 mm)",
+   "lines": [
+    {
+     "key": "S2.1b.moderate",
+     "raw": "moderately seasonal, with {month} the wettest month",
+     "vals": {
+      "month": "August"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S6.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "eight",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S6.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "None of them drains into it. It drains into one of them.",
+   "why": null,
+   "na": false,
+   "note": "in 0, out 1",
+   "lines": [
+    {
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "key": "S6.2.out_one",
+     "raw": "It drains into one of them.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Of the eight basins that meet here, it receives the least precipitation and is the most arid; of the other seven, it is warmer than four.",
+   "why": null,
+   "na": false,
+   "note": "extreme+counts: precip bottom, aridity bottom, temp more",
+   "lines": [
+    {
+     "key": "S2.3.extreme.counts",
+     "raw": "Of the {n} basins that meet here, it {cmp}; of the other {m}, it {list}.",
+     "vals": {
+      "cmp": "receives the least precipitation and is the most arid",
+      "n": "eight",
+      "m": "seven",
+      "list": "is warmer than four"
+     },
+     "parts": [
+      {
+       "key": "cmp.precip.bottom",
+       "raw": "receives the least precipitation",
+       "vals": {},
+       "parts": []
+      },
+      {
+       "key": "cmp.aridity.bottom",
+       "raw": "is the most arid",
+       "vals": {},
+       "parts": []
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "warmer",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.more",
+         "raw": "warmer",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S5.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one.",
+   "why": null,
+   "na": false,
+   "note": "counts: pasture more, forest less | not stated: cropland less than three of seven, not more than half",
+   "lines": [
+    {
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "more pasture than all but one and less forest than all but one"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more pasture",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.more",
+         "raw": "more pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less forest",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.forest.less",
+         "raw": "less forest",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S6.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "The basins across its divides all receive more precipitation.",
+   "why": null,
+   "na": false,
+   "note": "all: precip more; 6 across a divide",
+   "lines": [
+    {
+     "key": "S6.3.all.precip",
+     "raw": "The basins across its divides all receive {cmp} precipitation.",
+     "vals": {
+      "cmp": "more"
+     },
+     "parts": [
+      {
+       "key": "cmp.precip.more",
+       "raw": "more",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S6.5": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Of the eight basins that meet here, it has the gentlest slopes.",
+   "why": null,
+   "na": false,
+   "note": "slope bottom",
+   "lines": [
+    {
+     "key": "S6.5",
+     "raw": "Of the {n} basins that meet here, it has {list}.",
+     "vals": {
+      "n": "eight",
+      "list": "the gentlest slopes"
+     },
+     "parts": [
+      {
+       "key": "cmp.slope.bottom",
+       "raw": "the gentlest slopes",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S6.ring": {
+   "scope": "basin",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "7 neighbours; areas km2 core 11,888, neighbours 1,516 to 18,885; the core is neither the smallest nor the largest by area; left out of the sentences: population density less than 6 of 7, human footprint more than 4 of 7",
+   "lines": []
+  },
+  "S7.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "the nearest edge of the basin is not the seacoast (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S7.2": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "basin does not touch the sea (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.3": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "the point is inside a basin",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "11,888",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S8.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Permafrost extent is zero here and so has no percentile.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.2",
+     "raw": "{parts}.",
+     "vals": {
+      "parts": "Permafrost extent is zero here and so has no percentile"
+     },
+     "parts": [
+      {
+       "key": "S8.2.zero.one",
+       "raw": "{list} is zero here and so has no percentile",
+       "vals": {
+        "n": "1",
+        "list": "Permafrost extent"
+       },
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S9.2": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S9.4": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/",
+   "why": null,
+   "na": false,
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
+   "lines": []
+  },
+  "S8.point": {
+   "scope": "point",
+   "ok": true,
+   "text": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    }
+   ]
+  }
+ },
+ "notes": [
+  "S1.2a: the ecoregion at the point",
+  "S1.2c: point and basin ecoregions agree",
+  "S1.1b: mapzen, 30 m, via opentopodata",
+  "S3.2: class Catchment-uniform",
+  "S3.5: endo=0",
+  "S5.1a: 1%, flagged outside active domain by the engine (a percentile guard)",
+  "S4.1a: mean slope 2.6 degrees = 4.54%",
+  "S4.1b: raw 52/32/16, total 100; USDA class loam; a half-point change in a share gives another class",
+  "S4.3: karst 3, permafrost 0",
+  "S5.1c: GLC2000 largest class: Shrub cover, closed-open, deciduous (with or without sparse tree layer) 59%; largest other than cultivated: Shrub cover, closed-open, deciduous (with or without sparse tree layer) 59%",
+  "S2.4: index x 100 = 19",
+  "S3.4: lakes 0.1% (HydroLAKES), wetlands 1% (GLWD group 2: classes 4 to 12)",
+  "S1.4: Arizona Mountains forests 10%",
+  "S2.1b: concentration 0.24 (moderate); wettest month August (40 mm)",
+  "S6.2: in 0, out 1",
+  "S2.3: extreme+counts: precip bottom, aridity bottom, temp more",
+  "S5.2: counts: pasture more, forest less | not stated: cropland less than three of seven, not more than half",
+  "S6.3: all: precip more; 6 across a divide",
+  "S6.5: slope bottom",
+  "S6.ring: 7 neighbours; areas km2 core 11,888, neighbours 1,516 to 18,885; the core is neither the smallest nor the largest by area; left out of the sentences: population density less than 6 of 7, human footprint more than 4 of 7",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
+  "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 70 km))",
+  "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 6))",
+  "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",
+  "S7.3: not applicable (the nearest edge of the basin is not the seacoast (optional part not stated))",
+  "S7.2: not applicable (basin does not touch the sea (optional part not stated))",
+  "S8.3: not applicable (the point is inside a basin)"
+ ]
+}

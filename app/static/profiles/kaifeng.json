@@ -1,0 +1,1367 @@
+{
+ "place": "Kaifeng",
+ "slug": "kaifeng",
+ "lat": 34.8,
+ "lon": 114.31,
+ "hybas_id": 4060675920,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "provenance": "profile_templates.md v23 (last commit 4630b73; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 4630b73; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "filled": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the Huang He Plain mixed forests ecoregion.",
+   "runs": [
+    {
+     "t": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the "
+    },
+    {
+     "t": "Huang He Plain mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " sits at about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.1b"
+    },
+    {
+     "type": "text",
+     "text": " m above sea level, in a basin that runs from about "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5a"
+    },
+    {
+     "type": "text",
+     "text": " m to "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.5b"
+    },
+    {
+     "type": "text",
+     "text": " m. It lies in the "
+    },
+    {
+     "type": "slot",
+     "slot": "S1.2a"
+    },
+    {
+     "type": "text",
+     "text": " ecoregion. "
+    },
+    {
+     "type": "text",
+     "text": " "
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "filled": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the surrounding basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km², rainfall averages about "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.1a"
+    },
+    {
+     "type": "text",
+     "text": " mm a year, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.1b",
+     "key": "S2.1b.clear",
+     "raw": "clearly seasonal, with {month} the wettest month",
+     "vals": {
+      "month": "July"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". Temperatures there average "
+    },
+    {
+     "type": "slot",
+     "slot": "S2.2a"
+    },
+    {
+     "type": "text",
+     "text": " °C, "
+    },
+    {
+     "type": "line",
+     "unit": "S2.2bc",
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "0.3",
+      "lo_month": "January",
+      "hi_temp": "28.0",
+      "hi_month": "July"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S2.4",
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.60",
+      "class": "dry sub-humid"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S2.3",
+     "key": "S2.3.counts",
+     "raw": "Compared with the {m} basins around it, its basin {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "receives less precipitation than five, is cooler than four and is more arid than five"
+     },
+     "parts": [
+      {
+       "key": "S2.3.counts.item.precip",
+       "raw": "receives {cmp} precipitation than {k}",
+       "vals": {
+        "cmp": "less",
+        "k": "five"
+       },
+       "parts": [
+        {
+         "key": "cmp.precip.less",
+         "raw": "less",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "cooler",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.less",
+         "raw": "cooler",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "more arid",
+        "k": "five"
+       },
+       "parts": [
+        {
+         "key": "cmp.aridity.less",
+         "raw": "more arid",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "filled": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet."
+    }
+   ],
+   "template": [
+    {
+     "type": "line",
+     "unit": "S3.1",
+     "key": "S3.1.named",
+     "raw": "{name} is about {d} km from the {river}.",
+     "vals": {
+      "name": "{name}",
+      "d": "11",
+      "river": "Yellow River"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.2",
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.3",
+     "key": "S3.3.same.named",
+     "raw": "The {river} is much larger than any river within the basin.",
+     "vals": {
+      "river": "Yellow River"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S3.4",
+     "key": "S3.4.lakes",
+     "raw": "Lakes cover about {l}% of the basin.",
+     "vals": {
+      "l": "0.1"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " The basin drains "
+    },
+    {
+     "type": "line",
+     "unit": "S3.5",
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "488"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "filled": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Across the basin, the land is "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1a",
+     "key": "S4.1a.under",
+     "raw": "{class} on average (a mean slope under 0.1%)",
+     "vals": {
+      "class": "level"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ", with topsoil that averages "
+    },
+    {
+     "type": "line",
+     "unit": "S4.1b",
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "28",
+      "silt": "47",
+      "clay": "25",
+      "texture": "loam"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". The underlying rock is mostly "
+    },
+    {
+     "type": "slot",
+     "slot": "S4.2"
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S4.3",
+     "key": "S4.3.karst",
+     "raw": "Karst outcrop covers up to about {k}% of the basin.",
+     "vals": {
+      "k": "2"
+     },
+     "parts": []
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "filled": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
+   "runs": [
+    {
+     "t": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "Around 2000, "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1a",
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "70%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " and "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1b",
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "3%"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": "; "
+    },
+    {
+     "type": "line",
+     "unit": "S5.1c",
+     "key": "S5.1c",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
+     "vals": {
+      "label": "herbaceous cover, closed-open",
+      "share": "4"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": ". "
+    },
+    {
+     "type": "line",
+     "unit": "S5.2",
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "more cropland than all but one and less pasture than four"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more cropland",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.cropland.more",
+         "raw": "more cropland",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less pasture",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.less",
+         "raw": "less pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "filled": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ],
+   "template": [
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": "'s basin is one of "
+    },
+    {
+     "type": "slot",
+     "slot": "S6.1a"
+    },
+    {
+     "type": "text",
+     "text": " that meet here. "
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "type": "line",
+     "unit": "S6.2",
+     "key": "S6.2.out_chain",
+     "raw": "It drains into one of them, and its water then passes through {n} more.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S6.5",
+     "key": "S6.5",
+     "raw": "Of the {n} basins that meet here, it has {list}.",
+     "vals": {
+      "n": "eight",
+      "list": "the gentlest slopes"
+     },
+     "parts": [
+      {
+       "key": "cmp.slope.bottom",
+       "raw": "the gentlest slopes",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "filled": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ],
+   "template": [
+    {
+     "type": "text",
+     "text": "The elevation and ecoregion under Setting are for "
+    },
+    {
+     "type": "slot",
+     "slot": "name"
+    },
+    {
+     "type": "text",
+     "text": " itself. The other figures describe the basin of about "
+    },
+    {
+     "type": "slot",
+     "slot": "S8.1a"
+    },
+    {
+     "type": "text",
+     "text": " km² that contains it, from global datasets. "
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S8.point",
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    },
+    {
+     "type": "text",
+     "text": " "
+    },
+    {
+     "type": "line",
+     "unit": "S8.osm",
+     "key": "S8.osm",
+     "raw": "River names contain information from OpenStreetMap, available under the ODbL.",
+     "vals": {},
+     "parts": []
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "precip_mm": [
+   17.0,
+   20.0,
+   29.0,
+   46.0,
+   51.0,
+   74.0,
+   198.0,
+   137.0,
+   68.0,
+   36.0,
+   20.0,
+   14.0
+  ],
+  "temp_c": [
+   0.3,
+   2.7,
+   8.2,
+   14.9,
+   20.9,
+   25.8,
+   28.0,
+   26.7,
+   21.8,
+   15.9,
+   9.1,
+   3.0
+  ]
+ },
+ "buttons_title": "Buttons",
+ "buttons": [
+  {
+   "id": "S9.3",
+   "label": "Profile as JSON",
+   "url": "/static/profiles/response/kaifeng.json",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=34.8&lon=114.31",
+   "target": "_blank"
+  },
+  {
+   "id": "S9.2",
+   "label": "Ecoregion on Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/Huang_He_Plain_mixed_forests",
+   "target": "_blank"
+  }
+ ],
+ "units": {
+  "S1.2a": {
+   "scope": "point",
+   "ok": true,
+   "text": "Huang He Plain mixed forests",
+   "why": null,
+   "na": false,
+   "note": "the ecoregion at the point",
+   "lines": []
+  },
+  "S1.2c": {
+   "scope": "point",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "point and basin ecoregions agree",
+   "lines": []
+  },
+  "S1.1b": {
+   "scope": "point",
+   "ok": true,
+   "text": "73",
+   "why": null,
+   "na": false,
+   "note": "mapzen, 30 m, via opentopodata",
+   "lines": []
+  },
+  "S1.5a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "15",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S1.5b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "137",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "710",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "14.8",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S2.2bc": {
+   "scope": "basin",
+   "ok": true,
+   "text": "from 0.3 °C in January to 28.0 °C in July",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S2.2bc",
+     "raw": "from {lo_temp} °C in {lo_month} to {hi_temp} °C in {hi_month}",
+     "vals": {
+      "lo_temp": "0.3",
+      "lo_month": "January",
+      "hi_temp": "28.0",
+      "hi_month": "July"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.2a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "1.0",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S3.2b": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S3.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "No other basin drains into this one: its rivers rise within it.",
+   "why": null,
+   "na": false,
+   "note": "class Catchment-uniform",
+   "lines": [
+    {
+     "key": "S3.2.headwater",
+     "raw": "No other basin drains into this one: its rivers rise within it.",
+     "vals": {
+      "S3.2a": "1.0",
+      "S3.2b": "⟦S3.2b: class is Catchment-uniform: the built rule has no \"drier\" or \"cooler\" statement, only \"wetter\" for exogenous water⟧"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.5": {
+   "scope": "basin",
+   "ok": true,
+   "text": "to the sea about 488 km beyond its outlet",
+   "why": null,
+   "na": false,
+   "note": "endo=0",
+   "lines": [
+    {
+     "key": "S3.5.sea",
+     "raw": "to the sea about {km} km beyond its outlet",
+     "vals": {
+      "km": "488"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "siliciclastic sedimentary rocks",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S5.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "about 70% of the basin is cropland",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S5.1a.some",
+     "raw": "about {value} of the basin is cropland",
+     "vals": {
+      "value": "70%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S5.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "3% is pasture",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S5.1b.some",
+     "raw": "{value} is pasture",
+     "vals": {
+      "value": "3%"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.1": {
+   "scope": "point",
+   "ok": true,
+   "text": "{name} is about 11 km from the Yellow River.",
+   "why": null,
+   "na": false,
+   "note": "tier 1: class 3 reach 40516963, 11.5 km, 1428.7 m3/s; named Yellow River (line 1.1 km from the reach)",
+   "lines": [
+    {
+     "key": "S3.1.named",
+     "raw": "{name} is about {d} km from the {river}.",
+     "vals": {
+      "name": "{name}",
+      "d": "11",
+      "river": "Yellow River"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.3": {
+   "scope": "point",
+   "ok": true,
+   "text": "The Yellow River is much larger than any river within the basin.",
+   "why": null,
+   "na": false,
+   "note": "own basin largest class 5; class 3 reach 40516963, 11.5 km, 1429 m3/s; the same reach as S3.1; named Yellow River",
+   "lines": [
+    {
+     "key": "S3.3.same.named",
+     "raw": "The {river} is much larger than any river within the basin.",
+     "vals": {
+      "river": "Yellow River"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S8.osm": {
+   "scope": "point",
+   "ok": true,
+   "text": "River names contain information from OpenStreetMap, available under the ODbL.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.osm",
+     "raw": "River names contain information from OpenStreetMap, available under the ODbL.",
+     "vals": {},
+     "parts": []
+    }
+   ]
+  },
+  "S4.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "level on average (a mean slope under 0.1%)",
+   "why": null,
+   "na": false,
+   "note": "mean slope 0.0 degrees = 0.00%",
+   "lines": [
+    {
+     "key": "S4.1a.under",
+     "raw": "{class} on average (a mean slope under 0.1%)",
+     "vals": {
+      "class": "level"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "28% sand, 47% silt and 25% clay (USDA texture class: loam)",
+   "why": null,
+   "na": false,
+   "note": "raw 28/47/25, total 100; USDA class loam",
+   "lines": [
+    {
+     "key": "S4.1b.texture",
+     "raw": "{sand}% sand, {silt}% silt and {clay}% clay (USDA texture class: {texture})",
+     "vals": {
+      "sand": "28",
+      "silt": "47",
+      "clay": "25",
+      "texture": "loam"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S4.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Karst outcrop covers up to about 2% of the basin.",
+   "why": null,
+   "na": false,
+   "note": "karst 2, permafrost 0",
+   "lines": [
+    {
+     "key": "S4.3.karst",
+     "raw": "Karst outcrop covers up to about {k}% of the basin.",
+     "vals": {
+      "k": "2"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S5.1c": {
+   "scope": "basin",
+   "ok": true,
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%",
+   "why": null,
+   "na": false,
+   "note": "GLC2000 largest class: Cultivated and managed areas 94%; largest other than cultivated: Herbaceous cover, closed-open 4%",
+   "lines": [
+    {
+     "key": "S5.1c",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
+     "vals": {
+      "label": "herbaceous cover, closed-open",
+      "share": "4"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Its aridity index of 0.60 falls in the UNEP dry sub-humid class.",
+   "why": null,
+   "na": false,
+   "note": "index x 100 = 60",
+   "lines": [
+    {
+     "key": "S2.4",
+     "raw": "Its aridity index of {ai} falls in the UNEP {class} class.",
+     "vals": {
+      "ai": "0.60",
+      "class": "dry sub-humid"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S3.4": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Lakes cover about 0.1% of the basin.",
+   "why": null,
+   "na": false,
+   "note": "lakes 0.1% (HydroLAKES), wetlands 0% (GLWD group 2: classes 4 to 12)",
+   "lines": [
+    {
+     "key": "S3.4.lakes",
+     "raw": "Lakes cover about {l}% of the basin.",
+     "vals": {
+      "l": "0.1"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S1.4": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "no other ecoregion covers 10% of the basin or more",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S2.1b": {
+   "scope": "basin",
+   "ok": true,
+   "text": "clearly seasonal, with July the wettest month",
+   "why": null,
+   "na": false,
+   "note": "concentration 0.52 (clear); wettest month July (198 mm)",
+   "lines": [
+    {
+     "key": "S2.1b.clear",
+     "raw": "clearly seasonal, with {month} the wettest month",
+     "vals": {
+      "month": "July"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S6.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "eight",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S6.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "None of them drains into it. It drains into one of them, and its water then passes through one more.",
+   "why": null,
+   "na": false,
+   "note": "in 0, out 2",
+   "lines": [
+    {
+     "key": "S6.2.in_none",
+     "raw": "None of them drains into it.",
+     "vals": {
+      "n": "zero"
+     },
+     "parts": []
+    },
+    {
+     "key": "S6.2.out_chain",
+     "raw": "It drains into one of them, and its water then passes through {n} more.",
+     "vals": {
+      "n": "one"
+     },
+     "parts": []
+    }
+   ]
+  },
+  "S2.3": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five.",
+   "why": null,
+   "na": false,
+   "note": "counts: precip less, temp less, aridity less",
+   "lines": [
+    {
+     "key": "S2.3.counts",
+     "raw": "Compared with the {m} basins around it, its basin {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "receives less precipitation than five, is cooler than four and is more arid than five"
+     },
+     "parts": [
+      {
+       "key": "S2.3.counts.item.precip",
+       "raw": "receives {cmp} precipitation than {k}",
+       "vals": {
+        "cmp": "less",
+        "k": "five"
+       },
+       "parts": [
+        {
+         "key": "cmp.precip.less",
+         "raw": "less",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "cooler",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.temp.less",
+         "raw": "cooler",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S2.3.counts.item",
+       "raw": "is {cmp} than {k}",
+       "vals": {
+        "cmp": "more arid",
+        "k": "five"
+       },
+       "parts": [
+        {
+         "key": "cmp.aridity.less",
+         "raw": "more arid",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S5.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
+   "why": null,
+   "na": false,
+   "note": "counts: cropland more, pasture less | not stated: forest less than three of seven, not more than half",
+   "lines": [
+    {
+     "key": "S5.2.counts",
+     "raw": "Compared with the {m} basins around it, its basin has {list}.",
+     "vals": {
+      "m": "seven",
+      "list": "more cropland than all but one and less pasture than four"
+     },
+     "parts": [
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "more cropland",
+        "k": "all but one"
+       },
+       "parts": [
+        {
+         "key": "cmp.cropland.more",
+         "raw": "more cropland",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      },
+      {
+       "key": "S5.2.counts.item",
+       "raw": "{cmp} than {k}",
+       "vals": {
+        "cmp": "less pasture",
+        "k": "four"
+       },
+       "parts": [
+        {
+         "key": "cmp.pasture.less",
+         "raw": "less pasture",
+         "vals": {},
+         "parts": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "S6.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "no measure on which all, or all but one of, the 5 basins across its divides lie on one side",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S6.5": {
+   "scope": "basin",
+   "ok": true,
+   "text": "Of the eight basins that meet here, it has the gentlest slopes.",
+   "why": null,
+   "na": false,
+   "note": "slope bottom",
+   "lines": [
+    {
+     "key": "S6.5",
+     "raw": "Of the {n} basins that meet here, it has {list}.",
+     "vals": {
+      "n": "eight",
+      "list": "the gentlest slopes"
+     },
+     "parts": [
+      {
+       "key": "cmp.slope.bottom",
+       "raw": "the gentlest slopes",
+       "vals": {},
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S6.ring": {
+   "scope": "basin",
+   "ok": true,
+   "text": "",
+   "why": null,
+   "na": false,
+   "note": "7 neighbours; areas km2 core 15,267, neighbours 3,124 to 17,568; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 5 of 7, human footprint less than 4 of 7",
+   "lines": []
+  },
+  "S7.3": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "the nearest edge of the basin is not the seacoast (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S7.2": {
+   "scope": "basin",
+   "ok": false,
+   "text": null,
+   "why": "basin does not touch the sea (optional part not stated)",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.3": {
+   "scope": "point",
+   "ok": false,
+   "text": null,
+   "why": "the point is inside a basin",
+   "na": true,
+   "note": null,
+   "lines": []
+  },
+  "S8.1a": {
+   "scope": "basin",
+   "ok": true,
+   "text": "15,267",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S8.2": {
+   "scope": "basin",
+   "ok": true,
+   "text": "3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.2",
+     "raw": "{parts}.",
+     "vals": {
+      "parts": "3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+     },
+     "parts": [
+      {
+       "key": "S8.2.zero",
+       "raw": "{n} measures are zero here and so have no percentile: {list}",
+       "vals": {
+        "n": "3",
+        "list": "Permafrost extent, Wetland extent group 1, Wetland extent group 2"
+       },
+       "parts": []
+      }
+     ]
+    }
+   ]
+  },
+  "S9.2": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://en.wikipedia.org/wiki/Huang_He_Plain_mixed_forests",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": []
+  },
+  "S9.4": {
+   "scope": "point",
+   "ok": true,
+   "text": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/",
+   "why": null,
+   "na": false,
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
+   "lines": []
+  },
+  "S8.point": {
+   "scope": "point",
+   "ok": true,
+   "text": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "why": null,
+   "na": false,
+   "note": null,
+   "lines": [
+    {
+     "key": "S8.point",
+     "raw": "Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+     "vals": {},
+     "parts": []
+    }
+   ]
+  }
+ },
+ "notes": [
+  "S1.2a: the ecoregion at the point",
+  "S1.2c: point and basin ecoregions agree",
+  "S1.1b: mapzen, 30 m, via opentopodata",
+  "S3.2: class Catchment-uniform",
+  "S3.5: endo=0",
+  "S3.1: tier 1: class 3 reach 40516963, 11.5 km, 1428.7 m3/s; named Yellow River (line 1.1 km from the reach)",
+  "S3.3: own basin largest class 5; class 3 reach 40516963, 11.5 km, 1429 m3/s; the same reach as S3.1; named Yellow River",
+  "S4.1a: mean slope 0.0 degrees = 0.00%",
+  "S4.1b: raw 28/47/25, total 100; USDA class loam",
+  "S4.3: karst 2, permafrost 0",
+  "S5.1c: GLC2000 largest class: Cultivated and managed areas 94%; largest other than cultivated: Herbaceous cover, closed-open 4%",
+  "S2.4: index x 100 = 60",
+  "S3.4: lakes 0.1% (HydroLAKES), wetlands 0% (GLWD group 2: classes 4 to 12)",
+  "S2.1b: concentration 0.52 (clear); wettest month July (198 mm)",
+  "S6.2: in 0, out 2",
+  "S2.3: counts: precip less, temp less, aridity less",
+  "S5.2: counts: cropland more, pasture less | not stated: forest less than three of seven, not more than half",
+  "S6.5: slope bottom",
+  "S6.ring: 7 neighbours; areas km2 core 15,267, neighbours 3,124 to 17,568; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 5 of 7, human footprint less than 4 of 7",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
+  "S1.4: not applicable (no other ecoregion covers 10% of the basin or more)",
+  "S6.3: not applicable (no measure on which all, or all but one of, the 5 basins across its divides lie on one side)",
+  "S7.3: not applicable (the nearest edge of the basin is not the seacoast (optional part not stated))",
+  "S7.2: not applicable (basin does not touch the sea (optional part not stated))",
+  "S8.3: not applicable (the point is inside a basin)"
+ ]
+}

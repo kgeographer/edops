@@ -1,0 +1,147 @@
+{
+ "place": "Timbuktu",
+ "lat": 16.77,
+ "lon": -3.01,
+ "hybas_id": 1060551560,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Timbuktu sits at about 272 m above sea level, in a basin that runs from about 257 m to 279 m. It lies in the Sahelian Acacia savanna ecoregion. Most of its basin lies in the Inner Niger Delta flooded savanna ecoregion.",
+   "runs": [
+    {
+     "t": "Timbuktu sits at about 272 m above sea level, in a basin that runs from about 257 m to 279 m. It lies in the "
+    },
+    {
+     "t": "Sahelian Acacia savanna",
+     "href": "https://www.oneearth.org/ecoregions/sahelian-acacia-savanna/"
+    },
+    {
+     "t": " ecoregion. Most of its basin lies in the "
+    },
+    {
+     "t": "Inner Niger Delta flooded savanna",
+     "href": "https://www.oneearth.org/ecoregions/inner-niger-delta-flooded-savanna/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 3,826 km², rainfall averages about 189 mm a year, strongly concentrated, with August the wettest month. Temperatures there average 28.6 °C, from 21.5 °C in January to 33.8 °C in June. Its aridity index of 0.09 falls in the UNEP arid class. Compared with the five basins around it, its basin receives less precipitation than three and is cooler than three.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 3,826 km², rainfall averages about 189 mm a year, strongly concentrated, with August the wettest month. Temperatures there average 28.6 °C, from 21.5 °C in January to 33.8 °C in June. Its aridity index of 0.09 falls in the UNEP arid class. Compared with the five basins around it, its basin receives less precipitation than three and is cooler than three."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "Timbuktu is about 13 km from the Niger River. Most of the water passing here falls far upstream: the catchment above is 100 times the size of the local basin, and wetter than it. Lakes cover about 0.4% of the basin and wetlands about 37%. The basin drains to the sea about 2,331 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Timbuktu is about 13 km from the Niger River. Most of the water passing here falls far upstream: the catchment above is 100 times the size of the local basin, and wetter than it. Lakes cover about 0.4% of the basin and wetlands about 37%. The basin drains to the sea about 2,331 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is level on average (a mean slope of 0.2%), with topsoil that averages 66% sand, 20% silt and 14% clay (USDA texture class: sandy loam). The underlying rock is mostly unconsolidated sediments.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope of 0.2%), with topsoil that averages 66% sand, 20% silt and 14% clay (USDA texture class: sandy loam). The underlying rock is mostly unconsolidated sediments."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, no cropland is recorded and 28% of the basin is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is sparse herbaceous or sparse shrub cover, at about 38%. Compared with the five basins around it, its basin has less cropland than three and less pasture than three.",
+   "runs": [
+    {
+     "t": "Around 2000, no cropland is recorded and 28% of the basin is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is sparse herbaceous or sparse shrub cover, at about 38%. Compared with the five basins around it, its basin has less cropland than three and less pasture than three."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Timbuktu's basin is one of six that meet here. Two of them drain into it. It drains into one of them. Of the six basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Timbuktu's basin is one of six that meet here. Two of them drain into it. It drains into one of them. Of the six basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Timbuktu itself. The other figures describe the basin of about 3,826 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Timbuktu itself. The other figures describe the basin of about 3,826 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   0.0,
+   0.0,
+   0.0,
+   1.0,
+   4.0,
+   17.0,
+   54.0,
+   78.0,
+   32.0,
+   4.0,
+   0.0,
+   0.0
+  ],
+  "temp_c": [
+   21.5,
+   24.3,
+   27.5,
+   31.0,
+   33.5,
+   33.8,
+   31.5,
+   29.9,
+   30.7,
+   30.4,
+   26.5,
+   22.4
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Sahelian Acacia savanna",
+    "url": "https://www.oneearth.org/ecoregions/sahelian-acacia-savanna/"
+   },
+   {
+    "name": "Inner Niger Delta flooded savanna",
+    "url": "https://www.oneearth.org/ecoregions/inner-niger-delta-flooded-savanna/"
+   }
+  ],
+  "wikipedia": null,
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=16.77&lon=-3.01"
+ }
+}

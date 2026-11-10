@@ -1,0 +1,158 @@
+{
+ "place": "Tbilisi",
+ "lat": 41.72,
+ "lon": 44.79,
+ "hybas_id": 2060616700,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Tbilisi sits at about 418 m above sea level, in a basin that runs from about 255 m to 3,838 m. It lies in the Azerbaijan shrub desert and steppe ecoregion. Most of its basin lies in the Caucasus mixed forests ecoregion. Its basin also takes in parts of the Eastern Anatolian montane steppe ecoregion.",
+   "runs": [
+    {
+     "t": "Tbilisi sits at about 418 m above sea level, in a basin that runs from about 255 m to 3,838 m. It lies in the "
+    },
+    {
+     "t": "Azerbaijan shrub desert and steppe",
+     "href": "https://www.oneearth.org/ecoregions/azerbaijan-shrub-desert-and-steppe/"
+    },
+    {
+     "t": " ecoregion. Most of its basin lies in the "
+    },
+    {
+     "t": "Caucasus mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/caucasus-mixed-forests/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Eastern Anatolian montane steppe",
+     "href": "https://www.oneearth.org/ecoregions/eastern-anatolian-montane-steppe/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 23,251 km², rainfall averages about 762 mm a year, moderately seasonal, with May the wettest month. Temperatures there average 5.3 °C, from -5.9 °C in January to 15.8 °C in August. Its aridity index of 0.93 falls in the UNEP humid class. Compared with the nine basins around it, its basin receives more precipitation than six, is cooler than seven and is more humid than six.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 23,251 km², rainfall averages about 762 mm a year, moderately seasonal, with May the wettest month. Temperatures there average 5.3 °C, from -5.9 °C in January to 15.8 °C in August. Its aridity index of 0.93 falls in the UNEP humid class. Compared with the nine basins around it, its basin receives more precipitation than six, is cooler than seven and is more humid than six."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "Tbilisi is on the Kura River. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 664 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Tbilisi is on the Kura River. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 664 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is moderately steep on average (a mean slope of 22%), with topsoil that averages 35% sand, 43% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly intermediate volcanic rocks. Permafrost underlies about 1% of it.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is moderately steep on average (a mean slope of 22%), with topsoil that averages 35% sand, 43% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly intermediate volcanic rocks. Permafrost underlies about 1% of it."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 22% of the basin is cropland and 31% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven.",
+   "runs": [
+    {
+     "t": "Around 2000, about 22% of the basin is cropland and 31% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Tbilisi's basin is one of ten that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Tbilisi's basin is one of ten that meet here. None of them drains into it. It drains into one of them."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   35.0,
+   40.0,
+   48.0,
+   73.0,
+   105.0,
+   104.0,
+   76.0,
+   71.0,
+   56.0,
+   59.0,
+   53.0,
+   42.0
+  ],
+  "temp_c": [
+   -5.9,
+   -5.1,
+   -0.9,
+   4.7,
+   9.6,
+   12.7,
+   15.7,
+   15.8,
+   12.0,
+   7.2,
+   1.6,
+   -3.4
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Azerbaijan shrub desert and steppe",
+    "url": "https://www.oneearth.org/ecoregions/azerbaijan-shrub-desert-and-steppe/"
+   },
+   {
+    "name": "Caucasus mixed forests",
+    "url": "https://www.oneearth.org/ecoregions/caucasus-mixed-forests/"
+   },
+   {
+    "name": "Eastern Anatolian montane steppe",
+    "url": "https://www.oneearth.org/ecoregions/eastern-anatolian-montane-steppe/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Azerbaijan_shrub_desert_and_steppe",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=41.72&lon=44.79"
+ }
+}

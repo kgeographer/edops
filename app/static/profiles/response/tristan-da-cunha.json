@@ -1,0 +1,10 @@
+{
+ "place": "Tristan da Cunha",
+ "lat": -37.068,
+ "lon": -12.312,
+ "hybas_id": null,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": true,
+ "message": "This place lies outside any drainage basin in the data, so there is no environmental profile to show."
+}

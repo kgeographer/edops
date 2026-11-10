@@ -1,0 +1,146 @@
+{
+ "place": "Utqiagvik",
+ "lat": 71.29,
+ "lon": -156.79,
+ "hybas_id": 8060007840,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Utqiagvik sits at about 3 m above sea level, in a basin that runs from about 0 m to 90 m. It lies in the Arctic coastal tundra ecoregion.",
+   "runs": [
+    {
+     "t": "Utqiagvik sits at about 3 m above sea level, in a basin that runs from about 0 m to 90 m. It lies in the "
+    },
+    {
+     "t": "Arctic coastal tundra",
+     "href": "https://www.oneearth.org/ecoregions/arctic-coastal-tundra/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation; of the other three, it is cooler than two and is more arid than two.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation; of the other three, it is cooler than two and is more arid than two."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 14% of the basin and wetlands about 67%. The basin drains directly to the sea.",
+   "runs": [
+    {
+     "t": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 14% of the basin and wetlands about 67%. The basin drains directly to the sea."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is very gently sloping on average (a mean slope of 1.4%), with topsoil that averages 48% sand, 36% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Permafrost underlies about 97% of it.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is very gently sloping on average (a mean slope of 1.4%), with topsoil that averages 48% sand, 36% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Permafrost underlies about 97% of it."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is sparse herbaceous or sparse shrub cover, at about 81%.",
+   "runs": [
+    {
+     "t": "Around 2000, neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is sparse herbaceous or sparse shrub cover, at about 81%."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Utqiagvik's basin is one of four that meet here. None of them drains into it. It drains into none of them. The basins across its divides are all higher. Of the four basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Utqiagvik's basin is one of four that meet here. None of them drains into it. It drains into none of them. The basins across its divides are all higher. Of the four basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes."
+    }
+   ]
+  },
+  {
+   "id": "S7",
+   "title": "Coast and reach",
+   "text": "Its basin touches the sea.",
+   "runs": [
+    {
+     "t": "Its basin touches the sea."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   5.0,
+   5.0,
+   5.0,
+   6.0,
+   5.0,
+   9.0,
+   27.0,
+   30.0,
+   19.0,
+   12.0,
+   7.0,
+   5.0
+  ],
+  "temp_c": [
+   -25.1,
+   -26.8,
+   -24.7,
+   -16.8,
+   -5.4,
+   2.7,
+   6.1,
+   5.0,
+   0.4,
+   -9.0,
+   -17.6,
+   -23.9
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Arctic coastal tundra",
+    "url": "https://www.oneearth.org/ecoregions/arctic-coastal-tundra/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Arctic_coastal_tundra",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=71.29&lon=-156.79"
+ }
+}

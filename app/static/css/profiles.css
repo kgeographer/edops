@@ -1,0 +1,40 @@
+/* Environmental Profiles sample page. Own header position rule: site.css pins the nav pills at left:500px, which breaks at phone width. */
+.edops-page-pills-wrap { position: static; transform: none; }
+
+/*#pf-main { max-width: 960px; margin: 0 auto; padding: 0.5rem var(--page-inline-padding, 1.5rem) 2rem; }*/
+#pf-main { max-width: none; margin: 0 auto; padding: 0.5rem var(--page-inline-padding, 1.5rem) 2rem; }
+
+.pf-places { flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+.pf-places .nav-link { padding: 0.25rem 0.75rem; font-size: 0.9rem; background-color: #e9ecef; color: #495057; }
+.pf-places .nav-link.active { background-color: #4a7c59; color: #fff; }
+
+#pf-intro { font-size: 0.9rem; color: #495057; }
+#pf-intro p { margin-bottom: 0.5rem; }
+.pf-draft { font-size: 0.75rem; font-style: italic; color: #993333; margin-bottom: 0.25rem !important; }
+.pf-meta { font-size: 0.8rem; color: #6c757d; }
+
+.pf-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin: 0.75rem 0; }
+.pf-legend { font-size: 0.8rem; color: #6c757d; }
+
+/*#pf-profile { max-height: 65vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem 1.25rem; background: #fff; }*/
+#pf-profile { max-height: none; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem 1.25rem; background: #fff; }
+#pf-profile p { margin-bottom: 0.75rem; line-height: 1.55; overflow-wrap: anywhere; }
+.pf-sec { margin: 1rem 0 0.35rem; font-size: 1rem; font-weight: 600; color: #4a7c59; }
+.pf-sec:first-child { margin-top: 0; }
+.pf-nobasin { color: #993333; font-size: 1.15rem; font-weight: 600; }
+.pf-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.pf-fig { margin: 0.5rem 0 1rem; }
+.pf-fig figcaption { font-size: 0.8rem; color: #6c757d; }
+
+/* template view */
+.pf-tkey { color: #8a8f94; font-size: 0.7rem; margin-right: 0.1rem; }
+.pf-tline { background: #f3f6f4; border-radius: 3px; padding: 0 0.15rem; }
+.pf-tparts { display: inline-block; margin-left: 0.25rem; padding-left: 0.4rem; border-left: 2px solid #c9d6cd; }
+.pf-tparts .pf-tline { background: #eaf0ec; }
+.pf-tslot { color: #7a3e8a; font-size: 0.85em; background: transparent; padding: 0; }
+
+@media (max-width: 576px) {
+  #pf-profile { max-height: none; padding: 0.75rem; }
+  #pf-main { padding-inline: 1rem; }
+}

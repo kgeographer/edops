@@ -1,0 +1,136 @@
+{
+ "place": "Poltava",
+ "lat": 49.59,
+ "lon": 34.55,
+ "hybas_id": 2060459130,
+ "generated": "2026-11-10",
+ "template_version": 23,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Poltava sits at about 165 m above sea level, in a basin that runs from about 61 m to 256 m. It lies in the East European forest steppe ecoregion.",
+   "runs": [
+    {
+     "t": "Poltava sits at about 165 m above sea level, in a basin that runs from about 61 m to 256 m. It lies in the "
+    },
+    {
+     "t": "East European forest steppe",
+     "href": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 14,512 km², rainfall averages about 565 mm a year, spread fairly evenly through the year. Temperatures there average 7.2 °C, from -6.7 °C in January to 20.2 °C in July. Its aridity index of 0.73 falls in the UNEP humid class. Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 14,512 km², rainfall averages about 565 mm a year, spread fairly evenly through the year. Temperatures there average 7.2 °C, from -6.7 °C in January to 20.2 °C in July. Its aridity index of 0.73 falls in the UNEP humid class. Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "A river runs about 3 km from Poltava. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 516 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "A river runs about 3 km from Poltava. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 516 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is gently sloping on average (a mean slope of 2.6%), with topsoil that averages 33% sand, 45% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly mixed sedimentary rocks.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is gently sloping on average (a mean slope of 2.6%), with topsoil that averages 33% sand, 45% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly mixed sedimentary rocks."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 64% of the basin is cropland and 12% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is mosaic: cropland/shrub and/or herbaceous cover, at about 12%. Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three.",
+   "runs": [
+    {
+     "t": "Around 2000, about 64% of the basin is cropland and 12% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is mosaic: cropland/shrub and/or herbaceous cover, at about 12%. Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Poltava's basin is one of five that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Poltava's basin is one of five that meet here. None of them drains into it. It drains into one of them."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Poltava itself. The other figures describe the basin of about 14,512 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Poltava itself. The other figures describe the basin of about 14,512 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   44.0,
+   35.0,
+   33.0,
+   40.0,
+   48.0,
+   64.0,
+   68.0,
+   50.0,
+   47.0,
+   43.0,
+   45.0,
+   47.0
+  ],
+  "temp_c": [
+   -6.7,
+   -6.0,
+   -0.9,
+   8.3,
+   15.1,
+   18.6,
+   20.2,
+   19.4,
+   14.0,
+   7.3,
+   0.8,
+   -3.5
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "East European forest steppe",
+    "url": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/East_European_forest_steppe",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=49.59&lon=34.55"
+ }
+}
