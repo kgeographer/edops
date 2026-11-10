@@ -1,0 +1,158 @@
+{
+ "place": "Santa Fe",
+ "lat": 35.69,
+ "lon": -105.94,
+ "hybas_id": 7060674070,
+ "generated": "2026-11-10",
+ "template_version": 22,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Santa Fe sits at about 2,128 m above sea level, in a basin that runs from about 1,436 m to 3,936 m. It lies in the Colorado Plateau shrublands ecoregion. Its basin also takes in parts of the Colorado Rockies forests and Arizona Mountains forests ecoregions.",
+   "runs": [
+    {
+     "t": "Santa Fe sits at about 2,128 m above sea level, in a basin that runs from about 1,436 m to 3,936 m. It lies in the "
+    },
+    {
+     "t": "Colorado Plateau shrublands",
+     "href": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Colorado Rockies forests",
+     "href": "https://www.oneearth.org/ecoregions/colorado-rockies-forests/"
+    },
+    {
+     "t": " and "
+    },
+    {
+     "t": "Arizona Mountains forests",
+     "href": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+    },
+    {
+     "t": " ecoregions."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 14,659 km², rainfall averages about 360 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 10.2 °C, from -0.7 °C in January to 21.6 °C in July. Its aridity index of 0.30 falls in the UNEP semi-arid class. Compared with the seven basins around it, its basin receives more precipitation than four, is warmer than four and is more humid than five.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 14,659 km², rainfall averages about 360 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 10.2 °C, from -0.7 °C in January to 21.6 °C in July. Its aridity index of 0.30 falls in the UNEP semi-arid class. Compared with the seven basins around it, its basin receives more precipitation than four, is warmer than four and is more humid than five."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "The catchment above is 3.4 times the size of the local basin, in a somewhat different climate from it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 2,108 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "The catchment above is 3.4 times the size of the local basin, in a somewhat different climate from it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 2,108 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is sloping on average (a mean slope of 9.5%), with topsoil that averages 50% sand, 34% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 18% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is sloping on average (a mean slope of 9.5%), with topsoil that averages 50% sand, 34% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 18% of the basin."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 2% of the basin is cropland and 49% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 53%. Compared with the seven basins around it, its basin has less pasture than four and more forest than five.",
+   "runs": [
+    {
+     "t": "Around 2000, about 2% of the basin is cropland and 49% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 53%. Compared with the seven basins around it, its basin has less pasture than four and more forest than five."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Santa Fe's basin is one of eight that meet here. Two of them drain into it. It drains into one of them. The basins across its divides are all more arid.",
+   "runs": [
+    {
+     "t": "Santa Fe's basin is one of eight that meet here. Two of them drain into it. It drains into one of them. The basins across its divides are all more arid."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Santa Fe itself. The other figures describe the basin of about 14,659 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Santa Fe itself. The other figures describe the basin of about 14,659 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   19.0,
+   20.0,
+   23.0,
+   19.0,
+   22.0,
+   24.0,
+   58.0,
+   64.0,
+   39.0,
+   31.0,
+   21.0,
+   21.0
+  ],
+  "temp_c": [
+   -0.7,
+   1.7,
+   4.8,
+   9.2,
+   14.1,
+   19.3,
+   21.6,
+   20.3,
+   16.6,
+   10.9,
+   4.3,
+   -0.1
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Colorado Plateau shrublands",
+    "url": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+   },
+   {
+    "name": "Colorado Rockies forests",
+    "url": "https://www.oneearth.org/ecoregions/colorado-rockies-forests/"
+   },
+   {
+    "name": "Arizona Mountains forests",
+    "url": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=35.69&lon=-105.94"
+ }
+}

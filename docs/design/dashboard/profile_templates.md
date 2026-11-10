@@ -6,7 +6,7 @@ This file is the product of the WO-04 to WO-07 work: the wording of the Environm
 
 **Every change is recorded.** Whoever edits this file (Karl, Opus or Claude Code) raises `Version:` by one and adds a line to Changes: `- vN | date | who | what and why`. The generator will not run if the newest line in Changes does not match `Version:`. Each generated file states the version, the last commit of this file, and whether it has been edited since.
 
-Version: 20
+Version: 22
 
 ## Changes
 
@@ -15,6 +15,8 @@ Version: 20
 - v3 | 2026-11-05 | CC | Two lines added, no other wording changed: `S3.2.undetermined` (empty, like endorheic; the sixth class of the Analysis tab's rule, a basin whose upstream area is under 500 km², where the rule makes no comparison) and `label.upstream` (readable names in the S8.2 lists, from the variable catalog; an upstream measure reads "Karst area (upstream)").
 - v4 | 2026-11-07 | CC | Water wording checked against the Analysis rule's classes over 306 sample basins (WO-05 item 2, `wo05_results.md`). New `S3.2.headwater`, used for the uniform and local classes when no other basin drains into this one (area ratio 1.05 or less; 118 of 181 such basins): "uniform" had said "1.0 times the size ... with much the same climate", which compares a basin with itself. `S3.2.local` rewritten: it had said "most of the water passing here falls locally", but 43 of 46 sample basins in the class have an upstream catchment over twice the local basin, and the class is the rule's residual. New `S3.2.coastal_large`, used when a coastal-terminal basin has an area ratio over 2: the rule tests only distance to the sea, so "little water arrives from upstream" is not safe there; `S3.2.coastal` unchanged otherwise. `S3.5.sea` and `S3.5.inland` reworded ("beyond its outlet") because "downstream of the basin" repeated the subject. Exogenous, endorheic and undetermined unchanged. Needs the script rule for the headwater and coastal_large switches (wo04_fill.py).
 - v5 | 2026-11-07 | CC | Ring comparison wording (WO-06), from Opus's draft in `wo06_basin-rings-comparisons.md` with these changes: `S6.2` (one line) is replaced by `S6.2.in_none`, `S6.2.in_one`, `S6.2.in_some`, `S6.2.out_one`, `S6.2.out_some` (new: a basin can drain into more than one of the basins around it, through a chain) and `S6.2.out_none`; new `S2.3.extreme`, `S2.3.count`, `S5.2.extreme`, `S5.2.count`, `S6.3.all`, `S6.4` (states the count of measures outside the neighbours' range, and is silent when there are none), `S6.5`; `cmp.<measure>.top|bottom|more|less` for every measure the sentences use (the full list is in the Comparisons part below; relief, slope, forest, karst and the soil shares have only top and bottom, since they appear only in S6.5). Precipitation has its own frames (`S2.3.extreme.precip`, `S2.3.count.precip`, `S6.3.all.precip`: "receives the least precipitation"), so that "dry", "wet", "arid" and "humid" are used for aridity only; extremes over the same set of basins and frame are joined into one sentence. Small numbers are written as words (one to ten) by the script. No existing wording changed, but the ring keys switch the new rules on: a template without them still regenerates as v4.
+- v22 | 2026-11-10 | CC | WO-10a. `nobasin.text` is plain language: it had read "No basin contains this point (structured response `no_basin`; nearest basin: see WO-03 Q6). Every basin-keyed unit is empty.", which is developer wording and appears on the sample page and in the response for a place outside any basin (Tristan da Cunha). Karl's idea of the sentence: "This place lies outside any basin"; "in the data" and the profile are added so the reader knows what is missing.
+- v21 | 2026-11-10 | CC | WO-10a. `S5.1c` and `S5.both_none` name the land cover map ("in the GLC2000 land cover map, the commonest class other than cultivated land is …"): cropland and pasture are the BasinATLAS land-use extents and the cover class is GLC2000, so the figures can add up to more than 100% (Chaco Canyon 126%, Santa Fe 104%) and the sentence must not read as one partition of the basin. `{S8.2}` leaves `S8.frame` and `S8.frame.noyears`: it explained percentiles the page does not show, with catalog variable names; the unit is still filled and kept in the stored record, and its keys are unchanged. New `S6.2.out_chain` ("It drains into one of them, and its water then passes through {n} more.") for a basin with one direct downstream neighbour and others beyond it (Kaifeng: one, then a second three steps down); "flows on through two of them" had left the reader to wonder how water flows through two basins. `S6.2.out_some` stays for the other cases of more than one.
 - v20 | 2026-11-10 | CC | WO-10, for the sample page, which hides a unit not built yet. New `S1.frame.nogist` (Setting without the ecoregion gist S1.2b, which would leave "ecoregion, .") and `S8.frame.noyears` (About these figures without the dataset years S8.1b: "from global datasets."). The page's record builder uses them only while S1.2b and S8.1b are not built; the ordinary frames stay and the markdown profiles are unchanged. Karl accepted the wording, to be revisited with the live page.
 - v19 | 2026-11-09 | CC | `S5.2.counts` takes the verb ("its basin has {list}") and `S5.2.counts.item` loses it ("{cmp} than {k}"), so two measures read "has less cropland than three and less pasture than three" and not "has ... and has ...". `S2.3.counts` is unchanged: its items need different verbs ("is", "receives").
 - v18 | 2026-11-09 | CC | OneEarth button. New `S9.4` (the URL of the ecoregion's page at oneearth.org/ecoregions/, from the slug stored with the ecoregion; 845 of 846 have one, and all 845 pages answered 200 on 9 Nov). `S9.frame` and `S9.frame.nowiki` gain `[Ecoregion on OneEarth: {S9.4}]` before the Wikipedia button, which stays (hidden where flagged). The button opens in a new tab (`target="_blank"`). The data are CC BY-NC 4.0, cite One Earth; their page text is not reproduced (permission asked separately).
@@ -67,8 +69,8 @@ S4.frame: Across the basin, the land is {S4.1a}, with topsoil that averages {S4.
 S5.frame: Around 2000, {S5.1a} and {S5.1b}; {S5.1c}. {S5.2}
 S6.frame: {name}'s basin is one of {S6.1a} that meet here. {S6.2} {S6.2c} {S6.3} {S6.5}
 S7.frame: {S7.2}
-S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.2} {S8.3} {S8.point} {S8.osm}
-S8.frame.noyears: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets. {S8.2} {S8.3} {S8.point} {S8.osm}
+S8.frame: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets of about {S8.1b}. {S8.3} {S8.point} {S8.osm}
+S8.frame.noyears: The elevation and ecoregion under Setting are for {name} itself. The other figures describe the basin of about {S8.1a} km² that contains it, from global datasets. {S8.3} {S8.point} {S8.osm}
 S9.frame: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Ecoregion on Wikipedia: {S9.2}] [Data as JSON: always]
 S9.frame.nowiki: {S9.1} [Ecoregion on OneEarth: {S9.4}] [Data as JSON: always]
 S5.frame.both_none: Around 2000, {S5.both_none}. {S5.2}
@@ -125,10 +127,10 @@ S5.1a.some: about {value} of the basin is cropland
 S5.1a.none: no cropland is recorded
 S5.1b.some: {value} is pasture
 S5.1b.some_full: {value} of the basin is pasture
-S5.both_none: neither cropland nor pasture is recorded; the commonest cover is {label}, at about {share}%
+S5.both_none: neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is {label}, at about {share}%
 S5.both_none.bare: neither cropland nor pasture is recorded
 S5.1b.none: no pasture is recorded
-S5.1c: the commonest other cover is {label}, at about {share}%
+S5.1c: in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%
 
 Surroundings. The flow lines say how many of the basins that meet here drain into this basin, and how many this basin drains into (directly or through another basin). `{n}`: that number, as a word up to ten. Wording for this section is WO-06's.
 
@@ -137,6 +139,7 @@ S6.2.in_one: One of them drains into it.
 S6.2.in_some: {n} of them drain into it.
 S6.2.out_one: It drains into one of them.
 S6.2.out_some: Its water flows on through {n} of them.
+S6.2.out_chain: It drains into one of them, and its water then passes through {n} more.
 S6.2.out_none: It drains into none of them.
 
 ## Comparisons with the basins around
@@ -234,5 +237,5 @@ status.not_areal: not defined for an area
 
 A point inside no basin.
 
-nobasin.text: No basin contains this point (structured response `no_basin`; nearest basin: see WO-03 Q6). Every basin-keyed unit is empty.
+nobasin.text: This place lies outside any drainage basin in the data, so there is no environmental profile to show.
 nobasin.frame: {S1.1b} {S9.1}

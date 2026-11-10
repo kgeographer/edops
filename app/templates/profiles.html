@@ -103,12 +103,20 @@
     return p;
   }
 
+  // A round tick step (1, 2, 2.5, 5 or 10 times a power of ten) at or above raw.
+  function niceStep(raw) {
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    return pow * [1, 2, 2.5, 5, 10].find(f => f * pow >= raw - 1e-9);
+  }
+
   // Monthly precipitation (bars) and temperature (line), after the Sandbox's Walter-Lieth chart.
   function climateFigure(m) {
     const pre = m.precip_mm, tmp = m.temp_c, months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const W = 460, H = 240, PAD = { t: 16, r: 50, b: 36, l: 50 }, iW = W - PAD.l - PAD.r, iH = H - PAD.t - PAD.b;
-    const preMax = Math.max(...pre), tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp), barW = iW / 12;
-    const pY = v => iH - (v / (preMax * 1.1)) * iH, tY = v => iH - ((v - (tmpMin - 3)) / (tmpMax - tmpMin + 6)) * iH;
+    const tmpMin = Math.min(...tmp), tmpMax = Math.max(...tmp), barW = iW / 12;
+    const pStep = niceStep(Math.max(...pre) / 3), pTop = Math.ceil(Math.max(...pre) / pStep) * pStep;   // precipitation axis ends on a round tick
+    const tLo = tmpMin - 3, tHi = tmpMax + 3, tStep = niceStep((tHi - tLo) / 4);
+    const pY = v => iH - (v / pTop) * iH, tY = v => iH - ((v - tLo) / (tHi - tLo)) * iH;
     let bars = '', pts = '', xl = '', yp = '', yt = '';
     for (let i = 0; i < 12; i++) {
       const x = PAD.l + i * barW, tx = (PAD.l + (i + 0.5) * barW).toFixed(1);
@@ -116,12 +124,12 @@
       pts += `${tx},${(PAD.t + tY(tmp[i])).toFixed(1)} `;
       xl += `<text x="${tx}" y="${H - 8}" font-size="11" text-anchor="middle">${months[i]}</text>`;
     }
-    for (const v of [0, Math.round(preMax / 2), Math.round(preMax)]) {
+    for (let v = 0; v <= pTop + 1e-9; v += pStep) {
       const y = (PAD.t + pY(v)).toFixed(1);
-      yp += `<text x="${PAD.l - 5}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${v}</text><line x1="${PAD.l}" y1="${y}" x2="${PAD.l + iW}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
+      yp += `<text x="${PAD.l - 5}" y="${y}" font-size="11" text-anchor="end" fill="#5b8dc4" dominant-baseline="middle">${+v.toFixed(2)}</text><line x1="${PAD.l}" y1="${y}" x2="${PAD.l + iW}" y2="${y}" stroke="#ddd" stroke-width="0.6"/>`;
     }
-    for (const v of [Math.round(tmpMin), Math.round((tmpMin + tmpMax) / 2), Math.round(tmpMax)]) {
-      yt += `<text x="${PAD.l + iW + 5}" y="${(PAD.t + tY(v)).toFixed(1)}" font-size="11" fill="#c0392b" dominant-baseline="middle">${v}°</text>`;
+    for (let v = Math.ceil(tLo / tStep) * tStep; v <= tHi + 1e-9; v += tStep) {
+      yt += `<text x="${PAD.l + iW + 5}" y="${(PAD.t + tY(v)).toFixed(1)}" font-size="11" fill="#c0392b" dominant-baseline="middle">${+v.toFixed(2)}°</text>`;
     }
     const lx = PAD.l / 2, rx = W - PAD.r / 2 + 8, cy = PAD.t + iH / 2;
     const fig = mk('figure', 'pf-fig');

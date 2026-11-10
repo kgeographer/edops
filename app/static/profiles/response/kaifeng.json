@@ -1,0 +1,136 @@
+{
+ "place": "Kaifeng",
+ "lat": 34.8,
+ "lon": 114.31,
+ "hybas_id": 4060675920,
+ "generated": "2026-11-10",
+ "template_version": 22,
+ "no_basin": false,
+ "sections": [
+  {
+   "id": "S1",
+   "title": "Setting",
+   "text": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the Huang He Plain mixed forests ecoregion.",
+   "runs": [
+    {
+     "t": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the "
+    },
+    {
+     "t": "Huang He Plain mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "Climate",
+   "text": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five."
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "Water",
+   "text": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet."
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "Land and geology",
+   "text": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin."
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "Land cover around 2000",
+   "text": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
+   "runs": [
+    {
+     "t": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four."
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "Surroundings",
+   "text": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ]
+  },
+  {
+   "id": "S8",
+   "title": "About these figures",
+   "text": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ]
+  }
+ ],
+ "monthly": {
+  "scope": "basin",
+  "level": 6,
+  "source": "BasinATLAS monthly climatology",
+  "units": {
+   "precip_mm": "millimetres per month",
+   "temp_c": "degrees Celsius, monthly mean"
+  },
+  "note": "Monthly climatology of the basin that contains the place, not of the point.",
+  "precip_mm": [
+   17.0,
+   20.0,
+   29.0,
+   46.0,
+   51.0,
+   74.0,
+   198.0,
+   137.0,
+   68.0,
+   36.0,
+   20.0,
+   14.0
+  ],
+  "temp_c": [
+   0.3,
+   2.7,
+   8.2,
+   14.9,
+   20.9,
+   25.8,
+   28.0,
+   26.7,
+   21.8,
+   15.9,
+   9.1,
+   3.0
+  ]
+ },
+ "links": {
+  "ecoregions": [
+   {
+    "name": "Huang He Plain mixed forests",
+    "url": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/"
+   }
+  ],
+  "wikipedia": "https://en.wikipedia.org/wiki/Huang_He_Plain_mixed_forests",
+  "signature": "https://edops.computingplace.org/api/signature?scope=basin&level=6&lat=34.8&lon=114.31"
+ }
+}

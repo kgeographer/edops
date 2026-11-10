@@ -11,7 +11,7 @@ These are the four units the ten profiles still show as `⟦...⟧`. The goal is
 - **S1.2b, the one-line ecoregion gist.** Blocked on reliable stored summaries: see E1 and E2.
 - **S6.2c, a description of a neighbouring basin.** The slot in the flow sentence: "Upstream, {neighbour description} drains into it; downstream, it drains into {neighbour description}" (`modal_dummy_annotated.md`, S6.2a and S6.2b). It describes one specific neighbour, the one the flow points at, and basins have no names, so something must identify it. S6.2 today gives counts only ("one basin drains into it") and does not describe. Two ways are named in `wo04a_results.md` (row S6.2c, Q4): *by character*, from how the neighbour ranks on the measures the ring comparisons already use ("a drier, higher basin"); or *by its main river* ("the basin of the Niger"). A third, by shape ("a narrow corridor along the Niger", `S6.X1`), needs basin shape (O2), which is not started. The river-name gate (WO-08 A5) may make the second cheaper; not checked for a neighbour's reach, nor what it says when no river passes. *For Opus:* choose between character and river (or both, river first), and the wording. WO-06 left it as "planned unless it turns out to be easy". *When:* not scheduled.
 - **S8.1b, the years of the datasets.** Needs the glossary of dataset years. *When:* with the glossary.
-- **S9.1, the link from WHG into EDOPS.** Needs the URL scheme from WHG.
+- **S9.1, the link from WHG into EDOPS.** Our side, January work (WO-10a): EDOPS defines the URL, a permalink into the Sandbox that opens a place's signature from `lat`, `lon`, `name`, `scope` and `level`; WHG builds it from a place's name and coordinates. Not blocked on WHG.
 
 ## Ecoregions and Wikipedia
 

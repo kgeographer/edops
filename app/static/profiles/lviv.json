@@ -5,8 +5,8 @@
  "lon": 24.03,
  "hybas_id": 2060376210,
  "generated": "2026-11-10",
- "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 22,
+ "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -299,10 +299,10 @@
   {
    "id": "S5",
    "title": "Land cover around 2000",
-   "filled": "Around 2000, about 44% of the basin is cropland and 13% is pasture; the commonest other cover is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7.",
+   "filled": "Around 2000, about 44% of the basin is cropland and 13% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7.",
    "runs": [
     {
-     "t": "Around 2000, about 44% of the basin is cropland and 13% is pasture; the commonest other cover is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7."
+     "t": "Around 2000, about 44% of the basin is cropland and 13% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7."
     }
    ],
    "template": [
@@ -342,7 +342,7 @@
      "type": "line",
      "unit": "S5.1c",
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "tree cover, mixed leaf type",
       "share": "9"
@@ -462,10 +462,10 @@
   {
    "id": "S8",
    "title": "About these figures",
-   "filled": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "filled": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
    "runs": [
     {
-     "t": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+     "t": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
     }
    ],
    "template": [
@@ -488,30 +488,6 @@
     {
      "type": "text",
      "text": " km² that contains it, from global datasets. "
-    },
-    {
-     "type": "line",
-     "unit": "S8.2",
-     "key": "S8.2",
-     "raw": "{parts}.",
-     "vals": {
-      "parts": "3 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 2"
-     },
-     "parts": [
-      {
-       "key": "S8.2.zero",
-       "raw": "{n} measures are zero here and so have no percentile: {list}",
-       "vals": {
-        "n": "3",
-        "list": "Karst area, Permafrost extent, Wetland extent group 2"
-       },
-       "parts": []
-      }
-     ]
-    },
-    {
-     "type": "text",
-     "text": " "
     },
     {
      "type": "text",
@@ -570,7 +546,7 @@
   {
    "id": "S9.3",
    "label": "Profile as JSON",
-   "url": "/static/profiles/lviv.json",
+   "url": "/static/profiles/response/lviv.json",
    "target": "_blank"
   },
   {
@@ -850,14 +826,14 @@
   "S5.1c": {
    "scope": "basin",
    "ok": true,
-   "text": "the commonest other cover is tree cover, mixed leaf type, at about 9%",
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is tree cover, mixed leaf type, at about 9%",
    "why": null,
    "na": false,
    "note": "GLC2000 largest class: Cultivated and managed areas 67%; largest other than cultivated: Tree cover, mixed leaf type 9%",
    "lines": [
     {
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "tree cover, mixed leaf type",
       "share": "9"

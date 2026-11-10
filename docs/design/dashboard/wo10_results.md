@@ -6,7 +6,7 @@ Sample profile page at `/profiles` (branch `whg-profile-page`, local, not pushed
 
 Both are in `profile_templates.md` wording, so any fix is a version bump (v21) with a Changes line, on Karl's word.
 
-**1. Land cover percentages can add up to more than 100% (S5.1a, S5.1b, S5.1c).**
+**1. Land cover percentages can add up to more than 100% (S5.1a, S5.1b, S5.1c).** *Settled in v21 (WO-10a): the sentence names the GLC2000 map. The mosaic-class oddity at Poltava remains; see `wo10a_summary.md`.*
 The sentence reads as one partition of the basin: "about 2% of the basin is cropland and 49% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 53%." That is 104%.
 
 Cause: two datasets in one sentence. Cropland and pasture are BasinATLAS land-use extents (Band D, `crp_pc_sse`, `pst_pc_sse`). "The commonest other cover" is the largest GLC2000 class (`glc_pc_s01` to `s22`) other than "cultivated and managed areas" (`wo07_classes.glc_other`). Pasture is a land-use figure and covers land that GLC maps as shrub, herbaceous or bare, so "other" means other than GLC's cultivated class, not other than the cropland and pasture just stated.
@@ -20,7 +20,7 @@ Options:
 
 CC suggests the first two together.
 
-**2. S8.2 explains percentiles the page never shows.**
+**2. S8.2 explains percentiles the page never shows.** *Settled in v21 (WO-10a): `{S8.2}` is out of the S8 frames.*
 S8.2 lists the measures that are zero and so have no percentile, for example (Kaifeng): "3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2." Two problems for a reader of this profile: the profile shows no percentiles, so "no percentile" explains an absence nobody can see; and "Wetland extent group 1" and "group 2" are catalog variable names, not plain language. Options: drop S8.2 from the profile; or reword it ("Some measures are zero here, so they are not described: …") with plain names, which needs the friendly-name crosswalk (the separate work order noted in CLAUDE.md).
 
 ## Open questions for Opus

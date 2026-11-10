@@ -5,8 +5,8 @@
  "lon": 114.31,
  "hybas_id": 4060675920,
  "generated": "2026-11-10",
- "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 22,
+ "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -371,10 +371,10 @@
   {
    "id": "S5",
    "title": "Land cover around 2000",
-   "filled": "Around 2000, about 70% of the basin is cropland and 3% is pasture; the commonest other cover is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
+   "filled": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
    "runs": [
     {
-     "t": "Around 2000, about 70% of the basin is cropland and 3% is pasture; the commonest other cover is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four."
+     "t": "Around 2000, about 70% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four."
     }
    ],
    "template": [
@@ -414,7 +414,7 @@
      "type": "line",
      "unit": "S5.1c",
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "herbaceous cover, closed-open",
       "share": "4"
@@ -474,10 +474,10 @@
   {
    "id": "S6",
    "title": "Surroundings",
-   "filled": "Kaifeng's basin is one of eight that meet here. None of them drains into it. Its water flows on through two of them. Of the eight basins that meet here, it has the gentlest slopes.",
+   "filled": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes.",
    "runs": [
     {
-     "t": "Kaifeng's basin is one of eight that meet here. None of them drains into it. Its water flows on through two of them. Of the eight basins that meet here, it has the gentlest slopes."
+     "t": "Kaifeng's basin is one of eight that meet here. None of them drains into it. It drains into one of them, and its water then passes through one more. Of the eight basins that meet here, it has the gentlest slopes."
     }
    ],
    "template": [
@@ -510,10 +510,10 @@
     {
      "type": "line",
      "unit": "S6.2",
-     "key": "S6.2.out_some",
-     "raw": "Its water flows on through {n} of them.",
+     "key": "S6.2.out_chain",
+     "raw": "It drains into one of them, and its water then passes through {n} more.",
      "vals": {
-      "n": "two"
+      "n": "one"
      },
      "parts": []
     },
@@ -552,10 +552,10 @@
   {
    "id": "S8",
    "title": "About these figures",
-   "filled": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "filled": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
    "runs": [
     {
-     "t": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+     "t": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
     }
    ],
    "template": [
@@ -578,30 +578,6 @@
     {
      "type": "text",
      "text": " km² that contains it, from global datasets. "
-    },
-    {
-     "type": "line",
-     "unit": "S8.2",
-     "key": "S8.2",
-     "raw": "{parts}.",
-     "vals": {
-      "parts": "3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2"
-     },
-     "parts": [
-      {
-       "key": "S8.2.zero",
-       "raw": "{n} measures are zero here and so have no percentile: {list}",
-       "vals": {
-        "n": "3",
-        "list": "Permafrost extent, Wetland extent group 1, Wetland extent group 2"
-       },
-       "parts": []
-      }
-     ]
-    },
-    {
-     "type": "text",
-     "text": " "
     },
     {
      "type": "text",
@@ -668,7 +644,7 @@
   {
    "id": "S9.3",
    "label": "Profile as JSON",
-   "url": "/static/profiles/kaifeng.json",
+   "url": "/static/profiles/response/kaifeng.json",
    "target": "_blank"
   },
   {
@@ -983,14 +959,14 @@
   "S5.1c": {
    "scope": "basin",
    "ok": true,
-   "text": "the commonest other cover is herbaceous cover, closed-open, at about 4%",
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is herbaceous cover, closed-open, at about 4%",
    "why": null,
    "na": false,
    "note": "GLC2000 largest class: Cultivated and managed areas 94%; largest other than cultivated: Herbaceous cover, closed-open 4%",
    "lines": [
     {
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "herbaceous cover, closed-open",
       "share": "4"
@@ -1075,7 +1051,7 @@
   "S6.2": {
    "scope": "basin",
    "ok": true,
-   "text": "None of them drains into it. Its water flows on through two of them.",
+   "text": "None of them drains into it. It drains into one of them, and its water then passes through one more.",
    "why": null,
    "na": false,
    "note": "in 0, out 2",
@@ -1089,10 +1065,10 @@
      "parts": []
     },
     {
-     "key": "S6.2.out_some",
-     "raw": "Its water flows on through {n} of them.",
+     "key": "S6.2.out_chain",
+     "raw": "It drains into one of them, and its water then passes through {n} more.",
      "vals": {
-      "n": "two"
+      "n": "one"
      },
      "parts": []
     }

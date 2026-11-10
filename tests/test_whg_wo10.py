@@ -62,7 +62,7 @@ def test_segments_keep_slots_unfilled_and_leave_out_what_is_not_built_or_silent(
 def test_no_basin_record_has_a_message_and_no_sections():
     F = dict(pub=None, lat=-37.1, lon=-12.3, hid=None)
     r = P.build_record('Tristan da Cunha', F, {}, '2026-11-10')
-    assert r['no_basin'] and r['sections'] == [] and r['slug'] == 'tristan-da-cunha' and 'No basin contains this point' in r['message']
+    assert r['no_basin'] and r['sections'] == [] and r['slug'] == 'tristan-da-cunha' and r['message'] == W.fmt('nobasin.text', {})
     assert r['template_version'] == W.templates()['version']
 
 

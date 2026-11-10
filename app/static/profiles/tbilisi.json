@@ -5,8 +5,8 @@
  "lon": 44.79,
  "hybas_id": 2060616700,
  "generated": "2026-11-10",
- "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 22,
+ "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -396,10 +396,10 @@
   {
    "id": "S5",
    "title": "Land cover around 2000",
-   "filled": "Around 2000, about 22% of the basin is cropland and 31% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven.",
+   "filled": "Around 2000, about 22% of the basin is cropland and 31% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven.",
    "runs": [
     {
-     "t": "Around 2000, about 22% of the basin is cropland and 31% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven."
+     "t": "Around 2000, about 22% of the basin is cropland and 31% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven."
     }
    ],
    "template": [
@@ -439,7 +439,7 @@
      "type": "line",
      "unit": "S5.1c",
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "shrub cover, closed-open, deciduous (with or without sparse tree layer)",
       "share": "18"
@@ -559,10 +559,10 @@
   {
    "id": "S8",
    "title": "About these figures",
-   "filled": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. 2 measures are zero here and so have no percentile: Karst area, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "filled": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
    "runs": [
     {
-     "t": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. 2 measures are zero here and so have no percentile: Karst area, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+     "t": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
     }
    ],
    "template": [
@@ -585,30 +585,6 @@
     {
      "type": "text",
      "text": " km² that contains it, from global datasets. "
-    },
-    {
-     "type": "line",
-     "unit": "S8.2",
-     "key": "S8.2",
-     "raw": "{parts}.",
-     "vals": {
-      "parts": "2 measures are zero here and so have no percentile: Karst area, Wetland extent group 2"
-     },
-     "parts": [
-      {
-       "key": "S8.2.zero",
-       "raw": "{n} measures are zero here and so have no percentile: {list}",
-       "vals": {
-        "n": "2",
-        "list": "Karst area, Wetland extent group 2"
-       },
-       "parts": []
-      }
-     ]
-    },
-    {
-     "type": "text",
-     "text": " "
     },
     {
      "type": "text",
@@ -675,7 +651,7 @@
   {
    "id": "S9.3",
    "label": "Profile as JSON",
-   "url": "/static/profiles/tbilisi.json",
+   "url": "/static/profiles/response/tbilisi.json",
    "target": "_blank"
   },
   {
@@ -991,14 +967,14 @@
   "S5.1c": {
    "scope": "basin",
    "ok": true,
-   "text": "the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%",
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%",
    "why": null,
    "na": false,
    "note": "GLC2000 largest class: Cultivated and managed areas 19%; largest other than cultivated: Shrub cover, closed-open, deciduous (with or without sparse tree layer) 18%",
    "lines": [
     {
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "shrub cover, closed-open, deciduous (with or without sparse tree layer)",
       "share": "18"

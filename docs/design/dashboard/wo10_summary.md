@@ -1,6 +1,6 @@
 # WO-10 summary: sample profile page
 
-Spec: `wo10_sample-profile-page.md`. Findings and questions for Opus: `wo10_results.md`. Branch `whg-profile-page` (cut from `whg-profile`), local only: not pushed, not deployed, not merged. Commits fe5b153, e52d52c, c1095c9, ac1ae19. Template version 20.
+Spec: `wo10_sample-profile-page.md`. Adjusted by WO-10a (`wo10a_summary.md`): template v22, "Profile as JSON" now opens the proposed response (`app/static/profiles/response/`), the ecoregion links and the chart ticks changed. Where the two differ, WO-10a is current. Findings and questions for Opus: `wo10_results.md`. Branch `whg-profile-page` (cut from `whg-profile`), local only: not pushed, not deployed, not merged. Commits fe5b153, e52d52c, c1095c9, ac1ae19. Template version 20.
 
 ## What was built
 

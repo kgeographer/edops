@@ -99,7 +99,7 @@ These are not in v1. Each gets a short entry in a Future work document in the re
 
 Ideas that surface during the work, tagged v1 (could fit before February), roadmap (after) or undecided. The project-wide `docs/design/deferred_items_register.md` is still to be reviewed.
 
-- **Permalink to a place in the Sandbox (the Dashboard in v1).** Read `lat`, `lon`, `name`, `scope` and `level` from the URL and run Get signature on load, so a link opens a place's full signature. The Sandbox reads only `?tab=` today. For the profile page it would replace, or sit beside, the raw-JSON button. Undecided; not in the plan above.
-- **Absolute URLs for the profile page's buttons.** The stored buttons use site-relative URLs. A WHG modal on another origin needs `https://edops.computingplace.org/...`. Small; v1, once the modal's embedding is known.
+- **Permalink to a place in the Sandbox (the Dashboard in v1).** Read `lat`, `lon`, `name`, `scope` and `level` from the URL and run Get signature on load, so a link opens a place's full signature. The Sandbox reads only `?tab=` today. For the profile page it would replace, or sit beside, the raw-JSON button. January work on our side (WO-10a): it is the EDOPS half of S9.1, since EDOPS defines the URL and WHG builds it from a place's name and coordinates, so S9.1 is not blocked on WHG. Not yet in the hours table above.
+- **Absolute URLs.** Done in the WO-10a response files (the links are absolute). The preview page's own buttons stay site-relative.
 - **Readable signature view.** A formatted signature with a spinner, in place of the raw JSON link. Roadmap.
 - **Wikipedia link on the ecoregion name.** The ecoregion name links to OneEarth now; Wikipedia remains a button. Waiting on the repair of flagged Wikipedia links (see the open items file). Undecided.

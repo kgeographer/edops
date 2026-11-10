@@ -37,5 +37,7 @@ def test_every_record_has_both_renderings_and_hides_what_is_not_built():
         assert len(rec['monthly']['precip_mm']) == 12 and len(rec['monthly']['temp_c']) == 12 and rec['monthly']['scope'] == 'basin'
         sig = next(b for b in rec['buttons'] if b['id'] == 'signature')
         assert sig['url'] == f'/api/signature?scope=basin&level=6&lat={rec["lat"]}&lon={rec["lon"]}'
+        assert rec['buttons'][0]['url'] == f'/static/profiles/response/{p["slug"]}.json'
+        assert (PROFILES / 'response' / f'{p["slug"]}.json').exists()
         assert rec['buttons'][0]['id'] == 'S9.3' and rec['buttons'][0]['label'] == 'Profile as JSON' and rec['buttons'][1]['id'] == 'signature' and all(b['target'] == '_blank' for b in rec['buttons'])
         assert {u['scope'] for u in rec['units'].values()} == {'basin', 'point'}

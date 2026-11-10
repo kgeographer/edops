@@ -5,8 +5,8 @@
  "lon": -156.79,
  "hybas_id": 8060007840,
  "generated": "2026-11-10",
- "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 22,
+ "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -340,10 +340,10 @@
   {
    "id": "S5",
    "title": "Land cover around 2000",
-   "filled": "Around 2000, neither cropland nor pasture is recorded; the commonest cover is sparse herbaceous or sparse shrub cover, at about 81%.",
+   "filled": "Around 2000, neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is sparse herbaceous or sparse shrub cover, at about 81%.",
    "runs": [
     {
-     "t": "Around 2000, neither cropland nor pasture is recorded; the commonest cover is sparse herbaceous or sparse shrub cover, at about 81%."
+     "t": "Around 2000, neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is sparse herbaceous or sparse shrub cover, at about 81%."
     }
    ],
    "template": [
@@ -355,7 +355,7 @@
      "type": "line",
      "unit": "S5.both_none",
      "key": "S5.both_none",
-     "raw": "neither cropland nor pasture is recorded; the commonest cover is {label}, at about {share}%",
+     "raw": "neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is {label}, at about {share}%",
      "vals": {
       "label": "sparse herbaceous or sparse shrub cover",
       "share": "81"
@@ -498,10 +498,10 @@
   {
    "id": "S8",
    "title": "About these figures",
-   "filled": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Pasture extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "filled": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
    "runs": [
     {
-     "t": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Pasture extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+     "t": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
     }
    ],
    "template": [
@@ -524,30 +524,6 @@
     {
      "type": "text",
      "text": " km² that contains it, from global datasets. "
-    },
-    {
-     "type": "line",
-     "unit": "S8.2",
-     "key": "S8.2",
-     "raw": "{parts}.",
-     "vals": {
-      "parts": "3 measures are zero here and so have no percentile: Cropland extent, Karst area, Pasture extent"
-     },
-     "parts": [
-      {
-       "key": "S8.2.zero",
-       "raw": "{n} measures are zero here and so have no percentile: {list}",
-       "vals": {
-        "n": "3",
-        "list": "Cropland extent, Karst area, Pasture extent"
-       },
-       "parts": []
-      }
-     ]
-    },
-    {
-     "type": "text",
-     "text": " "
     },
     {
      "type": "text",
@@ -606,7 +582,7 @@
   {
    "id": "S9.3",
    "label": "Profile as JSON",
-   "url": "/static/profiles/utqiagvik.json",
+   "url": "/static/profiles/response/utqiagvik.json",
    "target": "_blank"
   },
   {
@@ -889,14 +865,14 @@
   "S5.1c": {
    "scope": "basin",
    "ok": true,
-   "text": "the commonest other cover is sparse herbaceous or sparse shrub cover, at about 81%",
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is sparse herbaceous or sparse shrub cover, at about 81%",
    "why": null,
    "na": false,
    "note": "GLC2000 largest class: Sparse herbaceous or sparse shrub cover 81%; largest other than cultivated: Sparse herbaceous or sparse shrub cover 81%",
    "lines": [
     {
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "sparse herbaceous or sparse shrub cover",
       "share": "81"
@@ -917,14 +893,14 @@
   "S5.both_none": {
    "scope": "basin",
    "ok": true,
-   "text": "neither cropland nor pasture is recorded; the commonest cover is sparse herbaceous or sparse shrub cover, at about 81%",
+   "text": "neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is sparse herbaceous or sparse shrub cover, at about 81%",
    "why": null,
    "na": false,
    "note": "cropland and pasture both zero",
    "lines": [
     {
      "key": "S5.both_none",
-     "raw": "neither cropland nor pasture is recorded; the commonest cover is {label}, at about {share}%",
+     "raw": "neither cropland nor pasture is recorded; in the GLC2000 land cover map, the commonest class is {label}, at about {share}%",
      "vals": {
       "label": "sparse herbaceous or sparse shrub cover",
       "share": "81"

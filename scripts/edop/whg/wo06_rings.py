@@ -35,7 +35,7 @@ L_UNSTATED = {'popdens': 'population density', 'footprint': 'human footprint'}  
 
 def ring_keys():
     """Every template key the ring rules read; check_keys requires them once the template has S6.2.in_none."""
-    keys = {f'S6.2.{k}' for k in ('in_none', 'in_one', 'in_some', 'out_one', 'out_some', 'out_none')}
+    keys = {f'S6.2.{k}' for k in ('in_none', 'in_one', 'in_some', 'out_one', 'out_some', 'out_chain', 'out_none')}
     keys |= {'S2.3.extreme', 'S2.3.allbutone', 'S2.3.allbutone.precip', 'S5.2.extreme', 'S5.2.allbutone',
              'S6.3.all', 'S6.3.all.precip', 'S6.3.allbutone', 'S6.3.allbutone.precip', 'S6.5'}
     for s in set(L_S23) | set(L_S52) | set(L_S63):
@@ -246,9 +246,10 @@ def fill_ring_units(F, ok, no):
         U['S6.2'] = no('no neighbouring basin', na=True)
     else:
         a = 'in_none' if n_in == 0 else 'in_one' if n_in == 1 else 'in_some'
-        b = 'out_none' if n_out == 0 else 'out_one' if n_out == 1 else 'out_some'
+        chain = f['dn1'] == 1 and f['dnN'] >= 1   # one basin directly downstream and others further on
+        b = 'out_none' if n_out == 0 else 'out_one' if n_out == 1 else 'out_chain' if chain else 'out_some'
         first = W.fmt('S6.2.' + a, dict(n=W.numword(n_in)))
-        U['S6.2'] = ok(first[:1].upper() + first[1:] + ' ' + W.fmt('S6.2.' + b, dict(n=W.numword(n_out))),
+        U['S6.2'] = ok(first[:1].upper() + first[1:] + ' ' + W.fmt('S6.2.' + b, dict(n=W.numword(f['dnN'] if chain else n_out))),
                        f'in {n_in}, out {n_out}')
     df = F.get('ring')
     others = ('S2.3', 'S5.2', 'S6.3', 'S6.5')

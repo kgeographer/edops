@@ -5,8 +5,8 @@
  "lon": 29.92,
  "hybas_id": 1060034170,
  "generated": "2026-11-10",
- "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
+ "template_version": 22,
+ "provenance": "profile_templates.md v22 (last commit fe5b153; edited since: yes); script wo04_fill.py (last commit c1095c9; edited since: no); script wo06_rings.py (last commit 3bfacd6; edited since: yes); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
@@ -383,10 +383,10 @@
   {
    "id": "S5",
    "title": "Land cover around 2000",
-   "filled": "Around 2000, about 24% of the basin is cropland and 3% is pasture; the commonest other cover is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three.",
+   "filled": "Around 2000, about 24% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three.",
    "runs": [
     {
-     "t": "Around 2000, about 24% of the basin is cropland and 3% is pasture; the commonest other cover is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three."
+     "t": "Around 2000, about 24% of the basin is cropland and 3% is pasture; in the GLC2000 land cover map, the commonest class other than cultivated land is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three."
     }
    ],
    "template": [
@@ -426,7 +426,7 @@
      "type": "line",
      "unit": "S5.1c",
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "bare areas",
       "share": "54"
@@ -601,10 +601,10 @@
   {
    "id": "S8",
    "title": "About these figures",
-   "filled": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent (upstream), Pasture extent (upstream), Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "filled": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
    "runs": [
     {
-     "t": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent (upstream), Pasture extent (upstream), Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+     "t": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
     }
    ],
    "template": [
@@ -627,47 +627,6 @@
     {
      "type": "text",
      "text": " km² that contains it, from global datasets. "
-    },
-    {
-     "type": "line",
-     "unit": "S8.2",
-     "key": "S8.2",
-     "raw": "{parts}.",
-     "vals": {
-      "parts": "3 measures are zero here and so have no percentile: Cropland extent (upstream), Pasture extent (upstream), Permafrost extent"
-     },
-     "parts": [
-      {
-       "key": "S8.2.zero",
-       "raw": "{n} measures are zero here and so have no percentile: {list}",
-       "vals": {
-        "n": "3",
-        "list": "Cropland extent (upstream), Pasture extent (upstream), Permafrost extent"
-       },
-       "parts": [
-        {
-         "key": "label.upstream",
-         "raw": "{label} (upstream)",
-         "vals": {
-          "label": "Cropland extent"
-         },
-         "parts": []
-        },
-        {
-         "key": "label.upstream",
-         "raw": "{label} (upstream)",
-         "vals": {
-          "label": "Pasture extent"
-         },
-         "parts": []
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "type": "text",
-     "text": " "
     },
     {
      "type": "text",
@@ -726,7 +685,7 @@
   {
    "id": "S9.3",
    "label": "Profile as JSON",
-   "url": "/static/profiles/alexandria.json",
+   "url": "/static/profiles/response/alexandria.json",
    "target": "_blank"
   },
   {
@@ -1022,14 +981,14 @@
   "S5.1c": {
    "scope": "basin",
    "ok": true,
-   "text": "the commonest other cover is bare areas, at about 54%",
+   "text": "in the GLC2000 land cover map, the commonest class other than cultivated land is bare areas, at about 54%",
    "why": null,
    "na": false,
    "note": "GLC2000 largest class: Bare areas 54%; largest other than cultivated: Bare areas 54%",
    "lines": [
     {
      "key": "S5.1c",
-     "raw": "the commonest other cover is {label}, at about {share}%",
+     "raw": "in the GLC2000 land cover map, the commonest class other than cultivated land is {label}, at about {share}%",
      "vals": {
       "label": "bare areas",
       "share": "54"

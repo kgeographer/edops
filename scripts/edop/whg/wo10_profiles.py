@@ -11,6 +11,8 @@ import unicodedata
 from scripts.edop.whg import wo04_fill as W
 
 PROFILES_DIR = W.ROOT / 'app' / 'static' / 'profiles'
+RESPONSE_DIR = PROFILES_DIR / 'response'   # what a place portal would receive; the stored record behind the page stays beside it
+SITE = 'https://edops.computingplace.org'
 
 # Units that speak about the place's point, not its basin. A profile stored for a basin carries only the basin units; these are
 # added for a place. (S9.3 is both: the JSON of the record itself.)
@@ -98,9 +100,9 @@ def _runs(text, links):
 
 
 def _buttons(slug, U, lat, lon):
-    """The stored record, the full signature of the basin (the public API, relative to the site), and Wikipedia where present.
+    """The proposed response (the stored record is not linked), the full signature of the basin (the public API, relative to the site), and Wikipedia where present.
     (The OneEarth page is linked from the ecoregion name; S9.1, the link into EDOPS, is not built.)"""
-    out = [dict(id='S9.3', label='Profile as JSON', url=f'/static/profiles/{slug}.json', target='_blank'),
+    out = [dict(id='S9.3', label='Profile as JSON', url=f'/static/profiles/response/{slug}.json', target='_blank'),
            dict(id='signature', label='Full signature (JSON)', url=f'/api/signature?scope=basin&level=6&lat={lat}&lon={lon}', target='_blank')]
     if U.get('S9.2', {}).get('ok'):
         out.append(dict(id='S9.2', label='Ecoregion on Wikipedia', url=U['S9.2']['text'], target='_blank'))
@@ -148,14 +150,44 @@ def build_record(name, F, U, generated):
     return rec
 
 
-def write_records(records, directory=PROFILES_DIR):
-    """One <slug>.json per record, and index.json listing them in order. Returns the paths written."""
+def to_response(rec):
+    """The proposed /whgmodal response for a place, from its stored record: what a consumer needs and nothing of the generator's
+    own working (template lines, slot values, unit traces, fill notes: these would come with ?explain=1). The credit for
+    river names (OpenStreetMap, ODbL) is a sentence in the About section's text. Links are absolute."""
+    head = dict(place=rec['place'], lat=rec['lat'], lon=rec['lon'], hybas_id=rec['hybas_id'], generated=rec['generated'],
+                template_version=rec['template_version'])
+    if rec['no_basin']:
+        return dict(head, no_basin=True, message=rec['message'])
+    eco, seen = [], set()
+    for sec in rec['sections']:
+        for r in sec['runs']:
+            if r.get('href') and (r['t'], r['href']) not in seen:
+                seen.add((r['t'], r['href']))
+                eco.append(dict(name=r['t'], url=r['href']))
+    by_id = {b['id']: b['url'] for b in rec['buttons']}
+    m = rec['monthly']
+    return dict(head, no_basin=False,
+                sections=[dict(id=s['id'], title=s['title'], text=s['filled'], runs=s['runs']) for s in rec['sections']],
+                monthly=None if m is None else dict(scope=m['scope'], level=m['level'], source=m['source'],
+                                                    units=dict(precip_mm='millimetres per month', temp_c='degrees Celsius, monthly mean'),
+                                                    note='Monthly climatology of the basin that contains the place, not of the point.',
+                                                    precip_mm=m['precip_mm'], temp_c=m['temp_c']),
+                links=dict(ecoregions=eco, wikipedia=by_id.get('S9.2'), signature=SITE + by_id['signature']))
+
+
+def write_records(records, directory=PROFILES_DIR, response_directory=None):
+    """One <slug>.json per record, the response file of each beside it in response/, and index.json listing them in order.
+    Returns the paths written."""
     directory.mkdir(parents=True, exist_ok=True)
+    rdir = response_directory or directory / 'response'
+    rdir.mkdir(parents=True, exist_ok=True)
     paths = []
     for r in records:
         p = directory / f'{r["slug"]}.json'
         p.write_text(json.dumps(r, ensure_ascii=False, indent=1) + '\n')
-        paths.append(p)
+        q = rdir / f'{r["slug"]}.json'
+        q.write_text(json.dumps(to_response(r), ensure_ascii=False, indent=1) + '\n')
+        paths += [p, q]
     idx = directory / 'index.json'
     idx.write_text(json.dumps([dict(place=r['place'], slug=r['slug'], no_basin=r['no_basin']) for r in records],
                               ensure_ascii=False, indent=1) + '\n')
