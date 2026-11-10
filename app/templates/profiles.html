@@ -93,6 +93,16 @@
     return p;
   }
 
+  // Filled text as the record's runs; an ecoregion name carries its OneEarth page.
+  function filledBody(sec) {
+    const p = mk('p');
+    sec.runs.forEach(r => {
+      if (!r.href) return p.append(r.t);
+      const a = mk('a', null, r.t); a.href = r.href; a.target = '_blank'; a.rel = 'noopener'; p.append(a);
+    });
+    return p;
+  }
+
   function draw() {
     const rec = state.rec, box = el('pf-profile');
     el('pf-meta').textContent = 'Template version ' + rec.template_version + ', generated ' + rec.generated + '.';
@@ -102,12 +112,12 @@
       nodes.push(mk('h3', 'pf-nobasin', rec.message));
     } else {
       rec.sections.forEach(sec => {
-        nodes.push(mk('h5', 'pf-sec', sec.title), state.template ? templateBody(sec) : mk('p', null, sec.filled));
+        nodes.push(mk('h5', 'pf-sec', sec.title), state.template ? templateBody(sec) : filledBody(sec));
       });
       if (rec.buttons.length) {
         const row = mk('div', 'pf-buttons');
         rec.buttons.forEach(b => { const a = mk('a', 'btn btn-sm btn-outline-secondary', b.label); a.href = b.url; a.target = b.target; a.rel = 'noopener'; row.append(a); });
-        nodes.push(mk('h5', 'pf-sec', rec.buttons_title || 'Buttons'), row);
+        nodes.push(mk('hr'), row);
       }
     }
     box.replaceChildren(...nodes);

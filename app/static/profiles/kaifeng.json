@@ -6,13 +6,25 @@
  "hybas_id": 4060675920,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the Huang He Plain mixed forests ecoregion.",
+   "runs": [
+    {
+     "t": "Kaifeng sits at about 73 m above sea level, in a basin that runs from about 15 m to 137 m. It lies in the "
+    },
+    {
+     "t": "Huang He Plain mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -64,6 +76,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 15,267 km², rainfall averages about 710 mm a year, clearly seasonal, with July the wettest month. Temperatures there average 14.8 °C, from 0.3 °C in January to 28.0 °C in July. Its aridity index of 0.60 falls in the UNEP dry sub-humid class. Compared with the seven basins around it, its basin receives less precipitation than five, is cooler than four and is more arid than five."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -205,6 +222,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Kaifeng is about 11 km from the Yellow River. No other basin drains into this one: its rivers rise within it. The Yellow River is much larger than any river within the basin. Lakes cover about 0.1% of the basin. The basin drains to the sea about 488 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -285,6 +307,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope under 0.1%), with topsoil that averages 28% sand, 47% silt and 25% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 2% of the basin."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -345,6 +372,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 70% of the basin is cropland and 3% is pasture; the commonest other cover is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four.",
+   "runs": [
+    {
+     "t": "Around 2000, about 70% of the basin is cropland and 3% is pasture; the commonest other cover is herbaceous cover, closed-open, at about 4%. Compared with the seven basins around it, its basin has more cropland than all but one and less pasture than four."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -443,6 +475,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Kaifeng's basin is one of eight that meet here. None of them drains into it. Its water flows on through two of them. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Kaifeng's basin is one of eight that meet here. None of them drains into it. Its water flows on through two of them. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -516,6 +553,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Kaifeng itself. The other figures describe the basin of about 15,267 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -588,17 +630,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Huang_He_Plain_mixed_forests",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=34.8&lon=114.31",
    "target": "_blank"
   },
   {
@@ -1265,7 +1308,7 @@
    "text": "https://www.oneearth.org/ecoregions/huang-he-plain-mixed-forests/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1305,7 +1348,7 @@
   "S5.2: counts: cropland more, pasture less | not stated: forest less than three of seven, not more than half",
   "S6.5: slope bottom",
   "S6.ring: 7 neighbours; areas km2 core 15,267, neighbours 3,124 to 17,568; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 5 of 7, human footprint less than 4 of 7",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S1.4: not applicable (no other ecoregion covers 10% of the basin or more)",
   "S6.3: not applicable (no measure on which all, or all but one of, the 5 basins across its divides lie on one side)",
   "S7.3: not applicable (the nearest edge of the basin is not the seacoast (optional part not stated))",

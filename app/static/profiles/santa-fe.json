@@ -6,13 +6,39 @@
  "hybas_id": 7060674070,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Santa Fe sits at about 2,128 m above sea level, in a basin that runs from about 1,436 m to 3,936 m. It lies in the Colorado Plateau shrublands ecoregion. Its basin also takes in parts of the Colorado Rockies forests and Arizona Mountains forests ecoregions.",
+   "runs": [
+    {
+     "t": "Santa Fe sits at about 2,128 m above sea level, in a basin that runs from about 1,436 m to 3,936 m. It lies in the "
+    },
+    {
+     "t": "Colorado Plateau shrublands",
+     "href": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Colorado Rockies forests",
+     "href": "https://www.oneearth.org/ecoregions/colorado-rockies-forests/"
+    },
+    {
+     "t": " and "
+    },
+    {
+     "t": "Arizona Mountains forests",
+     "href": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+    },
+    {
+     "t": " ecoregions."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -74,6 +100,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 14,659 km², rainfall averages about 360 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 10.2 °C, from -0.7 °C in January to 21.6 °C in July. Its aridity index of 0.30 falls in the UNEP semi-arid class. Compared with the seven basins around it, its basin receives more precipitation than four, is warmer than four and is more humid than five.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 14,659 km², rainfall averages about 360 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 10.2 °C, from -0.7 °C in January to 21.6 °C in July. Its aridity index of 0.30 falls in the UNEP semi-arid class. Compared with the seven basins around it, its basin receives more precipitation than four, is warmer than four and is more humid than five."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -215,6 +246,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "The catchment above is 3.4 times the size of the local basin, in a somewhat different climate from it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 2,108 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "The catchment above is 3.4 times the size of the local basin, in a somewhat different climate from it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 2,108 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -274,6 +310,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is sloping on average (a mean slope of 9.5%), with topsoil that averages 50% sand, 34% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 18% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is sloping on average (a mean slope of 9.5%), with topsoil that averages 50% sand, 34% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 18% of the basin."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -335,6 +376,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 2% of the basin is cropland and 49% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 53%. Compared with the seven basins around it, its basin has less pasture than four and more forest than five.",
+   "runs": [
+    {
+     "t": "Around 2000, about 2% of the basin is cropland and 49% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 53%. Compared with the seven basins around it, its basin has less pasture than four and more forest than five."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -433,6 +479,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Santa Fe's basin is one of eight that meet here. Two of them drain into it. It drains into one of them. The basins across its divides are all more arid.",
+   "runs": [
+    {
+     "t": "Santa Fe's basin is one of eight that meet here. Two of them drain into it. It drains into one of them. The basins across its divides are all more arid."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -505,6 +556,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Santa Fe itself. The other figures describe the basin of about 14,659 km² that contains it, from global datasets. Permafrost extent is zero here and so has no percentile. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Santa Fe itself. The other figures describe the basin of about 14,659 km² that contains it, from global datasets. Permafrost extent is zero here and so has no percentile. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -569,17 +625,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=35.69&lon=-105.94",
    "target": "_blank"
   },
   {
@@ -1229,7 +1286,7 @@
    "text": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1268,7 +1325,7 @@
   "S5.2: counts: pasture less, forest more | not stated: cropland more than three of seven, not more than half",
   "S6.3: all: aridity less; 4 across a divide",
   "S6.ring: 7 neighbours; areas km2 core 14,659, neighbours 234 to 21,967; the core is neither the smallest nor the largest by area; left out of the sentences: population density highest, human footprint highest",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 26 km))",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 5))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",

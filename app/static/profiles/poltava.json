@@ -6,13 +6,25 @@
  "hybas_id": 2060459130,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Poltava sits at about 165 m above sea level, in a basin that runs from about 61 m to 256 m. It lies in the East European forest steppe ecoregion.",
+   "runs": [
+    {
+     "t": "Poltava sits at about 165 m above sea level, in a basin that runs from about 61 m to 256 m. It lies in the "
+    },
+    {
+     "t": "East European forest steppe",
+     "href": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -64,6 +76,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 14,512 km², rainfall averages about 565 mm a year, spread fairly evenly through the year. Temperatures there average 7.2 °C, from -6.7 °C in January to 20.2 °C in July. Its aridity index of 0.73 falls in the UNEP humid class. Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 14,512 km², rainfall averages about 565 mm a year, spread fairly evenly through the year. Temperatures there average 7.2 °C, from -6.7 °C in January to 20.2 °C in July. Its aridity index of 0.73 falls in the UNEP humid class. Compared with the four basins around it, its basin receives more precipitation than three and is more humid than three."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -189,6 +206,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "A river runs about 3 km from Poltava. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 516 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "A river runs about 3 km from Poltava. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 516 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -258,6 +280,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is gently sloping on average (a mean slope of 2.6%), with topsoil that averages 33% sand, 45% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly mixed sedimentary rocks.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is gently sloping on average (a mean slope of 2.6%), with topsoil that averages 33% sand, 45% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly mixed sedimentary rocks."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -309,6 +336,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 64% of the basin is cropland and 12% is pasture; the commonest other cover is mosaic: cropland/shrub and/or herbaceous cover, at about 12%. Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three.",
+   "runs": [
+    {
+     "t": "Around 2000, about 64% of the basin is cropland and 12% is pasture; the commonest other cover is mosaic: cropland/shrub and/or herbaceous cover, at about 12%. Compared with the four basins around it, its basin has less cropland than three, less pasture than three and more forest than three."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -423,6 +455,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Poltava's basin is one of five that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Poltava's basin is one of five that meet here. None of them drains into it. It drains into one of them."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -478,6 +515,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Poltava itself. The other figures describe the basin of about 14,512 km² that contains it, from global datasets. 4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Poltava itself. The other figures describe the basin of about 14,512 km² that contains it, from global datasets. 4 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 1, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -542,17 +584,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/East_European_forest_steppe",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=49.59&lon=34.55",
    "target": "_blank"
   },
   {
@@ -1177,7 +1220,7 @@
    "text": "https://www.oneearth.org/ecoregions/east-european-forest-steppe/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1214,7 +1257,7 @@
   "S2.3: counts: precip more, aridity more | not stated: temp more than two of four, not more than half",
   "S5.2: counts: cropland less, pasture less, forest more",
   "S6.ring: 4 neighbours; areas km2 core 14,512, neighbours 2,431 to 23,122; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 2 of 4, human footprint more than 2 of 4",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 5))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",
   "S4.3: not applicable (no karst and no permafrost recorded)",

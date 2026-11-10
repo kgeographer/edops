@@ -67,13 +67,42 @@ def frame_key(sec, U):
     return sec + '.frame'
 
 
-def _buttons(slug, U):
-    """OneEarth and Wikipedia where present; the JSON of the record. (S9.1, the link into EDOPS, is not built.)"""
+def _eco_links(F):
+    """{ecoregion name: its OneEarth page}, for the basin's majority ecoregion, the point's, and the others that cover part of the basin (S1.4). Names with no page are left out."""
+    base = 'https://www.oneearth.org/ecoregions/'
+    out = {}
+    if F.get('oe_slug') and W.val(F, 'ecoregion'):
+        out[W.val(F, 'ecoregion')] = base + F['oe_slug'] + '/'
+    for name, slug in F.get('oe_slug_by_name', {}).items():
+        if slug:
+            out[name] = base + slug + '/'
+    if F.get('oe_slug_pt') and F.get('pt_eco_name'):
+        out[F['pt_eco_name']] = base + F['oe_slug_pt'] + '/'
+    return out
+
+
+def _runs(text, links):
+    """The filled text as pieces: {t} for text, {t, href} for an ecoregion name, which the page opens in a new tab."""
+    if not links:
+        return [dict(t=text)]
+    pat = re.compile('|'.join(re.escape(n) for n in sorted(links, key=len, reverse=True)))
+    runs, pos = [], 0
+    for m in pat.finditer(text):
+        if m.start() > pos:
+            runs.append(dict(t=text[pos:m.start()]))
+        runs.append(dict(t=m.group(0), href=links[m.group(0)]))
+        pos = m.end()
+    if pos < len(text):
+        runs.append(dict(t=text[pos:]))
+    return runs
+
+
+def _buttons(slug, U, lat, lon):
+    """Wikipedia where present; the full signature of the basin (the public API, relative to the site); the JSON of the record. (The OneEarth page is linked from the ecoregion name; S9.1, the link into EDOPS, is not built.)"""
     out = []
-    if U.get('S9.4', {}).get('ok'):
-        out.append(dict(id='S9.4', label='Ecoregion on OneEarth', url=U['S9.4']['text'], target='_blank'))
     if U.get('S9.2', {}).get('ok'):
         out.append(dict(id='S9.2', label='Ecoregion on Wikipedia', url=U['S9.2']['text'], target='_blank'))
+    out.append(dict(id='signature', label='Full signature (JSON)', url=f'/api/signature?scope=basin&level=6&lat={lat}&lon={lon}', target='_blank'))
     out.append(dict(id='S9.3', label='Data as JSON', url=f'/static/profiles/{slug}.json', target='_blank'))
     return out
 
@@ -88,6 +117,7 @@ def build_record(name, F, U, generated):
         return rec
     vals = W.profile_vals(name, F, U)
     text = W.templates()['text']
+    links = _eco_links(F)
     sections = []
     for sec in W.SECTIONS:
         if sec == 'S9':
@@ -95,11 +125,11 @@ def build_record(name, F, U, generated):
         frame = frame_key(sec, U)
         filled = W.tidy(_PLACEHOLDER.sub('', W.fmt(frame, vals)))
         if filled.strip():      # a section with nothing true to say has no heading either
-            sections.append(dict(id=sec, title=W.fmt(sec + '.title', {}), filled=filled,
+            sections.append(dict(id=sec, title=W.fmt(sec + '.title', {}), filled=filled, runs=_runs(filled, links),
                                  template=_segments(text[frame], U, vals)))
     rec['sections'] = sections
     rec['buttons_title'] = W.fmt('S9.title', {})
-    rec['buttons'] = _buttons(slug, U)
+    rec['buttons'] = _buttons(slug, U, F['lat'], F['lon'])
     rec['units'] = {uid: dict(scope='point' if uid in POINT_UNITS else 'basin', ok=u['ok'], text=u['text'], why=u['why'],
                               na=bool(u.get('na')), note=u.get('note'), lines=[_clean(ln) for ln in u.get('lines', [])])
                     for uid, u in U.items()}

@@ -6,13 +6,39 @@
  "hybas_id": 1060034170,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Alexandria sits at about 22 m above sea level, in a basin that runs from about -32 m to 339 m. It lies in the Mediterranean dry woodlands and steppe ecoregion. Most of its basin lies in the North Saharan Xeric Steppe and Woodland ecoregion. Its basin also takes in parts of the Nile Delta flooded savanna ecoregion.",
+   "runs": [
+    {
+     "t": "Alexandria sits at about 22 m above sea level, in a basin that runs from about -32 m to 339 m. It lies in the "
+    },
+    {
+     "t": "Mediterranean dry woodlands and steppe",
+     "href": "https://www.oneearth.org/ecoregions/mediterranean-dry-woodlands-and-steppe/"
+    },
+    {
+     "t": " ecoregion. Most of its basin lies in the "
+    },
+    {
+     "t": "North Saharan Xeric Steppe and Woodland",
+     "href": "https://www.oneearth.org/ecoregions/north-saharan-xeric-steppe-and-woodlands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Nile Delta flooded savanna",
+     "href": "https://www.oneearth.org/ecoregions/nile-delta-flooded-savanna/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -84,6 +110,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 16,375 km², rainfall averages about 74 mm a year, strongly concentrated, with December the wettest month. Temperatures there average 20.2 °C, from 12.5 °C in January to 26.6 °C in August. Its aridity index of 0.05 falls in the UNEP arid class. Compared with the five basins around it, its basin receives more precipitation than all but one, is cooler than three and is more humid than all but one.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 16,375 km², rainfall averages about 74 mm a year, strongly concentrated, with December the wettest month. Temperatures there average 20.2 °C, from 12.5 °C in January to 26.6 °C in August. Its aridity index of 0.05 falls in the UNEP arid class. Compared with the five basins around it, its basin receives more precipitation than all but one, is cooler than three and is more humid than all but one."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -225,6 +256,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 1% of the basin and wetlands about 2%. The basin drains directly to the sea.",
+   "runs": [
+    {
+     "t": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 1% of the basin and wetlands about 2%. The basin drains directly to the sea."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -282,6 +318,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is level on average (a mean slope of 0.9%), with topsoil that averages 52% sand, 30% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 100% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope of 0.9%), with topsoil that averages 52% sand, 30% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly unconsolidated sediments. Karst outcrop covers up to about 100% of the basin."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -343,6 +384,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 24% of the basin is cropland and 3% is pasture; the commonest other cover is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three.",
+   "runs": [
+    {
+     "t": "Around 2000, about 24% of the basin is cropland and 3% is pasture; the commonest other cover is bare areas, at about 54%. Compared with the five basins around it, its basin has more cropland than all but one and more pasture than three."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -441,6 +487,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Alexandria's basin is one of six that meet here. None of them drains into it. It drains into none of them. All but one of the basins across its divides are higher. Of the six basins that meet here, it has the most runoff.",
+   "runs": [
+    {
+     "t": "Alexandria's basin is one of six that meet here. None of them drains into it. It drains into none of them. All but one of the basins across its divides are higher. Of the six basins that meet here, it has the most runoff."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -531,6 +582,11 @@
    "id": "S7",
    "title": "Coast and reach",
    "filled": "Its basin touches the sea.",
+   "runs": [
+    {
+     "t": "Its basin touches the sea."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -546,6 +602,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent (upstream), Pasture extent (upstream), Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Alexandria itself. The other figures describe the basin of about 16,375 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent (upstream), Pasture extent (upstream), Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -627,17 +688,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/mediterranean-dry-woodlands-and-steppe/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Mediterranean_dry_woodlands_and_steppe",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=31.2&lon=29.92",
    "target": "_blank"
   },
   {
@@ -1342,7 +1404,7 @@
    "text": "https://www.oneearth.org/ecoregions/mediterranean-dry-woodlands-and-steppe/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1382,7 +1444,7 @@
   "S6.5: runoff top",
   "S6.ring: 5 neighbours; areas km2 core 16,375, neighbours 8,571 to 25,335; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 3 of 5, human footprint more than 3 of 5",
   "S7.3: nearest edge 0.4 km from the coastline",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 52 km))",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 6))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",

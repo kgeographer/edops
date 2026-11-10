@@ -6,13 +6,25 @@
  "hybas_id": 2060376210,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Lviv sits at about 283 m above sea level, in a basin that runs from about 128 m to 476 m. It lies in the Central European mixed forests ecoregion.",
+   "runs": [
+    {
+     "t": "Lviv sits at about 283 m above sea level, in a basin that runs from about 128 m to 476 m. It lies in the "
+    },
+    {
+     "t": "Central European mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/central-european-mixed-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -64,6 +76,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 16,336 km², rainfall averages about 588 mm a year, moderately seasonal, with July the wettest month. Temperatures there average 7.5 °C, from -4.5 °C in January to 18.1 °C in July. Its aridity index of 0.79 falls in the UNEP humid class. Its basin is warmer than 10 of the 12 basins around it.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 16,336 km², rainfall averages about 588 mm a year, moderately seasonal, with July the wettest month. Temperatures there average 7.5 °C, from -4.5 °C in January to 18.1 °C in July. Its aridity index of 0.79 falls in the UNEP humid class. Its basin is warmer than 10 of the 12 basins around it."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -164,6 +181,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.6% of the basin. The basin drains to the sea about 710 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.6% of the basin. The basin drains to the sea about 710 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -222,6 +244,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is very gently sloping on average (a mean slope of 1.9%), with topsoil that averages 43% sand, 39% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly carbonate sedimentary rocks.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is very gently sloping on average (a mean slope of 1.9%), with topsoil that averages 43% sand, 39% silt and 18% clay (USDA texture class: loam). The underlying rock is mostly carbonate sedimentary rocks."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -273,6 +300,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 44% of the basin is cropland and 13% is pasture; the commonest other cover is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7.",
+   "runs": [
+    {
+     "t": "Around 2000, about 44% of the basin is cropland and 13% is pasture; the commonest other cover is tree cover, mixed leaf type, at about 9%. Compared with the 12 basins around it, its basin has more cropland than 8 and less forest than 7."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -371,6 +403,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Lviv's basin is one of 13 that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Lviv's basin is one of 13 that meet here. None of them drains into it. It drains into one of them."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -426,6 +463,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Lviv itself. The other figures describe the basin of about 16,336 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Karst area, Permafrost extent, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -490,17 +532,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/central-european-mixed-forests/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Central_European_mixed_forests",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=49.84&lon=24.03",
    "target": "_blank"
   },
   {
@@ -1074,7 +1117,7 @@
    "text": "https://www.oneearth.org/ecoregions/central-european-mixed-forests/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1110,7 +1153,7 @@
   "S2.3: count: temp more | not stated: precip more than 6 of 12, not more than half; aridity less than 6 of 12, not more than half",
   "S5.2: counts: cropland more, forest less | not stated: pasture more than 6 of 12, not more than half",
   "S6.ring: 12 neighbours; areas km2 core 16,336, neighbours 147 to 20,344; the core is neither the smallest nor the largest by area; left out of the sentences: population density more than 8 of 12, human footprint more than 6 of 12",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 37 km))",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 5))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",

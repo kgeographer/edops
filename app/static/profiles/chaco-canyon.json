@@ -6,13 +6,32 @@
  "hybas_id": 7060618200,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the Colorado Plateau shrublands ecoregion. Its basin also takes in parts of the Arizona Mountains forests ecoregion.",
+   "runs": [
+    {
+     "t": "Chaco Canyon sits at about 1,870 m above sea level, in a basin that runs from about 1,499 m to 2,841 m. It lies in the "
+    },
+    {
+     "t": "Colorado Plateau shrublands",
+     "href": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Arizona Mountains forests",
+     "href": "https://www.oneearth.org/ecoregions/arizona-mountains-forests/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -74,6 +93,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 11,888 km², rainfall averages about 246 mm a year, moderately seasonal, with August the wettest month. Temperatures there average 9.9 °C, from -2.3 °C in January to 22.4 °C in July. Its aridity index of 0.19 falls in the UNEP arid class. Of the eight basins that meet here, it receives the least precipitation and is the most arid. Its basin is warmer than four of the seven basins around it."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -198,6 +222,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "No other basin drains into this one: its rivers rise within it. Lakes cover about 0.1% of the basin and wetlands about 1%. The basin drains to the sea about 1,655 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -257,6 +286,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is gently sloping on average (a mean slope of 4.5%), with topsoil that averages 52% sand, 32% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Karst outcrop covers up to about 3% of the basin."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -318,6 +352,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 1% of the basin is cropland and 66% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one.",
+   "runs": [
+    {
+     "t": "Around 2000, about 1% of the basin is cropland and 66% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 59%. Compared with the seven basins around it, its basin has more pasture than all but one and less forest than all but one."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -416,6 +455,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Chaco Canyon's basin is one of eight that meet here. None of them drains into it. It drains into one of them. The basins across its divides all receive more precipitation. Of the eight basins that meet here, it has the gentlest slopes."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -506,6 +550,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Permafrost extent is zero here and so has no percentile. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Chaco Canyon itself. The other figures describe the basin of about 11,888 km² that contains it, from global datasets. Permafrost extent is zero here and so has no percentile. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -570,17 +619,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Colorado_Plateau_shrublands",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=36.06&lon=-107.96",
    "target": "_blank"
   },
   {
@@ -1228,7 +1278,7 @@
    "text": "https://www.oneearth.org/ecoregions/colorado-plateau-shrublands/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1269,7 +1319,7 @@
   "S6.3: all: precip more; 6 across a divide",
   "S6.5: slope bottom",
   "S6.ring: 7 neighbours; areas km2 core 11,888, neighbours 1,516 to 18,885; the core is neither the smallest nor the largest by area; left out of the sentences: population density less than 6 of 7, human footprint more than 4 of 7",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 70 km))",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 6))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",

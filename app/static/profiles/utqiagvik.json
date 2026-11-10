@@ -6,13 +6,25 @@
  "hybas_id": 8060007840,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Utqiagvik sits at about 3 m above sea level, in a basin that runs from about 0 m to 90 m. It lies in the Arctic coastal tundra ecoregion.",
+   "runs": [
+    {
+     "t": "Utqiagvik sits at about 3 m above sea level, in a basin that runs from about 0 m to 90 m. It lies in the "
+    },
+    {
+     "t": "Arctic coastal tundra",
+     "href": "https://www.oneearth.org/ecoregions/arctic-coastal-tundra/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -64,6 +76,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation. Compared with the three basins around it, its basin is cooler than two and is more arid than two.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 4,662 km², rainfall averages about 134 mm a year, clearly seasonal, with August the wettest month. Temperatures there average -11.3 °C, from -26.8 °C in February to 6.1 °C in July. Of the four basins that meet here, it receives the least precipitation. Compared with the three basins around it, its basin is cooler than two and is more arid than two."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -196,6 +213,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 14% of the basin and wetlands about 67%. The basin drains directly to the sea.",
+   "runs": [
+    {
+     "t": "The basin meets the sea at its outlet, so little water arrives from upstream. Lakes cover about 14% of the basin and wetlands about 67%. The basin drains directly to the sea."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -253,6 +275,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is very gently sloping on average (a mean slope of 1.4%), with topsoil that averages 48% sand, 36% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Permafrost underlies about 97% of it.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is very gently sloping on average (a mean slope of 1.4%), with topsoil that averages 48% sand, 36% silt and 16% clay (USDA texture class: loam). The underlying rock is mostly siliciclastic sedimentary rocks. Permafrost underlies about 97% of it."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -314,6 +341,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, neither cropland nor pasture is recorded; the commonest cover is sparse herbaceous or sparse shrub cover, at about 81%.",
+   "runs": [
+    {
+     "t": "Around 2000, neither cropland nor pasture is recorded; the commonest cover is sparse herbaceous or sparse shrub cover, at about 81%."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -340,6 +372,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Utqiagvik's basin is one of four that meet here. None of them drains into it. It drains into none of them. The basins across its divides are all higher. Of the four basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Utqiagvik's basin is one of four that meet here. None of them drains into it. It drains into none of them. The basins across its divides are all higher. Of the four basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -442,6 +479,11 @@
    "id": "S7",
    "title": "Coast and reach",
    "filled": "Its basin touches the sea.",
+   "runs": [
+    {
+     "t": "Its basin touches the sea."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -457,6 +499,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Pasture extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Utqiagvik itself. The other figures describe the basin of about 4,662 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Pasture extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -521,17 +568,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/arctic-coastal-tundra/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Arctic_coastal_tundra",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=71.29&lon=-156.79",
    "target": "_blank"
   },
   {
@@ -1175,7 +1223,7 @@
    "text": "https://www.oneearth.org/ecoregions/arctic-coastal-tundra/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1216,7 +1264,7 @@
   "S6.5: elev bottom, relief bottom, slope bottom",
   "S6.ring: 3 neighbours; areas km2 core 4,662, neighbours 6,539 to 12,998; the core is the smallest by area; left out of the sentences: population density highest, human footprint highest",
   "S7.3: nearest edge 1.7 km from the coastline",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.1: not applicable (no river of class 5 or larger within 3 km, and no named river within its limit (nearest class 5: 46 km))",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 6))",
   "S8.osm: not applicable (no river name is shown, so no OpenStreetMap credit)",

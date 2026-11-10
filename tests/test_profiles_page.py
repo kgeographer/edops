@@ -33,5 +33,8 @@ def test_every_record_has_both_renderings_and_hides_what_is_not_built():
             assert rec['message'] and rec['sections'] == []
             continue
         assert rec['sections'] and all(s['filled'].strip() and s['template'] for s in rec['sections'])
+        assert all(''.join(r['t'] for r in s['runs']) == s['filled'] for s in rec['sections'])
+        sig = next(b for b in rec['buttons'] if b['id'] == 'signature')
+        assert sig['url'] == f'/api/signature?scope=basin&level=6&lat={rec["lat"]}&lon={rec["lon"]}'
         assert rec['buttons'][-1]['id'] == 'S9.3' and all(b['target'] == '_blank' for b in rec['buttons'])
         assert {u['scope'] for u in rec['units'].values()} == {'basin', 'point'}

@@ -6,13 +6,39 @@
  "hybas_id": 2060616700,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Tbilisi sits at about 418 m above sea level, in a basin that runs from about 255 m to 3,838 m. It lies in the Azerbaijan shrub desert and steppe ecoregion. Most of its basin lies in the Caucasus mixed forests ecoregion. Its basin also takes in parts of the Eastern Anatolian montane steppe ecoregion.",
+   "runs": [
+    {
+     "t": "Tbilisi sits at about 418 m above sea level, in a basin that runs from about 255 m to 3,838 m. It lies in the "
+    },
+    {
+     "t": "Azerbaijan shrub desert and steppe",
+     "href": "https://www.oneearth.org/ecoregions/azerbaijan-shrub-desert-and-steppe/"
+    },
+    {
+     "t": " ecoregion. Most of its basin lies in the "
+    },
+    {
+     "t": "Caucasus mixed forests",
+     "href": "https://www.oneearth.org/ecoregions/caucasus-mixed-forests/"
+    },
+    {
+     "t": " ecoregion. Its basin also takes in parts of the "
+    },
+    {
+     "t": "Eastern Anatolian montane steppe",
+     "href": "https://www.oneearth.org/ecoregions/eastern-anatolian-montane-steppe/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -84,6 +110,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 23,251 km², rainfall averages about 762 mm a year, moderately seasonal, with May the wettest month. Temperatures there average 5.3 °C, from -5.9 °C in January to 15.8 °C in August. Its aridity index of 0.93 falls in the UNEP humid class. Compared with the nine basins around it, its basin receives more precipitation than six, is cooler than seven and is more humid than six.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 23,251 km², rainfall averages about 762 mm a year, moderately seasonal, with May the wettest month. Temperatures there average 5.3 °C, from -5.9 °C in January to 15.8 °C in August. Its aridity index of 0.93 falls in the UNEP humid class. Compared with the nine basins around it, its basin receives more precipitation than six, is cooler than seven and is more humid than six."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -225,6 +256,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "Tbilisi is on the Kura River. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 664 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Tbilisi is on the Kura River. No other basin drains into this one: its rivers rise within it. Lakes cover about 0.5% of the basin. The basin drains to the sea about 664 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -295,6 +331,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is moderately steep on average (a mean slope of 22%), with topsoil that averages 35% sand, 43% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly intermediate volcanic rocks. Permafrost underlies about 1% of it.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is moderately steep on average (a mean slope of 22%), with topsoil that averages 35% sand, 43% silt and 22% clay (USDA texture class: loam). The underlying rock is mostly intermediate volcanic rocks. Permafrost underlies about 1% of it."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -356,6 +397,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, about 22% of the basin is cropland and 31% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven.",
+   "runs": [
+    {
+     "t": "Around 2000, about 22% of the basin is cropland and 31% is pasture; the commonest other cover is shrub cover, closed-open, deciduous (with or without sparse tree layer), at about 18%. Compared with the nine basins around it, its basin has more cropland than seven and more pasture than seven."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -454,6 +500,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Tbilisi's basin is one of ten that meet here. None of them drains into it. It drains into one of them.",
+   "runs": [
+    {
+     "t": "Tbilisi's basin is one of ten that meet here. None of them drains into it. It drains into one of them."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -509,6 +560,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. 2 measures are zero here and so have no percentile: Karst area, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Tbilisi itself. The other figures describe the basin of about 23,251 km² that contains it, from global datasets. 2 measures are zero here and so have no percentile: Karst area, Wetland extent group 2. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -581,17 +637,18 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
-  {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/azerbaijan-shrub-desert-and-steppe/",
-   "target": "_blank"
-  },
   {
    "id": "S9.2",
    "label": "Ecoregion on Wikipedia",
    "url": "https://en.wikipedia.org/wiki/Azerbaijan_shrub_desert_and_steppe",
+   "target": "_blank"
+  },
+  {
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=41.72&lon=44.79",
    "target": "_blank"
   },
   {
@@ -1251,7 +1308,7 @@
    "text": "https://www.oneearth.org/ecoregions/azerbaijan-shrub-desert-and-steppe/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1289,7 +1346,7 @@
   "S2.3: counts: precip more, temp less, aridity more",
   "S5.2: counts: cropland more, pasture more | not stated: forest less than four of nine, not more than half",
   "S6.ring: 9 neighbours; areas km2 core 23,251, neighbours 2,976 to 22,012; the core is the largest by area; left out of the sentences: population density more than 6 of 9, human footprint more than 5 of 9",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 4))",
   "S6.3: not applicable (no measure on which all, or all but one of, the 8 basins across its divides lie on one side)",
   "S6.5: not applicable (the basin is the highest or lowest of the set on none of the terrain, forest, karst, soil, runoff, permafrost or water-table measures)",

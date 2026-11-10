@@ -323,6 +323,7 @@ def build_facts(lat, lon, conn, pairs, flow, ring=None, rivers=None):
     F['wiki_url_pt'] = wp[0] if wp and wp[0] else None
     slug = lambda i: (lambda r: r[0] if r and r[0] else None)(conn.execute('SELECT oneearth_slug FROM gaz."Ecoregions2017" WHERE eco_id = %s LIMIT 1', (int(i),)).fetchone()) if i is not None else None
     F['oe_slug'], F['oe_slug_pt'] = slug(eco_id), slug(F['pt_eco_id'])   # OneEarth page of the basin's and the point's ecoregion (v18)
+    F['oe_slug_by_name'] = {n: slug(i) for i, n, _ in F.get('eco_shares', [])}   # the basin's other ecoregions, for S1.4 names
     return F
 
 
@@ -530,7 +531,7 @@ def _fill_units(F):
         U['S9.2'] = ok(wiki) if wiki else no('no Wikipedia text for this ecoregion')
     if '{S9.4}' in templates()['text'].get('S9.frame', ''):   # v18: the OneEarth page of the ecoregion; the button opens in a new tab (target="_blank")
         oe = (F['oe_slug_pt'] or F['oe_slug']) if A and F['pt_eco_id'] is not None else F['oe_slug']
-        U['S9.4'] = ok(f'https://www.oneearth.org/ecoregions/{oe}/', 'OneEarth button opens in a new tab (target="_blank")') if oe else no('no OneEarth page for this ecoregion; button left out')
+        U['S9.4'] = ok(f'https://www.oneearth.org/ecoregions/{oe}/', 'the OneEarth page; the profile page links the ecoregion name to it, in a new tab') if oe else no('no OneEarth page for this ecoregion; no link')
     if has('S8.point'):   # WO-09 item 6: where the point comes from, whenever an elevation or a distance is stated
         U['S8.point'] = ok(fmt('S8.point', {})) if any(U.get(k, {}).get('ok') for k in ('S1.1b', 'S3.1', 'S3.3')) else no('no point elevation or distance stated', na=True)
     return U

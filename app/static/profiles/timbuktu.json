@@ -6,13 +6,32 @@
  "hybas_id": 1060551560,
  "generated": "2026-11-10",
  "template_version": 20,
- "provenance": "profile_templates.md v20 (last commit 3bfacd6; edited since: yes); script wo04_fill.py (last commit f153841; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit f153841; edited since: yes)",
+ "provenance": "profile_templates.md v20 (last commit fe5b153; edited since: no); script wo04_fill.py (last commit fe5b153; edited since: yes); script wo06_rings.py (last commit 3bfacd6; edited since: no); script wo07_rivers.py (last commit f153841; edited since: no); script wo07_classes.py (last commit 7090f1c; edited since: no); script wo08_units.py (last commit fe5b153; edited since: no)",
  "no_basin": false,
  "sections": [
   {
    "id": "S1",
    "title": "Setting",
    "filled": "Timbuktu sits at about 272 m above sea level, in a basin that runs from about 257 m to 279 m. It lies in the Sahelian Acacia savanna ecoregion. Most of its basin lies in the Inner Niger Delta flooded savanna ecoregion.",
+   "runs": [
+    {
+     "t": "Timbuktu sits at about 272 m above sea level, in a basin that runs from about 257 m to 279 m. It lies in the "
+    },
+    {
+     "t": "Sahelian Acacia savanna",
+     "href": "https://www.oneearth.org/ecoregions/sahelian-acacia-savanna/"
+    },
+    {
+     "t": " ecoregion. Most of its basin lies in the "
+    },
+    {
+     "t": "Inner Niger Delta flooded savanna",
+     "href": "https://www.oneearth.org/ecoregions/inner-niger-delta-flooded-savanna/"
+    },
+    {
+     "t": " ecoregion."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -74,6 +93,11 @@
    "id": "S2",
    "title": "Climate",
    "filled": "Across the surrounding basin of about 3,826 km², rainfall averages about 189 mm a year, strongly concentrated, with August the wettest month. Temperatures there average 28.6 °C, from 21.5 °C in January to 33.8 °C in June. Its aridity index of 0.09 falls in the UNEP arid class. Compared with the five basins around it, its basin receives less precipitation than three and is cooler than three.",
+   "runs": [
+    {
+     "t": "Across the surrounding basin of about 3,826 km², rainfall averages about 189 mm a year, strongly concentrated, with August the wettest month. Temperatures there average 28.6 °C, from 21.5 °C in January to 33.8 °C in June. Its aridity index of 0.09 falls in the UNEP arid class. Compared with the five basins around it, its basin receives less precipitation than three and is cooler than three."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -199,6 +223,11 @@
    "id": "S3",
    "title": "Water",
    "filled": "Timbuktu is about 13 km from the Niger River. Most of the water passing here falls far upstream: the catchment above is 100 times the size of the local basin, and wetter than it. Lakes cover about 0.4% of the basin and wetlands about 37%. The basin drains to the sea about 2,331 km beyond its outlet.",
+   "runs": [
+    {
+     "t": "Timbuktu is about 13 km from the Niger River. Most of the water passing here falls far upstream: the catchment above is 100 times the size of the local basin, and wetter than it. Lakes cover about 0.4% of the basin and wetlands about 37%. The basin drains to the sea about 2,331 km beyond its outlet."
+    }
+   ],
    "template": [
     {
      "type": "line",
@@ -270,6 +299,11 @@
    "id": "S4",
    "title": "Land and geology",
    "filled": "Across the basin, the land is level on average (a mean slope of 0.2%), with topsoil that averages 66% sand, 20% silt and 14% clay (USDA texture class: sandy loam). The underlying rock is mostly unconsolidated sediments.",
+   "runs": [
+    {
+     "t": "Across the basin, the land is level on average (a mean slope of 0.2%), with topsoil that averages 66% sand, 20% silt and 14% clay (USDA texture class: sandy loam). The underlying rock is mostly unconsolidated sediments."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -321,6 +355,11 @@
    "id": "S5",
    "title": "Land cover around 2000",
    "filled": "Around 2000, no cropland is recorded and 28% of the basin is pasture; the commonest other cover is sparse herbaceous or sparse shrub cover, at about 38%. Compared with the five basins around it, its basin has less cropland than three and less pasture than three.",
+   "runs": [
+    {
+     "t": "Around 2000, no cropland is recorded and 28% of the basin is pasture; the commonest other cover is sparse herbaceous or sparse shrub cover, at about 38%. Compared with the five basins around it, its basin has less cropland than three and less pasture than three."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -417,6 +456,11 @@
    "id": "S6",
    "title": "Surroundings",
    "filled": "Timbuktu's basin is one of six that meet here. Two of them drain into it. It drains into one of them. Of the six basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes.",
+   "runs": [
+    {
+     "t": "Timbuktu's basin is one of six that meet here. Two of them drain into it. It drains into one of them. Of the six basins that meet here, it has the lowest mean elevation, the least relief and the gentlest slopes."
+    }
+   ],
    "template": [
     {
      "type": "slot",
@@ -502,6 +546,11 @@
    "id": "S8",
    "title": "About these figures",
    "filled": "The elevation and ecoregion under Setting are for Timbuktu itself. The other figures describe the basin of about 3,826 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL.",
+   "runs": [
+    {
+     "t": "The elevation and ecoregion under Setting are for Timbuktu itself. The other figures describe the basin of about 3,826 km² that contains it, from global datasets. 3 measures are zero here and so have no percentile: Cropland extent, Karst area, Permafrost extent. Elevation and distances are measured from the place's point in WHG, which may be the centre of a town rather than its shore or riverbank. River names contain information from OpenStreetMap, available under the ODbL."
+    }
+   ],
    "template": [
     {
      "type": "text",
@@ -574,11 +623,12 @@
    ]
   }
  ],
+ "buttons_title": "Buttons",
  "buttons": [
   {
-   "id": "S9.4",
-   "label": "Ecoregion on OneEarth",
-   "url": "https://www.oneearth.org/ecoregions/sahelian-acacia-savanna/",
+   "id": "signature",
+   "label": "Full signature (JSON)",
+   "url": "/api/signature?scope=basin&level=6&lat=16.77&lon=-3.01",
    "target": "_blank"
   },
   {
@@ -1239,7 +1289,7 @@
    "text": "https://www.oneearth.org/ecoregions/sahelian-acacia-savanna/",
    "why": null,
    "na": false,
-   "note": "OneEarth button opens in a new tab (target=\"_blank\")",
+   "note": "the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
    "lines": []
   },
   "S8.point": {
@@ -1278,7 +1328,7 @@
   "S5.2: counts: cropland less, pasture less",
   "S6.5: elev bottom, relief bottom, slope bottom",
   "S6.ring: 5 neighbours; areas km2 core 3,826, neighbours 921 to 24,966; the core is neither the smallest nor the largest by area; left out of the sentences: population density highest, human footprint more than 4 of 5",
-  "S9.4: OneEarth button opens in a new tab (target=\"_blank\")",
+  "S9.4: the OneEarth page; the profile page links the ecoregion name to it, in a new tab",
   "S3.3: not applicable (no reach within 50 km that is 2 classes above the largest in the own basin (class 4))",
   "S4.3: not applicable (no karst and no permafrost recorded)",
   "S1.4: not applicable (no other ecoregion covers 10% of the basin or more)",
