@@ -69,6 +69,8 @@ docs/edop/*
 !docs/edop/api_shape/**
 !docs/edop/_v1/
 !docs/edop/_v1/**
+docs/edop/_v1/**/.DS_Store
+docs/edop/_v1/.DS_Store
 !docs/cdop/
 docs/cdop/*
 !docs/cdop/pilot/
