@@ -94,6 +94,34 @@ layer re-centres each cell on its own 850–1850 CE mean of the stored values, s
 cells intersecting a query is reported alongside the values. A query smaller than one cell is
 reading a regional average.
 
+### Great Eurasian Drought Atlas (GEDA)
+
+[Dataset](https://doi.org/10.5281/zenodo.11059894) ·
+[Article](https://doi.org/10.1175/JCLI-D-23-0773.1)
+
+*Status: stored in the EDOPS database; not yet returned by the API or the Sandbox.*
+
+Gridded reconstruction of summer (June–August) drought, the self-calibrating Palmer Drought Severity
+Index (scPDSI), on a 0.5° grid for 1000–2020 CE, built from 1,869 tree-ring chronologies and one
+speleothem record (Cook et al. 2024). EDOPS stores the authors' trimmed distribution: Eurasia, without
+sub-Saharan Africa or anything south of the equator. Planned for Band T beside LMR as a separate
+product.
+
+**What to know.** The years 1000–1989 are reconstructed from tree rings; 1990–2020 are observed
+values (CRU TS 4.06 scPDSI), not reconstruction. Values are standard scores: each cell is rescaled to a
+mean of 0 and a standard deviation of 1 over 1000–2020, observed years included, so a value says how
+many standard deviations a summer sat from that cell's own long-run average. It is not on LMR's scale,
+and a given value does not mean the same drought severity in different places. The data are summer
+only, not annual.
+
+Reliability follows the density of the tree-ring network. The authors report validation statistics
+that stay broadly consistent as the network thins back in time, shown as maps; EDOPS has not yet
+derived regional figures from them. The grid is coarse: a cell is about 2,000 km² at mid-latitudes, so
+a large basin holds a few cells and a small one a fraction of a cell. Only the 28,970 cells with values
+are stored; outside them nothing is returned, which is different from a value of zero.
+
+Licence: CC BY 4.0. The deposit on Zenodo is by the authors, Edward R. Cook and Benjamin I. Cook.
+
 ### eVolv2k v4
 
 [Dataset and citation](https://doi.org/10.1594/PANGAEA.971968)
