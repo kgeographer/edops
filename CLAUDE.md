@@ -13,7 +13,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
-- **Active phase — Dashboard:** `docs/edop/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Dashboard:** `docs/edop/_v1/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -224,7 +224,10 @@ docs/edop/areas/         #   Areas tracker (frozen ref) + findings (tracked)
 docs/edop/engine/        #   Work-order specs (tracked)
 docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
 docs/edop/demo/          #   Demo tracker + findings (tracked)
-docs/edop/dashboard/     #   Dashboard phase (tracked) ← active
+docs/edop/_v1/           #   V1 development (tracked): dashboard/ (Sandbox morph, not begun), whgmodal/ (WHG profile +
+                          #   /whgmodal endpoint, milestone reached; its WO-01..10a files stayed in docs/design/dashboard/
+                          #   because code paths point there, see _INDEX.md), regionality/ (active; scripts/notebooks/tests
+                          #   use a `regionality/` subfolder). Branch `regionality`.
 docs/design/dashboard/   #   Dashboard design material (tracked since 2026-10-31, text only): Sandbox cheat sheet, WO-01/WO-02 files, examples
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)

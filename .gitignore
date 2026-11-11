@@ -67,8 +67,10 @@ docs/edop/*
 !docs/edop/workbench/**
 !docs/edop/api_shape/
 !docs/edop/api_shape/**
-!docs/edop/dashboard/
-!docs/edop/dashboard/**
+!docs/edop/_v1/
+!docs/edop/_v1/**
+!docs/edop/rubrics/
+!docs/edop/rubrics/**
 !docs/cdop/
 docs/cdop/*
 !docs/cdop/pilot/
