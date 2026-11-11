@@ -4,7 +4,7 @@
 
 ## The short version
 
-GEDA is usable as the pilot dataset, with care. It covers all of Ukraine for every year from 1000 to 2020 with no gaps. But it is stored in a way that will bite an ingest (a hidden fill value, and z-scores instead of PDSI), its last 31 years are observations and not reconstruction, and in Ukraine it hardly agrees with OWDA, the other reconstruction. Nobody has published skill figures for Ukraine that we could find.
+GEDA is usable as the pilot dataset, with care. It covers all of Ukraine for every year from 1000 to 2020 with no gaps. But it is stored in a way that will bite an ingest (a hidden fill value, and z-scores instead of PDSI), its last 31 years are observations and not reconstruction, and in Ukraine it differs strongly from OWDA, the older product it replaces (the OWDA web app is in "legacy mode" and recommends GEDA). That difference shows where the newer network changed the answer; it is not evidence against GEDA. Nobody has published skill figures for Ukraine that we could find.
 
 ## What we found
 
@@ -15,7 +15,7 @@ GEDA is usable as the pilot dataset, with care. It covers all of Ukraine for eve
 5. **The join at 1990.** The paper says 1000 to 1989 is reconstruction and 1990 to 2020 is observed CRU data. The file does not mark it. In Ukraine the average sits higher in 1960 to 1989 than in 1990 to 2020 (0.37 against -0.04); we did not test whether that is climate or an artefact.
 6. **GEDA's variance is steady across the centuries.** There is no early-century collapse of the kind we found in LMR (EDA F10.1). That is a measurement, not proof the early centuries are reliable.
 7. **OWDA does have Ukraine data before 1000 CE.** This corrects the WO. The west and northwest (55 of 271 cells) have values from year 0, 80 cells by 600, 161 by 800, 174 by 1000, and the last by 1120. Coverage spreads from west to east, which is what the animation showed once you allow for its resolution. The map is `output/edop/regionality/wo01_ukraine_owda_first_year.png`.
-8. **The two reconstructions barely agree over Ukraine.** The typical correlation between them is 0.05 over 1000 to 1978 (0.29 for 1900 to 1978). Over Paris it is 0.77, and across Western Europe 0.67. Agreement falls steadily eastward, and Ukraine is the lowest of any European country measured. We checked that this is not a year or grid misalignment. It is in the data.
+8. **GEDA and the older OWDA barely agree over Ukraine.** The typical correlation is 0.05 over 1000 to 1978 (0.29 for 1900 to 1978), against 0.77 over Paris and 0.67 across Western Europe, falling steadily eastward; Ukraine is the lowest of any European country measured. We checked that this is not a year or grid misalignment. OWDA is the product GEDA replaces: its web app says it is in legacy mode and recommends GEDA, and the GEDA paper says it improves on OWDA (106 chronologies against 1,869, and a new method). Agreement is highest where OWDA's network was dense, so this maps where the newer network changed the answer; it is not evidence against GEDA. LMR, which the worked example also uses, correlates at about 0.1 or less with both at annual resolution, and smoothing to 31 years does not change that.
 9. **Basins are finer than the data.** An L6 basin typically overlaps about 9 GEDA cells, but about three in four have less than the engine's "five cells' worth" cutoff for good resolution. An L8 basin in Ukraine is, for 94% of them, smaller than one GEDA cell, so neighbouring basins would share a value. A rule that uses only the cell centre would lose 16% of L6 basins and 70% of L8 basins; area weighting is needed.
 
 ## What the papers say, and what is still missing
@@ -31,10 +31,11 @@ GEDA (Cook et al. 2024) is built from 1,869 tree-ring chronologies by an ensembl
 
 ## Decisions for you and Opus
 
-1. **Is GEDA still the pilot?** The case for: complete coverage and no gaps from 1000. The case for caution: no Ukraine skill figures, and the only independent reconstruction disagrees with it there.
+1. **Is GEDA still the pilot?** The case for: complete coverage and no gaps from 1000. The case for caution: no Ukraine skill figures. (Disagreement with the older OWDA is expected and is not part of the case.)
 2. **Which basin levels to ingest.** L6 is workable with area weighting; at L8 the value repeats across neighbouring basins. Whether to offer L8 at all is a product choice.
 3. **How to word the units and the instrumental years** in whatever the addendum says (z-scores against 1000 to 2020; 1990 to 2020 are observations).
 4. **Whether the Ukraine example needs OWDA** for the early part, now that it has values from year 0 in the west, or stays with LMR alone before 1000.
-5. **Whether to run one more check**: compare the 1990 shift with the differences between other 30-year windows.
+5. **How to show GEDA and LMR together in the worked example.** At annual resolution they are uncorrelated over Ukraine (and over Paris), and smoothing to 31 years does not change that (figure `output/edop/regionality/wo01_ukraine_lowfreq.png`). With only 16 to 31 independent values, none of these correlations is solid either way.
+6. **Whether to run one more check**: compare the 1990 shift with the differences between other 30-year windows.
 
 The full list of open ingest issues is at the end of `wo01_results.md`.

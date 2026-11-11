@@ -8,7 +8,7 @@
 2. **GEDA's file stores a netCDF fill value as data**, with no `_FillValue` declared. Anything that opens it without masking `> 1e30` will read 9.969e+36 as a value (Q3).
 3. **GEDA values are z-scores**, not PDSI: every valid cell has mean 0.0000 and SD 1.0000 over 1000 to 2020 (Q5). OWDA values are not rescaled (SD about 1.9).
 4. **"37,774 points" is the full GEDA.** The trimmed file has 28,970 cells with values. The authors removed sub-Saharan Africa and everything south of the equator (Q4).
-5. **GEDA and OWDA barely agree in Ukraine**: median per-cell correlation 0.046 over 1000 to 1978, the lowest of any European country with 30 or more cells, against 0.77 at a Paris cell (Q10). Neither file carries skill statistics (Q2), and the papers give none for Ukraine.
+5. **GEDA differs strongly from OWDA in Ukraine**: median per-cell correlation 0.046 over 1000 to 1978, the lowest of any European country with 30 or more cells, against 0.77 at a Paris cell (Q10). OWDA is the older product that GEDA replaces (its web app says so and recommends GEDA), so this shows where the newer network changed the answer; it is not evidence against GEDA. The open question about GEDA itself is its validation over Ukraine: neither file carries skill statistics (Q2) and the papers give none for Ukraine. LMR, which the worked example also uses, correlates at about 0.1 or less with both products at annual resolution (Q10, Cell 15).
 6. **The "700 CE" sentence in the WO is wrong about its origin.** The Sandbox's LMR map layer starts at 700 CE, a quality floor set from our own EDA (F10.1, F10.3), not "following the LMR authors". The signature reports LMR from 0 CE (see `docs/edop/_v1/rubrics/lmr_quality_border.md`).
 
 ## Q1. Structure of both files
@@ -177,6 +177,17 @@ The pattern is a gradient from west to east: the west and northwest from year 0,
 
 ## Q10. OWDA against GEDA, Ukraine, 1000 to 1978
 
+**How the two products relate.** OWDA (Cook et al. 2015) is the older product that GEDA replaces. The OWDA web app carries this notice (wording supplied by Karl, 2026-11-11): "Legacy Notice: The Old World Drought Atlas (OWDA) has entered legacy mode. This web app will remain available, but will no longer be updated. The Great Eurasian Drought Atlas significantly improves upon the reconstructions available in the OWDA and is recommended." The GEDA paper (Cook et al. 2024) likewise says GEDA "builds, expands, and improves upon previous spatial reconstructions of PDSI, including the Old World Drought Atlas". Inputs and methods differ:
+
+| | OWDA | GEDA |
+|---|---|---|
+| Tree-ring network | 106 chronologies ("reasonably uniform ... except for Russia") | 1,869 chronologies and one speleothem |
+| Method | point-by-point regression, mean of 8 ensemble members | ensemble point-by-point regression, 48 candidate models per cell chosen on validation R2, recalibrated at nine chronology cutoffs (1800 to 1000) and averaged |
+| Calibration / validation | 1928 to 1978 / 1901 to 1927 | 1951 to 1990 / 1920 to 1950 |
+| Observed target | CRU TS 3.21 scPDSI | CRU TS 4.06 scPDSI |
+
+The two are therefore not expected to agree where OWDA's network was thin, and the agreement figures below fit that: highest in Western Europe, lowest in the east. They show where the newer product differs most from the older one; they do not show which is right in Ukraine. Because OWDA is the product its authors now advise against using, its agreement or disagreement with GEDA is background, not a test of GEDA.
+
 271 Ukraine cells with OWDA values; each cell used only in years where OWDA has a value (264,436 of 265,309 cell-years have both); a cell-century needs 20 years. Per-cell SD over matched years, median: OWDA 1.924, GEDA 1.002. GEDA is rescaled and OWDA is not, so the mean difference mixes scale and baseline with disagreement; correlations are unaffected by scale. The two share chronologies, so agreement shows consistency, not independent skill.
 
 | Years | Cells | r median | r p10 | r p90 | Mean diff (OWDA - GEDA) | SD ratio | Cell-average r | Cell-average diff |
@@ -243,6 +254,49 @@ Median per-cell r by the cell's OWDA first-year group (cells in the group with a
 | **Ukraine** | **271** | **0.046** (p10 -0.104, p90 0.233) | **0.286** |
 
 (Other countries with 30 or more cells are in the Cell 12 output.) Agreement falls from west to east, and Ukraine is the lowest of the European countries listed. The GEDA paper's Supplementary Fig. 3 (validation R² maps for the 1800, 1600 and 1400 chronology cutoffs) shows R² highest, about 0.4 to 0.5, over Western and Central Europe and Scandinavia and lower to the east. At the resolution of the map in the supplement Ukraine cannot be read; this is a visual impression only.
+
+**Observed overlap (Cell 15).** The GEDA paper says its 1990 to 2020 values are instrumental CRU TS 4.06 scPDSI; OWDA was calibrated on CRU TS 3.21 scPDSI, and the NCEI description puts its observed years at 1979 to 2012 (the paper text read does not say so). If both tails are observations, the two files should agree closely there. Per-cell r between OWDA and GEDA by span (Ukraine with 10th and 90th percentile; other columns are medians over the cells with values in both files):
+
+| Years | Ukraine median | Ukraine p10 | Ukraine p90 | All cells | Western Europe | Eastern Europe |
+|---|---|---|---|---|---|---|
+| 1901-1950 | 0.242 | -0.041 | 0.496 | 0.522 | 0.782 | 0.434 |
+| 1951-1978 | 0.284 | 0.034 | 0.528 | 0.575 | 0.749 | 0.493 |
+| 1979-1989 (11 years) | 0.458 | 0.094 | 0.746 | 0.551 | 0.575 | 0.570 |
+| 1990-2012 | 0.701 | 0.386 | 0.858 | 0.765 | 0.817 | 0.774 |
+
+Agreement rises toward the observed years but reaches only 0.70 over Ukraine in 1990 to 2012 (0.82 over Western Europe). The files cannot say why (the CRU versions the two used differ, or the OWDA tail holds something other than what its description says); since OWDA is not planned for ingest this was not pursued. The earlier expectation of near-identical series over 1990 to 2012 was wrong.
+
+**LMR as a third product (Cell 15).** LMR PDSI is annual, on a 2° grid, an anomaly (a different variable and season from JJA scPDSI); 31 LMR cells cover the Ukraine cells. Per-cell r over the Ukraine cells (median, with 10th and 90th percentile):
+
+| Span | GEDA-OWDA | GEDA-LMR | OWDA-LMR |
+|---|---|---|---|
+| 1000-1978 | 0.046 (-0.104, 0.233) | -0.030 (-0.068, 0.088) | 0.108 (-0.024, 0.186) |
+| 1900-1978 | 0.286 (0.015, 0.502) | 0.123 (-0.014, 0.364) | 0.163 (-0.035, 0.268) |
+
+On the Ukraine cell-average series: 1000 to 1978 GEDA-OWDA 0.085, GEDA-LMR -0.026, OWDA-LMR 0.186; 1900 to 1978 0.442, 0.219, 0.234. Year-lag scan of the cell averages over 1000 to 1978 (LMR year = product year + lag), lags -2 to +2: GEDA against LMR -0.063, -0.019, -0.026, -0.031, 0.003; OWDA against LMR 0.046, 0.099, 0.186, 0.140, 0.136 (no peak for GEDA; a weak peak at lag 0 for OWDA; no sign of a one-year offset in LMR). Single cells over 1000 to 1978:
+
+| Cell | GEDA-OWDA | GEDA-LMR | OWDA-LMR |
+|---|---|---|---|
+| Paris | 0.774 | 0.094 | 0.096 |
+| Ankara | 0.650 | 0.055 | 0.020 |
+| Stockholm | 0.531 | 0.057 | -0.108 |
+
+LMR does not side with either product. It does not track either at annual resolution, even where GEDA and OWDA agree strongly. At annual resolution GEDA and LMR are effectively uncorrelated over Ukraine and over Paris, so showing them side by side in the worked example invites an expectation of corroboration that is not there. Agreement on slower changes is in the next paragraph.
+
+**Slow changes (Cells 16 and 17).** Cell averages over two fixed sets of Ukraine cells (so the mix of cells does not change through time), then centred moving averages. Set A: the 55 cells with OWDA values from year 0 (the west), 1000 to 1978. Set B: all 271 cells with OWDA values, 1120 to 1978 (the last cell starts in 1120). r between the cell-average series, by smoothing window ("independent" is about span / window; smoothed values overlap, so few are independent):
+
+| Set | Window (years) | Independent values | GEDA-OWDA | GEDA-LMR | OWDA-LMR |
+|---|---|---|---|---|---|
+| A (n=55) | 1 | 979 | 0.349 | 0.081 | 0.081 |
+| A | 11 | 89 | 0.365 | -0.013 | 0.004 |
+| A | 31 | 31 | 0.266 | -0.060 | -0.014 |
+| A | 51 | 19 | 0.249 | -0.026 | -0.008 |
+| B (n=271) | 1 | 859 | 0.093 | -0.014 | 0.184 |
+| B | 11 | 78 | -0.001 | -0.080 | 0.201 |
+| B | 31 | 27 | -0.185 | -0.166 | 0.235 |
+| B | 51 | 16 | -0.249 | -0.085 | 0.370 |
+
+In the west (set A) GEDA and OWDA agree moderately at every scale (0.25 to 0.37) and LMR sits near zero against both. Over all Ukraine cells (set B) GEDA and OWDA agree weakly unsmoothed (0.09) and become negatively correlated as the series are smoothed (-0.19 at 31 years), with their smoothed values often of opposite sign (around 1885 GEDA +1.76, OWDA -0.67; around 1585 +1.50 against -0.60; around 1135 -0.58 against +1.73; in set A around 1065 OWDA -2.69 against GEDA +0.80). OWDA-LMR rises to 0.37 at 51 years but rests on about 16 independent values. With 16 to 31 roughly independent values, correlations of plus or minus 0.2 to 0.4 can arise by chance; no significance test was run. The figure `output/edop/regionality/wo01_ukraine_lowfreq.png` (gitignored) shows the 31-year series: the three lines move independently over most of the record, converging only late (all three rise near 1815 and fall near 1915 to 1960, the period when the products are fitted to observations). So slow swings are not shared across the products over Ukraine, and the check does not support presenting a centennial drought narrative from a single product there. The eastern cells alone (those starting after 1000 CE) were not separated out.
 
 ## Q11. Grid cells per basin
 
@@ -383,11 +437,11 @@ Cells overlapping by area: 1 for 216 basins, 2 for 335, 3 to 4 for 774, 5 to 9 f
 2. **Footprint.** The valid-cell mask (28,970 cells) is the footprint, not the bounding box. The 8,804 cells removed by the authors and the cells outside it must give an absent addendum, never zero. Timbuktu's cell is outside.
 3. **Units.** Values are z-scores against each cell's own 1000 to 2020 history, including the instrumental years; the addendum must say so. They are not comparable with OWDA's scPDSI, whose SD over Ukraine is about 1.9.
 4. **Instrumental years.** 1990 to 2020 are observed CRU TS 4.06 scPDSI, restandardized, not reconstruction. The join is not flagged in the file. The Ukraine mean differs between 1960 to 1989 and 1990 to 2020 (0.37 against -0.04 for the cell average); whether that is climate was not tested.
-5. **Skill.** No skill statistics in either file; no Ukraine figures in either paper. GEDA validation maps exist (Supplementary Fig. 4 was not in our copy of the supplement; the EPPR method is in Smerdon et al. 2023). Whatever the addendum says about reliability in Ukraine needs one of these, or the authors. The weak OWDA/GEDA agreement in Ukraine (Q10) means neither can be taken as corroborating the other there.
+5. **Skill.** No skill statistics in either file; no Ukraine figures in either paper. GEDA validation maps exist (Supplementary Fig. 4 was not in our copy of the supplement; the EPPR method is in Smerdon et al. 2023). Whatever the addendum says about reliability in Ukraine needs one of these, or the authors. OWDA's disagreement with GEDA in Ukraine is expected from the change of network and method and is not evidence against GEDA. LMR (annual, 2 degrees, a different variable and season) is uncorrelated with GEDA at annual resolution, so it cannot corroborate it; this matters for how the worked example presents the two.
 6. **Resolution.** At L6 the median basin overlaps 9 cells, but 73% of footprint basins are below the engine's `w_eff` threshold of 5; a centre-in-basin rule would lose 16% of them. At L8 a centre rule would lose 70% of footprint basins and 68% in Ukraine; in Ukraine 94% of L8 basins are smaller than one cell (`w_eff` below 1), so neighbouring basins share cells and the value repeats across them. Whether to ingest L8 at all is a decision, not a measurement.
 7. **Year labels.** Neither file states that the years are CE; GEDA's `yr` is "unitless". The papers and the OWDA readme say CE/AD.
 8. **Variance.** GEDA's variance is flat across centuries in Ukraine and overall (Q8), unlike the LMR funnel. Whether that reflects the reconstruction method (nine-member ensemble, recalibrated at nine chronology cutoffs) or real stability was not tested.
-9. **OWDA as a second source.** Not planned for ingest, but if it is considered later: coverage and skill vary by cell start year (Q9, Q10), the file marks thin support only by start year, and the 26 northern-Arabian cells that OWDA has and GEDA lacks are unexplained.
+9. **OWDA as a second source.** Not planned for ingest, and its authors now advise using GEDA instead; if it is considered later anyway: coverage and skill vary by cell start year (Q9, Q10), the file marks thin support only by start year, and the 26 northern-Arabian cells that OWDA has and GEDA lacks are unexplained.
 10. **Housekeeping.** `data/eurasion_drought_atlas/geda_trim.nc` is a byte-identical copy of `data/geda/geda_trim.nc` (directory name misspelt); `data/` is gitignored. Redistribution terms beyond "cite the source" were not checked.
 
 ## What would answer what the files cannot
@@ -396,3 +450,4 @@ Cells overlapping by area: 1 for 216 basins, 2 for 335, 3 to 4 for 774, 5 to 9 f
 - OWDA chronology counts and nest structure per cell: the OWDA supplement (Figs S6 and S11), not in `data/owda/`.
 - Which GEDA cells were removed in trimming, and why the 26 Arabian cells are absent: the authors.
 - Whether the 1990 shift in Ukraine is unusual: a comparison with other 30-year windows (not run).
+- What GEDA's validation looks like over Ukraine: its Supplementary Fig. 4, Smerdon et al. 2023, or the authors (Edward Cook, Lamont-Doherty, is an author of the GEDA paper and led OWDA).
