@@ -1,6 +1,6 @@
 # WO-01 (regional data) results: GEDA and OWDA exploration
 
-2026-11-11. Spec: `wo01_GEDA-OWDA-exploration.md`. Notebook: `notebooks/edop/regionality/wo01_geda_owda_exploration.ipynb` (Cells 1 to 14; the outputs are saved in it). Inputs: `data/geda/geda_trim.nc`, `data/owda/owda.nc`; their documentation (`owda-readme.txt`; Cook et al. 2024 and its supplement for GEDA; Cook et al. 2015 for OWDA); `gaz.admin0`, `public.basin06` and `public.basin08` (read only). The numbers below are from notebook output Karl ran. Nothing here sets a threshold or reaches a verdict. "Cell" means a 0.5° grid cell; "valid" means a finite value after the fill value described under Q3 is masked. A plain-language summary is in `wo01_summary.md`.
+2026-11-11. Spec: `reg_wo01_GEDA-OWDA-exploration.md`. Notebook: `notebooks/edop/regionality/wo01_geda_owda_exploration.ipynb` (Cells 1 to 14; the outputs are saved in it). Inputs: `data/geda/geda_trim.nc`, `data/owda/owda.nc`; their documentation (`owda-readme.txt`; Cook et al. 2024 and its supplement for GEDA; Cook et al. 2015 for OWDA); `gaz.admin0`, `public.basin06` and `public.basin08` (read only). The numbers below are from notebook output Karl ran. Nothing here sets a threshold or reaches a verdict. "Cell" means a 0.5° grid cell; "valid" means a finite value after the fill value described under Q3 is masked. A plain-language summary is in `reg_wo01_summary.md`.
 
 ## Read first: what changes the WO's premises
 

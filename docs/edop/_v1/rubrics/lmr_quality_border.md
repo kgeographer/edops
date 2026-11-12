@@ -26,5 +26,5 @@ The border is our own EDA result. It is not a cutoff published by the LMR author
 
 ## Related
 
-- Regional data WO-01 (`docs/edop/_v1/regionality/wo01_GEDA-OWDA-exploration.md`), Q8, looks for the same funnel in GEDA (variance by century, Ukraine and reference cells). Its result can be compared with F10.1.
+- Regional data WO-01 (`docs/edop/_v1/regionality/reg_wo01_GEDA-OWDA-exploration.md`), Q8, looks for the same funnel in GEDA (variance by century, Ukraine and reference cells). Its result can be compared with F10.1.
 - Scope: GEDA starts at 1000 CE; Ukraine 700–1000 CE is covered by LMR alone (above the map floor, below GEDA).

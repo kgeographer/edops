@@ -1,6 +1,6 @@
 # WO-02 (regionality) results: GEDA stored; what a basin query returns on the fly
 
-2026-11-11. Spec: `wo02_store_GEDA.md`. Notebook: `notebooks/edop/regionality/wo02_geda_store_and_aggregate.ipynb` (Cells 1 to 15, with 4a; outputs saved in it). Load script: `scripts/edop/regionality/load_geda.py`. The database is the local dev instance (Postgres.app); the server load is a separate step. Numbers are from notebook output Karl ran. No thresholds or verdicts. A plain-language summary is in `wo02_summary.md`. Figures (gitignored, `output/edop/regionality/`): `wo02_item6_distribution.png`, `wo02_item7_8_lines.png`, `wo02_item11_geda_vs_lmr.png`.
+2026-11-11. Spec: `reg_wo02_store_GEDA.md`. Notebook: `notebooks/edop/regionality/wo02_geda_store_and_aggregate.ipynb` (Cells 1 to 15, with 4a; outputs saved in it). Load script: `scripts/edop/regionality/load_geda.py`. The database is the local dev instance (Postgres.app); the server load is a separate step. Numbers are from notebook output Karl ran. No thresholds or verdicts. A plain-language summary is in `reg_wo02_summary.md`. Figures (gitignored, `output/edop/regionality/`): `wo02_item6_distribution.png`, `wo02_item7_8_lines.png`, `wo02_item11_geda_vs_lmr.png`.
 
 ## Read first
 

@@ -50,7 +50,7 @@ Run GEDA through the Band T aggregation path, as for LMR, for these basins: the 
 
 - The GEDA table and metadata (Part A), with the load script.
 - Notebook: `notebooks/edop/regionality/wo02_geda_store_and_aggregate.ipynb`, following `notebooks/CLAUDE.md`.
-- `wo02_results.md` and `wo02_summary.md`: one section per item, numbered as above; panel-style figures for items 6 to 11.
+- `reg_wo02_results.md` and `reg_wo02_summary.md`: one section per item, numbered as above; panel-style figures for items 6 to 11.
 
 ## Acceptance gate
 

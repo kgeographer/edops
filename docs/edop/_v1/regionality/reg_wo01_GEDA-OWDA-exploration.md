@@ -57,7 +57,7 @@ OWDA is examined here to confirm its Ukraine coverage from the data and to compa
 ## Deliverables
 
 - Notebook: `notebooks/edop/regionality/wo01_geda_owda_exploration.ipynb`, following `notebooks/CLAUDE.md`.
-- `wo01_results.md`, next to this WO: one section per question, numbered as above; tables where they help; maps only where a table won't do (Q9).
+- `reg_wo01_results.md`, next to this WO: one section per question, numbered as above; tables where they help; maps only where a table won't do (Q9).
 - A short list of open issues for the ingest design.
 
 ## Acceptance gate

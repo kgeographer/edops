@@ -1,6 +1,6 @@
 # WO-02 summary: GEDA stored, and what a basin query returns
 
-2026-11-11. Spec: `wo02_store_GEDA.md`. Full numbers by item: `wo02_results.md`. Notebook: `notebooks/edop/regionality/wo02_geda_store_and_aggregate.ipynb`. Loader: `scripts/edop/regionality/load_geda.py`. Branch `regionality`. The engine, API and app were not changed. The GEDA table exists only in the local database; putting it on the server is a later step.
+2026-11-11. Spec: `reg_wo02_store_GEDA.md`. Full numbers by item: `reg_wo02_results.md`. Notebook: `notebooks/edop/regionality/wo02_geda_store_and_aggregate.ipynb`. Loader: `scripts/edop/regionality/load_geda.py`. Branch `regionality`. The engine, API and app were not changed. The GEDA table exists only in the local database; putting it on the server is a later step.
 
 ## The short version
 

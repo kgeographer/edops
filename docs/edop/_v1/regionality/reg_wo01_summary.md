@@ -1,6 +1,6 @@
 # WO-01 summary: what the GEDA and OWDA files actually contain
 
-2026-11-11. Spec: `wo01_GEDA-OWDA-exploration.md`. Full numbers, one section per question: `wo01_results.md`. Notebook: `notebooks/edop/regionality/wo01_geda_owda_exploration.ipynb` (Cells 1 to 14). Branch `regionality`. Nothing was ingested, written to the database or changed in the app. All twelve questions are answered.
+2026-11-11. Spec: `reg_wo01_GEDA-OWDA-exploration.md`. Full numbers, one section per question: `reg_wo01_results.md`. Notebook: `notebooks/edop/regionality/wo01_geda_owda_exploration.ipynb` (Cells 1 to 14). Branch `regionality`. Nothing was ingested, written to the database or changed in the app. All twelve questions are answered.
 
 ## The short version
 
@@ -38,4 +38,4 @@ GEDA (Cook et al. 2024) is built from 1,869 tree-ring chronologies by an ensembl
 5. **How to show GEDA and LMR together in the worked example.** At annual resolution they are uncorrelated over Ukraine (and over Paris), and smoothing to 31 years does not change that (figure `output/edop/regionality/wo01_ukraine_lowfreq.png`). With only 16 to 31 independent values, none of these correlations is solid either way.
 6. **Whether to run one more check**: compare the 1990 shift with the differences between other 30-year windows.
 
-The full list of open ingest issues is at the end of `wo01_results.md`.
+The full list of open ingest issues is at the end of `reg_wo01_results.md`.
