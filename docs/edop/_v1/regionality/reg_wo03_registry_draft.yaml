@@ -32,11 +32,14 @@
 #
 # RESPONSE `sources` BLOCK (decided, Q5). Every signature response, UI and public API alike, gets a small block stating where
 # it comes from, in two lists:
-#   used:         the sources that contributed to this response. Always BasinATLAS; the temporal and regional sources (LMR,
-#                 HYDE, eVolv2k, GEDA) only when Band T is requested and the span and place fall inside what they cover.
-#                 Each entry carries name, version, citation and licence from the `describes` block.
+#   used:         the sources that contributed to this response: BasinATLAS always; Cliopatria when the request resolves a
+#                 polity; whichever elevation service answered, when the elevation lookup ran; the temporal and regional
+#                 sources (LMR, HYDE, eVolv2k, GEDA) only when Band T is requested and the span and place fall inside what
+#                 they cover. A source returned at low coverage (GEDA, 0.1 to 0.5) is `used`, with its rows flagged
+#                 low_coverage. Each entry carries name, version, citation and licence from the `describes` block.
 #   not_applied:  sources the request would have drawn on but could not, each with a reason: outside_span,
-#                 outside_footprint or low_coverage. The UI may ignore it or use it to explain a gap.
+#                 outside_footprint or below_coverage_floor (coverage under the source's low_coverage_from; no value
+#                 returned). The UI may ignore it or use it to explain a gap.
 #   A source the request does not ask for (for example the temporal sources when T is off) appears in neither list.
 #   The rows stay as they are. The block is additive; the existing meta.data_sources and lmr_status fields stay for now.
 #
@@ -173,7 +176,7 @@ sources:
         method: cell_overlap_weighted
         cell: {size_deg: 0.5, geometry_column: temporal.geda_climate.cell_geom}
         lon_convention: "-180..180"
-      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1}   # decided (starting values, tunable): >= 0.5 ok; 0.1 to 0.5 value returned, flagged low_coverage; < 0.1 not_applied, no value
+      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1}   # decided (starting values, tunable): >= 0.5 ok; 0.1 to 0.5 value returned, flagged low_coverage; < 0.1 not_applied (below_coverage_floor), no value; a deliberate exception to serve-don't-suppress, reported with a reason in the `sources` block
       # coverage = the fraction of the query area covered by this source's cells. Other sources report coverage per row but
       # apply no threshold today; a coverage_rule can be added to any source.
       years_recommended: null
@@ -230,7 +233,7 @@ sources:
     selects:
       kind: field
       status: served
-      table: public.basin06, public.basin08        # L6: 16,397 basins; L8: 190,675
+      table: [public.basin06, public.basin08]      # L6: 16,397 basins; L8: 190,675
       views: {6: public.v_basin06_persist_rev2, 8: public.v_basin08_persist_rev2}   # the only path to the monthly arrays
       footprint: {type: global}
       time:
@@ -285,9 +288,9 @@ sources:
     describes:
       name: OpenTopoData (mapzen DEM)
       grain: "about 30 m"
-      licence: null
-      licence_url: https://www.opentopodata.org
-      licence_note: "Live call at request time; terms not checked."
+      licence: "no single licence: the Mapzen terrain tiles are a composite of national elevation datasets, each with its own attribution requirement"
+      licence_url: https://github.com/tilezen/joerd/blob/master/docs/attribution.md
+      licence_note: "Checked 2026-11-12. OpenTopoData's own pages state no licence or attribution terms; the public API is limited to 1 call per second and 1,000 per day. The Tilezen attribution document lists the required credits (SRTM, GMTED2010, ETOPO1, USGS 3DEP, EU-DEM and national sources)."
       notes: "Not a dataset we hold. The primary elevation provider."
 
   - id: open_meteo_elevation
@@ -300,9 +303,9 @@ sources:
     describes:
       name: Open-Meteo elevation API (Copernicus GLO-90)
       grain: "about 90 m"
-      licence: null
-      licence_url: https://open-meteo.com
-      licence_note: "Live call at request time, used only when OpenTopoData fails; terms not checked."
+      licence: "CC BY 4.0 (data); the free API is for non-commercial use only"
+      licence_url: https://open-meteo.com/en/terms
+      licence_note: "Checked 2026-11-12. Free API: under 10,000 calls a day, 5,000 an hour, 600 a minute. The terms page does not mention the Elevation API by name, so whether it is covered is unconfirmed; the underlying Copernicus GLO-90 licence was not checked. Used only when OpenTopoData fails."
       notes: "Not a dataset we hold."
 
 # Questions raised while drafting (all decided)

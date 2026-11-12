@@ -100,7 +100,7 @@ Scope, settled with Karl: the registry covers what the signature reads (BasinATL
 
 ### Limits of this audit
 
-Not traced: year handling in the JavaScript of the Explorer, Workbench and Cliopatria pages beyond the literals found by search; `app/db/hyde.py` year clamping; per-column units, periods and licences for BasinATLAS; Cliopatria caveat text in code; the terms of the OpenTopoData elevation service (the public signature calls it live).
+Not traced: year handling in the JavaScript of the Explorer, Workbench and Cliopatria pages beyond the literals found by search; `app/db/hyde.py` year clamping; per-column units, periods and licences for BasinATLAS; Cliopatria caveat text in code.
 
 ## Part C: registry schema proposal (item 6)
 
@@ -131,8 +131,8 @@ Request logic stays in the code: Band T needs a span, buffer and area scopes nee
 1. **What the registry judges.** Source availability and handling, identically for the UI and the public API. It does not decide which bands or variables a route returns; that is each route's own specification. Today the two differ: `/api/areas` returns only `coast_fraction` and `outlet_type` among the derived variables; the public basin path returns the seasonality and relief variables and makes the live elevation lookup; the climate-class variables come from the similarity and context endpoints, in neither. A response is the route's specification filtered by the registry's availability decisions, and `variables` in the registry means what a source can supply.
 2. **Two blocks per source,** `selects` and `describes`, each with named consumers; no metadata sits in the registry that nothing reads.
 3. **Location gate: the source's own cells, no stored shape.** A regional source names its cell geometry (GEDA: `temporal.geda_climate.cell_geom`), and the gate is whether the query geometry (point, buffer or polygon) touches any cell. Measured on GEDA: 0.1 to 0.4 ms for a 100 km buffer (0 cells at Mexico City and Lima, 14 at Reykjavik, 24 at Kyiv). Zero cells means outside the footprint. Global sources are not tested. Measured footprint shapes, for the record: exact union of cells 57.7 million km2 (86 parts); bounding box 111.6; convex hull 109.9; concave hull 71.6 (ratio 0.1). A box or hull was rejected as inaccurate. A display outline, if wanted, is generated from the cells and is not part of the registry.
-4. **Coverage rule per source.** GEDA: coverage 0.5 or more is `ok`; 0.1 to 0.5 returns the value flagged `low_coverage`; below 0.1 is `not_applied` with no value. Starting values, tunable. Other sources report coverage per row and apply no threshold today. WO-02 context: of 6,630 basins in the footprint, 150 are under 50% covered and 46 under 10%.
-5. **A `sources` block in every response,** UI and API alike. `used`: the sources that contributed (always BasinATLAS; the temporal and regional sources only when Band T is requested and the span and place fall inside what they cover), each with name, version, citation and licence. `not_applied`: sources the request would have drawn on but could not, with a reason (`outside_span`, `outside_footprint`, `low_coverage`). Sources the request does not ask for appear in neither. The rows are unchanged; the block is additive; the existing `meta.data_sources` and `lmr_status` stay for now. It replaces `meta.data_sources`' habit of listing all five sources whether or not they contributed.
+4. **Coverage rule per source.** GEDA: coverage 0.5 or more is `ok`; 0.1 to 0.5 returns the value flagged `low_coverage`; below 0.1 is `not_applied` with no value. Starting values, tunable. This is a deliberate exception to "serve, don't suppress"; it is defensible because the `sources` block reports it with a reason. Other sources report coverage per row and apply no threshold today. WO-02 context: of 6,630 basins in the footprint, 150 are under 50% covered and 46 under 10%.
+5. **A `sources` block in every response,** UI and API alike. `used`: the sources that contributed (BasinATLAS always; Cliopatria when the request resolves a polity; whichever elevation service answered, when the elevation lookup ran; the temporal and regional sources only when Band T is requested and the span and place fall inside what they cover; a source returned at low coverage is `used`, with its rows flagged), each with name, version, citation and licence. `not_applied`: sources the request would have drawn on but could not, with a reason (`outside_span`, `outside_footprint`, `below_coverage_floor`). Sources the request does not ask for appear in neither. The rows are unchanged; the block is additive; the existing `meta.data_sources` and `lmr_status` stay for now. It replaces `meta.data_sources`' habit of listing all five sources whether or not they contributed.
 6. **Two sources for the same concept** (GEDA and LMR both give drought indices and disagree): nothing is carried in the signature. The UI explains the meaning and the difference whenever the two appear together.
 7. **Derived variables.** BasinATLAS is the default input; only the exceptions are named: `elev_point` (catalog `elevation_point`), `relief_position` and `relief_range_m` also use OpenTopoData.
 8. **Scope.** Signature sources only; Workbench-only data stays out.
@@ -147,29 +147,39 @@ Request logic stays in the code: Band T needs a span, buffer and area scopes nee
 
 **For Opus to weigh.** The engine and the public basin path use different spatial methods for the same sources (overlap weights against nearest cell for LMR, against centroid-in-basin for HYDE), different step rules for HYDE, and different not-covered behaviour. The registry does not unify them; stage 2 must decide whether the public basin path moves onto the engine's methods or only consults the registry for availability. The 700 CE recommended floor is applied in the Sandbox layer and the basin-path note, not in the engine's Band T.
 
-## Proposed trial (stage 2 shape; for Opus to react to)
+## From Opus's review of this draft (2026-11-12)
 
-The draft is an educated design: it comes from reading what the code decides (the table in Part C), but nothing has been tried. The baseline test is the check. The smallest trial:
+Opus approves the schema once the small fixes are in; they are applied (the `not_applied` reason `below_coverage_floor`, the elevation services' licences checked, BasinATLAS's table as a list, and the `used` description naming Cliopatria and the elevation service that answered). Opus's decisions, all recorded here:
+- GEDA's coverage floor (below 0.1, no value) is a deliberate exception to "serve, don't suppress", defensible because the `sources` block reports it with a reason. Record it in the locked decisions.
+- Stage 2: both paths consult the registry for availability only, so the baseline stays identical. Unifying the two spatial methods is a later work order of its own, with a deliberate baseline re-capture. GEDA enters through the engine path first.
+- Stage 2 order: pull the inline LMR, HYDE and eVolv2k blocks into their own functions as a pure refactor first, with the baseline passing, before any registry call is wired in.
+- The 1998 to 2000 fix goes in as a small standalone change, not inside stage 2.
 
-1. A loader for the registry file, and one function that answers, per source, in or out with a reason (span or footprint). Nothing else changes.
-2. Call it inside `aggregate_band_t` to gate the existing HYDE, LMR and eVolv2k blocks, and take the year ranges from the registry in place of `_LMR_RANGE` and `_EVOLV_RANGE`. The blocks are inline today; pulling each into its own function may be needed first.
-3. Add the `sources` block (`used`, `not_applied`) to the payload, additive.
-4. The baseline test must pass at every step; where the registry's answer differs from today's behaviour, a field is missing or wrong.
-5. GEDA joins afterwards as a new block (stage 3), with the touch test before its query and the coverage rule after it returns.
+## Proposed trial (stage 2 shape)
 
-The public basin path has its own source code (`temporal.py`, `hyde.py`). It would consult the registry for the in-or-out verdict only, later.
+The draft is an educated design: it comes from reading what the code decides (the table in Part C), but nothing has been tried. The baseline test is the check. In Opus's order:
+
+1. The 1998 to 2000 fix, standalone (text and clamp), with the baseline passing.
+2. A pure refactor: pull the inline LMR, HYDE and eVolv2k blocks of `aggregate_band_t` into their own functions, baseline passing, no registry yet.
+3. A loader for the registry file, and one function that answers, per source, in or out with a reason (span or footprint). Nothing else changes.
+4. Call it from the engine to gate the per-source functions, and take the year ranges from the registry in place of `_LMR_RANGE` and `_EVOLV_RANGE`.
+5. Add the `sources` block (`used`, `not_applied`) to the payload, additive.
+6. The baseline passes at every step; where the registry's answer differs from today's behaviour, a field is missing or wrong.
+7. GEDA joins afterwards as a new block (stage 3), through the engine path, with the touch test before its query and the coverage rule after it returns.
+
+The public basin path (`temporal.py`, `hyde.py`) consults the registry for the in-or-out verdict only, later.
 
 ## Needs attention going forward
 
 Nothing below was changed in this work order.
 
 **Fixes to make (Karl's decisions so far):**
-1. **LMR years 0-1998 to 0-2000 everywhere it is claimed:** `engine.py:906` (the clamp), `app/db/temporal.py` (lines 27, 35, 42, 51, 197), `routes_common.py` (51, 215-216), `docsite/data-sources.md:83`, `docsite/api.md:59-60` (regenerate), `documentation/edops_schema_basin.json:25` and `edops_schema_area.json:26`, `data/lmr_v2.1/lmr_inventory.md:6`, `EDOP_summary_v04.md:122`. The clamp change makes spans that reach 1999 and 2000 start returning data; no baseline request touches those years. Karl sees no reason for the 1998 clamp. The Explorer's "Industrial (1850-1998)" period (`explorer.html:167`, `:533`; `cliopatria.html:937`, `:957`; `lmr_notches_meta.json:36`) describes a precomputed layer and is a separate question.
+1. **LMR years 0-1998 to 0-2000 everywhere it is claimed:** `engine.py:906` (the clamp), `app/db/temporal.py` (lines 27, 35, 42, 51, 197), `routes_common.py` (51, 215-216), `docsite/data-sources.md:83`, `docsite/api.md:59-60` (regenerate), `documentation/edops_schema_basin.json:25` and `edops_schema_area.json:26`, `data/lmr_v2.1/lmr_inventory.md:6`, `EDOP_summary_v04.md:122`. Opus: a small standalone change, not part of stage 2. The clamp change makes spans that reach 1999 and 2000 start returning data; no baseline request touches those years. Karl sees no reason for the 1998 clamp. The Explorer's "Industrial (1850-1998)" period (`explorer.html:167`, `:533`; `cliopatria.html:937`, `:957`; `lmr_notches_meta.json:36`) describes a precomputed layer and is a separate question.
 2. **HYDE 3.4 to 3.5** in the docsite heading and prose, the catalog friendly names (which the UI shows), `meta.data_sources` (`routes_common.py:53`), the codebook, `load_hyde_cells.py`, and the summary documents. End year 2023 to 2025 (`routes_common.py:53`, `EDOP_summary_v04.md:70`). Cite the in-prep 3.5 paper, with the 2017 paper as lineage. The two HYDE docsite links were already corrected (commit decbccc).
 3. **eVolv2k units** `Tg S` against `Tg`.
 
 **To investigate or decide:**
-4. **Licences.** LMR: not found. BasinATLAS: which columns, if any, are ODbL 1.0 (share-alike). Cliopatria: which release we hold, and the Seshat NC-SA statement against the CC BY 4.0 in the Cliopatria repo. OpenTopoData terms. The docsite states a licence only for GEDA. What the licences mean for downstream use is Karl's judgement.
+4. **Licences.** LMR: not found. BasinATLAS: which columns, if any, are ODbL 1.0 (share-alike). Cliopatria: which release we hold, and the Seshat NC-SA statement against the CC BY 4.0 in the Cliopatria repo. The elevation services were checked on 2026-11-12: OpenTopoData states no licence (its tiles are a composite of national datasets with per-provider attribution; the public API allows 1 call a second and 1,000 a day); Open-Meteo's data is CC BY 4.0 but its free API is non-commercial only, and its terms page does not name the Elevation API. Whether the live per-signature elevation call stays inside those limits on a public site is worth a look. The docsite states a licence only for GEDA. What the licences mean for downstream use is Karl's judgement.
 5. **LMR reference frame:** are 850-1850 (prior period) and 1000-1850 (recommended baseline) the same thing as the anomaly reference?
 6. **Missing papers** in `articles/sources/`: eVolv2k (Sigl and Toohey), BasinATLAS (Linke 2019); HYDE 3.5 is in prep.
 7. **Cliopatria's docsite entry** has no year range or licence; no entry for GEDA's caveat text or `meta.data_sources` until it is served.
