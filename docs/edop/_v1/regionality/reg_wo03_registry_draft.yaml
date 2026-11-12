@@ -305,12 +305,12 @@ sources:
       licence_note: "Live call at request time, used only when OpenTopoData fails; terms not checked."
       notes: "Not a dataset we hold."
 
-# Open questions for approval
+# Questions raised while drafting (all decided)
 # 1. DECIDED: one derived entry; BasinATLAS is the default input, and only the exceptions are named (the three elevation
 #    variables also use OpenTopoData).
 # 2. DECIDED by the same test as the rest (does the engine, a route or the API need it from the registry?): external services
 #    are entries only so the `sources` block can credit them. Their timeouts, caching and fallback logic stay in the route code.
-# 3. Footprint: the source's own cells are the gate (no stored shape); an outline for display is generated separately. Agreed?
+# 3. DECIDED: the source's own cells are the gate (no stored shape); an outline for display is generated separately.
 # 4. DECIDED: the coverage rule lives on each source in the registry (GEDA: ok from 0.5, low_coverage from 0.1, otherwise not_applied).
 # 5. DECIDED: the `sources` block above (used / not_applied), not silent omission and not placeholder rows.
 # 6. DECIDED: no concept field and nothing carried in the signature. When two sources that measure the same thing (GEDA and
