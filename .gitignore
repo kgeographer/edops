@@ -120,3 +120,6 @@ prompts/
 sql/
 sysop/
 theory/
+
+# LibreOffice lock files
+.~lock.*#
