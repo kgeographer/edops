@@ -35,8 +35,8 @@ integers scaled by 10 or 100; where EDOPS displays these the scaling is given in
 
 ### HYDE 3.4
 
-[Dataset](https://www.pbl.nl/en/image/links/hyde) ·
-[Article](https://essd.copernicus.org/articles/9/927/2017/essd-9-927-2017.pdf)
+[Dataset](https://public.yoda.uu.nl/geo/UU01/F45D44.html) ·
+[Article (for v3.2; latest)](https://essd.copernicus.org/articles/9/927/2017/essd-9-927-2017.pdf)
 
 Historical land use — cropland, pasture, grazing, rangeland — 10,000 BCE–2025 CE. Band T.
 
