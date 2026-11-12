@@ -430,7 +430,11 @@ curl "http://localhost:8000/api/signature?scope=basin&lat=16.8167&lon=-2.9833"  
 python -m pytest tests/                        # full suite (app + engine)
 python -m pytest tests/engine/                 # engine contract tests only
 python -m pytest tests/ --ignore=tests/engine/ # app tests only
+python -m pytest tests/ -m engine              # one area; markers are set by path in tests/conftest.py
+python -m pytest tests/ -m "not ui"            # everything except the Playwright browser tests
 ```
+
+Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate.
 
 **Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
 - A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.

@@ -63,3 +63,33 @@ def athens_bce_temporal(db_available):
         pytest.skip("DB not available")
     from app.db.temporal import get_temporal_context
     return get_temporal_context(lat=37.9838, lon=23.7275, year_start=-500, year_end=-400)
+
+
+# ---------------------------------------------------------------------------
+# Area markers, assigned by path so the suite can be run in parts: pytest -m engine, -m "not ui", ...
+# ---------------------------------------------------------------------------
+def _area(rel):
+    if rel.startswith("engine/"):
+        return "engine"
+    if rel == "surface/test_sandbox_ui.py":
+        return "ui"                               # Playwright, drives a browser
+    if rel.startswith("surface/"):
+        return "sandbox"
+    if rel.startswith("cdop/"):
+        return "cdop"
+    if rel.startswith("regionality/"):
+        return "regionality"
+    if rel.startswith("dashboard/"):
+        return "dashboard"
+    if rel == "test_live_server.py":
+        return "live"
+    if rel.startswith("test_whg_") or rel == "test_profiles_page.py":
+        return "whg"
+    return "api"
+
+
+def pytest_collection_modifyitems(config, items):
+    root = os.path.dirname(__file__)
+    for item in items:
+        rel = os.path.relpath(str(item.fspath), root).replace(os.sep, "/")
+        item.add_marker(getattr(pytest.mark, _area(rel)))

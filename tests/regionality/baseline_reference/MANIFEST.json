@@ -1,0 +1,124 @@
+{
+ "captured": "2026-11-12",
+ "git_head": "4f1192c",
+ "requests": {
+  "timbuktu_single_basin_L6": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "level": 6,
+    "bands": "ABCDE",
+    "detail": "true"
+   }
+  },
+  "timbuktu_buffer100_L6": {
+   "route": "areas",
+   "params": {
+    "scope": "buffer",
+    "radius_km": 100,
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "level": 6,
+    "bands": "ABCDE",
+    "detail": "true"
+   }
+  },
+  "tbilisi_single_basin_L6": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 41.7151,
+    "lon": 44.8271,
+    "level": 6,
+    "bands": "ABCDE",
+    "detail": "true"
+   }
+  },
+  "bruges_single_basin_L6": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 51.2093,
+    "lon": 3.2247,
+    "level": 6,
+    "bands": "ABCDE",
+    "detail": "true"
+   }
+  },
+  "northern_song_961_L6": {
+   "route": "areas",
+   "params": {
+    "scope": "polity",
+    "polity": "Northern Song",
+    "year": 961,
+    "level": 6,
+    "bands": "ABCDE",
+    "detail": "true"
+   }
+  },
+  "timbuktu_bandT_1236_1240": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "from_year": 1236,
+    "to_year": 1240,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "timbuktu_bandT_1300_1400": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "from_year": 1300,
+    "to_year": 1400,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "kyiv_bandT_1236_1240": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 50.4547,
+    "lon": 30.5238,
+    "from_year": 1236,
+    "to_year": 1240,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "kyiv_bandT_1300_1400": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 50.4547,
+    "lon": 30.5238,
+    "from_year": 1300,
+    "to_year": 1400,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "timbuktu_public_signature": {
+   "route": "signature",
+   "params": {
+    "scope": "basin",
+    "level": 6,
+    "bands": "ABCE",
+    "lat": 16.8167,
+    "lon": -2.9833
+   }
+  }
+ }
+}
