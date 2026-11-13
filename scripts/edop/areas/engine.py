@@ -978,9 +978,10 @@ class _BandTQuery:
     to_year: int
     resolver_year: object
     conn: object
+    permitted: object = None     # set of source ids the request may consult; None = all
 
 
-def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year):
+def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted=None):
     if geom_wkt is not None:
         buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
         buf_geog_sql = f"({buf_geom_sql})::geography"
@@ -993,13 +994,13 @@ def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resol
     buf_area_m2 = float(
         conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
     )
-    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn)
+    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn, permitted)
 
 
 def _band_t_evolv2k(q):
     """eVolv2k rows: one per event in the span, clipped to the catalog's years."""
     rows = []
-    decision = source_registry.check('evolv2k_v4', span=(q.from_year, q.to_year))
+    decision = source_registry.check('evolv2k_v4', span=(q.from_year, q.to_year), permitted=q.permitted)
 
     if decision.applied:
         ev_from, ev_to = decision.span
@@ -1027,7 +1028,7 @@ def _band_t_lmr(q):
     rows = []
     # ── LMR ───────────────────────────────────────────────────────────────────
     # Array slices fetched once per footprint; expanded to annual rows in Python.
-    decision = source_registry.check('lmr_v2_1', span=(q.from_year, q.to_year))
+    decision = source_registry.check('lmr_v2_1', span=(q.from_year, q.to_year), permitted=q.permitted)
 
     if decision.applied:
         lmr_from, lmr_to = decision.span
@@ -1100,7 +1101,7 @@ def _band_t_lmr(q):
 def _band_t_hyde(q):
     """HYDE rows: four land-use variables per epoch in the span (the nearest epoch when none fall in it)."""
     rows = []
-    if not source_registry.check('hyde_3_5', span=(q.from_year, q.to_year)).applied:
+    if not source_registry.check('hyde_3_5', span=(q.from_year, q.to_year), permitted=q.permitted).applied:
         return rows
     # ── HYDE ──────────────────────────────────────────────────────────────────
     # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
@@ -1184,7 +1185,7 @@ def _band_t_hyde(q):
 
 
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
-                     geom_wkt=None, resolver_year=None):
+                     geom_wkt=None, resolver_year=None, permitted=None):
     """
     Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
     eVolv2k (global_forcing) for a query area over a year span.
@@ -1210,12 +1211,13 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     conn        : psycopg3 connection
     geom_wkt    : str or None — WKT polygon to use instead of a circular buffer;
                   when provided, lat/lon/radius_km are not used for geometry
+    permitted   : set of source ids to consult (e.g. {'hyde_3_5', 'evolv2k_v4'}); None = all
 
     Returns
     -------
     list of make_row dicts — pass to assemble_payload for the top-level payload
     """
-    q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year)
+    q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted)
 
     rows = []
 
