@@ -73,3 +73,31 @@ def check(source_id, span=None, geometry=None, permitted=None):
     if lo > hi:
         return Decision(source_id, False, 'outside_span')
     return Decision(source_id, True, None, (lo, hi))
+
+
+def _source_entry(source_id, note=None):
+    d = entry(source_id)['describes']
+    e = {'id': source_id, 'name': d.get('name'), 'version': d.get('version'),
+         'citation': d.get('citation'), 'licence': d.get('licence')}   # licence None = not stated
+    if note:
+        e['note'] = note
+    return e
+
+
+def sources_block(decisions=(), used=(), notes=None):
+    """The response's `sources` block: {'used': [...], 'not_applied': [...]}.
+
+    decisions : check() results; applied ones are `used`, ones with a reported reason are `not_applied`;
+                the rest (not_permitted, not_served) are left out of both lists
+    used      : further source ids that contributed (BasinATLAS always, Cliopatria for a polity, the elevation service)
+    notes     : optional {source_id: text} attached to that source's entry (e.g. HYDE's nearest step)
+    """
+    notes = notes or {}
+    used_ids = list(used)
+    not_applied = []
+    for d in decisions:
+        if d.applied:
+            used_ids.append(d.source_id)
+        elif d.reason in REPORTED_REASONS:
+            not_applied.append({**_source_entry(d.source_id, notes.get(d.source_id)), 'reason': d.reason})
+    return {'used': [_source_entry(i, notes.get(i)) for i in used_ids], 'not_applied': not_applied}
