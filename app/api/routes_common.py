@@ -26,7 +26,9 @@ from app.db.temporal import get_temporal_context
 from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
+from scripts.edop.areas import source_registry
 from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, NoBasinsError
+from scripts.edop.areas.source_registry import Decision
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -450,6 +452,24 @@ def signature(
         },
         "data_sources": _data_sources_block(level),
     }
+
+    # `sources` block: what this response drew on. LMR and eVolv2k are judged by the registry from the span; HYDE
+    # from what the route returned (it gives only the steps inside the span, so none means "no step inside the span").
+    used = ["basinatlas_v1"]
+    elevation = {"opentopodata": "opentopodata_mapzen", "open-meteo": "open_meteo_elevation"}.get(sig.get("elev_source"))
+    if elevation:
+        used.append(elevation)
+    decisions, notes = [], {}
+    if "T" in requested_bands:
+        n_epochs = (band_t.get("hyde_land_use") or {}).get("n_epochs", 0)
+        decisions = [
+            Decision("hyde_3_5", n_epochs > 0, None if n_epochs else "outside_span"),
+            source_registry.check("lmr_v2_1", span=(from_year, to_year)),
+            source_registry.check("evolv2k_v4", span=(from_year, to_year)),
+        ]
+        if not n_epochs:
+            notes["hyde_3_5"] = "no step inside the span"
+    sig["sources"] = source_registry.sources_block(decisions, used=used, notes=notes)
 
     return sig
 

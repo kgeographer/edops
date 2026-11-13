@@ -1040,10 +1040,16 @@ class TestSignatureScopeDispatch:
         assert r.status_code == 422
 
     def test_level_defaults_to_6_when_omitted(self, buf_client):
-        a = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin").json()
-        b = buf_client.get(
-            "/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin&level=6"
-        ).json()
+        from unittest.mock import patch
+        # The live elevation lookup and meta.generated can differ between identical calls; pin the one, drop the other.
+        pinned = {"elev_point": 267.0, "elev_source": "opentopodata", "elev_dataset": "mapzen", "elev_resolution_m": 30}
+        with patch("app.db.signature.get_elevation_point", return_value=pinned):
+            a = buf_client.get("/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin").json()
+            b = buf_client.get(
+                "/api/signature?lat=16.8167&lon=-2.9833&bands=A&scope=basin&level=6"
+            ).json()
+        for p in (a, b):
+            p["meta"].pop("generated", None)
         assert a == b
 
     def test_scope_buffer_matches_areas_buffer(self, buf_client):
