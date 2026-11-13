@@ -1193,7 +1193,7 @@ class TestSignatureScopeDispatch:
         )
         data = r.json()
         meta = data["meta"]
-        assert meta["signature_version"] == "0.4"
+        assert meta["signature_version"] == "0.5"
         assert "generated" in meta
         assert meta["query"] == {
             "lat": 16.8167, "lon": -2.9833, "radius_km": 50.0,
@@ -1209,7 +1209,7 @@ class TestSignatureScopeDispatch:
         r = buf_client.get(f"/api/signature?scope=area&geom_wkt={quote(self._AREA_WKT)}&bands=A")
         data = r.json()
         meta = data["meta"]
-        assert meta["signature_version"] == "0.4"
+        assert meta["signature_version"] == "0.5"
         assert "generated" in meta
         assert meta["query"] == {"geom_wkt": self._AREA_WKT, "bands": "A", "level": 6}
         assert "basin" in meta["data_sources"]

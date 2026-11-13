@@ -799,11 +799,11 @@ CAVEAT_TEXTS = {
         "At buffer scale the collapsed value is essentially the prior at this location."
     ),
     'hyde_caveat': (
-        "HYDE 3.4 cadence-transition artifact: 1950 is the last centennial/decadal "
+        "HYDE 3.5 cadence-transition artifact: 1950 is the last centennial/decadal "
         "epoch before annual data begins; value may not reflect real land-use change."
     ),
     'hyde_nearest_year': (
-        "No HYDE 3.4 epoch falls within this span; nearest available step shown."
+        "No HYDE 3.5 epoch falls within this span; nearest available step shown."
     ),
 }
 

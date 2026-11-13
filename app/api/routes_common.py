@@ -32,7 +32,7 @@ from scripts.edop.areas.source_registry import Decision
 
 router = APIRouter(prefix="/api", tags=["api"])
 
-SIGNATURE_VERSION = "0.4"   # meta.signature_version of every signature response
+SIGNATURE_VERSION = "0.5"  # meta.signature_version of every signature response
 
 
 def _fold_scope_into_meta(scope_obj: Dict[str, Any], query: Dict[str, Any]) -> Dict[str, Any]:
@@ -52,9 +52,9 @@ def _data_sources_block(level: int) -> Dict[str, str]:
     return {
         "basin": f"HydroATLAS v1.0 / BasinATLAS Level 0{level}",
         "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
-        "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+        "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–2000 CE; 2°×2° grid, annual",
         "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-        "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
+        "land_use_temporal": "HYDE 3.5 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
     }
 
 

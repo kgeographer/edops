@@ -5,7 +5,7 @@
     "flat": "Add &flat=true to the request. Response includes meta, profile_summary, and all band field values as top-level keys. signature_bands is omitted. Band T temporal data appears at key 'temporal' rather than inside signature_bands."
   },
   "meta": {
-    "signature_version": "0.4",
+    "signature_version": "0.5",
     "generated": "2026-09-14T16:49:09Z",
     "query": {
       "lat": 16.8167,
@@ -22,9 +22,9 @@
     "data_sources": {
       "basin": "HydroATLAS v1.0 / BasinATLAS Level 08",
       "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
-      "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–1998 CE; 2°×2° grid, annual",
+      "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–2000 CE; 2°×2° grid, annual",
       "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-      "land_use_temporal": "HYDE 3.4 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
+      "land_use_temporal": "HYDE 3.5 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
     },
     "_note": "Always present on every /api/signature response. Injected by the route, not part of the DB query."
   },
@@ -564,7 +564,7 @@
         "hyde_land_use": {
           "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
           "n_epochs": 3,
-          "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+          "_note": "HYDE 3.5 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
         }
       }
     }
@@ -748,7 +748,7 @@
       "hyde_land_use": {
         "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
         "n_epochs": 3,
-        "_note": "HYDE 3.4 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+        "_note": "HYDE 3.5 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
       }
     }
   }

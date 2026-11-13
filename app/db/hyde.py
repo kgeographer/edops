@@ -26,7 +26,7 @@ from app.db.connection import db_connect
 # ---------------------------------------------------------------------------
 
 HYDE_NOTE = (
-    "HYDE 3.4 temporal resolution varies by era: "
+    "HYDE 3.5 temporal resolution varies by era: "
     "millennial before 1 CE, centennial to 1700 CE, "
     "decadal to 1950, annual thereafter. "
     "BCE queries typically return a single epoch."
