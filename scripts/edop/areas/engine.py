@@ -1098,6 +1098,90 @@ def _band_t_lmr(q):
     return rows
 
 
+def _band_t_hyde(q):
+    """HYDE rows: four land-use variables per epoch in the span (the nearest epoch when none fall in it)."""
+    rows = []
+    # ── HYDE ──────────────────────────────────────────────────────────────────
+    # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
+    # extracts the correct array element without re-scanning hyde_cells.
+    # Nearest-year fallback: if no HYDE step falls within the span (common for
+    # narrow polity slices between centennial epochs), use the closest epoch so
+    # that some HYDE context always appears in the signature.
+    mid = (q.from_year + q.to_year) // 2
+    hyde_sql = f"""
+    WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
+    in_span AS (
+        SELECT step_idx, year_ce
+        FROM temporal.hyde_times
+        WHERE year_ce BETWEEN {q.from_year} AND {q.to_year}
+    ),
+    epochs AS (
+        SELECT step_idx, year_ce, false AS is_nearest FROM in_span
+        UNION ALL
+        SELECT step_idx, year_ce, true AS is_nearest
+        FROM (
+            SELECT step_idx, year_ce
+            FROM temporal.hyde_times
+            ORDER BY ABS(year_ce - {mid}) LIMIT 1
+        ) nearest_fallback
+        WHERE NOT EXISTS (SELECT 1 FROM in_span)
+    ),
+    cell_overlaps AS (
+        SELECT area_km2,
+               ST_Area(ST_Intersection(hc.geom, buf.buf_geom)::geography) AS overlap_m2,
+               cropland, grazing, pasture, rangeland
+        FROM temporal.hyde_cells hc, buf
+        WHERE ST_Intersects(hc.geom, buf.buf_geom)
+    )
+    SELECT
+        e.year_ce, e.step_idx, e.is_nearest,
+        co.area_km2, co.overlap_m2,
+        co.cropland [e.step_idx + 1] AS cropland,
+        co.grazing  [e.step_idx + 1] AS grazing,
+        co.pasture  [e.step_idx + 1] AS pasture,
+        co.rangeland[e.step_idx + 1] AS rangeland
+    FROM cell_overlaps co CROSS JOIN epochs e
+    WHERE co.overlap_m2 > 0
+    ORDER BY e.year_ce
+    """
+    hyde_ts = pd.read_sql(hyde_sql, q.conn)
+
+    for year_ce, grp in hyde_ts.groupby('year_ce', sort=True):
+        yr     = int(year_ce)
+        caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
+        if bool(grp['is_nearest'].iloc[0]):
+            caveat.append('hyde_nearest_year')
+        for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
+                           ('pasture',  'km²'), ('rangeland', 'km²')]:
+            agg = _agg_hyde_b7(grp, var, q.buf_area_m2)
+            hist_h = agg['histogram']
+            if hist_h is not None:
+                hist_h.update({
+                    'resolver_year': q.resolver_year,
+                    'band_t_from':   q.from_year,
+                    'band_t_to':     q.to_year,
+                })
+            rows.append(make_row(
+                variable=f'hyde_{var}', band='T',
+                method='grid_areal_distribution',
+                unit_type='hyde_cell', n_units=agg['n_units'],
+                representative_score=None,
+                representative_raw=agg['representative_raw'],
+                coverage=agg['coverage'], status=agg['status'],
+                caveat=caveat,
+                year=yr, epoch_year=yr, units=units,
+                detail={
+                    'p10':          agg['p10'],
+                    'p90':          agg['p90'],
+                    'sd':           agg['sd'],
+                    'w_eff':        agg['w_eff'],
+                    'unit':         'km2_per_cell',
+                    'distribution': hist_h,
+                },
+            ))
+    return rows
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None):
     """
@@ -1134,84 +1218,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
 
     rows = []
 
-    # ── HYDE ──────────────────────────────────────────────────────────────────
-    # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
-    # extracts the correct array element without re-scanning hyde_cells.
-    # Nearest-year fallback: if no HYDE step falls within the span (common for
-    # narrow polity slices between centennial epochs), use the closest epoch so
-    # that some HYDE context always appears in the signature.
-    mid = (from_year + to_year) // 2
-    hyde_sql = f"""
-    WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
-    in_span AS (
-        SELECT step_idx, year_ce
-        FROM temporal.hyde_times
-        WHERE year_ce BETWEEN {from_year} AND {to_year}
-    ),
-    epochs AS (
-        SELECT step_idx, year_ce, false AS is_nearest FROM in_span
-        UNION ALL
-        SELECT step_idx, year_ce, true AS is_nearest
-        FROM (
-            SELECT step_idx, year_ce
-            FROM temporal.hyde_times
-            ORDER BY ABS(year_ce - {mid}) LIMIT 1
-        ) nearest_fallback
-        WHERE NOT EXISTS (SELECT 1 FROM in_span)
-    ),
-    cell_overlaps AS (
-        SELECT area_km2,
-               ST_Area(ST_Intersection(hc.geom, buf.buf_geom)::geography) AS overlap_m2,
-               cropland, grazing, pasture, rangeland
-        FROM temporal.hyde_cells hc, buf
-        WHERE ST_Intersects(hc.geom, buf.buf_geom)
-    )
-    SELECT
-        e.year_ce, e.step_idx, e.is_nearest,
-        co.area_km2, co.overlap_m2,
-        co.cropland [e.step_idx + 1] AS cropland,
-        co.grazing  [e.step_idx + 1] AS grazing,
-        co.pasture  [e.step_idx + 1] AS pasture,
-        co.rangeland[e.step_idx + 1] AS rangeland
-    FROM cell_overlaps co CROSS JOIN epochs e
-    WHERE co.overlap_m2 > 0
-    ORDER BY e.year_ce
-    """
-    hyde_ts = pd.read_sql(hyde_sql, conn)
-
-    for year_ce, grp in hyde_ts.groupby('year_ce', sort=True):
-        yr     = int(year_ce)
-        caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
-        if bool(grp['is_nearest'].iloc[0]):
-            caveat.append('hyde_nearest_year')
-        for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
-                           ('pasture',  'km²'), ('rangeland', 'km²')]:
-            agg = _agg_hyde_b7(grp, var, q.buf_area_m2)
-            hist_h = agg['histogram']
-            if hist_h is not None:
-                hist_h.update({
-                    'resolver_year': resolver_year,
-                    'band_t_from':   from_year,
-                    'band_t_to':     to_year,
-                })
-            rows.append(make_row(
-                variable=f'hyde_{var}', band='T',
-                method='grid_areal_distribution',
-                unit_type='hyde_cell', n_units=agg['n_units'],
-                representative_score=None,
-                representative_raw=agg['representative_raw'],
-                coverage=agg['coverage'], status=agg['status'],
-                caveat=caveat,
-                year=yr, epoch_year=yr, units=units,
-                detail={
-                    'p10':          agg['p10'],
-                    'p90':          agg['p90'],
-                    'sd':           agg['sd'],
-                    'w_eff':        agg['w_eff'],
-                    'unit':         'km2_per_cell',
-                    'distribution': hist_h,
-                },
-            ))
+    rows += _band_t_hyde(q)
 
     rows += _band_t_lmr(q)
 
