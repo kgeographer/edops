@@ -1100,6 +1100,8 @@ def _band_t_lmr(q):
 def _band_t_hyde(q):
     """HYDE rows: four land-use variables per epoch in the span (the nearest epoch when none fall in it)."""
     rows = []
+    if not source_registry.check('hyde_3_5', span=(q.from_year, q.to_year)).applied:
+        return rows
     # ── HYDE ──────────────────────────────────────────────────────────────────
     # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
     # extracts the correct array element without re-scanning hyde_cells.
