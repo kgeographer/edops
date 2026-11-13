@@ -735,7 +735,7 @@ Cutoffs that decide what label, badge, sentence or withheld value a user sees. V
 | Two-regime (bimodal) score suppression: gap as a fraction of spread | 0.50 (*provisional*) | `_MODALITY_GAP` | fixed |
 | ...and minimum weight on each side to count as a regime | 0.20 | `_MIN_REGIME_WEIGHT` | fixed |
 | Histogram flagged `low_resolution` | fewer than 3 basins (basin units), or effective weight under 5 (cell units) | `_LOW_RES_BASIN_THRESHOLD`, `_LOW_RES_CELL_THRESHOLD` | fixed (flag only; no visible UI use found) |
-| Band T span limits | LMR 0 to 2000 CE; eVolv2k -491 to 1890 CE | `_LMR_RANGE`, `_EVOLV_RANGE` | fixed (data coverage, not interpretation) |
+| Band T span limits | LMR 0 to 2000 CE; eVolv2k -491 to 1890 CE | source registry (`years_covered`, `documentation/EDOPS_source_registry.yaml`) | fixed (data coverage, not interpretation) |
 
 **Sandbox UI** (`app/templates/sandbox.html`)
 

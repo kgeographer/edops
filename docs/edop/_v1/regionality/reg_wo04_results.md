@@ -13,6 +13,18 @@ Spec: `reg_wo04_registry-harness-refactor.md`. Branch `registry`. In progress; t
 - Loader `scripts/edop/regionality/load_source_registry.py` into `public.source_registry` (moved from `temporal`: sources are not all temporal). Local database only. Commit 2aaf5a1.
 - Registry test `tests/regionality/test_registry.py` (5 tests): entries for every source, named tables exist, every catalog variable claimed by a source, one owner each except `elevation_point`, and the YAML agrees with the loaded table.
 
+**Part B (complete): `aggregate_band_t` refactor.** Plan: `reg_wo04_refactor_plan.md` (reviewed by Opus, ea8adef). Every step ran the regionality and engine partitions (baseline included); output unchanged throughout.
+- Three new reference payloads captured from the unchanged code first (buffer with Band T across 1950, polity with Band T, span past LMR and eVolv2k); the ten existing references untouched (6078584).
+- Shared query object `_BandTQuery` and `_band_t_query` for the geometry, area, span and connection (7ed6add): the one step that was not a literal move (four references changed).
+- eVolv2k (eb1deed), LMR (38cc14c), HYDE (08eb4e7) each extracted into `_band_t_<source>(q)`. Each moved block checked line by line against the old one; only the reads of span, `resolver_year` and connection changed. `aggregate_band_t` now builds the query and calls the three functions in the old row order.
+
+**Part C (complete): the engine path consults the registry.**
+- Module `scripts/edop/areas/source_registry.py` (reads the YAML once): `check(source_id, span, geometry, permitted)` returns applied or not, a reason, and the clipped span; 13 unit tests (0543e1d). HYDE's explicit `outside_span: nearest_step` key keeps the nearest-epoch rule in force.
+- eVolv2k (64ea6ca), LMR (415a5a7) and HYDE (8b75248) ask the registry; `_EVOLV_RANGE` and `_LMR_RANGE` removed, their values now come from the registry.
+- Optional `permitted` set on `aggregate_band_t` (1fc1cef); nothing passes it yet. Test: with LMR excluded, no LMR rows and the others unchanged. The `sources`-block half of that test comes with Part D.
+- Sandbox cheat sheet: span limits now cite the registry.
+- Internal reasons `not_permitted` and `not_served` are not reported in the `sources` block.
+
 ## Needs attention going forward
 
 1. **The catalog must be the single truth of every variable EDOPS can deliver (top item; the work order after WO-04).** Everything that describes a signature (docs, UI labels, caveats, a future prose layer) should ask the catalog, so every variable returnable from the UI or either API needs a row and a complete, documented key. Scope for that work order: give every returnable variable a row (including the elevation fields); make the join key complete; move the catalog from a file read in four places to one loader; add a test over the saved payloads that fails when a returned variable has no row. The registry also holds variable facts today (payload name, catalog key, column and units for the temporal sources), a second copy of what the catalog should own, put there because the pairing had nowhere else to live. Once the key is complete, the registry should keep source-level facts and point to catalog keys. Findings so far: the catalog is not yet a complete key to what a signature returns. Checked against the ten baseline payloads (80 distinct variable names): 74 match a catalog row on `api_key_s` or `api_key_u` (30 of them also on `schema_key`); 6 match nothing.
@@ -26,3 +38,8 @@ Spec: `reg_wo04_registry-harness-refactor.md`. Branch `registry`. In progress; t
 6. **The registry test claims whole catalog sources by name** (BasinATLAS, Derived), not variable by variable. A BasinATLAS variable the code reads but the catalog omits would not be flagged.
 7. **`lmr_status` with the permitted-sources option:** if LMR is excluded, `lmr_status` may still say `out_of_range`, which is not quite true. To check when the Band T extraction is done.
 8. The closed WO-03 files still say the registry table is `temporal.source_registry`; it is `public.source_registry`.
+9. **HYDE outside its years:** a span wholly outside HYDE's years still returns the nearest epoch (2100-2200 returns 2025 values, flagged `hyde_nearest_year`). Whether it should return anything is a real question; changing it changes behaviour, so it is left for later. The `sources` block will report HYDE as `used` with a note naming the epoch.
+10. **GEDA (stage 3, WO-05):** zero touching cells is normal for GEDA (unlike LMR's global grid), so its function must handle it explicitly; new code should use parameterized SQL, not strings built into the query as the existing blocks do.
+11. **The registry table may not be needed:** the module reads the YAML; `public.source_registry` is loaded and tested, but nothing reads it at runtime. We may rely on the YAML alone. Left as it is.
+12. **Schema addition:** the HYDE `time` block gained `outside_span: nearest_step` (a small addition to the schema Opus approved).
+13. **LMR code oddity, recorded not fixed:** LMR rows always carry `status: ok` and eVolv2k rows `coverage: None`, so the status field cannot signal partial overlap for those two. An LMR query that touched no cells would fail (division by zero); it cannot happen on the global grid.
