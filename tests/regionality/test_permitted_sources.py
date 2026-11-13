@@ -57,3 +57,11 @@ def test_decisions_name_the_sources_that_were_not_applied(conn):
     r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 2010, 2020, conn)
     assert [(d.source_id, d.reason) for d in r.decisions if not d.applied] == [('lmr_v2_1', 'outside_span'), ('evolv2k_v4', 'outside_span')]
     assert r.notes == {}
+
+
+def test_a_source_left_out_is_in_neither_list_of_the_sources_block(conn):
+    from scripts.edop.areas import source_registry
+    r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 1300, 1400, conn, permitted=ALL - {'lmr_v2_1'})
+    b = source_registry.sources_block(r.decisions, used=['basinatlas_v1'], notes=r.notes)
+    assert [e['id'] for e in b['used']] == ['basinatlas_v1', 'hyde_3_5', 'evolv2k_v4']
+    assert b['not_applied'] == []

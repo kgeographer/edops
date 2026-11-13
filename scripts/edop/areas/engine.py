@@ -873,7 +873,7 @@ def project_row(row, include_detail=False) -> dict:
 
 
 def assemble_payload(rows, scope, shortfall, bands,
-                     temporal=None, include_detail=False) -> dict:
+                     temporal=None, include_detail=False, sources=None) -> dict:
     """
     Assemble the top-level Areas payload from a list of make_row dicts.
 
@@ -888,13 +888,14 @@ def assemble_payload(rows, scope, shortfall, bands,
     bands        : list of str — bands requested
     temporal     : dict or None — {from_year, to_year} if Band T was requested
     include_detail : bool — &detail projection flag
+    sources      : dict or None — the `sources` block ({used, not_applied}); omitted from the payload when None
     """
     used_keys = set()
     for row in rows:
         used_keys.update(row.get('caveat', []))
     caveats = {k: CAVEAT_TEXTS[k] for k in sorted(used_keys) if k in CAVEAT_TEXTS}
 
-    return {
+    payload = {
         'scope':        scope,
         'shortfall':    shortfall,
         'bands':        bands,
@@ -902,6 +903,9 @@ def assemble_payload(rows, scope, shortfall, bands,
         'caveats':      caveats,
         'rows':         [project_row(r, include_detail) for r in rows],
     }
+    if sources is not None:
+        payload['sources'] = sources
+    return payload
 
 
 # ── Band T: promoted from step3b_band_t.ipynb, wired to make_row ─────────────
@@ -2413,11 +2417,17 @@ def _areal_signature_from_basin_set(
     active_bands = bands if bands is not None else _BASIN_BANDS + (['T'] if run_t else [])
     temporal     = {'from_year': from_year, 'to_year': to_year} if run_t else None
 
+    # BasinATLAS always; Cliopatria when the query resolved a polity; the temporal sources as Band T decided.
+    used    = ['basinatlas_v1'] + (['cliopatria'] if scope.get('type') == 'polity' else [])
+    sources = source_registry.sources_block(
+        t_result.decisions if run_t else (), used=used, notes=t_result.notes if run_t else None)
+
     return assemble_payload(
         all_rows, scope, shortfall,
         bands=active_bands,
         temporal=temporal,
         include_detail=include_detail,
+        sources=sources,
     )
 
 
