@@ -905,7 +905,6 @@ def assemble_payload(rows, scope, shortfall, bands,
 
 # ── Band T: promoted from step3b_band_t.ipynb, wired to make_row ─────────────
 
-_LMR_RANGE            = (0,    2000)
 _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
@@ -1028,10 +1027,10 @@ def _band_t_lmr(q):
     rows = []
     # ── LMR ───────────────────────────────────────────────────────────────────
     # Array slices fetched once per footprint; expanded to annual rows in Python.
-    lmr_from = max(_LMR_RANGE[0], q.from_year)
-    lmr_to   = min(_LMR_RANGE[1], q.to_year)
+    decision = source_registry.check('lmr_v2_1', span=(q.from_year, q.to_year))
 
-    if lmr_from <= lmr_to:
+    if decision.applied:
+        lmr_from, lmr_to = decision.span
         pg_from, pg_to = lmr_from + 1, lmr_to + 1
         lmr_sql = f"""
         WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
