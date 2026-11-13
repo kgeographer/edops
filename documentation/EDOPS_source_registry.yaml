@@ -97,6 +97,7 @@ sources:
       time:
         step: irregular                            # 1000 yr to 0, 100 yr to 1700, 10 yr to 1950, annual 1951 to 2025
         years_covered: [-10000, 2025]
+        outside_span: nearest_step                 # a span with no step inside it still returns the nearest step (engine); the registry does not report outside_span for it
         year_to_array_position: "step_idx + 1 (step_idx from temporal.hyde_times)"
         step_rule: "steps inside the span; if none, the step nearest the span midpoint (engine only; flagged hyde_nearest_year). The public basin path returns steps inside the span only. The Sandbox layer floor-snaps."
       spatial:
