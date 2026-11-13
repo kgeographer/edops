@@ -24,6 +24,7 @@ Dispatch (WO3):
 
 import math
 import warnings
+from dataclasses import dataclass
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -968,6 +969,34 @@ def _agg_lmr_b7(overlap_m2, values, buf_area_m2):
     }
 
 
+@dataclass(frozen=True)
+class _BandTQuery:
+    """What the Band T source blocks share: the query geometry (SQL text), its area, the span and the connection."""
+    buf_geom_sql: str
+    buf_geog_sql: str
+    buf_area_m2: float
+    from_year: int
+    to_year: int
+    resolver_year: object
+    conn: object
+
+
+def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year):
+    if geom_wkt is not None:
+        buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
+        buf_geog_sql = f"({buf_geom_sql})::geography"
+    else:
+        radius_m     = radius_km * 1000.0
+        pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
+        buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
+        buf_geom_sql = f"({buf_geog_sql})::geometry"
+
+    buf_area_m2 = float(
+        conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
+    )
+    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn)
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None):
     """
@@ -1000,18 +1029,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     -------
     list of make_row dicts — pass to assemble_payload for the top-level payload
     """
-    if geom_wkt is not None:
-        buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
-        buf_geog_sql = f"({buf_geom_sql})::geography"
-    else:
-        radius_m     = radius_km * 1000.0
-        pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
-        buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
-        buf_geom_sql = f"({buf_geog_sql})::geometry"
-
-    buf_area_m2 = float(
-        conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
-    )
+    q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year)
 
     rows = []
 
@@ -1023,7 +1041,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     # that some HYDE context always appears in the signature.
     mid = (from_year + to_year) // 2
     hyde_sql = f"""
-    WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
+    WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
     in_span AS (
         SELECT step_idx, year_ce
         FROM temporal.hyde_times
@@ -1067,7 +1085,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
             caveat.append('hyde_nearest_year')
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
-            agg = _agg_hyde_b7(grp, var, buf_area_m2)
+            agg = _agg_hyde_b7(grp, var, q.buf_area_m2)
             hist_h = agg['histogram']
             if hist_h is not None:
                 hist_h.update({
@@ -1102,7 +1120,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     if lmr_from <= lmr_to:
         pg_from, pg_to = lmr_from + 1, lmr_to + 1
         lmr_sql = f"""
-        WITH buf AS (SELECT {buf_geom_sql} AS buf_geom),
+        WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
         footprints AS (
             SELECT
                 lc.lat,
@@ -1130,7 +1148,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
         ca      = lmr_ts['cell_area_m2'].values.astype(float)
         frac_l  = ov / ca
         w_lmr   = frac_l / frac_l.sum()
-        cov_lmr = float(ov.sum() / buf_area_m2)
+        cov_lmr = float(ov.sum() / q.buf_area_m2)
         n_fp    = len(lmr_ts)
         years_l = list(range(lmr_from, lmr_to + 1))
 
