@@ -25,6 +25,7 @@ Dispatch (WO3):
 import math
 import warnings
 from dataclasses import dataclass
+from typing import NamedTuple, Optional
 import geopandas as gpd
 from scripts.edop.areas import source_registry
 import numpy as np
@@ -981,6 +982,20 @@ class _BandTQuery:
     permitted: object = None     # set of source ids the request may consult; None = all
 
 
+class _SourceResult(NamedTuple):
+    """One Band T source: its rows, the registry's decision, and an optional note for the `sources` block."""
+    rows: list
+    decision: object
+    note: Optional[str] = None
+
+
+class _BandTResult(NamedTuple):
+    """aggregate_band_t: all rows (HYDE, LMR, eVolv2k order), every decision, and {source id: note}."""
+    rows: list
+    decisions: list
+    notes: dict
+
+
 def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted=None):
     if geom_wkt is not None:
         buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
@@ -1020,7 +1035,7 @@ def _band_t_evolv2k(q):
                 coverage=None, status='ok',
                 year=int(ev['year_ad']), epoch_year=None, units='Tg S',
             ))
-    return rows
+    return _SourceResult(rows, decision)
 
 
 def _band_t_lmr(q):
@@ -1095,14 +1110,15 @@ def _band_t_lmr(q):
                     year=year, epoch_year=None, units=units,
                     detail={'distribution': hist_l},
                 ))
-    return rows
+    return _SourceResult(rows, decision)
 
 
 def _band_t_hyde(q):
     """HYDE rows: four land-use variables per epoch in the span (the nearest epoch when none fall in it)."""
     rows = []
-    if not source_registry.check('hyde_3_5', span=(q.from_year, q.to_year), permitted=q.permitted).applied:
-        return rows
+    decision = source_registry.check('hyde_3_5', span=(q.from_year, q.to_year), permitted=q.permitted)
+    if not decision.applied:
+        return _SourceResult(rows, decision)
     # ── HYDE ──────────────────────────────────────────────────────────────────
     # Spatial filter runs once (cell_overlaps CTE); CROSS JOIN with epochs
     # extracts the correct array element without re-scanning hyde_cells.
@@ -1181,7 +1197,8 @@ def _band_t_hyde(q):
                     'distribution': hist_h,
                 },
             ))
-    return rows
+    nearest = sorted({r['year'] for r in rows if 'hyde_nearest_year' in r.get('caveat', [])})
+    return _SourceResult(rows, decision, f'nearest step: {nearest[0]}' if nearest else None)
 
 
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
@@ -1215,19 +1232,17 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
 
     Returns
     -------
-    list of make_row dicts — pass to assemble_payload for the top-level payload
+    _BandTResult(rows, decisions, notes): rows are make_row dicts to pass to assemble_payload;
+    decisions are the registry's check() results; notes is {source id: text} for the `sources` block
     """
     q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted)
 
-    rows = []
-
-    rows += _band_t_hyde(q)
-
-    rows += _band_t_lmr(q)
-
-    rows += _band_t_evolv2k(q)
-
-    return rows
+    results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q)]
+    return _BandTResult(
+        rows=[r for res in results for r in res.rows],
+        decisions=[res.decision for res in results],
+        notes={res.decision.source_id: res.note for res in results if res.note},
+    )
 
 
 _BLOCK1_CLUSTERS = frozenset({'continental-gradient', 'scale-dependent', 'local-anomaly'})
@@ -2387,12 +2402,12 @@ def _areal_signature_from_basin_set(
     have_span = from_year is not None and to_year is not None
     run_t     = want_t and have_span
 
-    t_rows = aggregate_band_t(
+    t_result = aggregate_band_t(
         lat, lon, radius_km, from_year, to_year, conn,
         geom_wkt=geom_wkt, resolver_year=resolver_year,
-    ) if run_t else []
+    ) if run_t else None
 
-    all_rows = basin_rows + t_rows
+    all_rows = basin_rows + (t_result.rows if run_t else [])
 
     # ── 6. Assemble payload ───────────────────────────────────────────────────
     active_bands = bands if bands is not None else _BASIN_BANDS + (['T'] if run_t else [])

@@ -19,7 +19,7 @@ def conn():
 
 
 def _rows(conn, **kw):
-    return aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 1300, 1400, conn, **kw)
+    return aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 1300, 1400, conn, **kw).rows
 
 
 def _sources(rows):
@@ -44,3 +44,16 @@ def test_excluding_lmr_leaves_the_other_rows_unchanged(conn):
 
 def test_only_hyde_permitted(conn):
     assert _sources(_rows(conn, permitted={'hyde_3_5'})) == {'hyde'}
+
+
+def test_result_carries_a_decision_per_source_and_the_hyde_note(conn):
+    r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 1236, 1240, conn)   # no HYDE step inside the span
+    assert [d.source_id for d in r.decisions] == ['hyde_3_5', 'lmr_v2_1', 'evolv2k_v4']
+    assert all(d.applied for d in r.decisions)
+    assert r.notes == {'hyde_3_5': 'nearest step: 1200'}
+
+
+def test_decisions_name_the_sources_that_were_not_applied(conn):
+    r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 2010, 2020, conn)
+    assert [(d.source_id, d.reason) for d in r.decisions if not d.applied] == [('lmr_v2_1', 'outside_span'), ('evolv2k_v4', 'outside_span')]
+    assert r.notes == {}
