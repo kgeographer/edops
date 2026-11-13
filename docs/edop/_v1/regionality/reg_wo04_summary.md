@@ -44,6 +44,6 @@ See the results file. Those most relevant to the next steps:
 - Registry schema addition for Opus: the `outside_span: nearest_step` key on HYDE (item 12).
 - The local `public.source_registry` table is unused and can be dropped by hand (item 4).
 
-## To do before merge
+## Next
 
-Opus's review, then merge `registry` into `regionality` when Karl or Opus directs.
+Opus's review. Work continues on `registry` (WO-05); no merge back to `regionality` until a stage needs it.

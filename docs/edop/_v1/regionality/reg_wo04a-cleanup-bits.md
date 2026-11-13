@@ -4,12 +4,12 @@ Draft of 2026-11-13.
 
 ## Goal
 
-Close stage 2 cleanly before GEDA is added, so that when WO-05 changes the payload the only differences are GEDA's. Fix the payload strings WO-04 deferred, bump the signature version for the `sources` block, re-capture the reference payloads once, deliberately, and then merge.
+Close stage 2 cleanly before GEDA is added, so that when WO-05 changes the payload the only differences are GEDA's. Fix the payload strings WO-04 deferred, bump the signature version for the `sources` block, and re-capture the reference payloads once, deliberately.
 
 ## Context
 
 - WO-04 is complete on branch `registry` (head 4c0c8e2; 710 passed, 21 skipped). Its open items 2, 3, 5, 11 and 16 are handled here.
-- This WO stays on `registry`. The merge into `regionality` happens at the end of this WO, not before.
+- This WO stays on `registry`, and so does the work after it (WO-05). There is no merge back to `regionality` at this point; it happens when a stage needs it.
 
 ## Items
 
@@ -34,8 +34,7 @@ Close stage 2 cleanly before GEDA is added, so that when WO-05 changes the paylo
 
 - Commits for items 1 to 4; the diff for item 5 (for review); the re-captured references.
 - `reg_wo04a_summary.md` (short): what changed, the reviewed diff, test state.
-- Merge of `registry` into `regionality` after the acceptance gate.
 
 ## Acceptance gate
 
-The diff before re-capture shows only the intended changes; after re-capture the baseline passes; the full suite passes (zero failures); then merge.
+The diff before re-capture shows only the intended changes; after re-capture the baseline passes; the full suite passes (zero failures).
