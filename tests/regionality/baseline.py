@@ -31,6 +31,11 @@ REQUESTS = {
     'kyiv_bandT_1236_1240': ('areas', dict(scope='single_basin', **KYIV, from_year=1236, to_year=1240, **_T)),
     'kyiv_bandT_1300_1400': ('areas', dict(scope='single_basin', **KYIV, from_year=1300, to_year=1400, **_T)),
     'timbuktu_public_signature': ('signature', dict(scope='basin', level=6, bands='ABCE', **TIMBUKTU)),
+    # added 2026-11-13 (WO-04), captured from the code before the Band T refactor: the buffer geometry branch with the
+    # HYDE 1950 epoch, a polity with Band T, and a span past LMR and eVolv2k
+    'timbuktu_buffer100_bandT_1940_1960': ('areas', dict(scope='buffer', radius_km=100, **TIMBUKTU, from_year=1940, to_year=1960, **_T)),
+    'northern_song_bandT_950_970': ('areas', dict(scope='polity', polity='Northern Song', year=961, from_year=950, to_year=970, **_T)),
+    'timbuktu_bandT_2010_2020': ('areas', dict(scope='single_basin', **TIMBUKTU, from_year=2010, to_year=2020, **_T)),
 }
 
 # Paths (dot-joined, list indexes dropped) that legitimately vary between identical calls.

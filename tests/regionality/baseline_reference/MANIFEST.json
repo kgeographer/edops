@@ -1,6 +1,6 @@
 {
- "captured": "2026-11-12",
- "git_head": "4f1192c",
+ "captured": "2026-11-13",
+ "git_head": "ea8adef",
  "requests": {
   "timbuktu_single_basin_L6": {
    "route": "areas",
@@ -118,6 +118,46 @@
     "bands": "ABCE",
     "lat": 16.8167,
     "lon": -2.9833
+   }
+  },
+  "timbuktu_buffer100_bandT_1940_1960": {
+   "route": "areas",
+   "params": {
+    "scope": "buffer",
+    "radius_km": 100,
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "from_year": 1940,
+    "to_year": 1960,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "northern_song_bandT_950_970": {
+   "route": "areas",
+   "params": {
+    "scope": "polity",
+    "polity": "Northern Song",
+    "year": 961,
+    "from_year": 950,
+    "to_year": 970,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "timbuktu_bandT_2010_2020": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 16.8167,
+    "lon": -2.9833,
+    "from_year": 2010,
+    "to_year": 2020,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
    }
   }
  }
