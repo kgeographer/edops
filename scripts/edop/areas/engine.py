@@ -997,6 +997,32 @@ def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resol
     return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn)
 
 
+def _band_t_evolv2k(q):
+    """eVolv2k rows: one per event in the span, clipped to the catalog's years."""
+    rows = []
+    ev_from = max(_EVOLV_RANGE[0], q.from_year)
+    ev_to   = min(_EVOLV_RANGE[1], q.to_year)
+
+    if ev_from <= ev_to:
+        events = pd.read_sql(f"""
+            SELECT year_ad, vssi_tg
+            FROM temporal.evolv2k_v4
+            WHERE year_ad BETWEEN {ev_from} AND {ev_to}
+            ORDER BY year_ad
+        """, q.conn)
+        for _, ev in events.iterrows():
+            rows.append(make_row(
+                variable='evolv2k_vssi', band='T',
+                method='global_forcing',
+                unit_type='global', n_units=1,
+                representative_score=None,
+                representative_raw=float(ev['vssi_tg']),
+                coverage=None, status='ok',
+                year=int(ev['year_ad']), epoch_year=None, units='Tg S',
+            ))
+    return rows
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None):
     """
@@ -1182,27 +1208,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                     detail={'distribution': hist_l},
                 ))
 
-    # ── eVolv2k ───────────────────────────────────────────────────────────────
-    ev_from = max(_EVOLV_RANGE[0], from_year)
-    ev_to   = min(_EVOLV_RANGE[1], to_year)
-
-    if ev_from <= ev_to:
-        events = pd.read_sql(f"""
-            SELECT year_ad, vssi_tg
-            FROM temporal.evolv2k_v4
-            WHERE year_ad BETWEEN {ev_from} AND {ev_to}
-            ORDER BY year_ad
-        """, conn)
-        for _, ev in events.iterrows():
-            rows.append(make_row(
-                variable='evolv2k_vssi', band='T',
-                method='global_forcing',
-                unit_type='global', n_units=1,
-                representative_score=None,
-                representative_raw=float(ev['vssi_tg']),
-                coverage=None, status='ok',
-                year=int(ev['year_ad']), epoch_year=None, units='Tg S',
-            ))
+    rows += _band_t_evolv2k(q)
 
     return rows
 
