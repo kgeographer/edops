@@ -1,0 +1,310 @@
+# EDOPS source registry: one entry per data source the signature draws on. The loader reads this file into
+# temporal.source_registry; the engine does not consult it until regionality WO-04 Part C. Design record:
+# docs/edop/_v1/regionality/reg_wo03_results.md. The registry is what the code consults to decide whether and how
+# to query a source for a request, so each entry has two blocks.
+#
+#   selects:   read by the code that pulls data (engine.py aggregate_band_t; the public basin path in app/db/temporal.py
+#              and app/db/hyde.py; the Sandbox map-layer routes). Everything here replaces a fact now hard-coded in those places.
+#   describes: read by the response's `sources` block (below), the payload's meta.data_sources
+#              (routes_common._data_sources_block), the docsite generator and licence/credits text. Not consulted when
+#              choosing sources.
+#
+# Request logic stays in the code, not here: Band T needs a span; buffer and area scopes need a single year; level 6 or 8;
+# scope dispatch.
+#
+# WHAT THE REGISTRY JUDGES (decided). Source availability and handling: does this source cover this place and span, how
+# much, how to read it, what to attach; identically for the UI and the public API. It does not decide which bands or
+# variables a route returns; that is each route's own specification (today the public basin path returns the relief and
+# seasonality variables and /api/areas does not). A response is the route's specification filtered by the registry's
+# availability decisions. `variables` under `selects` means what the source can supply, not what a route returns. The
+# `sources` block below is computed from what the route actually returned.
+#
+# LOCATION GATE (a source must not be queried where it has no data, e.g. GEDA for the Americas). No stored shape:
+#   a source with a regional footprint names its own cell geometry, and the gate is the exact test of the query geometry
+#   (point, buffer or polygon) against those cells. Measured on GEDA: 0.1 to 0.4 ms per query (a 100 km buffer touches 0
+#   cells at Mexico City and Lima, 14 at Reykjavik, 24 at Kyiv). Zero cells touched = outside_footprint, reported as a
+#   status. The same query gives the exact coverage fraction (as in WO-02), which the source's `coverage_rule` turns into
+#   ok / low_coverage / not_applied (decided, below). Global sources are marked global and are not tested.
+#   The registry is the arbiter of whether a source is used: the engine asks it (footprint, years, coverage rule) and does what
+#   it can to help, rather than each source's code deciding for itself.
+#   A bounding box or hull was rejected: for GEDA the box is 1.9 times the real area and the convex hull barely better
+#   (Eurasia is not convex). An outline for display (a map of where a source applies) is generated from the cells when
+#   needed and is not part of the registry.
+#
+# RESPONSE `sources` BLOCK (decided, Q5). Every signature response, UI and public API alike, gets a small block stating where
+# it comes from, in two lists:
+#   used:         the sources that contributed to this response: BasinATLAS always; Cliopatria when the request resolves a
+#                 polity; whichever elevation service answered, when the elevation lookup ran; the temporal and regional
+#                 sources (LMR, HYDE, eVolv2k, GEDA) only when Band T is requested and the span and place fall inside what
+#                 they cover. A source returned at low coverage (GEDA, 0.1 to 0.5) is `used`, with its rows flagged
+#                 low_coverage. Each entry carries name, version, citation and licence from the `describes` block.
+#   not_applied:  sources the request would have drawn on but could not, each with a reason: outside_span,
+#                 outside_footprint or below_coverage_floor (coverage under the source's low_coverage_from; no value
+#                 returned). The UI may ignore it or use it to explain a gap.
+#   A source the request does not ask for (for example the temporal sources when T is off) appears in neither list.
+#   The rows stay as they are. The block is additive; the existing meta.data_sources and lmr_status fields stay for now.
+#
+# Table temporal.source_registry: one row per source, `selects` and `describes` as two jsonb columns plus
+# id, status and table_name as plain columns.
+
+sources:
+
+  - id: lmr_v2_1
+    selects:
+      kind: gridded_time_series
+      status: served
+      table: temporal.lmr_climate                  # 16,380 points; arrays of 2001 values
+      footprint: {type: global}
+      time:
+        step: annual
+        years_covered: [0, 2000]                   # the data
+        year_to_array_position: "year + 1"
+        step_rule: "every year in the span, clipped to years_covered"
+      spatial:
+        method: cell_overlap_weighted              # engine; the public basin path takes the nearest cell instead
+        cell: {size_deg: 2, built_from: "point +/- half a cell", note: "envelopes built in SQL"}
+        lon_convention: "0..360 (values > 180 are wrapped by the engine)"
+      years_recommended: {from: 700, to: 2000, reason: "sparser proxy records before 700 CE", origin: "EDOPS EDA F10.1, F10.3", applies_to: "Sandbox map layer (cutoff); public basin path (note)"}
+      baseline: {years: [850, 1850], applies_to: "Sandbox map layer re-baselines each cell to its own mean over this period (_LMR_BASELINE)"}
+      year_flags: []
+      caveats:
+        - {key: lmr_caveat, when: always}
+      variables:                                   # payload name, catalog key, column, units, conversion
+        - {payload: lmr_pdsi,  catalog: lmr_pdsi,            column: pdsi,  units: "dimensionless anomaly"}
+        - {payload: lmr_air,   catalog: lmr_temp_anomaly,    column: air,   units: "K anomaly"}
+        - {payload: lmr_prate, catalog: lmr_precip_anomaly,  column: prate, units: "mm/day anomaly", conversion: "x 86400"}
+        - {payload: null,      catalog: lmr_slp,             column: null,  status: planned}
+      # payload-to-catalog pairing is inferred from the catalog's api_key_s (pdsi_series, air_series, prate_series);
+      # the crosswalk work order is not yet written
+    describes:
+      name: Last Millennium Reanalysis
+      version: "2.1"
+      grain: "2 degrees"
+      citation: "Tardif et al. 2019, Climate of the Past 15, 1251"
+      doi: 10.5194/cp-15-1251-2019
+      licence: null                                # not found
+      licence_url: https://www.ncei.noaa.gov/access/paleo-search/study/27850
+      licence_note: "NOAA study page did not render for a fetch; the data directory and the files state no terms."
+      legacy_notes: [lmr_out_of_range_note, lmr_fidelity_note, lmr_proxy_bias_note]   # app/db/temporal.py
+      notes: "Anomalies; the reference frame is given as 850-1850 CE (CCSM4 prior) in the engine and docsite, 1000-1850 in EDOP_summary_v04. Unresolved."
+
+  - id: hyde_3_5
+    selects:
+      kind: gridded_time_series
+      status: served
+      table: temporal.hyde_cells                   # 2,215,829 cells; hyde_times holds the 128 steps
+      footprint: {type: global_land}
+      time:
+        step: irregular                            # 1000 yr to 0, 100 yr to 1700, 10 yr to 1950, annual 1951 to 2025
+        years_covered: [-10000, 2025]
+        year_to_array_position: "step_idx + 1 (step_idx from temporal.hyde_times)"
+        step_rule: "steps inside the span; if none, the step nearest the span midpoint (engine only; flagged hyde_nearest_year). The public basin path returns steps inside the span only. The Sandbox layer floor-snaps."
+      spatial:
+        method: cell_overlap_weighted              # engine; the public basin path takes cells whose centroid is in the basin
+        cell: {size_deg: 0.0833, geometry_column: temporal.hyde_cells.geom}
+        lon_convention: "-180..180"
+      years_recommended: null
+      year_flags:
+        - {years: [1950, 1950], flag: cadence_transition, note: "last decadal step before annual data begins; value may not reflect real land-use change"}
+      caveats:
+        - {key: hyde_caveat, when: "step year is 1950"}
+        - {key: hyde_nearest_year, when: "no step in the span; nearest step used"}
+      variables:
+        - {payload: hyde_cropland,  catalog: hyde_cropland,  column: cropland,  units: "km2"}
+        - {payload: hyde_grazing,   catalog: hyde_grazing,   column: grazing,   units: "km2"}
+        - {payload: hyde_pasture,   catalog: hyde_pasture,   column: pasture,   units: "km2"}
+        - {payload: hyde_rangeland, catalog: hyde_rangeland, column: rangeland, units: "km2"}
+    describes:
+      name: HYDE (History Database of the Global Environment)
+      version: "3.5"
+      version_note: "The files' own attributes say HYDE3.4 (stale). Source package hyde35_c9_apr2025; urban_area.nc is byte-identical (md5 6450ebdb4669c9930e80b4699662ff5c) to the 3.5 download."
+      grain: "5 arc-minutes (about 9 km; about 85 km2 per cell at the equator)"
+      citation: "Klein Goldewijk, Beusen, Vander Linden, Doelman 2025, Holocene anthropogenic land-use reconstructions; HYDE 3.5, Earth System Science Data (in prep)"
+      doi: null
+      lineage_citation: "Klein Goldewijk et al. 2017, Earth System Science Data 9, 927-953 (v3.2)"
+      lineage_doi: 10.5194/essd-9-927-2017
+      licence: "CC BY 3.0"
+      licence_url: https://creativecommons.org/licenses/by/3.0/
+      licence_note: "The files' licence attribute and the 3.5 readme; references to be acknowledged."
+      legacy_notes: [HYDE_NOTE]                    # app/db/hyde.py
+      notes: "Allocation model, not a record of settlement (docsite)."
+
+  - id: evolv2k_v4
+    selects:
+      kind: events
+      status: served
+      table: temporal.evolv2k_v4                   # 256 events
+      footprint: {type: global}
+      time:
+        step: event_years
+        years_covered: [-491, 1890]
+        step_rule: "events inside the span, clipped to years_covered"
+      spatial:
+        method: none                               # global forcing, one value per event year
+      years_recommended: null
+      year_flags: []
+      caveats: []                                  # the engine attaches none; temporal.py writes volcanic_events_note
+      variables:
+        - {payload: evolv2k_vssi, catalog: evolv2k_vssi_per_event, column: vssi_tg, units: "Tg S"}
+        - {payload: null, catalog: [evolv2k_vssi_sum, evolv2k_event_count, evolv2k_events, evolv2k_years_since_major, evolv2k_asymmetry], note: "computed by the public basin path in temporal.py"}
+    describes:
+      name: eVolv2k
+      version: "4"
+      grain: "one value per event year"
+      citation: "Sigl and Toohey 2024, PANGAEA"
+      doi: 10.1594/PANGAEA.971968
+      licence: "CC BY 4.0"
+      licence_url: https://creativecommons.org/licenses/by/4.0/
+      licence_note: "Stated in the header of our own .tab file."
+      legacy_notes: [volcanic_events_note]
+      notes: "Units: payload 'Tg S', catalog 'Tg' (disagree)."
+
+  - id: geda
+    selects:
+      kind: gridded_time_series
+      status: stored                               # temporal.geda_climate exists in the local database only
+      table: temporal.geda_climate                 # 28,970 cells; 1,021 values each
+      footprint:
+        type: cells
+        test: temporal.geda_climate.cell_geom      # gate = the query geometry intersects these cells; no stored shape
+        cells: 28970
+      time:
+        step: annual
+        years_covered: [1000, 2020]
+        year_to_array_position: "year - 999"
+        step_rule: "every year in the span, clipped to years_covered"
+      spatial:
+        method: cell_overlap_weighted
+        cell: {size_deg: 0.5, geometry_column: temporal.geda_climate.cell_geom}
+        lon_convention: "-180..180"
+      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1}   # decided (starting values, tunable): >= 0.5 ok; 0.1 to 0.5 value returned, flagged low_coverage; < 0.1 not_applied (below_coverage_floor), no value; a deliberate exception to serve-don't-suppress, reported with a reason in the `sources` block
+      # coverage = the fraction of the query area covered by this source's cells. Other sources report coverage per row but
+      # apply no threshold today; a coverage_rule can be added to any source.
+      years_recommended: null
+      year_flags:
+        - {years: [1990, 2020], flag: observed, note: "observed CRU TS 4.06, not reconstructed; 1000-1989 is reconstructed"}
+      caveats: []                                  # to be written at stage 3: z-scores, summer only, observed years, reliability follows tree-ring density
+      variables: []                                # no catalog entry yet; name to be decided at stage 3
+      columns: {scpdsi: "JJA scPDSI as z-scores (mean 0, SD 1 per cell over 1000-2020)"}
+    describes:
+      name: Great Eurasian Drought Atlas
+      version: "trimmed distribution geda_trim.nc"
+      grain: "0.5 degrees"
+      citation: "Cook et al. 2024, Journal of Climate"
+      doi: 10.1175/JCLI-D-23-0773.1
+      dataset_doi: 10.5281/zenodo.11059894
+      licence: "CC BY 4.0"
+      licence_url: https://creativecommons.org/licenses/by/4.0/
+      licence_note: "Zenodo deposit by the authors."
+      legacy_notes: []
+      notes: "Not read by the engine."
+
+  - id: cliopatria
+    selects:
+      kind: polygon_set
+      status: served
+      table: gaz.clio_polities                     # 15,690 slices of 1,618 polities
+      footprint: {type: global}
+      time:
+        step: polity_slices                        # fromyear, toyear per slice
+        years_covered: [-3400, 2024]
+        step_rule: "the slice(s) in force at the resolver year"
+      spatial:
+        method: polygon_becomes_query_area         # the polity geometry is the query area (engine.py:163-176)
+        geometry_note: "often invalid; use ST_MakeValid"
+        lon_convention: "-180..180"
+      years_recommended: null
+      year_flags: []
+      caveats: []
+      variables: []                                # the resolver; no catalog variables
+    describes:
+      name: Cliopatria polity borders
+      version: null                                # release we hold not recorded; Zenodo v0.0.1 is August 2024
+      grain: "polygons"
+      citation: "Bennett et al. 2025, Scientific Data"
+      doi: 10.1038/s41597-025-04516-9
+      dataset_doi: 10.5281/zenodo.13363121         # v0.0.1
+      licence: "CC BY 4.0"
+      licence_url: https://github.com/Seshat-Global-History-Databank/cliopatria
+      licence_note: "Repo LICENSE.md and the Zenodo record. Seshat's general downloads page says CC BY-NC-SA; that page is about Seshat data generally."
+      legacy_notes: []
+      notes: "Used to resolve polity queries, not as a band."
+
+  - id: basinatlas_v1
+    selects:
+      kind: field
+      status: served
+      table: [public.basin06, public.basin08]      # L6: 16,397 basins; L8: 190,675
+      views: {6: public.v_basin06_persist_rev2, 8: public.v_basin08_persist_rev2}   # the only path to the monthly arrays
+      footprint: {type: global}
+      time:
+        step: null                                 # static
+        years_covered: null
+        static_basis: "climate normals and contemporary land cover"
+      spatial:
+        method: containing_basin                   # point in polygon; buffer, polygon and polity scopes aggregate member basins
+        levels: [6, 8]
+      years_recommended: null
+      year_flags: []
+      caveats: []
+      static_basis_notes: "Band C and D notes when the span starts before 0 CE (routes_common.py:111-131)"
+      nodata: -9999
+      variables: {catalog_source: "BasinATLAS v1.0"}    # all catalog rows with this source label (71 rows)
+    describes:
+      name: BasinATLAS (HydroATLAS)
+      version: "1.0"
+      grain: "basin polygons, levels 6 and 8"
+      citation: "Linke et al. 2019, Scientific Data 6, 283"
+      doi: 10.1038/s41597-019-0300-6
+      licence: "CC BY 4.0 (database as a whole); some attribute columns may be ODbL 1.0"
+      licence_url: https://hydrosheds.org/terms-of-use
+      licence_note: "Per-column licences are listed in the BasinATLAS catalog; not yet checked against our columns. ODbL has share-alike terms."
+      legacy_notes: []
+      notes: "Some attributes stored scaled by 10 or 100 (the codebook states each)."
+
+  - id: edops_derived
+    selects:
+      kind: derived
+      status: served
+      table: null
+      footprint: {type: global}
+      inputs: [basinatlas_v1]                      # the default input of every derived variable (decided)
+      input_exceptions:                            # decided: only the exceptions are named
+        - {variables: [elevation_point, relief_position, relief_range_m], payload_note: "public basin path key elev_point", also_uses: opentopodata_mapzen}
+      variables: {catalog_source: ["Derived", "Derived (WO7)"]}   # 17 rows
+    describes:
+      name: EDOPS derived variables
+      citation: null
+      licence: null
+      licence_note: "Inherits from inputs."
+      notes: "Computed at request or startup from the inputs; see the Derived rows of the catalog."
+
+  - id: opentopodata_mapzen
+    selects:
+      kind: external_service                       # an entry only so the `sources` block can credit it (decided); timeouts, caching and the fallback stay in the route code
+      status: served
+      table: null
+      footprint: {type: global}
+      variables: [{payload: elev_point, catalog: elevation_point}]
+    describes:
+      name: OpenTopoData (mapzen DEM)
+      grain: "about 30 m"
+      licence: "no single licence: the Mapzen terrain tiles are a composite of national elevation datasets, each with its own attribution requirement"
+      licence_url: https://github.com/tilezen/joerd/blob/master/docs/attribution.md
+      licence_note: "Checked 2026-11-12. OpenTopoData's own pages state no licence or attribution terms; the public API is limited to 1 call per second and 1,000 per day. The Tilezen attribution document lists the required credits (SRTM, GMTED2010, ETOPO1, USGS 3DEP, EU-DEM and national sources)."
+      notes: "Not a dataset we hold. The primary elevation provider."
+
+  - id: open_meteo_elevation
+    selects:
+      kind: external_service                       # the fallback when OpenTopoData fails; the response credits whichever answered (elev_source)
+      status: served
+      table: null
+      footprint: {type: global}
+      variables: [{payload: elev_point, catalog: elevation_point}]
+    describes:
+      name: Open-Meteo elevation API (Copernicus GLO-90)
+      grain: "about 90 m"
+      licence: "CC BY 4.0 (data); the free API is for non-commercial use only"
+      licence_url: https://open-meteo.com/en/terms
+      licence_note: "Checked 2026-11-12. Free API: under 10,000 calls a day, 5,000 an hour, 600 a minute. The terms page does not mention the Elevation API by name, so whether it is covered is unconfirmed; the underlying Copernicus GLO-90 licence was not checked. Used only when OpenTopoData fails."
+      notes: "Not a dataset we hold."
