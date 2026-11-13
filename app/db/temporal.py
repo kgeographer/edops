@@ -24,7 +24,7 @@ from app.db.connection import db_connect
 
 
 # Coverage constants for each temporal layer
-LMR_MIN, LMR_MAX         = 0, 1998      # LMR v2.1 proxy reanalysis window
+LMR_MIN, LMR_MAX         = 0, 2000      # LMR v2.1 proxy reanalysis window
 EVOLV2K_MIN, EVOLV2K_MAX = -491, 1890   # eVolv2k v4 actual DB range
 
 
@@ -32,14 +32,14 @@ def get_temporal_context(
     lat: float,
     lon: float,
     year_start: int = 0,
-    year_end: int = 1998,
+    year_end: int = 2000,
     vssi_min: float = 5.0,
 ) -> Dict[str, Any]:
     """
     Return PDSI time series and volcanic events for a location and year range.
 
     LMR and eVolv2k are handled independently:
-      - LMR covers 0–1998 CE; queries outside this range return empty series
+      - LMR covers 0–2000 CE; queries outside this range return empty series
         with lmr_status = "out_of_range".
       - eVolv2k covers −491–1890 CE; volcanic events are returned for any
         requested window within that range, even when LMR is unavailable.
@@ -48,7 +48,7 @@ def get_temporal_context(
     ----------
     lat, lon      : query coordinates (used to find nearest 2° LMR grid cell)
     year_start    : first year to include (negative = BCE); default 0
-    year_end      : last year to include; default 1998
+    year_end      : last year to include; default 2000
     vssi_min      : minimum VSSI (Tg) to include a volcanic event; default 5.0
 
     Returns
@@ -194,7 +194,7 @@ def get_temporal_context(
             if year_end > EVOLV2K_MAX else None
         ),
         "lmr_out_of_range_note": (
-            f"LMR v2.1 covers 0–1998 CE; climate reconstruction is not available for this period."
+            f"LMR v2.1 covers 0–2000 CE; climate reconstruction is not available for this period."
             if not lmr_available else None
         ),
         "lmr_fidelity_note": (

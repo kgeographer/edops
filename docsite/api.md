@@ -56,8 +56,8 @@ Return an environmental signature.
 | `lon` | float (-180 to 180) | no | — | Longitude, decimal degrees, in [-180, 180]. Required for scope=basin/buffer. |
 | `bands` | str | no | `ABCDE` | Which signature bands to include, e.g. "ABCDE" or "ABCDET". |
 | `level` | int | no | `6` | Basin hierarchy level: 8 or 6. |
-| `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–1998). |
-| `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–1998). |
+| `from_year` | int | no | — | Start year CE for Band T temporal enrichment (0–2000). |
+| `to_year` | int | no | — | End year CE for Band T temporal enrichment (0–2000). |
 | `flat` | bool | no | `false` | If true, return flat field values instead of nested signature_bands; Band T temporal data appears at key "temporal" rather than in signature_bands. |
 | `place_links` | str | no | — | Comma-separated gazetteer identifiers (e.g. "wd:Q220,gn:3169070") to echo into meta.query.place_links. |
 | `scope` | str | **yes** | — | 'basin': raw values for the one basin containing this point -- the shape documented below. 'buffer': aggregate distribution over the basins within radius_km of this point -- a different shape (variables/shortfall/caveats/meta). 'area': same shape as buffer, aggregated over the basins within an arbitrary polygon instead of a radius -- see geom_wkt. |

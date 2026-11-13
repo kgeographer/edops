@@ -4,7 +4,7 @@ load_temporal.py
 Creates the temporal schema and loads paleoclimate datasets into cedop:
 
   1. LMR v2.1 PDSI  — data/lmr_v2.1/pdsi_MCruns_ensemble_mean_LMRv2.1.nc
-     16,380 rows (one per 2° grid cell); pdsi[] array of 2001 annual means (0–1998 CE).
+     16,380 rows (one per 2° grid cell); pdsi[] array of 2001 annual means (0–2000 CE).
 
   2. eVolv2k v4     — data/volcano/evolv2k_v4.csv
      256 volcanic eruption events, ~500 BCE – 1890 CE.

@@ -212,8 +212,8 @@ def signature(
         "Which signature bands to include, e.g. \"ABCDE\" or \"ABCDET\"."
     )),
     level: int = Query(6, description="Basin hierarchy level: 8 or 6."),
-    from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–1998)."),
-    to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–1998)."),
+    from_year: Optional[int] = Query(None, description="Start year CE for Band T temporal enrichment (0–2000)."),
+    to_year: Optional[int] = Query(None, description="End year CE for Band T temporal enrichment (0–2000)."),
     flat: bool = Query(False, description=(
         "If true, return flat field values instead of nested signature_bands; Band T "
         "temporal data appears at key \"temporal\" rather than in signature_bands."

@@ -903,7 +903,7 @@ def assemble_payload(rows, scope, shortfall, bands,
 
 # ── Band T: promoted from step3b_band_t.ipynb, wired to make_row ─────────────
 
-_LMR_RANGE            = (0,    1998)
+_LMR_RANGE            = (0,    2000)
 _EVOLV_RANGE          = (-491, 1890)
 _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 

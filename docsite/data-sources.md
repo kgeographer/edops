@@ -80,7 +80,7 @@ missing data.
 [Dataset](https://www.ncei.noaa.gov/access/paleo-search/study/27850) ·
 [Article](https://doi.org/10.5194/cp-15-1251-2019)
 
-Gridded paleoclimate reanalysis — PDSI, temperature, precipitation — 0–1998 CE (the Polities map
+Gridded paleoclimate reanalysis — PDSI, temperature, precipitation — 0–2000 CE (the Polities map
 layer starts at 700 CE). Band T.
 
 **What to know.** Reconstruction quality is geographically uneven: strongest for Europe and North

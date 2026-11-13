@@ -487,7 +487,7 @@ A–E rows take no date input. A point query has no resolver year at all.
 | Source | Covers | Cadence | What a span returns |
 |---|---|---|---|
 | HYDE 3.4 | −10000 to 2025 CE (128 steps) | millennial −10000 to −1000 (10 steps); centennial 0 to 1700 (18); decadal 1710 to 1950 (25); annual 1951 to 2025 (75) | all epochs inside the span, 4 rows each. **If none falls inside, the single nearest epoch to the span's midpoint**, tagged `hyde_nearest_year` |
-| LMR v2.1 | 0 to 1998 CE (arrays hold 2001 values; the engine clamps to 0–1998; the API parameter text also says 0–1998 but does not validate it) | annual | one row per year per variable (PDSI, air, precipitation); **none** if the span is entirely before 0 or after 1998; partial overlap is clipped |
+| LMR v2.1 | 0 to 2000 CE (arrays hold 2001 values; the engine clamps to 0–2000; the API parameter text also says 0–2000 but does not validate it) | annual | one row per year per variable (PDSI, air, precipitation); **none** if the span is entirely before 0 or after 2000; partial overlap is clipped |
 | eVolv2k v4 | −491 to 1890 CE (256 events) | event years only | one row per eruption year inside the span; none if no events |
 
 [code engine.py:_LMR_RANGE, _EVOLV_RANGE, aggregate_band_t; DB `temporal.hyde_times`, `evolv2k_v4`, `lmr_climate`]
@@ -735,7 +735,7 @@ Cutoffs that decide what label, badge, sentence or withheld value a user sees. V
 | Two-regime (bimodal) score suppression: gap as a fraction of spread | 0.50 (*provisional*) | `_MODALITY_GAP` | fixed |
 | ...and minimum weight on each side to count as a regime | 0.20 | `_MIN_REGIME_WEIGHT` | fixed |
 | Histogram flagged `low_resolution` | fewer than 3 basins (basin units), or effective weight under 5 (cell units) | `_LOW_RES_BASIN_THRESHOLD`, `_LOW_RES_CELL_THRESHOLD` | fixed (flag only; no visible UI use found) |
-| Band T span limits | LMR 0 to 1998 CE; eVolv2k -491 to 1890 CE | `_LMR_RANGE`, `_EVOLV_RANGE` | fixed (data coverage, not interpretation) |
+| Band T span limits | LMR 0 to 2000 CE; eVolv2k -491 to 1890 CE | `_LMR_RANGE`, `_EVOLV_RANGE` | fixed (data coverage, not interpretation) |
 
 **Sandbox UI** (`app/templates/sandbox.html`)
 
