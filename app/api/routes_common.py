@@ -30,6 +30,8 @@ from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, 
 
 router = APIRouter(prefix="/api", tags=["api"])
 
+SIGNATURE_VERSION = "0.4"   # meta.signature_version of every signature response
+
 
 def _fold_scope_into_meta(scope_obj: Dict[str, Any], query: Dict[str, Any]) -> Dict[str, Any]:
     """engine.py's assemble_payload() returns a 'scope' dict that mixes request-echo
@@ -321,7 +323,7 @@ def signature(
         # assemble_payload() and /api/areas (which returns it unmodified) still say "rows".
         result["variables"] = result.pop("rows")
         result["meta"] = {
-            "signature_version": "0.4",
+            "signature_version": SIGNATURE_VERSION,
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "query": query,
             "scope": meta_scope,
@@ -363,7 +365,7 @@ def signature(
         result.pop("temporal", None)
         result["variables"] = result.pop("rows")
         result["meta"] = {
-            "signature_version": "0.4",
+            "signature_version": SIGNATURE_VERSION,
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "query": query,
             "scope": meta_scope,
@@ -439,7 +441,7 @@ def signature(
         query["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
     sig["meta"] = {
-        "signature_version": "0.4",
+        "signature_version": SIGNATURE_VERSION,
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "query": query,
         "scope": {
