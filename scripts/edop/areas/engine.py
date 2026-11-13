@@ -1023,6 +1023,81 @@ def _band_t_evolv2k(q):
     return rows
 
 
+def _band_t_lmr(q):
+    """LMR rows: three variables per year in the span, clipped to the data's years."""
+    rows = []
+    # ── LMR ───────────────────────────────────────────────────────────────────
+    # Array slices fetched once per footprint; expanded to annual rows in Python.
+    lmr_from = max(_LMR_RANGE[0], q.from_year)
+    lmr_to   = min(_LMR_RANGE[1], q.to_year)
+
+    if lmr_from <= lmr_to:
+        pg_from, pg_to = lmr_from + 1, lmr_to + 1
+        lmr_sql = f"""
+        WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
+        footprints AS (
+            SELECT
+                lc.lat,
+                CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END AS lon_disp,
+                lc.pdsi [{pg_from}:{pg_to}]  AS pdsi_slice,
+                lc.air  [{pg_from}:{pg_to}]  AS air_slice,
+                lc.prate[{pg_from}:{pg_to}]  AS prate_slice,
+                ST_MakeEnvelope(
+                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END - 1,
+                    lc.lat - 1,
+                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END + 1,
+                    lc.lat + 1, 4326) AS fp
+            FROM temporal.lmr_climate lc
+        )
+        SELECT f.pdsi_slice, f.air_slice, f.prate_slice,
+               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2,
+               ST_Area(f.fp::geography)                                 AS cell_area_m2
+        FROM footprints f, buf
+        WHERE ST_Intersects(f.fp, buf.buf_geom)
+        ORDER BY overlap_m2 DESC
+        """
+        lmr_ts = pd.read_sql(lmr_sql, q.conn)
+
+        ov      = lmr_ts['overlap_m2'].values.astype(float)
+        ca      = lmr_ts['cell_area_m2'].values.astype(float)
+        frac_l  = ov / ca
+        w_lmr   = frac_l / frac_l.sum()
+        cov_lmr = float(ov.sum() / q.buf_area_m2)
+        n_fp    = len(lmr_ts)
+        years_l = list(range(lmr_from, lmr_to + 1))
+
+        pdsi_mat  = np.array(lmr_ts['pdsi_slice'].tolist(),  dtype=float)
+        air_mat   = np.array(lmr_ts['air_slice'].tolist(),   dtype=float)
+        prate_mat = np.array(lmr_ts['prate_slice'].tolist(), dtype=float) * 86400
+
+        for i, year in enumerate(years_l):
+            for api_name, mat, units in [
+                ('pdsi',  pdsi_mat,  'dimensionless anomaly'),
+                ('air',   air_mat,   'K anomaly'),
+                ('prate', prate_mat, 'mm/day anomaly'),
+            ]:
+                col_vals = mat[:, i]
+                hist_l   = _weighted_histogram(col_vals, frac_l, unit_type='lmr_cell')
+                if hist_l is not None:
+                    hist_l.update({
+                        'resolver_year': q.resolver_year,
+                        'band_t_from':   q.from_year,
+                        'band_t_to':     q.to_year,
+                    })
+                rows.append(make_row(
+                    variable=f'lmr_{api_name}', band='T',
+                    method='grid_areal_distribution',
+                    unit_type='lmr_cell', n_units=n_fp,
+                    representative_score=None,
+                    representative_raw=float(np.dot(col_vals, w_lmr)),
+                    coverage=cov_lmr, status='ok',
+                    caveat=['lmr_caveat'],
+                    year=year, epoch_year=None, units=units,
+                    detail={'distribution': hist_l},
+                ))
+    return rows
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None):
     """
@@ -1138,75 +1213,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                 },
             ))
 
-    # ── LMR ───────────────────────────────────────────────────────────────────
-    # Array slices fetched once per footprint; expanded to annual rows in Python.
-    lmr_from = max(_LMR_RANGE[0], from_year)
-    lmr_to   = min(_LMR_RANGE[1], to_year)
-
-    if lmr_from <= lmr_to:
-        pg_from, pg_to = lmr_from + 1, lmr_to + 1
-        lmr_sql = f"""
-        WITH buf AS (SELECT {q.buf_geom_sql} AS buf_geom),
-        footprints AS (
-            SELECT
-                lc.lat,
-                CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END AS lon_disp,
-                lc.pdsi [{pg_from}:{pg_to}]  AS pdsi_slice,
-                lc.air  [{pg_from}:{pg_to}]  AS air_slice,
-                lc.prate[{pg_from}:{pg_to}]  AS prate_slice,
-                ST_MakeEnvelope(
-                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END - 1,
-                    lc.lat - 1,
-                    CASE WHEN lc.lon > 180 THEN lc.lon - 360 ELSE lc.lon END + 1,
-                    lc.lat + 1, 4326) AS fp
-            FROM temporal.lmr_climate lc
-        )
-        SELECT f.pdsi_slice, f.air_slice, f.prate_slice,
-               ST_Area(ST_Intersection(f.fp, buf.buf_geom)::geography) AS overlap_m2,
-               ST_Area(f.fp::geography)                                 AS cell_area_m2
-        FROM footprints f, buf
-        WHERE ST_Intersects(f.fp, buf.buf_geom)
-        ORDER BY overlap_m2 DESC
-        """
-        lmr_ts = pd.read_sql(lmr_sql, conn)
-
-        ov      = lmr_ts['overlap_m2'].values.astype(float)
-        ca      = lmr_ts['cell_area_m2'].values.astype(float)
-        frac_l  = ov / ca
-        w_lmr   = frac_l / frac_l.sum()
-        cov_lmr = float(ov.sum() / q.buf_area_m2)
-        n_fp    = len(lmr_ts)
-        years_l = list(range(lmr_from, lmr_to + 1))
-
-        pdsi_mat  = np.array(lmr_ts['pdsi_slice'].tolist(),  dtype=float)
-        air_mat   = np.array(lmr_ts['air_slice'].tolist(),   dtype=float)
-        prate_mat = np.array(lmr_ts['prate_slice'].tolist(), dtype=float) * 86400
-
-        for i, year in enumerate(years_l):
-            for api_name, mat, units in [
-                ('pdsi',  pdsi_mat,  'dimensionless anomaly'),
-                ('air',   air_mat,   'K anomaly'),
-                ('prate', prate_mat, 'mm/day anomaly'),
-            ]:
-                col_vals = mat[:, i]
-                hist_l   = _weighted_histogram(col_vals, frac_l, unit_type='lmr_cell')
-                if hist_l is not None:
-                    hist_l.update({
-                        'resolver_year': resolver_year,
-                        'band_t_from':   from_year,
-                        'band_t_to':     to_year,
-                    })
-                rows.append(make_row(
-                    variable=f'lmr_{api_name}', band='T',
-                    method='grid_areal_distribution',
-                    unit_type='lmr_cell', n_units=n_fp,
-                    representative_score=None,
-                    representative_raw=float(np.dot(col_vals, w_lmr)),
-                    coverage=cov_lmr, status='ok',
-                    caveat=['lmr_caveat'],
-                    year=year, epoch_year=None, units=units,
-                    detail={'distribution': hist_l},
-                ))
+    rows += _band_t_lmr(q)
 
     rows += _band_t_evolv2k(q)
 
