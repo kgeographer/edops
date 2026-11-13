@@ -28,7 +28,7 @@ Make the registry real and have the engine path consult it for source availabili
 ## Part A: the registry made real (WO-03 items 8 and 9)
 
 3. Final registry YAML in the repo, next to the variable catalog, from the approved draft with the agreed fixes.
-4. Loader into `temporal.source_registry` (plain columns: id, status, table names; `selects` and `describes` as jsonb).
+4. Loader into `public.source_registry` (plain columns: id, status, table names; `selects` and `describes` as jsonb).
 5. Registry test (pytest): every source the signature reads has an entry; every named table exists; every catalog variable is claimed by a source; the YAML and the loaded table agree.
 
 Nothing reads the registry yet. Baseline passes.
