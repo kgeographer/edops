@@ -1,5 +1,5 @@
-# EDOPS source registry: one entry per data source the signature draws on. The loader reads this file into
-# public.source_registry; the engine does not consult it until regionality WO-04 Part C. Design record:
+# EDOPS source registry: one entry per data source the signature draws on. The engine reads this file
+# (scripts/edop/areas/source_registry.py); it is the only copy. Design record:
 # docs/edop/_v1/regionality/reg_wo03_results.md. The registry is what the code consults to decide whether and how
 # to query a source for a request, so each entry has two blocks.
 #
@@ -43,9 +43,6 @@
 #                 returned). The UI may ignore it or use it to explain a gap.
 #   A source the request does not ask for (for example the temporal sources when T is off) appears in neither list.
 #   The rows stay as they are. The block is additive; the existing meta.data_sources and lmr_status fields stay for now.
-#
-# Table public.source_registry: one row per source, `selects` and `describes` as two jsonb columns plus
-# id, status and table_name as plain columns.
 
 sources:
 
@@ -92,7 +89,8 @@ sources:
     selects:
       kind: gridded_time_series
       status: served
-      table: temporal.hyde_cells                   # 2,215,829 cells; hyde_times holds the 128 steps
+      table: [temporal.hyde_cells, temporal.hyde_times, temporal.hyde_basin06_steps, temporal.hyde_basin08_steps]
+      #   hyde_cells: 2,215,829 cells; hyde_times: the 128 steps; the two basin tables: per-basin fractions by step (public basin path, choropleth)
       footprint: {type: global_land}
       time:
         step: irregular                            # 1000 yr to 0, 100 yr to 1700, 10 yr to 1950, annual 1951 to 2025

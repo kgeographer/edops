@@ -1,6 +1,5 @@
-"""Source registry (regionality WO-04, Part A): the YAML covers what the signature reads, and the loaded table matches it."""
+"""Source registry (regionality WO-04, Part A): the YAML covers what the signature reads."""
 import csv
-import json
 from pathlib import Path
 
 import pytest
@@ -78,16 +77,3 @@ def test_a_catalog_variable_has_one_owner_except_the_shared_ones(sources, catalo
     by_source, by_key = _claims(sources)
     multi = {r['schema_key'] for r in catalog if len(by_source.get(r['source'], []) + by_key.get(r['schema_key'], [])) > 1}
     assert multi == SHARED_KEYS
-
-
-def test_loaded_table_matches_the_yaml(sources):
-    with db_connect() as conn:
-        rows = conn.execute('SELECT id, status, table_names, selects, describes FROM public.source_registry').fetchall()
-    loaded = {r[0]: r for r in rows}
-    assert set(loaded) == {s['id'] for s in sources}, 'run scripts/edop/regionality/load_source_registry.py'
-    for s in sources:
-        _, status, table_names, selects, describes = loaded[s['id']]
-        assert status == s['selects']['status'], s['id']
-        assert table_names == _table_names(s), s['id']
-        assert selects == json.loads(json.dumps(s['selects'])), s['id']
-        assert describes == json.loads(json.dumps(s['describes'])), s['id']
