@@ -26,6 +26,7 @@ import math
 import warnings
 from dataclasses import dataclass
 import geopandas as gpd
+from scripts.edop.areas import source_registry
 import numpy as np
 import pandas as pd
 
@@ -905,7 +906,6 @@ def assemble_payload(rows, scope, shortfall, bands,
 # ── Band T: promoted from step3b_band_t.ipynb, wired to make_row ─────────────
 
 _LMR_RANGE            = (0,    2000)
-_EVOLV_RANGE          = (-491, 1890)
 _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
@@ -1000,10 +1000,10 @@ def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resol
 def _band_t_evolv2k(q):
     """eVolv2k rows: one per event in the span, clipped to the catalog's years."""
     rows = []
-    ev_from = max(_EVOLV_RANGE[0], q.from_year)
-    ev_to   = min(_EVOLV_RANGE[1], q.to_year)
+    decision = source_registry.check('evolv2k_v4', span=(q.from_year, q.to_year))
 
-    if ev_from <= ev_to:
+    if decision.applied:
+        ev_from, ev_to = decision.span
         events = pd.read_sql(f"""
             SELECT year_ad, vssi_tg
             FROM temporal.evolv2k_v4
