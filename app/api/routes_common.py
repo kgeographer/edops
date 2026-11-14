@@ -27,12 +27,50 @@ from app.db.hyde import get_hyde_land_use
 from app.db.connection import db_connect
 from app.settings import settings
 from scripts.edop.areas import source_registry
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, NoBasinsError
+from scripts.edop.areas.engine import (
+    areal_signature, areal_signature_polygon, band_t_geda_for_point, CAVEAT_TEXTS, NoBasinsError,
+)
 from scripts.edop.areas.source_registry import Decision
 
 router = APIRouter(prefix="/api", tags=["api"])
 
 SIGNATURE_VERSION = "0.5"  # meta.signature_version of every signature response
+
+
+def _geda_for_basin(lat: float, lon: float, level: int, from_year: int, to_year: int):
+    """GEDA for scope=basin Band T: (the `geda_scpdsi` block or None, the registry decision, an optional note).
+
+    The engine's GEDA block runs on the containing basin's polygon. The block is a compact series (per-year weighted
+    mean with p10 and p90 over the cells, no histograms), or {status: not_applied, reason} when the place or span is
+    outside what GEDA can give. A source the registry leaves out silently (not permitted, not served) gives no block."""
+    conn = db_connect()
+    try:
+        res = band_t_geda_for_point(lat, lon, level, from_year, to_year, conn)
+    finally:
+        conn.close()
+    d = res.decision
+    if not d.applied:
+        reported = d.reason in source_registry.REPORTED_REASONS
+        return ({"status": "not_applied", "reason": d.reason} if reported else None), d, res.note
+    series = []
+    for r in res.rows:
+        dist = (r["detail"] or {}).get("distribution") or {}
+        item = {"year": r["year"], "scpdsi": round(r["representative_raw"], 4), "p10": dist.get("p10"), "p90": dist.get("p90")}
+        if "geda_observed" in r["caveat"]:
+            item["observed"] = True
+        series.append(item)
+    values = [s["scpdsi"] for s in series]
+    block = {
+        "status": "low_coverage" if d.flag else "ok",
+        "n_cells": res.rows[0]["n_units"],
+        "coverage": round(d.coverage, 3),
+        "mean": round(sum(values) / len(values), 4),
+        "min": min(values),
+        "max": max(values),
+        "series": series,
+        "caveat": CAVEAT_TEXTS["geda_caveat"],
+    }
+    return block, d, res.note
 
 
 def _fold_scope_into_meta(scope_obj: Dict[str, Any], query: Dict[str, Any]) -> Dict[str, Any]:
@@ -247,7 +285,13 @@ def signature(
     "signature_bands": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
     for each requested band. Band T requires from_year and to_year (422 without them); when
     requested it nests under signature_bands["T"] instead, with its own "_status" ("ok" |
-    "error"). flat=True: the same identity/geometry
+    "error"). Band T holds the LMR and eVolv2k series, the HYDE epochs and a "geda_scpdsi" block
+    for GEDA (Eurasia, 1000-2020 CE): {"status": "ok" | "low_coverage", "n_cells", "coverage",
+    "mean", "min", "max", "series": [{"year", "scpdsi", "p10", "p90", "observed"?}], "caveat"},
+    or {"status": "not_applied", "reason": "outside_footprint" | "outside_span" |
+    "below_coverage_floor"} when the place, the span or the share of the basin that GEDA's cells
+    cover is outside what GEDA can give (the response's "sources" block records the same).
+    flat=True: the same identity/geometry
     fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
     top-level key "temporal" instead.
 
@@ -257,7 +301,8 @@ def signature(
     a full worked example. flat, place_links are basin-only; ignored for buffer/area. Band T
     on these two scopes requires from_year == to_year (a single year, not a range) -- unlike
     scope=basin, Band T here explodes into one row per HYDE-epoch/LMR-year per member basin,
-    so a real multi-year range is a genuine large-payload risk at this scope.
+    so a real multi-year range is a genuine large-payload risk at this scope. Band T on these
+    scopes includes GEDA rows (variable "geda_scpdsi") where GEDA applies.
 
     All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
     (the request echoed back), "scope", "data_sources"}. meta["scope"] is
@@ -406,6 +451,10 @@ def signature(
         hyde = get_hyde_land_use(lat=lat, lon=lon, from_year=from_year, to_year=to_year, level=level)
         band_t["hyde_land_use"] = hyde
 
+        geda_block, geda_decision, geda_note = _geda_for_basin(lat, lon, level, from_year, to_year)
+        if geda_block is not None:
+            band_t["geda_scpdsi"] = geda_block
+
         if flat:
             sig["temporal"] = band_t
         else:
@@ -466,9 +515,12 @@ def signature(
             Decision("hyde_3_5", n_epochs > 0, None if n_epochs else "outside_span"),
             source_registry.check("lmr_v2_1", span=(from_year, to_year)),
             source_registry.check("evolv2k_v4", span=(from_year, to_year)),
+            geda_decision,
         ]
         if not n_epochs:
             notes["hyde_3_5"] = "no step inside the span"
+        if geda_note:
+            notes["geda"] = geda_note
     sig["sources"] = source_registry.sources_block(decisions, used=used, notes=notes)
 
     return sig

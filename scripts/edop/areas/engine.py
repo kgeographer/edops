@@ -2601,6 +2601,17 @@ def resolve_single_basin(lat, lon, level, conn):
     return df
 
 
+def band_t_geda_for_point(lat, lon, level, from_year, to_year, conn, permitted=None):
+    """GEDA's Band T result (rows, decision, note) for the basin containing a point, for the public basin route.
+
+    Runs the engine's GEDA block on the same polygon as single_basin_signature, so the numbers match
+    /api/areas?scope=single_basin. Raises NoBasinsError when no basin covers the point."""
+    table    = _LEVEL_TABLE[level]
+    hybas_id = int(resolve_single_basin(lat, lon, level, conn)['hybas_id'].iloc[0])
+    wkt      = conn.execute(f"SELECT ST_AsText(geom) FROM {table} WHERE hybas_id = {hybas_id}").fetchone()[0]
+    return _band_t_geda(_band_t_query(lat, lon, 0, from_year, to_year, conn, wkt, None, permitted))
+
+
 def single_basin_signature(
     lat, lon,
     conn,

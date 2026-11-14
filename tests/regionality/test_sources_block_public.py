@@ -41,20 +41,20 @@ def test_the_fallback_elevation_service_is_credited_when_it_answered(client):
 def test_band_t_in_range_uses_the_three_temporal_sources(client):
     p = _get(client, bands='ABCET', from_year=1300, to_year=1400)
     assert _used(p) == ['basinatlas_v1', 'opentopodata_mapzen', 'hyde_3_5', 'lmr_v2_1', 'evolv2k_v4']
-    assert p['sources']['not_applied'] == []
+    assert _not_applied(p) == [('geda', 'outside_footprint')]        # Timbuktu is outside GEDA's cells
 
 
 def test_a_span_with_no_hyde_step_reports_hyde_not_applied_with_a_note(client):
     p = _get(client, bands='ABCET', from_year=1236, to_year=1240)
     assert _used(p) == ['basinatlas_v1', 'opentopodata_mapzen', 'lmr_v2_1', 'evolv2k_v4']
-    assert _not_applied(p) == [('hyde_3_5', 'outside_span')]
+    assert _not_applied(p) == [('hyde_3_5', 'outside_span'), ('geda', 'outside_footprint')]
     assert p['sources']['not_applied'][0]['note'] == 'no step inside the span'
 
 
 def test_span_past_lmr_and_evolv2k(client):
     p = _get(client, bands='ABCET', from_year=2010, to_year=2020)
     assert _used(p) == ['basinatlas_v1', 'opentopodata_mapzen', 'hyde_3_5']
-    assert _not_applied(p) == [('lmr_v2_1', 'outside_span'), ('evolv2k_v4', 'outside_span')]
+    assert _not_applied(p) == [('lmr_v2_1', 'outside_span'), ('evolv2k_v4', 'outside_span'), ('geda', 'outside_footprint')]
 
 
 @pytest.mark.parametrize('years', [(1300, 1400), (1995, 2005), (2010, 2020)])
