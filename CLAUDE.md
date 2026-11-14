@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 is live and frozen at tag `v0.4.2`** (GitHub release; deployed 2026-10-29). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **`main` = prod: nothing lands on it until a phase is accepted.** Active work is on branch **`dashboard`** (cut from `main` 2026-10-25). Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
+- **v0.4 is live: tag `v0.4.2` (deployed 2026-10-29) plus later commits on `main`** (as of 2026-11-14 `main` is `v0.4.2` + 93 commits: the eyes-only WHG profile page and endpoint, the AWMC/Mapbox basemap fallback, a noindex dashboard stub). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **Protect `main`: nothing from `regionality` reaches it until Karl says.** Active work is on branch **`regionality`** (cut from `main`'s tip 2026-11-11; `registry` and `geda` were cut from it in turn and merged back; all three were at the same commit when merged on 2026-11-14, and `regionality` carries the work from here). Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -13,7 +13,8 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/edop/demo/DEMO_tracker.md` — frozen reference (DEMO closed 2026-07-18)
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
-- **Active phase — Dashboard:** `docs/edop/_v1/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Regionality:** `docs/edop/_v1/regionality/` (files prefixed `reg_`; scripts, notebooks and tests under `regionality/` subfolders). **Start with `reg_post-wo05-cc.md` (status after WO-05) and `reg_wo06_summary.md` / `reg_wo06_summary02.md`**; per-WO records are `reg_wo0{4,5,6}_results.md` and `_summary.md`, each ending in a "Needs attention" list.
+- **Next phase — Dashboard (design; build not begun):** `docs/edop/_v1/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -31,8 +32,9 @@ predate this convention are grandfathered; new WOs get summary + `findings:` lin
 structured environmental "signatures" for any location on Earth. Signatures characterize a
 drainage basin — or a set of basins for areal queries like a basin ring, buffer neighborhood,
 or historical polity — using BasinATLAS variables covering hydrology, climate baselines,
-terrain, and ecoregions, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.4
-land-use history, and eVolv2k v4 volcanic forcing.
+terrain, and ecoregions, plus temporal enrichment layers: LMR v2.1 paleoclimate, HYDE 3.5 land-use
+history (the stored data is 3.5; older docs, the catalog and the UI still say 3.4), eVolv2k v4 volcanic forcing and, for
+Eurasia, GEDA summer drought.
 
 EDOPS is the active component of **Computing Place** (CEDOP), a spatial humanities research
 platform. The companion CDOP (Cultural Dimensions of Place) component is deferred; its
@@ -59,14 +61,29 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
-| **Dashboard**               | **active** (branch `dashboard`, from 2026-10-25) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
-| Regional / non-global temporal data | next, once the dashboard is stubbed | investigate datasets without global coverage; touches data model, API and dashboard UX; seed docs on remote branch `claude/remote-phone-file-access-hvttai` (regional layers framing, drought atlas memo) |
+| **Dashboard**               | **next** (design with Opus; the `dashboard` branch was retired 2026-11-14, its work is in `main`) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
+| **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (branch `regionality`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (dashboard design), pre-v1 docs check |
 
 ---
 
 ## Current work
 
-**Dashboard phase (active, started 2026-10-25).** Branch `dashboard`, cut from `main` at `v0.4.1`. Goal: a
+**Regionality (interim stop 2026-11-14).** Branch `regionality`. Goal: serve datasets without global coverage through a
+source registry. **Done:** `documentation/EDOPS_source_registry.yaml` (nine sources; the YAML is the only copy) read by
+`scripts/edop/areas/source_registry.py`, whose `check()` judges a source's years, footprint (GEDA's cells) and coverage
+rule for a request; `aggregate_band_t` split into one function per source (HYDE, LMR, eVolv2k, GEDA); every response carries
+a top-level `sources` block (`used` / `not_applied` with reasons) and `meta.data_sources` lists all sources; GEDA
+(`temporal.geda_climate`, 28,970 cells, 1000–2020 CE, Eurasia) is returned as `geda_scpdsi` rows on the engine path
+(`/api/areas`, public `scope=buffer|area`) and as `signature_bands.T.geda_scpdsi` on public `scope=basin`;
+`signature_version` is "0.5" (it holds through GEDA; the number moves to 1.0 at the v1 deploy). The regression baseline is
+`tests/regionality/baseline.py` + `baseline_reference/` (16 gzipped payloads; additions are allowed, changes need a
+deliberate re-capture with Karl's approval). The Sandbox page itself is unchanged from `main`; it receives the GEDA rows
+and ignores them (its Band T badge counts them). **Not done:** unifying the public basin path's Band T (LMR nearest cell,
+HYDE centroid rule) with the engine's blocks (assessment: `reg_wo06_results.md`); catalog completeness (every returnable
+variable needs a catalog row and key); showing GEDA; SQL built from polygon text in the older Band T blocks; the pre-v1
+docs check. **Deploy:** load `temporal.geda_climate` to the server database first.
+
+**Dashboard phase (next; a stub since 2026-10-25).** The `dashboard` branch was retired 2026-11-14 (its work is in `main`). Goal: a
 general-purpose front door for `edops.computingplace.org`, more broadly useful than the Sandbox / Workbench /
 Explorer trio. Explorer stays as is (more datasets coming). A stub exists at `/dashboard` (`dashboard.html`,
 unlinked, not in the nav). It will borrow heavily from `sandbox.html` and less from `workbench.html` —
@@ -100,11 +117,11 @@ source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus).
 **Next (dashboard):** Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
 source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
 LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
-Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Then non-global (regional)
-temporal datasets (significant implications for the data model, API and dashboard UX); seed docs (not merged) are on
+Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Regional datasets are under
+Regionality above; showing GEDA is a dashboard-design matter. Seed docs (not merged) remain on
 remote branch `claude/remote-phone-file-access-hvttai`: `docs/edop/regional/{regional_layers_framing,drought_atlas_memo}.md`.
 
-**Production:** v0.4 only. `edops-v4.service` :8004, tree `/var/www/edops-v4` (branch `main`), venv
+**Production:** the v0.4 line (`v0.4.2` plus later `main` commits, including the eyes-only WHG profile page). `edops-v4.service` :8004, tree `/var/www/edops-v4` (branch `main`), venv
 `/home/karlg/envs/cedop-v4`; serves `edops.computingplace.org`, `computingplace.org`, `edops04.computingplace.org`.
 DB is the shared live `cedop` (PostgreSQL 17); every v0.4 object was added additively
 (`v_basin0{6,8}_persist_rev2`, `gaz.{geonames_cities,admin0,wh_cities_terrain,ccodes}`, `public.basin08_scores`,
@@ -127,11 +144,15 @@ the CP entry point (`index.html`, `about.html`) to a small static site of its ow
 riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
 `logs/session_log_20260908.md`.
 
-**Branching:** `main` = prod, frozen at `v0.4.2`. A new phase is a plain branch cut off `main` (`dashboard`
-now; a regional-data branch later), with WO-child branches under it if wanted, merged to `main` only when the
-phase is accepted and then deployed. Housekeeping is cut off `main` and merged straight back. Tags: `v0.3`,
-`v0.4` (cutover marker), `v0.4.1` and `v0.4.2` (releases). Branch cleanup 2026-10-25 left only `main`, `dashboard` and the
-`claude/…` remote branch; the old list is in `logs/branch_cleanup_20261025.txt`.
+**Branching:** `main` is the deployed line (`v0.4.2` + later commits) and is protected. A new phase is a plain branch
+cut off `main` (`regionality` was cut from `main`'s tip 2026-11-11), with WO-child branches under it (`registry` from
+`regionality`, `geda` from `registry`), merged back into the parent as the work is accepted ("merge `geda` back into
+`registry`"); merging into `main` is a separate decision made at the v1 deploy, and a plain fast-forward while `main` has
+nothing `regionality` lacks. Commit, merge and push are separate asks. Tags: `v0.3`, `v0.4` (cutover marker), `v0.4.1`
+and `v0.4.2` (releases). Branches as of 2026-11-14: `main`, `regionality`, `registry`, `geda` (the last three merged to the same
+commit on 2026-11-14, all on origin; `regionality` is the working branch) and the `claude/…` remote seed-docs branch; `dashboard`, `mapfix`, `mapfix2`, `042` and the
+`whg-profile` branches were retired (everything real in them is in `main`). Older cleanup list:
+`logs/branch_cleanup_20261025.txt`.
 
 **What v0.4 contains (DOCS_v4 + kgreview + deploy fixes):** MkDocs live in-repo (`docsite/` source, `mkdocs.yml`,
 `site/` build output gitignored) with a generated Codebook
@@ -172,6 +193,12 @@ Sandbox polity, Reading a signature) are complete with screenshots. Session-by-s
 
 Two independent temporal axes: `resolver_year` (polity boundary) and Band T span (`from_year`/`to_year`).
 
+Band T is one function per source (`_band_t_hyde`, `_band_t_lmr`, `_band_t_evolv2k`, `_band_t_geda`, called by
+`aggregate_band_t`), each asking the source registry (`documentation/EDOPS_source_registry.yaml`, read by
+`scripts/edop/areas/source_registry.py`) whether it applies; `check()` judges years, footprint and coverage rule.
+`band_t_geda_for_point` serves public `scope=basin`; that route's LMR and HYDE still run on the older code in
+`app/db/{temporal,hyde}.py` (nearest cell, centroid rule), so the two paths differ in method (see `reg_wo06_results.md`).
+
 **`db_utils.read_areas_tsv(path, **kwargs)`** — always use instead of bare `pd.read_csv` for any
 TSV with `hybas_id` or `dominant_hybas_id`; forces Int64.
 
@@ -193,7 +220,7 @@ app/
 │   ├── sandbox.html     # Sandbox page — Demo phase product; current focus (renamed from
 │   │                     #   sandbox_v3.html 2026-08-15; old retired Lookup page is
 │   │                     #   sandbox_v03.html, unreferenced by any route)
-│   ├── dashboard.html   # Dashboard page (stub, /dashboard) — active phase; borrows from sandbox.html
+│   ├── dashboard.html   # Dashboard page (stub, /dashboard, noindex) — next phase; borrows from sandbox.html
 │   ├── explorer.html    # Explorer page — Phase 2 product
 │   ├── workbench.html   # Workbench page — standalone doc like the other two (2026-08-07;
 │   │                     #   formerly base.html-extending, base.html deleted, nothing else used it)
@@ -226,8 +253,9 @@ docs/edop/surface/       #   Surface tracker + findings (tracked; frozen ref)
 docs/edop/demo/          #   Demo tracker + findings (tracked)
 docs/edop/_v1/           #   V1 development (tracked): dashboard/ (Sandbox morph, not begun), whgmodal/ (WHG profile +
                           #   /whgmodal endpoint, milestone reached; its WO-01..10a files stayed in docs/design/dashboard/
-                          #   because code paths point there, see _INDEX.md), regionality/ (active; scripts/notebooks/tests
-                          #   use a `regionality/` subfolder). Branch `regionality`.
+                          #   because code paths point there, see _INDEX.md), regionality/ (registry + GEDA, interim stop
+                          #   2026-11-14; `reg_`-prefixed files; scripts/notebooks/tests use a `regionality/` subfolder).
+                          #   Branch `regionality`.
 docs/design/dashboard/   #   Dashboard design material (tracked since 2026-10-31, text only): Sandbox cheat sheet, WO-01/WO-02 files, examples
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
@@ -236,13 +264,14 @@ docs/edop/pageload_explorer.txt  # per-page pseudocode reference (gitignored) �
 docs/edop/routes_audit.txt       # every live /api route classified by template/JS caller (gitignored);
                           #   generated by scripts/edop/routes_audit.py — regenerate after any route add/remove/rename
 scripts/edop/            # Data pipelines, ESDA, Explorer asset generation
-scripts/edop/areas/      # Areas engine — engine.py is the primary artifact
+scripts/edop/areas/      # Areas engine — engine.py is the primary artifact; source_registry.py reads the source registry YAML
+tests/regionality/       # registry, GEDA and signature-baseline tests; baseline_reference/ holds the 16 gzipped reference payloads
 notebooks/edop/explore/  # CHAR phase EDA notebooks
 notebooks/edop/spatial/  # CHAR phase ESDA notebooks
 notebooks/edop/areas/    # Areas phase notebooks (research record; frozen)
 notebooks/edop/surface/  # Surface phase notebooks (frozen)
 notebooks/edop/demo/     # Demo phase notebooks
-notebooks/edop/dashboard/ # Dashboard phase notebooks ← active
+notebooks/edop/dashboard/ # Dashboard phase notebooks (WO-02 statement inventory)
 output/edop/areas/       # Areas output (gitignored)
 output/edop/surface/     # Surface output (gitignored)
 output/edop/demo/        # Demo output (gitignored)
@@ -379,11 +408,12 @@ there from `/docs` on 2026-08-04 to free that route for MkDocs).
 - `gaz.rivers`: HydroRIVERS v1.0 global river network — 8.5M rows; `hyriv_id`, `geom` (MultiLineString), `ord_clas` (Strahler order class 1–9); tiled to `app/static/sandbox/rivers.pmtiles` (gitignored)
 - `gaz.geonames_cities`: 27,699 modern populated places (GeoNames, `fclass='P'`, population ≥ 15,000), `geometry(Point,4326)` + GiST index; loaded from `whg_staging.geonames.places_filter1` via `scripts/edop/kgreview/load_geonames_cities.py`; backs Sandbox Polities map's Cities layer (`/api/sandbox/cities`)
 - `gaz.admin0`: Natural Earth country polygons, 242 rows; backs Sandbox Polities map's Countries layer (`/api/sandbox/countries`)
-- `temporal.hyde_cells`: 2,215,829 HYDE 3.4 grid cells (~5 arc-min); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
+- `temporal.hyde_cells`: 2,215,829 HYDE grid cells (~5 arc-min; the data is HYDE 3.5, labelled 3.4 in older docs); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
 - `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
 - `temporal.hyde_basin0{6,8}_steps`: precomputed per-basin HYDE fractions by `step_idx` (`hybas_id`, `step_idx`, `{cropland,grazing,pasture,rangeland}_frac`; L6 ~2.1M rows, L8 ~24.3M / 2.3 GB). Built in notebooks (wo18/wo22), **not** a script. The **only** backing for the HYDE basin choropleth (`/api/hyde/values`) — `hyde_cells`/`hyde_times` are the point-lookup path. (Missed in the v0.4 migration; loaded to prod 2026-09-09.) `_weights` sibling tables are notebook build artifacts, no app consumer.
 - `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
 - `temporal.evolv2k_v4`: eVolv2k v4 volcanic forcing rows by `year_ad`; columns `vssi_tg`, `so4_grl`, `so4_ant`, `lat`, `location`
+- `temporal.geda_climate`: 28,970 GEDA cells (0.5°, Eurasia; loader `scripts/edop/regionality/load_geda.py`): `scpdsi` as `real[]` of 1,021 June–August scPDSI z-scores (1000–2020 CE; array position = year − 999), `geom` (cell centre), `cell_geom` (cell box, the footprint test), `area_km2`. **Local database only until the v1 deploy; it must be loaded to the server before code that serves GEDA runs there.** (`public.source_registry`, also local, is unused: the YAML is the registry.)
 - Temperature fields (`tmp_dc_*`): stored as °C × 10 — always divide by 10 for display
 - PostGIS geometries: pass as WKT via `ST_GeomFromText()`, not EWKB hex (psycopg3 endian issue)
 - BasinATLAS NoData sentinel: `−9999` — mask before any analysis
@@ -410,7 +440,8 @@ Canonical detail (rsync asset list, DB-change pattern, perf config)
 is `MAINTAIN_DEPLOY.md` (gitignored). Short version: prod tracks `main` since 2026-09-09 —
 deploy is `git pull --ff-only origin main` + `sudo systemctl restart edops-v4` on the box
 (service `edops-v4` :8004, tree `/var/www/edops-v4`, venv `cedop-v4`), then purge the `/api/`
-nginx cache and run `./smoke_test.sh`.
+nginx cache and run `./smoke_test.sh`. Before deploying code that serves GEDA, load `temporal.geda_climate` to the
+server database; without it every Band T request fails.
 
 ---
 
@@ -434,7 +465,7 @@ python -m pytest tests/ -m engine              # one area; markers are set by pa
 python -m pytest tests/ -m "not ui"            # everything except the Playwright browser tests
 ```
 
-Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate.
+Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-14: 768 passed, 21 skipped; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`.
 
 **Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
 - A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.
@@ -467,6 +498,8 @@ site/ holds mkdocs generated/published markup
 | `docs/design/scenarios.md`                      | User profiles + scenarios — read before Lookup UI work                                                           |
 | `documentation/edops_schema_basin.json`         | `/api/signature?scope=basin` schema, Timbuktu example values (2026-09-14, replaces the old single `edops_schema.json`) |
 | `documentation/edops_schema_area.json`          | `/api/signature?scope=area` schema, real bbox example — an entirely different shape (`variables`, not `signature_bands`) |
+| `documentation/EDOPS_source_registry.yaml`      | Source registry: one entry per data source (what the code selects, and what describes it: citation, licence); read by `scripts/edop/areas/source_registry.py`; the only copy |
+| `docs/edop/_v1/regionality/`                    | Regionality WO specs, results and summaries (`reg_` prefix); `reg_post-wo05-cc.md` is the status note after WO-05 |
 
 ---
 
