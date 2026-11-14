@@ -18,6 +18,8 @@ TIMBUKTU = dict(lat=16.8167, lon=-2.9833)
 TBILISI = dict(lat=41.7151, lon=44.8271)
 BRUGES = dict(lat=51.2093, lon=3.2247)       # the flat-city fixture of the terrain lens (CITYKIN WO1a)
 KYIV = dict(lat=50.4547, lon=30.5238)        # L6 basin 2060448220
+CHACO = dict(lat=36.06, lon=-107.96)         # Chaco Canyon, outside the GEDA footprint (L6 basin 7060618200)
+GEDA_EDGE = dict(lat=28.8214, lon=20.0173)   # a point in L6 basin 1060044120: GEDA covers 0.498 of it (low coverage)
 _AE = dict(level=6, bands='ABCDE', detail='true')
 _T = dict(level=6, bands='T', detail='true')
 REQUESTS = {
@@ -36,6 +38,10 @@ REQUESTS = {
     'timbuktu_buffer100_bandT_1940_1960': ('areas', dict(scope='buffer', radius_km=100, **TIMBUKTU, from_year=1940, to_year=1960, **_T)),
     'northern_song_bandT_950_970': ('areas', dict(scope='polity', polity='Northern Song', year=961, from_year=950, to_year=970, **_T)),
     'timbuktu_bandT_2010_2020': ('areas', dict(scope='single_basin', **TIMBUKTU, from_year=2010, to_year=2020, **_T)),
+    # added 2026-11-14 (WO-05): GEDA on the buffer branch, outside its footprint, and at low coverage
+    'kyiv_buffer100_bandT_1300_1400': ('areas', dict(scope='buffer', radius_km=100, **KYIV, from_year=1300, to_year=1400, **_T)),
+    'chaco_canyon_bandT_1300_1400': ('areas', dict(scope='single_basin', **CHACO, from_year=1300, to_year=1400, **_T)),
+    'geda_edge_basin_bandT_1300_1400': ('areas', dict(scope='single_basin', **GEDA_EDGE, from_year=1300, to_year=1400, **_T)),
 }
 
 # Paths (dot-joined, list indexes dropped) that legitimately vary between identical calls.

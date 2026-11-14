@@ -1,6 +1,6 @@
 {
- "captured": "2026-11-13",
- "git_head": "4c0c8e2",
+ "captured": "2026-11-14",
+ "git_head": "931e5f5",
  "requests": {
   "timbuktu_single_basin_L6": {
    "route": "areas",
@@ -155,6 +155,46 @@
     "lon": -2.9833,
     "from_year": 2010,
     "to_year": 2020,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "kyiv_buffer100_bandT_1300_1400": {
+   "route": "areas",
+   "params": {
+    "scope": "buffer",
+    "radius_km": 100,
+    "lat": 50.4547,
+    "lon": 30.5238,
+    "from_year": 1300,
+    "to_year": 1400,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "chaco_canyon_bandT_1300_1400": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 36.06,
+    "lon": -107.96,
+    "from_year": 1300,
+    "to_year": 1400,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "geda_edge_basin_bandT_1300_1400": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 28.8214,
+    "lon": 20.0173,
+    "from_year": 1300,
+    "to_year": 1400,
     "level": 6,
     "bands": "T",
     "detail": "true"
