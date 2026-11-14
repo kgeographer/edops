@@ -5,7 +5,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 
 **Session startup:** read this file for orientation, then the tracker for the active phase.
 - `CLAUDE.md` (this file) — phase overview, architecture, conventions, pointers
-- **v0.4 is live: tag `v0.4.2` (deployed 2026-10-29) plus later commits on `main`** (as of 2026-11-14 `main` is `v0.4.2` + 93 commits: the eyes-only WHG profile page and endpoint, the AWMC/Mapbox basemap fallback, a noindex dashboard stub). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **Protect `main`: nothing from `regionality` reaches it until Karl says.** Active work is on branch **`regionality`** (cut from `main`'s tip 2026-11-11; `registry` and `geda` were cut from it in turn and merged back; all three were at the same commit when merged on 2026-11-14, and `regionality` carries the work from here). Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
+- **v0.4 is live: tag `v0.4.2` (deployed 2026-10-29) plus later commits on `main`** (as of 2026-11-14 `main` is `v0.4.2` + 93 commits: the eyes-only WHG profile page and endpoint, the AWMC/Mapbox basemap fallback, a noindex dashboard stub). Prod = `edops-v4.service` on :8004, tree `/var/www/edops-v4`, branch `main`; v0.3 is retired. **Protect `main`: nothing from `v1` reaches it until the v1 deploy, when Karl decides.** Active work is on branch **`v1`**, the long-lived trunk for all v1 work (created 2026-11-14 at `regionality`'s tip; `regionality` was cut from `main`'s tip 2026-11-11 and `registry` and `geda` from it in turn, and all of that is inside `v1`'s history). Phases are branches cut from `v1`; see Branching below. Most recent `logs/session_log_*.md` has latest work; deploy runbook is `MAINTAIN_DEPLOY.md`.
 
 ** Work proceeds in phases, w/persisted items in subfolders of docs/edop and docs/cdop, Frozen references:**
 - `docs/cdop/citykin/CITYKIN_tracker.md` — frozen reference (CDOP2/CITYKIN closed 2026-07-30)
@@ -61,14 +61,14 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
-| **Dashboard**               | **next** (design with Opus; the `dashboard` branch was retired 2026-11-14, its work is in `main`) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
-| **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (branch `regionality`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (dashboard design), pre-v1 docs check |
+| **Dashboard**               | **next** (pre-design with Opus; the old `dashboard` branch was retired 2026-11-14, its work is in `main`; a new `dashboard` branch will be cut from `v1`) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
+| **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (dashboard design), pre-v1 docs check |
 
 ---
 
 ## Current work
 
-**Regionality (interim stop 2026-11-14).** Branch `regionality`. Goal: serve datasets without global coverage through a
+**Regionality (interim stop 2026-11-14).** Done on `regionality`, `registry` and `geda`, now inside `v1`. Goal: serve datasets without global coverage through a
 source registry. **Done:** `documentation/EDOPS_source_registry.yaml` (nine sources; the YAML is the only copy) read by
 `scripts/edop/areas/source_registry.py`, whose `check()` judges a source's years, footprint (GEDA's cells) and coverage
 rule for a request; `aggregate_band_t` split into one function per source (HYDE, LMR, eVolv2k, GEDA); every response carries
@@ -83,7 +83,7 @@ HYDE centroid rule) with the engine's blocks (assessment: `reg_wo06_results.md`)
 variable needs a catalog row and key); showing GEDA; SQL built from polygon text in the older Band T blocks; the pre-v1
 docs check. **Deploy:** load `temporal.geda_climate` to the server database first.
 
-**Dashboard phase (next; a stub since 2026-10-25).** The `dashboard` branch was retired 2026-11-14 (its work is in `main`). Goal: a
+**Dashboard phase (next; a stub since 2026-10-25).** The old `dashboard` branch was retired 2026-11-14 (its work is in `main`); a new one will be cut from `v1`. Goal: a
 general-purpose front door for `edops.computingplace.org`, more broadly useful than the Sandbox / Workbench /
 Explorer trio. Explorer stays as is (more datasets coming). A stub exists at `/dashboard` (`dashboard.html`,
 unlinked, not in the nav). It will borrow heavily from `sandbox.html` and less from `workbench.html` —
@@ -144,15 +144,23 @@ the CP entry point (`index.html`, `about.html`) to a small static site of its ow
 riding EDOPS deploys — don't rename this repo, don't monorepo (won't fit a future CDOP). See
 `logs/session_log_20260908.md`.
 
-**Branching:** `main` is the deployed line (`v0.4.2` + later commits) and is protected. A new phase is a plain branch
-cut off `main` (`regionality` was cut from `main`'s tip 2026-11-11), with WO-child branches under it (`registry` from
-`regionality`, `geda` from `registry`), merged back into the parent as the work is accepted ("merge `geda` back into
-`registry`"); merging into `main` is a separate decision made at the v1 deploy, and a plain fast-forward while `main` has
-nothing `regionality` lacks. Commit, merge and push are separate asks. Tags: `v0.3`, `v0.4` (cutover marker), `v0.4.1`
-and `v0.4.2` (releases). Branches as of 2026-11-14: `main`, `regionality`, `registry`, `geda` (the last three merged to the same
-commit on 2026-11-14, all on origin; `regionality` is the working branch) and the `claude/…` remote seed-docs branch; `dashboard`, `mapfix`, `mapfix2`, `042` and the
-`whg-profile` branches were retired (everything real in them is in `main`). Older cleanup list:
-`logs/branch_cleanup_20261025.txt`.
+**Branching (plan agreed 2026-11-14).** `main` is the deployed line (`v0.4.2` + later commits) and is protected: the
+server deploys with `git pull --ff-only origin main`, so whatever is on `main` ships, and the only protection is that
+nothing unfinished is merged into it. **`v1`** is the long-lived trunk for all v1 work: a direct child of `main`, created
+2026-11-14 at `regionality`'s tip. Phases and work orders are branches cut from `v1` (the dashboard pre-design gets a new
+`dashboard` branch cut from `v1`) and are merged back into `v1` when accepted ("merge `X` back into `v1`"). `regionality`,
+`registry` and `geda` are inside `v1`'s history and are not used further; new regional work would branch from `v1`.
+- **Hotfix flow** (kept to a minimum): fix on a short branch cut from `main`, merge it into `main`, deploy by pull; then
+  merge `main` into `v1`, and `v1` into any active child branches. Flow runs one way down (`main` → `v1` → children);
+  children merge back up into `v1`. A child that has not yet received a hotfix is not affected or broken by it.
+- **Merges, not rebases,** on `v1` and its children (a rebase rewrites history and disturbs anything cut from it).
+- **At the v1 deploy:** merge `main` into `v1` one last time, then `v1` into `main` (no new commit needed if `main` has not
+  moved); the server then pulls as usual. Not done, discussed as optional hardening: GitHub branch protection on `main`, and
+  deploying from a tag or a `release` branch so an accidental pull cannot ship unfinished work.
+- Commit, merge and push are separate asks. Tags: `v0.3`, `v0.4` (cutover marker), `v0.4.1` and `v0.4.2` (releases).
+- Branches as of 2026-11-14: `main`, `v1` (working branch), `regionality`, `registry`, `geda` (history; all on origin) and
+  the `claude/…` remote seed-docs branch. Retired (everything real in them is in `main`): `dashboard`, `mapfix`, `mapfix2`,
+  `042`, the `whg-profile` branches. Older cleanup list: `logs/branch_cleanup_20261025.txt`.
 
 **What v0.4 contains (DOCS_v4 + kgreview + deploy fixes):** MkDocs live in-repo (`docsite/` source, `mkdocs.yml`,
 `site/` build output gitignored) with a generated Codebook
@@ -255,7 +263,7 @@ docs/edop/_v1/           #   V1 development (tracked): dashboard/ (Sandbox morph
                           #   /whgmodal endpoint, milestone reached; its WO-01..10a files stayed in docs/design/dashboard/
                           #   because code paths point there, see _INDEX.md), regionality/ (registry + GEDA, interim stop
                           #   2026-11-14; `reg_`-prefixed files; scripts/notebooks/tests use a `regionality/` subfolder).
-                          #   Branch `regionality`.
+                          #   Work lives on `v1`.
 docs/design/dashboard/   #   Dashboard design material (tracked since 2026-10-31, text only): Sandbox cheat sheet, WO-01/WO-02 files, examples
 docs/design/             #   deferred_items_register.md, scenarios.md (gitignored)
 docs/design/demo/        #   sandbox_v3 line specs + demo design notes (gitignored)
