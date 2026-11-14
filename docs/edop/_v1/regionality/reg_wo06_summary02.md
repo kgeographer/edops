@@ -20,4 +20,4 @@ Full suite: 768 passed, 21 skipped, no failures. Eleven new route tests (includi
 
 - LMR, HYDE and GEDA use different methods in the same basin response (nearest cell, centroid rule, overlap-weighted); unifying Band T on the engine's blocks is a roadmap item.
 - Deploy: load `temporal.geda_climate` first; the public basin route now depends on it too.
-- `meta.data_sources` does not list GEDA; the Band T guide pages and the area schema JSON do not mention it yet (pre-v1 docs check).
+- `meta.data_sources` now lists GEDA (a payload's data-sources list must list all the sources); the Band T guide pages do not mention GEDA yet (pre-v1 docs check).

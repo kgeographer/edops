@@ -25,7 +25,8 @@
       "elevation_point": "OpenTopoData (mapzen DEM, ~30m) with Open-Meteo fallback",
       "temporal_climate": "LMR v2.1 (Tardif et al. 2019); 0–2000 CE; 2°×2° grid, annual",
       "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
-      "land_use_temporal": "HYDE 3.5 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution"
+      "land_use_temporal": "HYDE 3.5 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
+      "temporal_drought": "GEDA (Cook et al. 2024); 1000–2020 CE; 0.5° grid; Eurasia"
     },
     "_note": "Always present on every /api/signature response. Injected by the route, not part of the DB query."
   },
