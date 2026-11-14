@@ -14,7 +14,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
 - **Active phase — Regionality:** `docs/edop/_v1/regionality/` (files prefixed `reg_`; scripts, notebooks and tests under `regionality/` subfolders). **Start with `reg_post-wo05-cc.md` (status after WO-05) and `reg_wo06_summary.md` / `reg_wo06_summary02.md`**; per-WO records are `reg_wo0{4,5,6}_results.md` and `_summary.md`, each ending in a "Needs attention" list.
-- **Next phase — Dashboard (design; build not begun):** `docs/edop/_v1/dashboard/` — **read `SESSION_SEED.md` there first** (no tracker yet — Opus-drafted WO specs land here; create `DASHBOARD_tracker.md` + `wo{nn}_findings.md` when the first WO arrives); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Dashboard (pre-design begun 2026-11-14; build not begun; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice) and `dash_wo01_summary.md` (the first exploratory WO; Fable drafts the `dash_wo*` specs, results and summaries land here; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -61,7 +61,7 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
-| **Dashboard**               | **next** (pre-design with Opus; the old `dashboard` branch was retired 2026-11-14, its work is in `main`; a new `dashboard` branch will be cut from `v1`) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
+| **Dashboard**               | **pre-design begun 2026-11-14** (with Fable; the old `dashboard` branch was retired the same day, its work is in `main`; the new `dashboard` branch was cut from `v1`) | general landing page for `edops.computingplace.org`; stub at `/dashboard` (`dashboard.html`); reuses Sandbox/Workbench backend + UI pieces; design first (Opus), then WOs |
 | **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (dashboard design), pre-v1 docs check |
 
 ---
@@ -83,7 +83,7 @@ HYDE centroid rule) with the engine's blocks (assessment: `reg_wo06_results.md`)
 variable needs a catalog row and key); showing GEDA; SQL built from polygon text in the older Band T blocks; the pre-v1
 docs check. **Deploy:** load `temporal.geda_climate` to the server database first.
 
-**Dashboard phase (next; a stub since 2026-10-25).** The old `dashboard` branch was retired 2026-11-14 (its work is in `main`); a new one will be cut from `v1`. Goal: a
+**Dashboard phase (pre-design begun 2026-11-14; a stub since 2026-10-25).** The old `dashboard` branch was retired 2026-11-14 (its work is in `main`); the new `dashboard` branch was cut from `v1` the same day. The brief is `docs/edop/_v1/dashboard/pre-design_notes_cc.md`; its file list matches `docs/design/_xfer/` (copies for the desktop project; not canonical). Exploratory WOs: `dash_wo01_*` (cost of Level 08 profiles: about 3.6 days of compute if the ecoregion query and signature reuse are fixed, about 93 days as built; `basin06`/`basin08` have no index on `hybas_id`; stored basin profiles hold ingredients and the paragraph is assembled per place; items 3 and 4 open). Goal: a
 general-purpose front door for `edops.computingplace.org`, more broadly useful than the Sandbox / Workbench /
 Explorer trio. Explorer stays as is (more datasets coming). A stub exists at `/dashboard` (`dashboard.html`,
 unlinked, not in the nav). It will borrow heavily from `sandbox.html` and less from `workbench.html` —
@@ -158,8 +158,8 @@ nothing unfinished is merged into it. **`v1`** is the long-lived trunk for all v
   moved); the server then pulls as usual. Not done, discussed as optional hardening: GitHub branch protection on `main`, and
   deploying from a tag or a `release` branch so an accidental pull cannot ship unfinished work.
 - Commit, merge and push are separate asks. Tags: `v0.3`, `v0.4` (cutover marker), `v0.4.1` and `v0.4.2` (releases).
-- Branches as of 2026-11-14: `main`, `v1` (working branch), `regionality`, `registry`, `geda` (history; all on origin) and
-  the `claude/…` remote seed-docs branch. Retired (everything real in them is in `main`): `dashboard`, `mapfix`, `mapfix2`,
+- Branches as of 2026-11-14: `main`, `v1` (trunk), `dashboard` (active phase, cut from `v1`, local only), `regionality`, `registry`, `geda` (history; all on origin) and
+  the `claude/…` remote seed-docs branch. Retired (everything real in them is in `main`): the earlier `dashboard`, `mapfix`, `mapfix2`,
   `042`, the `whg-profile` branches. Older cleanup list: `logs/branch_cleanup_20261025.txt`.
 
 **What v0.4 contains (DOCS_v4 + kgreview + deploy fixes):** MkDocs live in-repo (`docsite/` source, `mkdocs.yml`,
