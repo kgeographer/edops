@@ -42,8 +42,18 @@ def test_permitted_set_excludes_a_source_before_any_other_test():
     assert sr.check('lmr_v2_1', span=(1300, 1400), permitted=None).applied
 
 
-def test_stored_source_is_not_served():
-    d = sr.check('geda', span=(1300, 1400))
+@pytest.fixture
+def stored_source(monkeypatch):
+    """A source held but not served. The real registry has none since GEDA became `served`, so one is added for the test."""
+    reg = dict(sr._registry())
+    reg['stored_demo'] = {'id': 'stored_demo', 'describes': {'name': 'Stored demo'},
+                          'selects': {'status': 'stored', 'time': {'years_covered': [1000, 2020]}}}
+    monkeypatch.setattr(sr, '_registry', lambda: reg)
+    return 'stored_demo'
+
+
+def test_stored_source_is_not_served(stored_source):
+    d = sr.check(stored_source, span=(1300, 1400))
     assert (d.applied, d.reason) == (False, 'not_served')
 
 
@@ -82,9 +92,9 @@ def test_a_licence_not_stated_passes_through_as_none():
     assert sr.sources_block([sr.check('lmr_v2_1', span=(1300, 1400))])['used'][0]['licence'] is None
 
 
-def test_permitted_out_and_stored_sources_are_in_neither_list():
+def test_permitted_out_and_stored_sources_are_in_neither_list(stored_source):
     b = sr.sources_block([sr.check('lmr_v2_1', span=(1300, 1400), permitted={'hyde_3_5'}),
-                          sr.check('geda', span=(1300, 1400))])
+                          sr.check(stored_source, span=(1300, 1400))])
     assert b == {'used': [], 'not_applied': []}
 
 

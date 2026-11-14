@@ -161,7 +161,7 @@ sources:
   - id: geda
     selects:
       kind: gridded_time_series
-      status: stored                               # temporal.geda_climate exists in the local database only
+      status: served                               # Band T, engine path; temporal.geda_climate is loaded to a server database like the other static datasets
       table: temporal.geda_climate                 # 28,970 cells; 1,021 values each
       footprint:
         type: cells
@@ -182,12 +182,14 @@ sources:
       years_recommended: null
       year_flags:
         - {years: [1990, 2020], flag: observed, note: "observed CRU TS 4.06, not reconstructed; 1000-1989 is reconstructed"}
-      caveats: []                                  # to be written at stage 3: z-scores, summer only, observed years, reliability follows tree-ring density
-      variables: []                                # no catalog entry yet; name to be decided at stage 3
+      caveats:
+        - {key: geda_caveat, when: "every GEDA row"}
+      variables:
+        - {payload: geda_scpdsi, catalog: geda_scpdsi, column: scpdsi, units: "z-score"}
       columns: {scpdsi: "JJA scPDSI as z-scores (mean 0, SD 1 per cell over 1000-2020)"}
     describes:
       name: Great Eurasian Drought Atlas
-      version: "trimmed distribution geda_trim.nc"
+      version: "Zenodo deposit 10.5281/zenodo.11059894 (trimmed distribution)"
       grain: "0.5 degrees"
       citation: "Cook et al. 2024, Journal of Climate"
       doi: 10.1175/JCLI-D-23-0773.1
@@ -196,7 +198,7 @@ sources:
       licence_url: https://creativecommons.org/licenses/by/4.0/
       licence_note: "Zenodo deposit by the authors."
       legacy_notes: []
-      notes: "Not read by the engine."
+      notes: "Served in Band T on the engine path (regionality WO-05); the public basin path does not read it."
 
   - id: cliopatria
     selects:

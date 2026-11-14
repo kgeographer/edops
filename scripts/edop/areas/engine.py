@@ -805,6 +805,12 @@ CAVEAT_TEXTS = {
     'hyde_nearest_year': (
         "No HYDE 3.5 epoch falls within this span; nearest available step shown."
     ),
+    'geda_caveat': (
+        "Great Eurasian Drought Atlas summer (June–August) scPDSI as z-scores: each 0.5° cell relative to its own "
+        "1000–2020 record. 1000–1989 is reconstructed from tree rings; 1990–2020 is observed. "
+        "Values summarise the distribution of cell scores across the area. "
+        "Reliability is lower where and when tree-ring records are sparse."
+    ),
 }
 
 def make_row(

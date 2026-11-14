@@ -369,7 +369,7 @@ Computed via next_down DAG traversal
 
 ### Band T — Temporal
 
-Period-specific climate enrichment from LMR v2.1, volcanic event annotation from eVolv2k v4, and land-use history from HYDE 3.4. Requires from_year and to_year. 14 variables in the catalog (13 implemented, 1 planned).
+Period-specific climate enrichment from LMR v2.1, volcanic event annotation from eVolv2k v4, and land-use history from HYDE 3.4. Requires from_year and to_year. 15 variables in the catalog (14 implemented, 1 planned).
 
 #### Land Use Temporal
 
@@ -395,6 +395,9 @@ Annual series {year, prate_anom_mm_day} + mean; converted from kg/m²/s; anomaly
 
 **Sea-level pressure (LMR v2.1)** (`lmr_slp`) — planned · LMR v2.1 · hPa · point value<br>
 Not currently stored in temporal.lmr_climate
+
+**Summer drought index, scPDSI (GEDA)** (`geda_scpdsi`) — implemented · GEDA · SD (z-score)<br>
+Annual series 1000–2020 CE. June–August scPDSI as z-scores per 0.5° cell (mean 0, SD 1 over the cell's 1000–2020 record). 1000–1989 reconstructed from tree rings; 1990–2020 observed (CRU TS 4.06). Eurasian cells only. Area rows summarise the distribution of cell scores.
 
 **Temperature anomaly (LMR v2.1)** (`lmr_temp_anomaly`) — implemented · LMR v2.1 · K<br>
 Annual series {year, air_anom_k} + air_mean_anom_k; anomaly vs. the 850–1850 CE CCSM4 mean (Tardif et al. 2019)
