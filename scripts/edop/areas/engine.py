@@ -990,6 +990,7 @@ class _BandTQuery:
     resolver_year: object
     conn: object
     permitted: object = None     # set of source ids the request may consult; None = all
+    geom: object = None          # (parameterized SQL expression, parameters) for the geometry, for source_registry.check
 
 
 class _SourceResult(NamedTuple):
@@ -1010,16 +1011,18 @@ def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resol
     if geom_wkt is not None:
         buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
         buf_geog_sql = f"({buf_geom_sql})::geography"
+        geom = ('ST_GeomFromText(%s, 4326)', (geom_wkt,))
     else:
         radius_m     = radius_km * 1000.0
         pt_sql       = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)"
         buf_geog_sql = f"ST_Buffer({pt_sql}::geography, {radius_m})"
         buf_geom_sql = f"({buf_geog_sql})::geometry"
+        geom = ('ST_Buffer(ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)::geometry', (lon, lat, radius_m))
 
     buf_area_m2 = float(
         conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
     )
-    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn, permitted)
+    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn, permitted, geom)
 
 
 def _band_t_evolv2k(q):
