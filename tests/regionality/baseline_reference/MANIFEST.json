@@ -1,6 +1,6 @@
 {
  "captured": "2026-11-14",
- "git_head": "931e5f5",
+ "git_head": "fbf8de1",
  "requests": {
   "timbuktu_single_basin_L6": {
    "route": "areas",
@@ -198,6 +198,30 @@
     "level": 6,
     "bands": "T",
     "detail": "true"
+   }
+  },
+  "tbilisi_public_bandT_1150_1250": {
+   "route": "signature",
+   "params": {
+    "scope": "basin",
+    "level": 6,
+    "bands": "ABCET",
+    "from_year": 1150,
+    "to_year": 1250,
+    "lat": 41.7151,
+    "lon": 44.8271
+   }
+  },
+  "timbuktu_public_bandT_1236_1240": {
+   "route": "signature",
+   "params": {
+    "scope": "basin",
+    "level": 6,
+    "bands": "ABCET",
+    "from_year": 1236,
+    "to_year": 1240,
+    "lat": 16.8167,
+    "lon": -2.9833
    }
   }
  }

@@ -42,6 +42,10 @@ REQUESTS = {
     'kyiv_buffer100_bandT_1300_1400': ('areas', dict(scope='buffer', radius_km=100, **KYIV, from_year=1300, to_year=1400, **_T)),
     'chaco_canyon_bandT_1300_1400': ('areas', dict(scope='single_basin', **CHACO, from_year=1300, to_year=1400, **_T)),
     'geda_edge_basin_bandT_1300_1400': ('areas', dict(scope='single_basin', **GEDA_EDGE, from_year=1300, to_year=1400, **_T)),
+    # added 2026-11-14: Band T on the public basin route (it had no reference): GEDA inside its footprint, and GEDA
+    # outside it with a span that has no HYDE step
+    'tbilisi_public_bandT_1150_1250': ('signature', dict(scope='basin', level=6, bands='ABCET', from_year=1150, to_year=1250, **TBILISI)),
+    'timbuktu_public_bandT_1236_1240': ('signature', dict(scope='basin', level=6, bands='ABCET', from_year=1236, to_year=1240, **TIMBUKTU)),
 }
 
 # Paths (dot-joined, list indexes dropped) that legitimately vary between identical calls.
