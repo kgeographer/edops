@@ -72,7 +72,13 @@ scope=basin: basin identity/geometry fields (id, hybas_id, geom_geojson, ...) pl
 "signature_bands": {"<band letter>": {"label": str, "items": [{"key", "label", "value"}, ...]}}
 for each requested band. Band T requires from_year and to_year (422 without them); when
 requested it nests under signature_bands["T"] instead, with its own "_status" ("ok" |
-"error"). flat=True: the same identity/geometry
+"error"). Band T holds the LMR and eVolv2k series, the HYDE epochs and a "geda_scpdsi" block
+for GEDA (Eurasia, 1000-2020 CE): {"status": "ok" | "low_coverage", "n_cells", "coverage",
+"mean", "min", "max", "series": [{"year", "scpdsi", "p10", "p90", "observed"?}], "caveat"},
+or {"status": "not_applied", "reason": "outside_footprint" | "outside_span" |
+"below_coverage_floor"} when the place, the span or the share of the basin that GEDA's cells
+cover is outside what GEDA can give (the response's "sources" block records the same).
+flat=True: the same identity/geometry
 fields plus every variable as a top-level key (no signature_bands nesting); Band T appears at
 top-level key "temporal" instead.
 
@@ -82,7 +88,8 @@ basins, not an average) plus "shortfall" and "caveats". See edops_schema_area.js
 a full worked example. flat, place_links are basin-only; ignored for buffer/area. Band T
 on these two scopes requires from_year == to_year (a single year, not a range) -- unlike
 scope=basin, Band T here explodes into one row per HYDE-epoch/LMR-year per member basin,
-so a real multi-year range is a genuine large-payload risk at this scope.
+so a real multi-year range is a genuine large-payload risk at this scope. Band T on these
+scopes includes GEDA rows (variable "geda_scpdsi") where GEDA applies.
 
 All three scopes carry a top-level "meta": {"signature_version", "generated", "query"
 (the request echoed back), "scope", "data_sources"}. meta["scope"] is

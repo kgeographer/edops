@@ -565,6 +565,11 @@
           "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
           "n_epochs": 3,
           "_note": "HYDE 3.5 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+        },
+        "geda_scpdsi": {
+          "status": "not_applied",
+          "reason": "outside_footprint",
+          "_note": "GEDA (Great Eurasian Drought Atlas, summer scPDSI as z-scores, 1000-2020 CE) covers Eurasia only; this Timbuktu example is outside its cells. Inside the footprint the block is {status: 'ok' | 'low_coverage', n_cells, coverage, mean, min, max, series: [{year, scpdsi, p10, p90, observed (1990 onward)}], caveat}. Other reasons: 'outside_span' (the span is before 1000 or after 2020), 'below_coverage_floor' (GEDA's cells cover under 10% of the basin)."
         }
       }
     }
@@ -749,6 +754,10 @@
         "epochs": "[3 epoch objects, e.g. {\"year_ce\": 1400, \"cropland_km2\": 0.109, \"grazing_km2\": 5.727, \"pasture_km2\": 0.0, \"rangeland_km2\": 5.727, \"basin_area_km2\": 573.4, \"n_cells\": 7, \"cropland_pct\": 0.02, \"grazing_pct\": 1.0, \"pasture_pct\": 0.0, \"rangeland_pct\": 1.0, \"cropland_std\": 0.038, \"grazing_std\": 1.542, \"pasture_std\": 0.0, \"rangeland_std\": 1.542, \"cropland_p10\": 0.0, \"cropland_p90\": 0.044, \"grazing_p10\": 0.189, \"grazing_p90\": 1.951}]",
         "n_epochs": 3,
         "_note": "HYDE 3.5 temporal resolution varies by era: millennial before 1 CE, centennial to 1700 CE, decadal to 1950, annual thereafter. BCE queries typically return a single epoch."
+      },
+      "geda_scpdsi": {
+        "status": "not_applied",
+        "reason": "outside_footprint"
       }
     }
   }

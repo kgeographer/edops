@@ -99,7 +99,7 @@ reading a regional average.
 [Dataset](https://doi.org/10.5281/zenodo.11059894) ·
 [Article](https://doi.org/10.1175/JCLI-D-23-0773.1)
 
-*Status: returned in Band T by the Sandbox's signature and by the public `scope=buffer` and `scope=area` routes. Not yet returned by `scope=basin` on `/api/signature`, and not yet shown on the Sandbox page.*
+*Status: returned in Band T by the Sandbox's signature and by all three scopes of `/api/signature` (`basin`, `buffer`, `area`). Not yet shown on the Sandbox page.*
 
 Gridded reconstruction of summer (June–August) drought, the self-calibrating Palmer Drought Severity
 Index (scPDSI), on a 0.5° grid for 1000–2020 CE, built from 1,869 tree-ring chronologies and one
