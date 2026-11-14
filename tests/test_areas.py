@@ -299,11 +299,11 @@ class TestPolityPayload:
         assert res["year"]   == 1000
 
     def test_total_row_count(self, nsong_live):
-        assert len(nsong_live["rows"]) == 372
+        assert len(nsong_live["rows"]) == 473      # 372 before GEDA (regionality WO-05) + 101 GEDA years, 1000-1100
 
     def test_band_t_row_count(self, nsong_live):
         t_rows = [r for r in nsong_live["rows"] if r.get("band") == "T"]
-        assert len(t_rows) == 320
+        assert len(t_rows) == 421                  # 320 before GEDA + 101
 
     def test_scope_block(self, nsong_live):
         nb = nsong_live["scope"]
@@ -327,24 +327,29 @@ def polity_fixture_data():
     return json.loads(POLITY_FIXTURE_PATH.read_text())
 
 
+def _without_geda(rows):
+    """The frozen fixtures predate GEDA (regionality WO-05); compare on the rows they could contain."""
+    return [r for r in rows if r["variable"] != "geda_scpdsi"]
+
+
 class TestPolityFixtureEquivalence:
-    """Live /api/areas?scope=polity must match structure of 03_polity_nsong_detail.json."""
+    """Live /api/areas?scope=polity must match structure of 03_polity_nsong_detail.json (apart from GEDA rows)."""
 
     def test_same_row_count(self, nsong_live, polity_fixture_data):
-        assert len(nsong_live["rows"]) == len(polity_fixture_data["rows"])
+        assert len(_without_geda(nsong_live["rows"])) == len(polity_fixture_data["rows"])
 
     def test_same_variable_list(self, nsong_live, polity_fixture_data):
-        live_vars    = [r["variable"] for r in nsong_live["rows"]]
+        live_vars    = [r["variable"] for r in _without_geda(nsong_live["rows"])]
         fixture_vars = [r["variable"] for r in polity_fixture_data["rows"]]
         assert live_vars == fixture_vars
 
     def test_same_method_per_variable(self, nsong_live, polity_fixture_data):
-        live    = {r["variable"]: r["method"] for r in nsong_live["rows"]}
+        live    = {r["variable"]: r["method"] for r in _without_geda(nsong_live["rows"])}
         fixture = {r["variable"]: r["method"] for r in polity_fixture_data["rows"]}
         assert live == fixture
 
     def test_same_band_per_variable(self, nsong_live, polity_fixture_data):
-        live    = {r["variable"]: r["band"] for r in nsong_live["rows"]}
+        live    = {r["variable"]: r["band"] for r in _without_geda(nsong_live["rows"])}
         fixture = {r["variable"]: r["band"] for r in polity_fixture_data["rows"]}
         assert live == fixture
 

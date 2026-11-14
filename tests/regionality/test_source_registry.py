@@ -57,6 +57,16 @@ def test_stored_source_is_not_served(stored_source):
     assert (d.applied, d.reason) == (False, 'not_served')
 
 
+@pytest.mark.parametrize('year, keys', [(1000, []), (1989, []), (1990, ['geda_observed']), (2020, ['geda_observed']), (2021, [])])
+def test_year_caveats_follow_the_registry_year_flags(year, keys):
+    assert sr.year_caveats('geda', year) == keys
+
+
+def test_a_year_flag_without_a_caveat_key_adds_none():
+    assert sr.year_caveats('hyde_3_5', 1950) == []       # HYDE's 1950 flag is handled by its own code, not a caveat key here
+    assert sr.year_caveats('lmr_v2_1', 1300) == []
+
+
 def test_source_without_a_time_axis_applies():
     assert sr.check('basinatlas_v1').applied
     assert sr.check('basinatlas_v1', span=(1300, 1400)).span == (1300, 1400)

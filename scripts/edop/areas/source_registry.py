@@ -52,6 +52,12 @@ def years_covered(source_id):
     return tuple(yc) if yc else None
 
 
+def year_caveats(source_id, year):
+    """Caveat keys for a year the source flags: its `year_flags` entries that name a `caveat` and cover the year."""
+    flags = entry(source_id)['selects'].get('year_flags') or []
+    return [f['caveat'] for f in flags if f.get('caveat') and f['years'][0] <= year <= f['years'][1]]
+
+
 def coverage_outcome(source_id, coverage):
     """The source's coverage rule applied to a coverage share: (applied, reason, flag).
 

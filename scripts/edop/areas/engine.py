@@ -30,6 +30,7 @@ import geopandas as gpd
 from scripts.edop.areas import source_registry
 import numpy as np
 import pandas as pd
+from psycopg import sql
 
 # psycopg3 connections work fine with pd.read_sql; suppress the SQLAlchemy nag
 warnings.filterwarnings(
@@ -811,6 +812,10 @@ CAVEAT_TEXTS = {
         "Values summarise the distribution of cell scores across the area. "
         "Reliability is lower where and when tree-ring records are sparse."
     ),
+    'geda_observed': (
+        "Observed, not reconstructed: from 1990 the GEDA values come from CRU TS 4.06 climate data, "
+        "not from tree-ring reconstruction."
+    ),
 }
 
 def make_row(
@@ -1214,6 +1219,62 @@ def _band_t_hyde(q):
     return _SourceResult(rows, decision, f'nearest step: {nearest[0]}' if nearest else None)
 
 
+def _band_t_geda(q):
+    """GEDA rows: one summer scPDSI row per year in the span (1000-2020), shaped like the LMR rows.
+
+    The registry decides whether the source applies (years, cells under the geometry, coverage rule). Zero cells
+    is a normal outcome, not an error: no rows, and the decision says why."""
+    rows = []
+    decision = source_registry.check('geda', span=(q.from_year, q.to_year), geometry=q.geom,
+                                     permitted=q.permitted, conn=q.conn)
+    if not decision.applied:
+        return _SourceResult(rows, decision)
+
+    g_from, g_to = decision.span
+    first_year = source_registry.years_covered('geda')[0]
+    units = source_registry.entry('geda')['selects']['variables'][0]['units']
+    geom_sql, geom_params = q.geom
+    cells = q.conn.execute(sql.SQL("""
+        WITH g AS (SELECT {geom} AS geom)
+        SELECT c.scpdsi[(%s)::int:(%s)::int],
+               ST_Area(ST_Intersection(c.cell_geom, g.geom)::geography) AS overlap_m2,
+               c.area_km2 * 1e6 AS cell_m2
+        FROM temporal.geda_climate c, g
+        WHERE ST_Intersects(c.cell_geom, g.geom)
+        ORDER BY overlap_m2 DESC""").format(geom=sql.SQL(geom_sql)),
+        (*geom_params, g_from - first_year + 1, g_to - first_year + 1)).fetchall()
+
+    overlap = np.array([c[1] for c in cells], dtype=float)
+    keep    = overlap > 0                                     # cells that only touch the geometry carry no weight
+    matrix  = np.array([c[0] for c, k in zip(cells, keep) if k], dtype=float)      # cells x years
+    frac    = overlap[keep] / np.array([c[2] for c in cells], dtype=float)[keep]   # share of each cell inside the geometry
+    weight  = frac / frac.sum()
+    status  = 'low_coverage' if decision.flag == 'low_coverage' else 'ok'
+
+    for i, year in enumerate(range(g_from, g_to + 1)):
+        col  = matrix[:, i]
+        hist = _weighted_histogram(col, frac, unit_type='geda_cell')
+        if hist is not None:
+            hist.update({
+                'resolver_year': q.resolver_year,
+                'band_t_from':   q.from_year,
+                'band_t_to':     q.to_year,
+            })
+        rows.append(make_row(
+            variable='geda_scpdsi', band='T',
+            method='grid_areal_distribution',
+            unit_type='geda_cell', n_units=len(col),
+            representative_score=None,
+            representative_raw=float(np.dot(col, weight)),
+            coverage=decision.coverage, status=status,
+            caveat=['geda_caveat'] + source_registry.year_caveats('geda', year),
+            year=year, epoch_year=None, units=units,
+            detail={'distribution': hist, 'w_eff': round(float(frac.sum()), 2)},
+        ))
+    note = f'covers {decision.coverage:.1%} of the area' if decision.flag == 'low_coverage' else None
+    return _SourceResult(rows, decision, note)
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None, permitted=None):
     """
@@ -1250,7 +1311,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     """
     q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted)
 
-    results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q)]
+    results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q), _band_t_geda(q)]
     return _BandTResult(
         rows=[r for res in results for r in res.rows],
         decisions=[res.decision for res in results],
