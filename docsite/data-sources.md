@@ -99,12 +99,12 @@ reading a regional average.
 [Dataset](https://doi.org/10.5281/zenodo.11059894) ·
 [Article](https://doi.org/10.1175/JCLI-D-23-0773.1)
 
-*Status: stored in the EDOPS database; not yet returned by the API or the Sandbox.*
+*Status: returned in Band T by the Sandbox's signature and by the public `scope=buffer` and `scope=area` routes. Not yet returned by `scope=basin` on `/api/signature`, and not yet shown on the Sandbox page.*
 
 Gridded reconstruction of summer (June–August) drought, the self-calibrating Palmer Drought Severity
 Index (scPDSI), on a 0.5° grid for 1000–2020 CE, built from 1,869 tree-ring chronologies and one
 speleothem record (Cook et al. 2024). EDOPS stores the authors' trimmed distribution: Eurasia, without
-sub-Saharan Africa or anything south of the equator. Planned for Band T beside LMR as a separate
+sub-Saharan Africa or anything south of the equator. It is Band T beside LMR, as a separate
 product.
 
 **What to know.** The years 1000–1989 are reconstructed from tree rings; 1990–2020 are observed
@@ -119,6 +119,16 @@ that stay broadly consistent as the network thins back in time, shown as maps; E
 derived regional figures from them. The grid is coarse: a cell is about 2,000 km² at mid-latitudes, so
 a large basin holds a few cells and a small one a fraction of a cell. Only the 28,970 cells with values
 are stored; outside them nothing is returned, which is different from a value of zero.
+
+**How it is returned.** For each year of the span that GEDA covers (1000–2020 CE), the signature gives
+the area-weighted mean of the scores of the cells under the query area, and the distribution of the
+cells' values (10th and 90th percentiles and a histogram), with the number of cells and the share of the
+query area they cover. If no GEDA cell lies under the query area, as in the Americas, Africa south of the
+Sahara or the Southern Hemisphere, nothing is returned and the response's `sources` block lists GEDA as
+not applied (`outside_footprint`). If the cells cover under a tenth of the area, nothing is returned
+(`below_coverage_floor`); from a tenth to a half, values are returned with the status `low_coverage`. A span
+that ends before 1000 returns nothing (`outside_span`). Rows for 1990 onward carry a caveat marking them as
+observed.
 
 Licence: CC BY 4.0. The deposit on Zenodo is by the authors, Edward R. Cook and Benjamin I. Cook.
 

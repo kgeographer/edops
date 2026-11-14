@@ -39,7 +39,7 @@ Each section can be read on its own; the "Assumes" line under each heading says 
 | Buffer (radius 1 to 2000 km, default 100) | basins intersecting the circle, weighted by their share of it | a **distribution** over those basins (percentile, spread badge, histogram) | **only the basin containing the point** |
 | Polity at a date | basins intersecting the slice polygon, weighted by their share of it | a distribution over those basins | nothing: the other tabs are hidden |
 
-**The bands.** A–E are undated and return 52 rows at L6 (A physiographic 8, B hydro-climatic 18, C bioclimatic 15, D Anthropocene 8, E coastality 3). T (temporal) is the only band a date selects: HYDE land use, LMR paleoclimate, eVolv2k volcanic events, computed on the query's own geometry, with no percentile.
+**The bands.** A–E are undated and return 52 rows at L6 (A physiographic 8, B hydro-climatic 18, C bioclimatic 15, D Anthropocene 8, E coastality 3). T (temporal) is the only band a date selects: HYDE land use, LMR paleoclimate, eVolv2k volcanic events and, for places in Eurasia, GEDA summer drought (returned in the payload, not yet shown by the Sandbox), computed on the query's own geometry, with no percentile.
 
 **Why a number can be missing** (six states, each named on screen; details in §2.6):
 1. **By design:** categoricals and flags have no percentile (they show a class label or a fraction).
@@ -189,7 +189,7 @@ Verified live (local server) on Timbuktu 16.8167, −2.9833, L6, `bands=ABCDE&de
 | C | Bioclimatic proxies: temperature, precipitation, aridity, biome, ecoregion (contemporary baseline) | 15 | BasinATLAS |
 | D | Anthropocene markers: population, cropland, human footprint (present-day only) | 8 | BasinATLAS |
 | E | Coastality: distance to sink, endorheic flag, outlet type | 3 | BasinATLAS |
-| T | Temporal context: HYDE 3.4 land use, LMR v2.1 climate reconstruction, eVolv2k volcanic forcing. Needs a year span | separate | see 2.4, section 5 |
+| T | Temporal context: HYDE 3.4 land use, LMR v2.1 climate reconstruction, eVolv2k volcanic forcing, GEDA summer drought (Eurasia only). Needs a year span | separate | see 2.4, section 5 |
 
 [code sandbox.html:204-209 (labels), `BAND_LABELS`; catalog `documentation/EDOPS_variable_catalog_v0.4.tsv`; live counts]
 - The Signature tab groups rows **only by band** (accordion, default-open band is T if present, else C). The catalog's finer `dimension` (elevation, discharge, …) is not used for grouping. Within a band, order is engine block order (B1, B2, B3, B4, B5), not alphabetical or by dimension. [code sandbox.html:renderSignature:3374-3410; engine.py:_areal_signature_from_basin_set `basin_rows = b1+b2+b3+b4+b5`]
@@ -233,7 +233,7 @@ Routing is by the catalog's `kind` and `typology_cluster`: categorical → B3; f
 | `flag_fraction` | B4 | `coast_fraction` | none | area-weighted fraction of basins flagged coastal | null | none |
 | `distribution_only` | B5 | 3 untyped continuous (`temp_max`, `temp_min`, `reservoir_vol`) | as area_weighted | null for multi-basin | as area_weighted | as area_weighted, plus `regimes, suppressed_score` when suppressed |
 | `extreme` | B5 | none (the set is empty) | n/a | n/a | n/a | never emitted today |
-| `grid_areal_distribution`, `global_forcing` | B7 / Band T | HYDE, LMR, eVolv2k | n/a (Band T has no global percentile) | yes | n/a | section 5 |
+| `grid_areal_distribution`, `global_forcing` | B7 / Band T | HYDE, LMR, GEDA, eVolv2k | n/a (Band T has no global percentile) | yes | n/a | section 5 |
 
 [code engine.py:aggregate_b1…b5, aggregate_band_t; live `method` counts: area_weighted 35, class_mixture 10, distribution_only 3, dominant_basin 3, flag_fraction 1]
 - **B6 modality** is a post-pass on B1 and B5 rows: tags `unimodal` / `two_regime`; for a two-regime row the single score is nulled and `score_suppressed = true`. Live buffer: 13 rows `two_regime`, 13 suppressed. [code engine.py:apply_modality; live]
@@ -289,7 +289,7 @@ The docs use "variables" for several different counts. Measured 2026-10-27 at Ti
 
 | Count | Number | Notes |
 |---|---|---|
-| Catalog rows | 102 | 74 implemented, 28 planned. Band T has 13 implemented, 1 planned, plus 1 planned "output" row. This is the "around 100 variables" in the docs. |
+| Catalog rows | 103 | 75 implemented, 28 planned (102 and 74 when measured 2026-10-27; `geda_scpdsi` was added 2026-11-14). Band T has 14 implemented, 1 planned, plus 1 planned "output" row. This is the "around 100 variables" in the docs. |
 | Catalog A-E | 87 | 61 implemented (A 9, B 14, C 26, D 7, E 5) and 26 planned. Local and upstream versions share one entry, so the 61 entries have 75 keys. |
 | Public `/api/signature?scope=basin&bands=ABCDE` | 66 variables | A 11, B 20, C 22, D 10, E 3 |
 | Sandbox Signature tab (`/api/areas`) | 52 rows | local and upstream counted as separate rows (A 8, B 18, C 15, D 8, E 3) |
@@ -349,8 +349,9 @@ Band T does **not** use the basin set. It is computed directly on the query's ow
 | Source | Rows | Aggregation over the footprint | Notes |
 |---|---|---|---|
 | HYDE 3.4 (`hyde_cropland`, `hyde_grazing`, `hyde_pasture`, `hyde_rangeland`) | one per variable per HYDE epoch inside the span (1 epoch → 4 rows in all three runs) | **overlap-weighted sum** of cell areas in km² (an extensive quantity); distribution of per-cell values in `detail` | If no epoch falls in the span, the **nearest** epoch is used and tagged `hyde_nearest_year`; 1950 is tagged `hyde_caveat` |
-| LMR v2.1 (`lmr_pdsi`, `lmr_air`, `lmr_prate`) | one per variable per **year** in the span (51 years → 153 rows; 67 → 201) | area-weighted mean over 2°×2° footprints intersecting the area; footprint count in `n_units` | CE 0–1998 only; every row carries `lmr_caveat`; absent for BCE spans |
+| LMR v2.1 (`lmr_pdsi`, `lmr_air`, `lmr_prate`) | one per variable per **year** in the span (51 years → 153 rows; 67 → 201) | area-weighted mean over 2°×2° footprints intersecting the area; footprint count in `n_units` | CE 0–2000 only; every row carries `lmr_caveat`; absent for BCE spans |
 | eVolv2k (`evolv2k_vssi`) | one per volcanic event year in the span (7 and 8 in these runs) | none: a global forcing series, not spatial (`unit_type = global`) | −491 to 1890 CE |
+| GEDA (`geda_scpdsi`, added 2026-11-14) | one per **year** in the span, 1000–2020 | area-weighted mean over the 0.5° cells intersecting the area (as LMR); cell count in `n_units`; distribution in `detail`, plus `w_eff`, the effective cell count | Eurasian cells only. No rows, and an entry in `sources.not_applied`, when no cell lies under the area (`outside_footprint`), the cells cover under 10% of it (`below_coverage_floor`) or the span is outside 1000–2020 (`outside_span`); 10–50% coverage returns rows with status `low_coverage`. Every row carries `geda_caveat`, rows from 1990 also `geda_observed`. Engine path only: not returned by `/api/signature?scope=basin` |
 
 - No percentile or score for any Band T row (`representative_score` is null, not suppressed). [code engine.py:aggregate_band_t]
 - Row count scales with span length (164 rows for a 51-year span on one basin, 213 for 67 years on a polity). [live]
@@ -409,6 +410,7 @@ All of this is `renderLeaf`. Text in quotes is the literal UI text. [code sandbo
 - **LMR climate** (header "LMR climate — *N* cells · *from–to* CE"): for each of PDSI, temperature anomaly and precipitation, a histogram of footprint values for the **middle year**, a **Year slider** that swaps the histogram to any year in the span, and a small **time series** (mean line with a p10–p90 band, min/max and first/last year labelled).
 - **HYDE land use:** a table, rows Cropland / Grazing / Pasture / Rangeland, one column per epoch ("~" prefix and a footnote when the epoch is the nearest one rather than inside the span); values are km² sums.
 - **eVolv2k volcanic events:** a table of year and VSSI (Tg S). Events ≥ 5 Tg S are shown; a "show all N" link reveals the rest. If none reach 5, all are shown.
+- **GEDA:** not displayed. `renderTBand` draws only the LMR, HYDE and eVolv2k groups, so GEDA rows are ignored. They do count in the Band T badge (a 100-year span in the footprint adds 101).
 - Band T rows never show a percentile.
 
 ### 4.4 Analysis tab (Settlements only)
@@ -489,8 +491,9 @@ A–E rows take no date input. A point query has no resolver year at all.
 | HYDE 3.4 | −10000 to 2025 CE (128 steps) | millennial −10000 to −1000 (10 steps); centennial 0 to 1700 (18); decadal 1710 to 1950 (25); annual 1951 to 2025 (75) | all epochs inside the span, 4 rows each. **If none falls inside, the single nearest epoch to the span's midpoint**, tagged `hyde_nearest_year` |
 | LMR v2.1 | 0 to 2000 CE (arrays hold 2001 values; the engine clamps to 0–2000; the API parameter text also says 0–2000 but does not validate it) | annual | one row per year per variable (PDSI, air, precipitation); **none** if the span is entirely before 0 or after 2000; partial overlap is clipped |
 | eVolv2k v4 | −491 to 1890 CE (256 events) | event years only | one row per eruption year inside the span; none if no events |
+| GEDA | 1000 to 2020 CE; Eurasia only (28,970 cells of 0.5°) | annual | one row per year, clipped to 1000–2020; **none** if the span is outside those years, if no cell lies under the area, or if the cells cover under 10% of it |
 
-[code engine.py:_LMR_RANGE, _EVOLV_RANGE, aggregate_band_t; DB `temporal.hyde_times`, `evolv2k_v4`, `lmr_climate`]
+[code engine.py:_band_t_geda, aggregate_band_t; source_registry.py:check, years from the registry; (earlier) _LMR_RANGE, _EVOLV_RANGE; DB `temporal.geda_climate`; DB `temporal.hyde_times`, `evolv2k_v4`, `lmr_climate`]
 
 **LMR reference period.** LMR values are anomalies. Per Tardif et al. 2019 (section 2.3) the reanalysis fields are deviations from the mean over the CCSM4 last-millennium simulation, which covers 850 to 1850 CE (not a 20th-century period). The Signature tab's Band T rows show the stored values unchanged. The Polities map layer re-baselines each cell to the mean of the stored values over 850 to 1850 CE. Measured 2026-10-27: that mean is not exactly zero. For air temperature it averages about -0.21 K across the 16,380 cells (range -1.8 to +0.3 K); for PDSI about +0.02; for precipitation rate about -0.014 mm/day (range roughly -0.36 to +0.47). For the Timbuktu cell and 1475-1525 CE, the table shows -0.17 K and the map -0.02 K. So the two displays are close for most cells but not identical, and nothing on screen says which baseline applies. [code engine.py:aggregate_band_t, routes_sandbox.py:lmr_values, `_LMR_BASELINE`; Tardif et al. 2019, Clim. Past 15, 1251]
 
