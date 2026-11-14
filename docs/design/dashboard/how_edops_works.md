@@ -1,6 +1,6 @@
 # How EDOPS produces a signature
 
-Quick overview for a developer new to EDOPS. First draft 2026-11-13, a working document to be revised as the service changes. For detail, see `sandbox_cheatsheet.md` (what the Sandbox does, code-cited), `docsite/` (user docs) and `documentation/` (the variable catalog and source registry).
+Quick overview for a developer new to EDOPS. First draft 2026-11-13, updated 2026-11-14 for GEDA, a working document to be revised as the service changes. For detail, see `sandbox_cheatsheet.md` (what the Sandbox does, code-cited), `docsite/` (user docs) and `documentation/` (the variable catalog and source registry).
 
 **What a signature is.** For a place or area on Earth, EDOPS returns a table of environmental variables (terrain, hydrology, climate, ecoregion, land use, and so on). Each variable is aggregated over the drainage basins the query covers, with a global percentile. Optionally it also returns time-specific context for a span of years.
 
@@ -30,9 +30,9 @@ Quick overview for a developer new to EDOPS. First draft 2026-11-13, a working d
     - For each variable the engine reads BasinATLAS values from PostGIS, applies the variable's aggregation method (area-weighted, dominant basin, class mixture, and so on), and ranks the result against all basins on Earth at that level.
     - Seasonality variables are derived from the monthly arrays.
   - **Band T, if asked.**
-    - HYDE land use, LMR paleoclimate and eVolv2k volcanic events are computed on the query's own geometry.
+    - HYDE land use, LMR paleoclimate, eVolv2k volcanic events and GEDA summer drought are computed on the query's own geometry, one function per source.
     - Each source first asks the **source registry** (`documentation/EDOPS_source_registry.yaml`, read by `scripts/edop/areas/source_registry.py`) whether the span and place are covered.
-    - A source outside its years is skipped and reported.
+    - A source outside its years is skipped and reported. A regional source such as GEDA (Eurasia only) is also checked against its footprint: how much of the query area falls inside its cells. Below 10% it is skipped and reported; from 10% to 50% it is returned with a low-coverage note.
 - **Assemble** one JSON payload.
 - **Browser** draws the map, the signature accordion, the charts and the caveats.
 
@@ -40,17 +40,16 @@ Quick overview for a developer new to EDOPS. First draft 2026-11-13, a working d
 
 - **Always:** BasinATLAS (HydroATLAS), plus values derived from it.
 - **Polity scope:** Cliopatria polygons.
-- **Band T:** HYDE 3.5 (-10000 to 2025), LMR v2.1 (0 to 2000 CE) and eVolv2k v4 (volcanic forcing). Each is span-limited.
+- **Band T:** HYDE 3.5 (-10000 to 2025), LMR v2.1 (0 to 2000 CE), eVolv2k v4 (volcanic forcing) and GEDA (Great Eurasian Drought Atlas, summer scPDSI as standard scores, 1000 to 2020 CE, 0.5° grid, Eurasia only; 1990 onward is instrumental). Each is span-limited, and GEDA is also footprint-limited.
 - **Public basin call (`/api/signature`):** also an elevation service (OpenTopoData, falling back to Open-Meteo).
 - **Place lookup:** the WHG gazetteer (it finds the point and is not part of the signature).
-- **Planned:** GEDA, a regional data set (WO-05).
 
 ## 4. What comes back (`/api/areas`, one JSON object)
 
 - `rows`: one object per variable.
   - Each carries its band, variable name and friendly name, units, method, and score (the global percentile).
   - It also has the raw value for a single basin, the coherence and modality badges, `n_units`, a status, optional `detail` (histogram), and a caveat key.
-  - Band T rows live here too.
+  - Band T rows live here too, including `geda_scpdsi` rows. The Sandbox page does not draw GEDA rows yet.
 - `bands`: the list of bands included.
 - `scope`: what was resolved (basin id or member ids, level, radius, unit count).
 - `shortfall`: the share of the area covered by no basin (open water, for example).
@@ -60,6 +59,8 @@ Quick overview for a developer new to EDOPS. First draft 2026-11-13, a working d
 - Polity scope adds `resolver` (polity name and slice), `member_ids` and `modality_post_pass`.
 
 **The public API's shape differs.** `/api/signature?scope=basin` returns `id`, `up_area`, `geom_geojson`, the elevation fields, `profile_summary`, `signature_bands` (A to E, each a list of `{key, label, value}`), `meta` and `sources`. Its `scope=buffer` and `scope=area` return the engine's payload, with `rows` renamed to `variables` and a `meta` block added.
+
+**Band T on the public basin call.** With `T` in `bands`, `signature_bands.T` holds LMR, HYDE and eVolv2k from older code (`app/db/`: LMR nearest grid cell, HYDE cells whose centroid falls in the basin), and GEDA from the engine (`geda_scpdsi`: `n_cells`, `coverage`, `mean`, `min`, `max`, a yearly `series` with p10 and p90, or `not_applied` with a reason). So one basin response mixes two methods. Every `/api/signature` response also lists all data sources in `meta.data_sources` and the ones actually consulted in `sources`.
 
 ## Not yet covered
 
