@@ -3710,8 +3710,6 @@
       el.addEventListener('mouseenter', () => el.style.background = '#f0f4ff');
       el.addEventListener('mouseleave', () => el.style.background = '');
       el.addEventListener('click', () => {
-        // Lock example; commit to search path
-        document.getElementById('v3-polity-example').disabled = true;
         selectPolity(el.dataset.name).then(() => { if (_politySlices.length) _runPolitySignature(); });
       });
     });

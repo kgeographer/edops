@@ -188,6 +188,17 @@ def test_a_polity_chosen_from_the_dashboard_has_no_profile_tab(dashboard_server,
     assert _profile_tab_display(page) == "none"
 
 
+def test_the_polity_example_dropdown_stays_usable_after_a_polity_search(dashboard_server, page):
+    page.goto(f"{dashboard_server}/dashboard", wait_until="load")
+    page.click("#v3-tab-polities-btn")
+    page.fill("#v3-polity-input", "Northern Song")
+    page.locator(".v3-polity-item", has_text="Northern Song").first.click()
+    page.wait_for_function(SETTLED, timeout=60000)
+    assert page.is_enabled("#v3-polity-example")
+    page.select_option("#v3-polity-example", label="Inca Empire (1440–1571 CE)")
+    page.wait_for_url("**polity=Inca*")
+
+
 def test_a_polity_link_that_names_profile_just_opens_the_map(dashboard_server, page):
     page.goto(f"{dashboard_server}/dashboard?scope=polity&polity=Northern%20Song&view=profile&v=1", wait_until="load")
     page.wait_for_function(SETTLED, timeout=60000)
