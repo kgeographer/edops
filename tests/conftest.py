@@ -71,7 +71,7 @@ def athens_bce_temporal(db_available):
 def _area(rel):
     if rel.startswith("engine/"):
         return "engine"
-    if rel in ("surface/test_sandbox_ui.py", "dashboard/test_handoff_ui.py"):
+    if rel in ("surface/test_sandbox_ui.py", "dashboard/test_handoff_ui.py", "dashboard/test_permalink_ui.py"):
         return "ui"                               # Playwright, drives a browser
     if rel.startswith("surface/"):
         return "sandbox"

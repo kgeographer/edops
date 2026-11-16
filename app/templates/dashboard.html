@@ -499,6 +499,13 @@
         <span id="v3-handoff-msg"></span>
       </div>
 
+      <div id="v3-permalink-row" class="align-items-center justify-content-end gap-2 mb-1" style="display:none;">
+        <input id="v3-permalink-url" class="form-control form-control-sm" readonly style="width:320px; display:none;"
+               aria-label="Link to this result">
+        <button id="v3-permalink-btn" type="button" class="btn btn-sm btn-outline-secondary"
+                title="Copy a link that reproduces this result"><i class="bi bi-link-45deg"></i> <span id="v3-permalink-label">Copy link</span></button>
+      </div>
+
       <ul class="nav nav-tabs mb-2" id="v3TabList" role="tablist">
         <li class="nav-item" role="presentation" id="v3-tab-profile-li">
           <button class="nav-link disabled" id="v3-tab-profile-btn" data-bs-toggle="tab"
@@ -815,6 +822,7 @@
   // Query log: builders tag requests src=ui_aux (server skips them); a user-initiated Get-signature
   // upgrades its URL via _qlog(), which adds place_name and fires a GA event.
   let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
+  let _lastRun = null;      // parameters of the last successful run, for the permalink button
   function _qlog(url) {
     const u = new URL(url, location.origin);
     const p = u.searchParams;
@@ -2431,6 +2439,9 @@
   }
 
   function _resetRightColumn({ keepPlace = false } = {}) {
+    _lastRun = null;
+    document.getElementById('v3-permalink-row').style.display = 'none';
+    document.getElementById('v3-permalink-url').style.display = 'none';
     _pointSig = null;
     _centerPointSig = null;
     _previewRingMemberId = null;
@@ -2972,9 +2983,26 @@
   }
 
   // ── Get Signature click ───────────────────────────────────────────────────
+  function _settlementSnapshot(uiScope) {
+    const bands = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
+    const st = { kind: 'settlement', scope: { single: 'single_basin', ring: 'basin_ring', buffer: 'buffer' }[uiScope],
+                 level: _activeLevel(), bands, lat: currentLat, lon: currentLon, name: _currentPlaceName };
+    if (uiScope === 'buffer') st.radiusKm = parseFloat(document.getElementById('v3-radius').value);
+    if (bands.includes('T')) {
+      st.fromYear = parseInt(document.getElementById('v3-from-year').value, 10);
+      st.toYear   = parseInt(document.getElementById('v3-to-year').value, 10);
+    }
+    return st;
+  }
+  function _recordRun(snapshot) {
+    _lastRun = snapshot;
+    document.getElementById('v3-permalink-row').style.display = 'flex';
+  }
+
   async function _runSettlementSignature() {
     const scope     = document.getElementById('v3-scope-select').value;
     if (!scope) return;
+    const _snap = _settlementSnapshot(scope);
     const sigTabBtn = document.getElementById('v3-tab-sig-btn');
     const pane      = document.getElementById('v3-sig-content');
     const sigBtn    = document.getElementById('v3-sig-btn');
@@ -3078,6 +3106,7 @@
 
       renderSignature(payload);
       await renderProfileTab(payload, scope, lv);
+      _recordRun(_snap);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
@@ -3999,6 +4028,7 @@
       _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
       renderSignature(payload);
       await renderProfileTab(payload, 'polity', lv);
+      _recordRun({ kind: 'polity', scope: 'polity', polity: polityName, year: parseInt(resolverYear, 10), level: lv, bands });
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
 
@@ -4046,6 +4076,8 @@
   document.getElementById('v3-reset-btn').addEventListener('click', () => {
     const onPolities = document.getElementById('v3-tab-polities-btn').classList.contains('active');
     if (onPolities) resetPolities(); else resetSettlements();
+    history.replaceState(null, '', window.location.pathname);   // a reloaded page must not re-open the old link
+    document.getElementById('v3-handoff-alert').className = 'd-none';
   });
 
   // Level-select change listeners — reload choropleth at new level
@@ -4661,6 +4693,37 @@
     }
     bootstrap.Tab.getOrCreateInstance(btn).show();
   }
+
+  // The displayed state, for the permalink button: the last successful run's parameters, the ring member shown
+  // (if any) and the active tab. Panel controls (sliders, thresholds, Context radius, Similarity, map variable,
+  // accordions) are not captured; they open at their defaults.
+  function _viewOfActiveTab() {
+    const hit = Object.entries(_VIEW_BTN).find(([, id]) => document.getElementById(id).classList.contains('active'));
+    return hit ? hit[0] : 'signature';
+  }
+  function getState() {
+    if (!_lastRun) return null;
+    const st = { ..._lastRun, view: _viewOfActiveTab() };
+    if (st.scope === 'basin_ring' && _committedRingMemberId != null) st.member = _committedRingMemberId;
+    return st;
+  }
+  function _permalinkOrigin() {   // the public hosts all link to the canonical one
+    return ['computingplace.org', 'www.computingplace.org'].includes(window.location.hostname)
+      ? 'https://edops.computingplace.org' : window.location.origin;
+  }
+  document.getElementById('v3-permalink-btn').addEventListener('click', async () => {
+    const st = getState();
+    if (!st) return;
+    const url = `${_permalinkOrigin()}/dashboard?${EdopsPermalink.build(st)}`;
+    const box = document.getElementById('v3-permalink-url'), label = document.getElementById('v3-permalink-label');
+    box.value = url;
+    box.style.display = '';
+    box.select();
+    let copied = true;
+    try { await navigator.clipboard.writeText(url); } catch (_) { copied = false; }
+    label.textContent = copied ? 'Link copied' : 'Copy the link shown';
+    setTimeout(() => { label.textContent = 'Copy link'; }, 2500);
+  });
 
   async function _applySettlementState(st) {
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-settlements-btn')).show();
