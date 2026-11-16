@@ -1,0 +1,12 @@
+/* Dashboard-only styles (the page otherwise uses sandbox.css). */
+
+/* Profile tab: the stored profile's text and figure, styled as on the /profiles page. */
+#v3-profile-content p { margin-bottom: 0.75rem; line-height: 1.55; overflow-wrap: anywhere; }
+#v3-profile-content .pf-sec { margin: 1rem 0 0.35rem; font-size: 1rem; font-weight: 600; color: #4a7c59; }
+#v3-profile-content .pf-nobasin { color: #993333; font-size: 1.15rem; font-weight: 600; }
+#v3-profile-content .pf-fig { margin: 0.5rem 0 1rem; }
+#v3-profile-content .pf-fig figcaption { font-size: 0.8rem; color: #6c757d; }
+
+/* Placeholder text for Karl to write: search the templates for class "ph". */
+.ph { border-left: 3px solid #e0a800; padding-left: .6rem; }
+.ph::before { content: "placeholder text, to be written"; display: block; font-size: .7rem; color: #9a6b00; }
