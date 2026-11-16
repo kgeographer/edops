@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Request
+from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
 from app.settings import settings
@@ -68,6 +69,11 @@ def index(request: Request):
     if "workbench" in host:
         return _render(request, "workbench.html", **_workbench_ctx())
     return _render(request, "index.html")
+
+@router.get("/favicon.ico")
+def favicon():
+    """Browsers ask for this by default, whatever the page's own link tags say."""
+    return FileResponse(STATIC_DIR / "images" / "favicon.ico", media_type="image/x-icon")
 
 @router.get("/dashboard")
 def dashboard(request: Request):
