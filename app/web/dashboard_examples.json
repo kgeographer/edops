@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "note": "Examples for the splash and Dashboard dropdowns. Labels are placeholder wording. Coordinates: Timbuktu, Tbilisi, Santa Fe, Kaifeng as in the Sandbox's examples; the rest as in the WO-09 profile places. Tristan da Cunha (no basin) was a proof of the no-basin message and is not an example. 'profile' is the slug of a stored profile in app/static/profiles.",
+  "settlements": [
+    {"id": "timbuktu",         "name": "Timbuktu",         "label": "Timbuktu, Mali",         "lat": 16.8167,  "lon": -2.9833,   "profile": "timbuktu"},
+    {"id": "tbilisi",          "name": "Tbilisi",          "label": "Tbilisi, Georgia",       "lat": 41.6938,  "lon": 44.8015,   "profile": "tbilisi"},
+    {"id": "santa-fe",         "name": "Santa Fe",         "label": "Santa Fe, New Mexico",   "lat": 35.6870,  "lon": -105.9378, "profile": "santa-fe"},
+    {"id": "kaifeng",          "name": "Kaifeng",          "label": "Kaifeng, China",         "lat": 34.7975,  "lon": 114.3074,  "profile": "kaifeng"},
+    {"id": "lviv",             "name": "Lviv",             "label": "Lviv, Ukraine",          "lat": 49.84,    "lon": 24.03,     "profile": "lviv"},
+    {"id": "poltava",          "name": "Poltava",          "label": "Poltava, Ukraine",       "lat": 49.59,    "lon": 34.55,     "profile": "poltava"},
+    {"id": "chaco-canyon",     "name": "Chaco Canyon",     "label": "Chaco Canyon, New Mexico", "lat": 36.06,  "lon": -107.96,   "profile": "chaco-canyon"},
+    {"id": "alexandria",       "name": "Alexandria",       "label": "Alexandria, Egypt",      "lat": 31.20,    "lon": 29.92,     "profile": "alexandria"},
+    {"id": "utqiagvik",        "name": "Utqiagvik",        "label": "Utqiagvik, Alaska",      "lat": 71.29,    "lon": -156.79,   "profile": "utqiagvik"}
+  ],
+  "polities": [
+    {"id": "northern-song",     "name": "Northern Song",     "label": "Northern Song (961–1027 CE)"},
+    {"id": "inca-empire",       "name": "Inca Empire",       "label": "Inca Empire (1440–1571 CE)"},
+    {"id": "pagan-kingdom",     "name": "Pagan Kingdom",     "label": "Pagan Kingdom (850–1293 CE)"},
+    {"id": "mali-empire",       "name": "Mali Empire",       "label": "Mali Empire (1236–1611 CE)"},
+    {"id": "kingdom-of-poland", "name": "Kingdom of Poland", "label": "Kingdom of Poland (962–1449 CE)"},
+    {"id": "abbasid-caliphate", "name": "Abbasid Caliphate", "label": "Abbasid Caliphate (750–1259 CE)"},
+    {"id": "tibetan-empire",    "name": "Tibetan Empire",    "label": "Tibetan Empire (623–849 CE)"},
+    {"id": "qin",               "name": "Qin",               "label": "Qin (750–219 BCE), no LMR"}
+  ]
+}
