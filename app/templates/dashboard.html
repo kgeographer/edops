@@ -1234,7 +1234,6 @@
     if (idMatch) {
       _whgHideCandidates();
       _whgSetStatus('Resolving identifier…');
-      document.getElementById('v3-example-select').disabled = true;
       try {
         const res = await fetch(`/api/whg/entity?id=${encodeURIComponent(raw)}`);
         if (!res.ok) {
@@ -1247,7 +1246,6 @@
         setResolvedPoint(data.lat, data.lon, data.name || raw, data.links);
       } catch (err) {
         _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
-        document.getElementById('v3-example-select').disabled = false;
       }
       return;
     }
@@ -1281,7 +1279,6 @@
 
     _whgHideCandidates();
     _whgSetStatus('Searching WHG…');
-    document.getElementById('v3-example-select').disabled = true;
 
     try {
       let url = `/api/whg/suggest?q=${encodeURIComponent(q)}&limit=8`;
@@ -1304,14 +1301,12 @@
       if (!_whgResults.length) {
         const where = countryParam ? ` in ${escapeHtml(countryParam)}` : ' in the current map view';
         _whgSetStatus(`No results for "${escapeHtml(q)}"${where}.`);
-        document.getElementById('v3-example-select').disabled = false;
         return;
       }
       _whgSetStatus('', false);
       _renderCandidates(_whgResults);
     } catch (err) {
       _whgSetStatus(`Error: ${escapeHtml(err.message)}`);
-      document.getElementById('v3-example-select').disabled = false;
     }
   }
 
@@ -1419,9 +1414,6 @@
     document.getElementById('v3-whg-coords').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     document.getElementById('v3-whg-chip').classList.replace('d-none', 'd-flex');
 
-    // Example row disappears — resolve path is committed
-    document.getElementById('v3-example-row').style.display = 'none';
-
     // Scope dropdown appears (Single basin default)
     const scopeSelect = document.getElementById('v3-scope-select');
     if (!scopeSelect.value) scopeSelect.value = 'single';
@@ -1445,8 +1437,6 @@
     document.getElementById('v3-place-input').value  = '';
     document.getElementById('v3-whg-chip').classList.replace('d-flex', 'd-none');
     document.getElementById('v3-scope-wrap').style.display  = 'none';
-    document.getElementById('v3-example-row').style.display = '';
-    document.getElementById('v3-example-select').disabled   = false;
     document.getElementById('v3-resolve-btn').disabled       = false;
     document.getElementById('v3-place-input').disabled       = false;
     document.getElementById('v3-level').disabled             = true;

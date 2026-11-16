@@ -208,3 +208,18 @@ def test_the_signature_tab_shows_a_spinner_while_a_run_is_in_progress(dashboard_
     assert "active" in page.get_attribute("#v3-tab-map-btn", "class")              # the reader is still on the map
     page.wait_for_function(SETTLED, timeout=60000)
     page.wait_for_selector("#v3-tab-sig-spin.d-none", state="attached", timeout=10000)   # and gone when it ends
+
+
+def test_load_an_example_stays_available_after_a_place_is_resolved(dashboard_server, page):
+    page.goto(f"{dashboard_server}/dashboard", wait_until="load")
+    page.fill("#v3-place-input", "41.6938, 44.8015")
+    page.click("#v3-resolve-btn")
+    page.wait_for_function(SETTLED, timeout=60000)
+    assert page.is_visible("#v3-example-select") and page.is_enabled("#v3-example-select")
+    page.select_option("#v3-example-select", label="Timbuktu, Mali")                 # the reader can switch examples
+    page.wait_for_url("**/dashboard?lat=16.8167*")
+
+
+def test_load_an_example_stays_available_after_an_example_arrival(dashboard_server, page):
+    _arrive(page, dashboard_server, "/dashboard?lat=41.6938&lon=44.8015&name=Tbilisi&v=1", "v3-tab-map-btn")
+    assert page.is_visible("#v3-example-select") and page.is_enabled("#v3-example-select")
