@@ -28,7 +28,7 @@ def _open_link(page, base, url, tab):
 def test_the_button_is_hidden_until_a_run_and_after_a_reset(dashboard_server, page):
     page.goto(f"{dashboard_server}/dashboard", wait_until="load")
     assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "none"
-    _arrive(page, dashboard_server, TBILISI, "v3-tab-profile-btn")
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
     assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "flex"
     assert "lat=41.6938" in page.url
     page.click("#v3-reset-btn")
@@ -37,7 +37,7 @@ def test_the_button_is_hidden_until_a_run_and_after_a_reset(dashboard_server, pa
 
 
 def test_reset_also_clears_a_polity_link_and_its_message(dashboard_server, page):
-    _arrive(page, dashboard_server, "/dashboard?scope=polity&polity=Northern%20Song&v=1", "v3-tab-sig-btn")
+    _arrive(page, dashboard_server, "/dashboard?scope=polity&polity=Northern%20Song&v=1", "v3-tab-map-btn")
     assert "polity=Northern" in page.url
     page.click("#v3-reset-btn")
     assert page.url == f"{dashboard_server}/dashboard"
@@ -51,7 +51,7 @@ def test_a_failed_link_gives_no_button(dashboard_server, page):
 
 
 def test_single_basin_round_trip_keeps_the_tab_and_the_result(dashboard_server, page):
-    _arrive(page, dashboard_server, TBILISI, "v3-tab-profile-btn")
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
     page.click("#v3-tab-sig-btn")
     url, q = _link(page)
     assert q["view"] == ["signature"] and q["scope"] == ["single_basin"] and q["level"] == ["6"] and q["lat"] == ["41.6938"]
@@ -61,7 +61,7 @@ def test_single_basin_round_trip_keeps_the_tab_and_the_result(dashboard_server, 
 
 
 def test_the_active_tab_is_part_of_the_link(dashboard_server, page):
-    _arrive(page, dashboard_server, TBILISI, "v3-tab-profile-btn")
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
     page.click("#v3-tab-seasonality-btn")
     url, q = _link(page)
     assert q["view"] == ["seasonality"]
@@ -95,7 +95,7 @@ def test_a_ring_member_round_trips(dashboard_server, page):
 
 
 def test_a_polity_slice_round_trips(dashboard_server, page):
-    _arrive(page, dashboard_server, "/dashboard?scope=polity&polity=Northern%20Song&year=1000&v=1", "v3-tab-sig-btn")
+    _arrive(page, dashboard_server, "/dashboard?scope=polity&polity=Northern%20Song&year=1000&view=signature&v=1", "v3-tab-sig-btn")
     url, q = _link(page)
     assert q["scope"] == ["polity"] and q["polity"] == ["Northern Song"] and q["year"] == ["1000"] and "lat" not in q
     other = _open_link(page, dashboard_server, url, "v3-tab-sig-btn")

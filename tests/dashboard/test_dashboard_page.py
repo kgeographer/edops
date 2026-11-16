@@ -29,9 +29,9 @@ def test_dashboard_header_has_its_own_navigation():
     assert 'href="/sandbox"' not in html and 'href="/workbench"' not in html
 
 
-def test_dashboard_has_a_profile_tab_first_and_keeps_the_sandbox_ids():
+def test_dashboard_has_a_profile_tab_after_the_map_and_keeps_the_sandbox_ids():
     html = _get("/dashboard")
-    assert html.index('id="v3-tab-profile-btn"') < html.index('id="v3-tab-map-btn"')
+    assert html.index('id="v3-tab-map-btn"') < html.index('id="v3-tab-profile-btn"') < html.index('id="v3-tab-sig-btn"')
     for id_ in ("v3-tab-map-btn", "v3-tab-sig-btn", "v3-sig-btn", "v3-scope-select", "v3-level", "v3-polity-sig-btn", "v3-slice-slider"):
         assert f'id="{id_}"' in html
 

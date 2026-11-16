@@ -507,17 +507,17 @@
       </div>
 
       <ul class="nav nav-tabs mb-2" id="v3TabList" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="v3-tab-map-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-map" type="button" role="tab">Map</button>
+        </li>
         <li class="nav-item" role="presentation" id="v3-tab-profile-li">
           <button class="nav-link disabled" id="v3-tab-profile-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-profile" type="button" role="tab">Profile</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="v3-tab-map-btn" data-bs-toggle="tab"
-                  data-bs-target="#v3-pane-map" type="button" role="tab">Map</button>
-        </li>
-        <li class="nav-item" role="presentation">
           <button class="nav-link disabled" id="v3-tab-sig-btn" data-bs-toggle="tab"
-                  data-bs-target="#v3-pane-sig" type="button" role="tab">Signature</button>
+                  data-bs-target="#v3-pane-sig" type="button" role="tab">Signature<span class="spinner-border spinner-border-sm ms-1 d-none" id="v3-tab-sig-spin" role="status" aria-label="Loading"></span></button>
         </li>
         <li class="nav-item" role="presentation" id="v3-tab-analysis-li">
           <button class="nav-link disabled" id="v3-tab-analysis-btn" data-bs-toggle="tab"
@@ -823,6 +823,7 @@
   // upgrades its URL via _qlog(), which adds place_name and fires a GA event.
   let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
   let _lastRun = null;      // parameters of the last successful run, for the permalink button
+  function _sigTabBusy(on) { document.getElementById('v3-tab-sig-spin').classList.toggle('d-none', !on); }   // spinner on the Signature tab while a run is in progress
   function _qlog(url) {
     const u = new URL(url, location.origin);
     const p = u.searchParams;
@@ -1046,7 +1047,7 @@
     document.getElementById('v3-buffer-extra').style.display = (scope === 'buffer') ? 'flex' : 'none';
     document.getElementById('v3-ring-info').style.display    = (scope === 'ring')   ? ''     : 'none';
   }
-  async function _drawScopePreview(scope) {
+  async function _drawScopePreview(scope, { showMap = true } = {}) {   // showMap false: a URL arrival that names its own tab
     ['single-basin','buffer-basins','buffer-circle','ring-basins']
       .forEach(n => shell.remove(n));
     if (currentLat === null) return;
@@ -1090,7 +1091,7 @@
       const bbox = await drawRingGeometry(_ringData);
       if (bbox) _fitMap(bbox);
     }
-    _showMapTab();
+    if (showMap) _showMapTab();
   }
 
   document.getElementById('v3-scope-select').addEventListener('change', function () {
@@ -1380,7 +1381,7 @@
     }
   }
 
-  function setResolvedPoint(lat, lon, name, links) {
+  function setResolvedPoint(lat, lon, name, links, autoRun = true) {
     currentLat = lat;
     currentLon = lon;
     _currentPlaceName = name || '';
@@ -1411,9 +1412,10 @@
     updateSigButton();
 
     // Preview: draw for current scope (Single default)
-    _drawScopePreview(document.getElementById('v3-scope-select').value || 'single');
+    _drawScopePreview(document.getElementById('v3-scope-select').value || 'single', { showMap: autoRun });
 
     _revealLowerPanel();
+    if (autoRun) _runSettlementSignature();   // a confirmed place fills the tabs; the reader stays on the map
   }
 
   function clearResolvedPoint() {
@@ -2621,13 +2623,13 @@
     return 2 * 6371 * Math.asin(Math.sqrt(a));
   }
   async function renderProfileTab(payload, scope, lv) {
+    if (scope === 'polity') return;   // no Profile tab on the Polities side
     const box = document.getElementById('v3-profile-content');
     document.getElementById('v3-tab-profile-btn').classList.remove('disabled');
-    const heading = scope === 'polity' ? '' : `<h5 class="mb-2">${_basinTitleHtml(_currentPlaceName)}</h5>`;
+    const heading = `<h5 class="mb-2">${_basinTitleHtml(_currentPlaceName)}</h5>`;
     const say = (html) => { box.innerHTML = heading + html; };
     const notYet = '<p class="text-muted">Profiles cover single-basin queries at Level 06 for a few places so far.</p>' +
                    '<div class="ph"><p>A profile of this place\'s environment, written from its signature, will appear here.</p></div>';
-    if (scope === 'polity') { say('<p class="text-muted">Profiles are written for settlements. Choose a settlement to see one.</p>'); return; }
     const hid = payload && payload.scope ? payload.scope.hybas_id : null;
     if (scope !== 'single' || lv !== 6 || hid == null || currentLat == null) { say(notYet); return; }
     try {
@@ -3009,8 +3011,8 @@
 
     sigTabBtn.classList.remove('disabled');
     pane.innerHTML = spinner('Loading signature…');
-    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     sigBtn.disabled = true;
+    _sigTabBusy(true);
 
     // Capture any ring member already previewed/committed before drawRingGeometry's own
     // fresh-query reset wipes it (see that function's comment) -- re-applied below once the new
@@ -3109,7 +3111,7 @@
       _recordRun(_snap);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
-      if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
+      if (pendingBbox) _fitMap(pendingBbox);
 
       _repaintChoropleth();
 
@@ -3145,6 +3147,7 @@
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     } finally {
       sigBtn.disabled = false;
+      _sigTabBusy(false);
     }
   }
   document.getElementById('v3-sig-btn').addEventListener('click', _runSettlementSignature);
@@ -3698,7 +3701,7 @@
       el.addEventListener('click', () => {
         // Lock example; commit to search path
         document.getElementById('v3-polity-example').disabled = true;
-        selectPolity(el.dataset.name);
+        selectPolity(el.dataset.name).then(() => { if (_politySlices.length) _runPolitySignature(); });
       });
     });
     polityDropdown.style.display = 'block';
@@ -4018,8 +4021,8 @@
     const btn       = document.getElementById('v3-polity-sig-btn');
     sigTabBtn.classList.remove('disabled');
     pane.innerHTML = spinner('Loading signature…');
-    bootstrap.Tab.getOrCreateInstance(sigTabBtn).show();
     btn.disabled = true;
+    _sigTabBusy(true);
     try {
       const r = await fetch(_qlog(`/api/areas?${params}`));
       if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.detail ?? `Server error ${r.status}`); }
@@ -4038,18 +4041,19 @@
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     } finally {
       btn.disabled = false;
+      _sigTabBusy(false);
     }
   }
   document.getElementById('v3-polity-sig-btn').addEventListener('click', _runPolitySignature);
 
-  // Polities never populates Analysis/Seasonality/Context/Similarity -- the Get-signature
+  // Polities have no Profile (profiles are written for settlements) and never populate Analysis/Seasonality/Context/Similarity -- the Get-signature
   // handler only fetches /api/areas?scope=polity, never the parallel /api/signature call
   // Settlements uses, and Context/Similarity are point-anchored instruments with no
   // representative point for a polity to begin with (see deferred_items_register.md). Hiding
   // rather than leaving them disabled: four permanently-greyed-out tabs read as broken, not as
   // "not available for this fork."
   function _setPolitiesTabVisibility(onPolities) {
-    ['v3-tab-analysis-li', 'v3-tab-seasonality-li', 'v3-tab-context-li', 'v3-tab-similarity-li']
+    ['v3-tab-profile-li', 'v3-tab-analysis-li', 'v3-tab-seasonality-li', 'v3-tab-context-li', 'v3-tab-similarity-li']
       .forEach(id => document.getElementById(id)?.classList.toggle('d-none', onPolities));
     // Cities/Countries are Polities-only for now (no comparable boundary to filter cities
     // against on Settlements' single basin/buffer/ring) -- shown here, not on Settlements.
@@ -4725,6 +4729,16 @@
     setTimeout(() => { label.textContent = 'Copy link'; }, 2500);
   });
 
+  // Profile and Signature can be shown while the query runs (each has a loading line); the other tabs have
+  // nothing to show until their data arrives, so they are selected afterwards (_selectView).
+  function _selectViewEarly(view) {
+    if (view !== 'profile' && view !== 'signature') return;
+    const btn = document.getElementById(_VIEW_BTN[view]);
+    if (view === 'profile') document.getElementById('v3-profile-content').innerHTML = '<p class="text-muted">Loading…</p>';
+    btn.classList.remove('disabled');
+    bootstrap.Tab.getOrCreateInstance(btn).show();
+  }
+
   async function _applySettlementState(st) {
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-settlements-btn')).show();
     document.getElementById('v3-scope-select').value = { single_basin: 'single', basin_ring: 'ring', buffer: 'buffer' }[st.scope];
@@ -4734,9 +4748,11 @@
     document.getElementById('v3-from-year').value = st.bands.includes('T') ? String(st.fromYear) : '';
     document.getElementById('v3-to-year').value   = st.bands.includes('T') ? String(st.toYear)   : '';
     updateBandT();
-    setResolvedPoint(st.lat, st.lon, st.name, []);
+    setResolvedPoint(st.lat, st.lon, st.name, [], false);
     if (st.member != null) _committedRingMemberId = st.member;   // re-selected once the ring has loaded
-    await _runSettlementSignature();
+    const run = _runSettlementSignature();
+    _selectViewEarly(st.view);
+    await run;
     if (st.member != null && !(_ringData?.ring || []).some(m => Number(m.hybas_id) === st.member)) {
       _committedRingMemberId = null;
       _handoffMessage([`Basin ${st.member} is not in this place's ring; showing the centre basin.`]);
@@ -4753,7 +4769,9 @@
     await applySlice(idx, st.year, true);
     document.getElementById('v3-polity-level').value = String(st.level);
     document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.checked = st.bands.includes(cb.value); });
-    await _runPolitySignature();
+    const run = _runPolitySignature();
+    _selectViewEarly(st.view);
+    await run;
   }
 
   async function applyState(st) {
@@ -4765,6 +4783,7 @@
       _arrivalSrc = null;
     }
     if (document.querySelector('#v3-sig-content > .text-danger')) {   // the run failed; its message is in the Signature tab
+      document.getElementById('v3-tab-profile-btn').classList.add('disabled');
       bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-sig-btn')).show();
       _handoffMessage(['The query for this link did not complete.'], 'danger');
       return;

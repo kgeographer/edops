@@ -1,7 +1,7 @@
 /* Dashboard permalink codec: query string <-> state (version 1). No dependence on the page.
    Parameters mirror the API's names: lat, lon, name, scope (single_basin | basin_ring | buffer | polity), level, bands,
    from_year, to_year, radius_km, polity, year; plus v (version), member (a ring member's hybas_id) and view (the tab).
-   Defaults: single_basin, Level 6, bands ABCDE (polities ABCDET), view profile (polities signature).
+   Defaults: single_basin, Level 6, bands ABCDE (polities ABCDET), view map.
    parse(search) -> { state, errors, warnings }; state is null for a plain visit (no parameters of ours).
    Unknown parameters are ignored. build(state) -> query string without the "?". */
 (function () {
@@ -37,9 +37,10 @@
     if (!bands || [...bands].some(c => !BANDS.includes(c))) { errors.push(`bands must be letters from ${BANDS}.`); bands = ''; }
     st.bands = [...new Set(bands)].sort((a, b) => BANDS.indexOf(a) - BANDS.indexOf(b)).join('');
 
-    const view = get('view') ?? (kind === 'polity' ? 'signature' : 'profile');
+    const view = get('view') ?? 'map';
     if (!VIEWS.includes(view)) errors.push(`view must be one of ${VIEWS.join(', ')}.`);
     st.view = view;
+    if (kind === 'polity' && view === 'profile') st.view = 'map';   // polities have no Profile tab
 
     if (kind === 'settlement') {
       const lat = get('lat') === null ? NaN : numOf(get('lat')), lon = get('lon') === null ? NaN : numOf(get('lon'));
