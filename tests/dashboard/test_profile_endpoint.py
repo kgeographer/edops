@@ -48,3 +48,29 @@ def test_missing_or_bad_parameters_are_422():
 def test_the_route_is_internal():
     from app.main import app
     assert "/api/profile" not in _client().get("/openapi.json").json()["paths"]
+
+
+def _tbilisi():
+    return next(r for r in _records() if r["place"] == "Tbilisi")
+
+
+def test_a_point_near_the_profile_place_gets_the_record():
+    t = _tbilisi()
+    c = _client()
+    assert c.get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lat": t["lat"], "lon": t["lon"]}).status_code == 200
+    # the Sandbox's Tbilisi point is 3 km from the profile's point
+    assert c.get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lat": 41.6938, "lon": 44.8015}).status_code == 200
+
+
+def test_a_point_far_from_the_profile_place_in_the_same_basin_gets_none():
+    t = _tbilisi()
+    r = _client().get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lat": 41.55, "lon": 45.0})   # about 26 km away
+    assert r.status_code == 404 and "place" in r.json()["detail"]
+
+
+def test_lat_and_lon_go_together_and_are_range_checked():
+    t = _tbilisi()
+    c = _client()
+    assert c.get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lat": 41.7}).status_code == 422
+    assert c.get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lon": 44.8}).status_code == 422
+    assert c.get("/api/profile", params={"level": 6, "hybas_id": t["hybas_id"], "lat": 99, "lon": 44.8}).status_code == 422

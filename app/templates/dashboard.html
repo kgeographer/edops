@@ -2622,15 +2622,9 @@
     return `${prefix}${escapeHtml(placeName)}`;
   }
   // ── Profile tab ───────────────────────────────────────────────────────────
-  // The stored profile of the basin the query returned (/api/profile, keyed by level and hybas_id), shown for a
-  // single-basin Level 06 query of a settlement when the profile's own place is near the displayed place (the
-  // stored text names that place and its point). Otherwise one line says what profiles cover so far.
-  const PROFILE_MATCH_KM = 10;
-  function _kmBetween(lat1, lon1, lat2, lon2) {
-    const r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
-    return 2 * 6371 * Math.asin(Math.sqrt(a));
-  }
+  // The stored profile of the basin the query returned, for the displayed place (/api/profile: level, hybas_id,
+  // lat, lon; the route decides whether it has a profile for that place), shown for a single-basin Level 06 query
+  // of a settlement. Otherwise one line says what profiles cover so far.
   async function renderProfileTab(payload, scope, lv) {
     if (scope === 'polity') return;   // no Profile tab on the Polities side
     const box = document.getElementById('v3-profile-content');
@@ -2642,11 +2636,10 @@
     const hid = payload && payload.scope ? payload.scope.hybas_id : null;
     if (scope !== 'single' || lv !== 6 || hid == null || currentLat == null) { say(notYet); return; }
     try {
-      const r = await fetch(`/api/profile?level=6&hybas_id=${encodeURIComponent(hid)}`);
+      const r = await fetch(`/api/profile?level=6&hybas_id=${encodeURIComponent(hid)}&lat=${currentLat}&lon=${currentLon}`);
       if (r.status === 404) { say(notYet); return; }
       if (!r.ok) throw new Error(String(r.status));
       const rec = await r.json();
-      if (_kmBetween(currentLat, currentLon, rec.lat, rec.lon) > PROFILE_MATCH_KM) { say(notYet); return; }
       box.innerHTML = heading;
       const body = document.createElement('div');
       box.appendChild(body);

@@ -223,3 +223,11 @@ def test_load_an_example_stays_available_after_a_place_is_resolved(dashboard_ser
 def test_load_an_example_stays_available_after_an_example_arrival(dashboard_server, page):
     _arrive(page, dashboard_server, "/dashboard?lat=41.6938&lon=44.8015&name=Tbilisi&v=1", "v3-tab-map-btn")
     assert page.is_visible("#v3-example-select") and page.is_enabled("#v3-example-select")
+
+
+def test_a_place_in_a_profiled_basin_but_far_from_its_point_shows_the_plain_line(dashboard_server, page):
+    # about 26 km from the Tbilisi profile's point
+    _arrive(page, dashboard_server, "/dashboard?lat=41.55&lon=45.0&name=Rustavi&v=1", "v3-tab-map-btn")
+    page.click("#v3-tab-profile-btn")
+    assert "Profiles cover single-basin queries at Level 06" in page.inner_text("#v3-profile-content")
+    assert page.locator("#v3-profile-content .pf-sec").count() == 0
