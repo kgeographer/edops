@@ -12,13 +12,19 @@
       <a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height:60px;" class="me-2"></a>
       <h4 class="mb-0">{{ page_title }}</h4>
     </div>
-    <div class="edops-page-pills-wrap">
+    <div class="edops-page-pills-wrap">{% if active_page in ('dashboard', 'using') %}{# Dashboard and Using EDOPS pages: their own pills #}
+      <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
+        <li class="nav-item"><a class="nav-link" href="/edops">Home</a></li>
+        <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'dashboard' else '' }}" href="/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'using' else '' }}" href="/using">Using EDOPS</a></li>
+        <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
+      </ul>{% else %}
       <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'sandbox' else '' }}" href="/sandbox">Sandbox</a></li>
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'workbench' else '' }}" href="/workbench">Workbench</a></li>
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'explorer' else '' }}" href="/explorer">Data Explorer</a></li>
         <li class="nav-item" style="display: none"><a class="nav-link{{ ' active' if active_page == 'explorer' else '' }}" href="/polities">Polities</a></li>
-      </ul>
+      </ul>{% endif %}
     </div>
     <div class="d-flex align-items-center gap-3">
       <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">Documentation</a>

@@ -70,7 +70,11 @@ def index(request: Request):
 
 @router.get("/dashboard")
 def dashboard(request: Request):
-    return _render(request, "dashboard.html")
+    return _render(request, "dashboard.html", examples=_dashboard_examples())
+
+@router.get("/using")
+def using(request: Request):
+    return _render(request, "using.html")
 
 @router.get("/about")
 def about(request: Request):
