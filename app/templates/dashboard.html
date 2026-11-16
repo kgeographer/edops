@@ -3281,6 +3281,37 @@
     </svg>`;
   }
 
+  // Which Band T sources answered this query: one line, then a sentence for each exception. Wording is placeholder.
+  const T_SOURCES = [['hyde_3_5', 'HYDE land use'], ['lmr_v2_1', 'LMR climate'], ['evolv2k_v4', 'eVolv2k volcanic events'], ['geda', 'GEDA drought']];
+  const T_REASONS = {
+    outside_footprint:    'this place is outside its footprint',
+    outside_span:         'its years do not overlap this span',
+    below_coverage_floor: 'its cells cover too little of this area',
+  };
+  function renderSourcesLine(sources) {
+    if (!sources) return '';
+    const used = new Map((sources.used || []).map(e => [e.id, e]));
+    const notApplied = new Map((sources.not_applied || []).map(e => [e.id, e]));
+    const avail = T_SOURCES.filter(([id]) => used.has(id)).map(([, label]) => label);
+    const lines = [];
+    for (const [id, label] of T_SOURCES) {
+      const e = used.get(id);
+      if (e?.note) {
+        const near = /^nearest step: (-?\d+)/.exec(e.note);
+        lines.push(near ? `No ${label.split(' ')[0]} step falls in this span; the nearest (${near[1]}) is shown.`
+                        : `${label}: ${e.note}.`);
+      }
+    }
+    for (const [id, label] of T_SOURCES) {
+      const e = notApplied.get(id);
+      if (e) lines.push(`Not applied: ${label}, because ${T_REASONS[e.reason] || e.reason}.`);
+    }
+    return `<div id="v3-t-sources" class="mb-2 pb-2" style="font-size:0.78rem;border-bottom:1px solid #dee2e6;">
+      <div><span class="ph-inline">${avail.length ? `Available for this query: ${avail.map(escapeHtml).join(', ')}.` : 'No Band T source applies to this query.'}</span></div>
+      ${lines.map(l => `<div style="font-size:0.72rem;"><span class="ph-inline">${escapeHtml(l)}</span></div>`).join('')}
+    </div>`;
+  }
+
   // GEDA: its own block, never on an axis shared with LMR. Wording is placeholder (class ph-inline).
   function renderGedaBlock(vRows, caveats, withLmr) {
     const v = 'geda_scpdsi', first = vRows[0], last = vRows[vRows.length - 1];
@@ -3317,13 +3348,13 @@
     return h + `</div>`;
   }
 
-  function renderTBand(rows, caveats = {}) {
+  function renderTBand(rows, caveats = {}, sources = null) {
     const byVar = {};
     for (const r of rows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
     const lmrRows0 = byVar[LMR_VARS.find(v => byVar[v])];
     const spanStr  = lmrRows0 ? `${lmrRows0[0].year}–${lmrRows0[lmrRows0.length-1].year} CE` : '';
     const nLmr     = lmrRows0?.[0]?.n_units ?? '';
-    let html = `<div class="px-2 py-2">`;
+    let html = `<div class="px-2 py-2">${renderSourcesLine(sources)}`;
 
     if (LMR_VARS.some(v => byVar[v])) {
       html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-bottom:6px;">
@@ -3510,7 +3541,7 @@
           <div id="${paneId}" class="accordion-collapse collapse${band === defaultOpenBand ? ' show' : ''}">
             <div class="accordion-body p-0">
               ${band === 'T'
-                ? renderTBand(rows, payload.caveats || {})
+                ? renderTBand(rows, payload.caveats || {}, payload.sources)
                 : `<table class="table table-sm mb-0" style="font-size:0.8rem;">
                      <tbody>${rows.map(renderRow).join('')}</tbody>
                    </table>`}

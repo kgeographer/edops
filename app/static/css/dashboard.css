@@ -10,3 +10,6 @@
 /* Placeholder text for Karl to write: search the templates for class "ph". */
 .ph { border-left: 3px solid #e0a800; padding-left: .6rem; }
 .ph::before { content: "placeholder text, to be written"; display: block; font-size: .7rem; color: #9a6b00; }
+
+/* Placeholder wording for Karl to write. */
+.ph-inline { background: #fff3cd; }
