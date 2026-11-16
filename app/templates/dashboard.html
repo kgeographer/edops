@@ -493,6 +493,12 @@
     <!-- ===================== RIGHT COLUMN ===================== -->
     <div class="col-md-8">
 
+      <div id="v3-handoff-alert" class="d-none" role="alert">
+        <button type="button" class="btn-close float-end" aria-label="Close"
+                onclick="document.getElementById('v3-handoff-alert').classList.add('d-none')"></button>
+        <span id="v3-handoff-msg"></span>
+      </div>
+
       <ul class="nav nav-tabs mb-2" id="v3TabList" role="tablist">
         <li class="nav-item" role="presentation" id="v3-tab-profile-li">
           <button class="nav-link disabled" id="v3-tab-profile-btn" data-bs-toggle="tab"
@@ -765,6 +771,7 @@
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
 <script src="/static/js/pm_basemap.js?v={{ static_v('js/pm_basemap.js') }}"></script>
 <script src="/static/js/edops_profile.js?v={{ static_v('js/edops_profile.js') }}"></script>
+<script src="/static/js/edops_permalink.js?v={{ static_v('js/edops_permalink.js') }}"></script>
 <script>
 (() => {
   // ── Shared doc modal ──────────────────────────────────────────────────────
@@ -807,10 +814,11 @@
 
   // Query log: builders tag requests src=ui_aux (server skips them); a user-initiated Get-signature
   // upgrades its URL via _qlog(), which adds place_name and fires a GA event.
+  let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
   function _qlog(url) {
     const u = new URL(url, location.origin);
     const p = u.searchParams;
-    p.set('src', 'ui');
+    p.set('src', _arrivalSrc || 'ui');
     if (_currentPlaceName && !p.has('polity')) p.set('place_name', _currentPlaceName);
     if (typeof gtag === 'function') {
       gtag('event', 'signature_request', {
@@ -2964,7 +2972,7 @@
   }
 
   // ── Get Signature click ───────────────────────────────────────────────────
-  document.getElementById('v3-sig-btn').addEventListener('click', async () => {
+  async function _runSettlementSignature() {
     const scope     = document.getElementById('v3-scope-select').value;
     if (!scope) return;
     const sigTabBtn = document.getElementById('v3-tab-sig-btn');
@@ -3069,7 +3077,7 @@
       }
 
       renderSignature(payload);
-      renderProfileTab(payload, scope, lv);
+      await renderProfileTab(payload, scope, lv);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
       if (pendingBbox) map.once('resize', () => map.fitBounds(pendingBbox, { padding: 40 }));
@@ -3109,7 +3117,8 @@
     } finally {
       sigBtn.disabled = false;
     }
-  });
+  }
+  document.getElementById('v3-sig-btn').addEventListener('click', _runSettlementSignature);
 
   // ── Leaf widgets ──────────────────────────────────────────────────────────
   function renderMixtureBar(det) {
@@ -3959,7 +3968,7 @@
   });
 
   // Polity Get Signature
-  document.getElementById('v3-polity-sig-btn').addEventListener('click', async () => {
+  async function _runPolitySignature() {
     const polityName   = document.getElementById('v3-polity-input').value.trim();
     const resolverYear = document.getElementById('v3-resolver-year').value;
     if (!polityName || !resolverYear) return;
@@ -3989,7 +3998,7 @@
       const nb = payload.scope || {};
       _sigMemberIds = nb.member_ids?.length ? new Set(nb.member_ids.map(Number)) : null;
       renderSignature(payload);
-      renderProfileTab(payload, 'polity', lv);
+      await renderProfileTab(payload, 'polity', lv);
       const tRows = (payload.rows || []).filter(r => r.band === 'T');
       if (tRows.length) wireTSliders(tRows);
 
@@ -4000,7 +4009,8 @@
     } finally {
       btn.disabled = false;
     }
-  });
+  }
+  document.getElementById('v3-polity-sig-btn').addEventListener('click', _runPolitySignature);
 
   // Polities never populates Analysis/Seasonality/Context/Similarity -- the Get-signature
   // handler only fetches /api/areas?scope=polity, never the parallel /api/signature call
@@ -4621,6 +4631,92 @@
   } else if (_tabParam === 'polities') {
     bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-polities-btn')).show();
   }
+
+
+  // ── URL handoff ───────────────────────────────────────────────────────────
+  // A link such as /dashboard?lat=41.69&lon=44.80&name=Tbilisi opens that place with its result showing
+  // (parameters: edops_permalink.js). applyState(state) sets the controls, runs the query, waits for it and
+  // selects the tab; the URL codec stays outside it, so a permalink button can reuse both.
+  function _handoffMessage(msgs, kind = 'warning') {
+    const box = document.getElementById('v3-handoff-alert');
+    box.className = `alert alert-${kind} alert-dismissible py-2 mb-2`;
+    document.getElementById('v3-handoff-msg').innerHTML = msgs.map(escapeHtml).join('<br>');
+  }
+  function _mapReady() {
+    return new Promise(res => {
+      const t0 = Date.now();
+      const t = setInterval(() => { if (map.isStyleLoaded() || Date.now() - t0 > 15000) { clearInterval(t); res(); } }, 50);
+    });
+  }
+  const _VIEW_BTN = {
+    profile: 'v3-tab-profile-btn', map: 'v3-tab-map-btn', signature: 'v3-tab-sig-btn', analysis: 'v3-tab-analysis-btn',
+    seasonality: 'v3-tab-seasonality-btn', context: 'v3-tab-context-btn', similarity: 'v3-tab-similarity-btn',
+    atlas: 'v3-tab-atlas-btn',
+  };
+  function _selectView(view) {
+    let btn = document.getElementById(_VIEW_BTN[view]);
+    if (btn.classList.contains('disabled')) {
+      _handoffMessage([`The ${view} tab is not available for this query; showing Signature.`]);
+      btn = document.getElementById('v3-tab-sig-btn');
+    }
+    bootstrap.Tab.getOrCreateInstance(btn).show();
+  }
+
+  async function _applySettlementState(st) {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-settlements-btn')).show();
+    document.getElementById('v3-scope-select').value = { single_basin: 'single', basin_ring: 'ring', buffer: 'buffer' }[st.scope];
+    if (st.scope === 'buffer') document.getElementById('v3-radius').value = String(st.radiusKm);
+    document.getElementById('v3-level').value = String(st.level);
+    document.querySelectorAll('.v3-band-chk').forEach(cb => { cb.checked = st.bands.includes(cb.value); });
+    document.getElementById('v3-from-year').value = st.bands.includes('T') ? String(st.fromYear) : '';
+    document.getElementById('v3-to-year').value   = st.bands.includes('T') ? String(st.toYear)   : '';
+    updateBandT();
+    setResolvedPoint(st.lat, st.lon, st.name, []);
+    if (st.member != null) _committedRingMemberId = st.member;   // re-selected once the ring has loaded
+    await _runSettlementSignature();
+    if (st.member != null && !(_ringData?.ring || []).some(m => Number(m.hybas_id) === st.member)) {
+      _committedRingMemberId = null;
+      _handoffMessage([`Basin ${st.member} is not in this place's ring; showing the centre basin.`]);
+    }
+  }
+
+  async function _applyPolityState(st) {
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-polities-btn')).show();
+    polityInput.disabled = true;
+    await selectPolity(st.polity);
+    if (!_politySlices.length) throw new Error(`Polity not found: ${st.polity}.`);
+    const idx = st.year != null ? nearestPolitySlice(st.year) : 0;
+    document.getElementById('v3-slice-slider').value = _politySlices[idx].fromyear;
+    await applySlice(idx, st.year, true);
+    document.getElementById('v3-polity-level').value = String(st.level);
+    document.querySelectorAll('.v3-polity-band-chk').forEach(cb => { cb.checked = st.bands.includes(cb.value); });
+    await _runPolitySignature();
+  }
+
+  async function applyState(st) {
+    await _mapReady();
+    _arrivalSrc = 'link';
+    try {
+      if (st.kind === 'polity') await _applyPolityState(st); else await _applySettlementState(st);
+    } finally {
+      _arrivalSrc = null;
+    }
+    if (document.querySelector('#v3-sig-content > .text-danger')) {   // the run failed; its message is in the Signature tab
+      bootstrap.Tab.getOrCreateInstance(document.getElementById('v3-tab-sig-btn')).show();
+      _handoffMessage(['The query for this link did not complete.'], 'danger');
+      return;
+    }
+    _selectView(st.view);
+  }
+
+  (async () => {
+    const { state, errors, warnings } = EdopsPermalink.parse(window.location.search);
+    if (errors.length) { _handoffMessage(['This link could not be opened:', ...errors], 'danger'); return; }
+    if (!state) return;   // a plain visit
+    if (warnings.length) _handoffMessage(warnings, 'info');
+    try { await applyState(state); }
+    catch (err) { _handoffMessage([err.message || String(err)], 'danger'); }
+  })();
 
 })();
 </script>
