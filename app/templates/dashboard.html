@@ -825,6 +825,7 @@
   let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
   let _lastRun = null;      // parameters of the last successful run, for the permalink button
   let _sigRunning = false;  // a run is in progress
+  let _pressSeq = 0;        // counts presses of Get signature; a map preview that began before a press must not pull the reader back to the map
   function _sigTabBusy(on) {   // spinner on the Signature tab while a run is in progress; the buttons follow
     _sigRunning = on;
     document.getElementById('v3-tab-sig-spin').classList.toggle('d-none', !on);
@@ -1070,7 +1071,7 @@
     ['single-basin','buffer-basins','buffer-circle','ring-basins']
       .forEach(n => shell.remove(n));
     if (currentLat === null) return;
-    const lv = _activeLevel();
+    const seq = _pressSeq, lv = _activeLevel();
     if (scope === 'single') {
       const bbox = await drawSingleBasin(currentLat, currentLon, null, lv);
       if (bbox) _fitMap(bbox);
@@ -1110,7 +1111,7 @@
       const bbox = await drawRingGeometry(_ringData);
       if (bbox) _fitMap(bbox);
     }
-    if (showMap) _showMapTab();
+    if (showMap && seq === _pressSeq) _showMapTab();
   }
 
   document.getElementById('v3-scope-select').addEventListener('change', function () {
@@ -3152,7 +3153,12 @@
       _sigTabBusy(false);
     }
   }
-  document.getElementById('v3-sig-btn').addEventListener('click', _runSettlementSignature);
+  document.getElementById('v3-sig-btn').addEventListener('click', () => {
+    _pressSeq++;
+    const run = _runSettlementSignature();
+    _selectViewEarly('signature');   // the reader asked for it: show the Signature tab (automatic runs stay on the map); after the run starts, which clears the tabs
+    return run;
+  });
 
   // ── Leaf widgets ──────────────────────────────────────────────────────────
   function renderMixtureBar(det) {
@@ -4102,7 +4108,12 @@
       _sigTabBusy(false);
     }
   }
-  document.getElementById('v3-polity-sig-btn').addEventListener('click', _runPolitySignature);
+  document.getElementById('v3-polity-sig-btn').addEventListener('click', () => {
+    _pressSeq++;
+    const run = _runPolitySignature();
+    _selectViewEarly('signature');
+    return run;
+  });
 
   // Polities have no Profile (profiles are written for settlements) and never populate Analysis/Seasonality/Context/Similarity -- the Get-signature
   // handler only fetches /api/areas?scope=polity, never the parallel /api/signature call
