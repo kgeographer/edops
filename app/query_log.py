@@ -1,7 +1,8 @@
 """Signature query log: one row per successful /api/signature or /api/areas request.
 
 src='ui' = user-initiated GUI request (carries place_name); 'workbench' = Workbench lookup;
-'api' = no src tag (external callers, coordinates only). src='ui_aux' requests are the GUI's
+'link' = the GUI run for a Dashboard link or example (an arrival); 'api' = no src tag (external callers,
+coordinates only). src='ui_aux' requests are the GUI's
 parallel/silent duplicates and are not logged. Fail-soft: a logging problem never affects a response.
 """
 import asyncio

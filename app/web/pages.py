@@ -26,6 +26,7 @@ def _static_mtime(relpath: str) -> int:
 # ?v= cache-busting on tracked CSS/JS (StaticFiles sends no Cache-Control).
 templates.env.globals["static_v"] = _static_mtime
 templates.env.globals["mapbox_token"] = settings.MAPBOX_TOKEN or ""
+templates.env.globals["version_label"] = settings.EDOPS_VERSION_LABEL
 
 
 def _render(request: Request, name: str, **context):

@@ -17,6 +17,7 @@ class Settings:
     def __init__(self):
         self.WHG_API_TOKEN = os.getenv("WHG_API_TOKEN")
         self.MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN")   # public pk. token for the Sandbox terrain tiles
+        self.EDOPS_VERSION_LABEL = os.getenv("EDOPS_VERSION_LABEL", "v1.0 alpha")   # the app version pill in every page header and on the splash
 
 
 settings = Settings()
