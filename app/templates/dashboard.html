@@ -823,7 +823,22 @@
   // upgrades its URL via _qlog(), which adds place_name and fires a GA event.
   let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
   let _lastRun = null;      // parameters of the last successful run, for the permalink button
-  function _sigTabBusy(on) { document.getElementById('v3-tab-sig-spin').classList.toggle('d-none', !on); }   // spinner on the Signature tab while a run is in progress
+  let _sigRunning = false;  // a run is in progress
+  function _sigTabBusy(on) {   // spinner on the Signature tab while a run is in progress; the buttons follow
+    _sigRunning = on;
+    document.getElementById('v3-tab-sig-spin').classList.toggle('d-none', !on);
+    updateSigButton();
+    updatePolityButton();
+  }
+  // Get signature applies changed parameters: it is enabled only when the controls differ from the last
+  // successful run (or there is none yet for this place), and while a run is in progress it is not.
+  const _RUN_KEYS = ['kind', 'scope', 'level', 'bands', 'lat', 'lon', 'radiusKm', 'fromYear', 'toYear', 'polity', 'year'];
+  const _sameRun = (a, b) => _RUN_KEYS.every(k => a[k] === b[k] || (Number.isNaN(a[k]) && Number.isNaN(b[k])));
+  function _settlementDirty() {
+    const scope = document.getElementById('v3-scope-select').value;
+    if (!scope || currentLat === null) return false;
+    return !_lastRun || _lastRun.kind !== 'settlement' || !_sameRun(_settlementSnapshot(scope), _lastRun);
+  }
   function _qlog(url) {
     const u = new URL(url, location.origin);
     const p = u.searchParams;
@@ -904,6 +919,8 @@
       const scope = document.getElementById('v3-scope-select').value;
       if (scope && currentLat != null) _drawScopePreview(scope);  // redraw geometry at new level
     }
+    updateSigButton();
+    updatePolityButton();
     _silentResig();  // re-derive _sigMemberIds at new level, repaint choropleth
     _ctxOnLevelChange();  // Context tab: adjust radius options for the new level, refetch if visible
     _cjOnLevelChange();   // Conjunction panel: refetch at new level if visible (engine supports L06+L08)
@@ -1041,6 +1058,7 @@
   document.querySelectorAll('.v3-band-chk').forEach(cb => {
     cb.addEventListener('change', updateBandT);
   });
+  ['v3-from-year', 'v3-to-year', 'v3-radius'].forEach(id => document.getElementById(id).addEventListener('input', () => updateSigButton()));
 
   // ── Scope gate ────────────────────────────────────────────────────────────
   function applyScope(scope) {
@@ -1119,6 +1137,7 @@
     if (document.getElementById('v3-scope-select').value !== 'buffer') return;
     _resetRightColumn({ keepPlace: true });
     _drawScopePreview('buffer');
+    updateSigButton();
   }
   document.getElementById('v3-radius').addEventListener('change', _applyRadius);
   document.getElementById('v3-radius').addEventListener('keydown', e => {
@@ -1129,7 +1148,7 @@
   function updateSigButton() {
     const hasPoint = currentLat !== null && currentLon !== null;
     const scope    = document.getElementById('v3-scope-select').value;
-    document.getElementById('v3-sig-btn').disabled = !(hasPoint && scope);
+    document.getElementById('v3-sig-btn').disabled = !(hasPoint && scope) || _sigRunning || !_settlementDirty();
   }
 
   // ── Map tab / fitBounds helpers ───────────────────────────────────────────
@@ -3146,7 +3165,6 @@
       console.error('[v3] signature error:', err);
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     } finally {
-      sigBtn.disabled = false;
       _sigTabBusy(false);
     }
   }
@@ -3588,9 +3606,18 @@
   let _currentPolityFeature = null;  // GeoJSON feature currently drawn as the boundary -- read by _renderCitiesLayer()
   let _citiesData       = null;      // flat [gnid, name, ccode, population, lon, lat][] cache, fetched once
 
-  function updatePolityButton() {
-    document.getElementById('v3-polity-sig-btn').disabled = !(_polityName && _polityCurrentIdx >= 0);
+  function _polityControls() {
+    return { kind: 'polity', scope: 'polity', polity: _polityName,
+             year: parseInt(document.getElementById('v3-resolver-year').value, 10),
+             level: parseInt(document.getElementById('v3-polity-level').value || '6', 10),
+             bands: [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('') };
   }
+  function updatePolityButton() {
+    const ready = _polityName && _polityCurrentIdx >= 0;
+    const same  = _lastRun && _lastRun.kind === 'polity' && _sameRun(_polityControls(), _lastRun);
+    document.getElementById('v3-polity-sig-btn').disabled = !ready || _sigRunning || !!same;
+  }
+  document.querySelectorAll('.v3-polity-band-chk').forEach(cb => cb.addEventListener('change', updatePolityButton));
 
   function _setLMRAvailability(available, reason) {
     const varSel = document.getElementById('v3-basin-var');
@@ -4040,7 +4067,6 @@
     } catch (err) {
       pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
     } finally {
-      btn.disabled = false;
       _sigTabBusy(false);
     }
   }
