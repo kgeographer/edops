@@ -3185,7 +3185,7 @@
     return `<svg width="${W}" height="${BAR_H + LABEL_H}" style="display:block;">${inner}</svg>`;
   }
 
-  function renderHistogram(dist, windowLo, windowHi) {
+  function renderHistogram(dist, windowLo, windowHi, stampText) {
     const { bins, weights } = dist;
     if (!bins || !weights || !weights.length) return '';
     const W = 160, BAR_H = 36, LABEL_H = 12;
@@ -3220,6 +3220,7 @@
     const parts = [];
     if (dist.band_t_from != null && dist.band_t_to != null)
       parts.push(`${dist.band_t_from}–${dist.band_t_to} CE`);
+    if (stampText) { parts.length = 0; parts.push(stampText); }   // Band T: the slider's year, not the query span
     const stamp = parts.length
       ? `<div style="font-size:0.65rem;color:#000;margin-top:1px;">${escapeHtml(parts.join(' · '))}</div>` : '';
     return `<div style="margin-top:3px;">
@@ -3237,9 +3238,11 @@
   const LMR_LABELS  = { lmr_pdsi:'PDSI (drought index)', lmr_air:'Temperature anomaly', lmr_prate:'Precipitation' };
   const HYDE_LABELS = { hyde_cropland:'Cropland', hyde_grazing:'Grazing', hyde_pasture:'Pasture', hyde_rangeland:'Rangeland' };
   const VSSI_THRESHOLD = 5;
+  const tStamp = r => `${r.year} CE${r.caveat?.includes('geda_observed') ? ' · observed' : ''}`;
 
   function renderTimeMarginal(rows) {
     if (!rows || rows.length < 2) return '';
+    const obsFrom = rows.findIndex(r => r.caveat?.includes('geda_observed'));
     const W = 170, CH = 56, LH = 14;
     const p10s  = rows.map(r => r.detail?.distribution?.p10 ?? r.representative_raw);
     const p90s  = rows.map(r => r.detail?.distribution?.p90 ?? r.representative_raw);
@@ -3257,11 +3260,14 @@
       const zy = yS(0).toFixed(1);
       zeroLine = `<line x1="0" y1="${zy}" x2="${W}" y2="${zy}" stroke="#ddd" stroke-width="0.8" stroke-dasharray="3,2"/>`;
     }
-    return `<svg width="${W}" height="${CH+LH}" style="display:block;">
+    const mid = Math.floor(n / 2);
+    return `<svg width="${W}" height="${CH+LH}" style="display:block;" id="v3-t-tm-${rows[0].variable}" data-w="${W}" data-n="${n}">
       <rect width="${W}" height="${CH}" fill="#f8f9fa" rx="2"/>
+      ${obsFrom >= 0 ? `<rect x="${xS(obsFrom).toFixed(1)}" y="0" width="${(W - xS(obsFrom)).toFixed(1)}" height="${CH}" fill="#e0a800" opacity="0.22"/>` : ''}
       ${zeroLine}
       <polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>
       <polyline points="${meanPts}" fill="none" stroke="#2c5f8a" stroke-width="1.3" stroke-linejoin="round"/>
+      <line class="v3-t-mk" x1="${xS(mid).toFixed(1)}" x2="${xS(mid).toFixed(1)}" y1="0" y2="${CH}" stroke="#b02a37" stroke-width="1"/>
       <text x="1" y="9" font-size="9" fill="#000">${yMax.toFixed(2)}</text>
       <text x="1" y="${CH-2}" font-size="9" fill="#000">${yMin.toFixed(2)}</text>
       <text x="1" y="${CH+LH-1}" font-size="9" fill="#000">${rows[0].year}</text>
@@ -3269,7 +3275,43 @@
     </svg>`;
   }
 
-  function renderTBand(rows) {
+  // GEDA: its own block, never on an axis shared with LMR. Wording is placeholder (class ph-inline).
+  function renderGedaBlock(vRows, caveats, withLmr) {
+    const v = 'geda_scpdsi', first = vRows[0], last = vRows[vRows.length - 1];
+    const midRow = vRows[Math.floor(vRows.length / 2)];
+    const dist0  = first.detail?.distribution || {};
+    const asked  = dist0.band_t_from != null ? `${dist0.band_t_from}–${dist0.band_t_to}` : null;
+    const clipped = asked && (first.year !== dist0.band_t_from || last.year !== dist0.band_t_to);
+    const anyObserved = vRows.some(r => r.caveat?.includes('geda_observed'));
+    const low = vRows.some(r => r.status === 'low_coverage');
+    const lowRes = vRows.some(r => r.detail?.distribution?.low_resolution);
+    const note = t => `<div style="font-size:0.7rem;margin-top:3px;">${t}</div>`;
+    let h = `<div class="mb-3 pb-3" id="v3-t-geda" style="border-bottom:1px solid #dee2e6;">
+      <div style="font-size:0.9rem;font-weight:600;color:#993333;margin-bottom:2px;">
+        Great Eurasian Drought Atlas &mdash; ${first.n_units} cells &middot; ${first.year}–${last.year} CE</div>
+      <div style="font-size:0.78rem;color:#000;margin-bottom:4px;"><span class="ph-inline">Summer (June–August) drought, as a standard score (scPDSI z-score, ${escapeHtml(first.units || 'SD')}): how unusual that summer was for each 0.5° cell against its own 1000–2020 record. Positive is wetter than usual, negative drier. Not Palmer drought categories.</span></div>
+      <div class="d-flex align-items-start" style="gap:24px;">
+        <div style="flex:none;">
+          <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {}, null, null, tStamp(midRow))}</div>
+          <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
+            <span>Year</span>
+            <input type="range" id="v3-t-sl-${v}" min="${first.year}" max="${last.year}" step="1" value="${midRow.year}" style="width:110px;height:14px;">
+            <span id="v3-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
+          </div>
+        </div>
+        <div style="flex:none;">${renderTimeMarginal(vRows)}</div>
+      </div>
+      <div style="font-size:0.7rem;margin-top:4px;"><span class="ph-inline">Line: mean of the cells. Blue band: the middle 80% of cells (p10–p90).${anyObserved ? ' <span style="background:#f7e4a8;padding:0 3px;">Shaded: observed years (1990–2020), not reconstructed.</span>' : ''}</span></div>`;
+    if (caveats.geda_caveat) h += note(escapeHtml(caveats.geda_caveat));
+    if (anyObserved && caveats.geda_observed) h += note(escapeHtml(caveats.geda_observed));
+    if (clipped) h += note(`<span class="ph-inline">GEDA covers ${first.year}–${last.year} of the ${asked} requested.</span>`);
+    if (low) h += note(`<span class="ph-inline">GEDA's cells cover ${(first.coverage * 100).toFixed(0)}% of this area; read the values with care.</span>`);
+    if (lowRes) h += note(`<span class="ph-inline">Few cells fall in this area, so the histogram is coarse.</span>`);
+    if (withLmr) h += note(`<span class="ph-inline">GEDA and LMR are independent reconstructions; where they differ, neither is wrong, and they are not one answer to be reconciled.</span>`);
+    return h + `</div>`;
+  }
+
+  function renderTBand(rows, caveats = {}) {
     const byVar = {};
     for (const r of rows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
     const lmrRows0 = byVar[LMR_VARS.find(v => byVar[v])];
@@ -3288,7 +3330,7 @@
           <div style="font-size:0.78rem;color:#000;margin-bottom:2px;">${LMR_LABELS[v] || v}</div>
           <div class="d-flex align-items-start" style="gap:24px;">
             <div style="flex:none;">
-              <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {})}</div>
+              <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {}, null, null, tStamp(midRow))}</div>
               <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
                 <span>Year</span>
                 <input type="range" id="v3-t-sl-${v}"
@@ -3302,6 +3344,8 @@
         </div>`;
       }
     }
+
+    if (byVar['geda_scpdsi']) html += renderGedaBlock(byVar['geda_scpdsi'], caveats, LMR_VARS.some(v => byVar[v]));
 
     const hydePresent = HYDE_VARS.filter(v => byVar[v]);
     if (hydePresent.length) {
@@ -3368,7 +3412,13 @@
         const year = parseInt(el.value);
         if (yrLbl) yrLbl.textContent = year;
         const row = vRows.find(r => r.year === year);
-        if (row?.detail?.distribution) histDiv.innerHTML = renderHistogram(row.detail.distribution);
+        const mk = document.querySelector(`#v3-t-tm-${variable} .v3-t-mk`);
+        const idx = vRows.findIndex(r => r.year === year);
+        if (mk && idx >= 0) {
+          const tm = mk.parentNode, x = (idx / (+tm.dataset.n - 1)) * +tm.dataset.w;
+          mk.setAttribute('x1', x.toFixed(1)); mk.setAttribute('x2', x.toFixed(1));
+        }
+        if (row?.detail?.distribution) histDiv.innerHTML = renderHistogram(row.detail.distribution, null, null, tStamp(row));
       });
     });
   }
@@ -3454,7 +3504,7 @@
           <div id="${paneId}" class="accordion-collapse collapse${band === defaultOpenBand ? ' show' : ''}">
             <div class="accordion-body p-0">
               ${band === 'T'
-                ? renderTBand(rows)
+                ? renderTBand(rows, payload.caveats || {})
                 : `<table class="table table-sm mb-0" style="font-size:0.8rem;">
                      <tbody>${rows.map(renderRow).join('')}</tbody>
                    </table>`}
