@@ -4,7 +4,9 @@
 {% block header %}
 <header>
   <div class="container d-flex align-items-center justify-content-between" style="max-width: 960px;">
-    <a href="https://computingplace.org/"><img src="/static/images/cp_01_800w.jpg" alt="Computing Place" style="height: 80px;"></a>
+    <a href="/edops" class="d-flex align-items-center text-decoration-none text-dark">
+      <img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height: 60px;" class="me-2"><span class="fs-3 fw-semibold">EDOPS</span>
+    </a>
     <span class="d-flex align-items-center gap-2">
       <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About EDOPS</a> |
       <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">Documentation</a>
@@ -41,42 +43,78 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  /* Placeholder text for Karl to write: search the templates for class "ph" or "ph-inline". */
+  .ph { border-left: 3px solid #e0a800; padding-left: .6rem; }
+  .ph::before { content: "placeholder text, to be written"; display: block; font-size: .7rem; color: #9a6b00; }
+  .ph-inline { background: #fff3cd; }
+  .see-a-place { background: #f4f7fa; border: 1px solid #d5dde5; border-radius: 6px; padding: .9rem 1rem; }
+</style>
 <div class="container" style="max-width: 960px;">
 
-  <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Environmental Dimensions of Place Service (EDOPS)</h2>
+  <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Environmental Dimensions of Place Service</h2>
 
-  <p class="fs-6">EDOPS generates structured environmental profiles ("signatures") for any location on Earth, derived from global datasets aggregated to hydrological basins at multiple scales.</p>
+  <div class="ph">
+    <p class="fs-6">EDOPS generates structured environmental profiles ("signatures") for any location on Earth, derived from global datasets aggregated to hydrological basins at multiple scales.</p>
+    <p>A request can name <i>a settlement</i>, resolved to its containing basin or to a multi-basin neighborhood, or <i>a polity or regional boundary</i> at a given date, resolved to the set of basins it encloses.</p>
+  </div>
 
-  <p>Signature composition is spatially and thematically flexible. A request can name <i>a settlement</i> — resolved to its containing basin or to a multi-basin neighborhood — or <i>a polity or regional boundary</i> at a given date, resolved to the set of basins it encloses.</p>
-
-  <p>Signatures can include any combination of variables, grouped as bands: physiography, hydrology, climate, coastality, with optional historical enrichment from paleoclimate and land-use reconstructions.
-  </p>
+  <div class="see-a-place mt-4">
+    <div class="fw-semibold mb-2">See a place</div>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label small mb-0" for="ex-settlement">Settlements</label>
+        <select id="ex-settlement" class="form-select form-select-sm example-select">
+          <option value="">Choose an example</option>
+          {% for s in examples.settlements %}<option value="{{ s.url }}">{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small mb-0" for="ex-polity">Polities</label>
+        <select id="ex-polity" class="form-select form-select-sm example-select">
+          <option value="">Choose an example</option>
+          {% for p in examples.polities %}<option value="{{ p.url }}">{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
 
   <div class="cp-tiles mt-4">
     <div class="cp-tile-col">
-      <a href="/sandbox" class="cp-tile cp-tile-active" style="height:200px;">
-        <img src="/static/images/tile_sandbox_800.jpg" alt="EDOPS Sandbox" style="height:100%;">
+      <a href="/dashboard" class="cp-tile cp-tile-active" style="height:200px;">
+        <img src="/static/images/tile_dashboard_800.jpg" alt="EDOPS Dashboard" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Look up the environmental signature of any place</div>
+      <div class="cp-tile-blurb"><span class="ph-inline">Dashboard: look up the environmental signature of any place</span></div>
     </div>
     <div class="cp-tile-col">
-      <a href="/workbench" class="cp-tile cp-tile-active" style="height:200px;">
-        <img src="/static/images/tile_workbench_800.jpg" alt="EDOPS<>CDOP Workbench" style="height:100%;">
+      <a href="/using" class="cp-tile cp-tile-active" style="height:200px;">
+        <img src="/static/images/tile_using_800.jpg" alt="Using EDOPS" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Pilot studies of environment <> culture relations</div>
+      <div class="cp-tile-blurb"><span class="ph-inline">Using EDOPS: worked examples of environment and history</span></div>
     </div>
     <div class="cp-tile-col">
       <a href="/explorer" class="cp-tile cp-tile-active" style="height:200px;">
         <img src="/static/images/tile_explorer_800.jpg" alt="EDOPS Data Explorer" style="height:100%;">
       </a>
-      <div class="cp-tile-blurb">Browse the underlying global datasets on a map</div>
+      <div class="cp-tile-blurb"><span class="ph-inline">Data Explorer: browse the underlying datasets on a map</span></div>
     </div>
   </div>
 
   <hr/>
-  <p class="small text-center">EDOPS v0.4 is a research prototype, the environmental component of a broader <a href="https://computingplace.org" target="_blank">Computing Place</a> research initiative.<br/>Comments and use cases welcome &mdash; <a id="edops-contact" href="#">contact</a>.</p>
+  <p class="small text-center"><span class="ph-inline">EDOPS is a research prototype</span>, a product of <a href="https://computingplace.org" target="_blank">Computing Place</a>.<br/>Comments and use cases welcome &mdash; <a id="edops-contact" href="#">contact</a>.</p>
 
   <script>
+    // Choosing an example opens the Dashboard on that place.
+    document.querySelectorAll('.example-select').forEach(function (sel) {
+      sel.addEventListener('change', function () { if (this.value) window.location.href = this.value; });
+    });
+    // Coming back with the browser's Back button: reset the dropdowns.
+    window.addEventListener('pageshow', function () {
+      document.querySelectorAll('.example-select').forEach(function (sel) { sel.selectedIndex = 0; });
+    });
+
     // Assemble the address at runtime so it never appears as text in the served markup.
     (function () {
       var a = document.getElementById('edops-contact');

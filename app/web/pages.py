@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.parse import quote, urlencode
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
@@ -31,6 +32,24 @@ def _render(request: Request, name: str, **context):
     return templates.TemplateResponse(request, name, context)
 
 
+PERMALINK_V = 1   # version of the Dashboard's URL parameters; defaults: single basin, Level 06, bands A to E
+EXAMPLES_PATH = Path(__file__).with_name("dashboard_examples.json")
+
+
+def _example_url(params: dict) -> str:
+    return "/dashboard?" + urlencode(params, quote_via=quote)
+
+
+def _dashboard_examples() -> dict:
+    """The example places for the splash and Dashboard dropdowns, each with the Dashboard URL that opens it."""
+    d = json.loads(EXAMPLES_PATH.read_text(encoding="utf-8"))
+    for s in d["settlements"]:
+        s["url"] = _example_url({"lat": s["lat"], "lon": s["lon"], "name": s["name"], "v": PERMALINK_V})
+    for p in d["polities"]:
+        p["url"] = _example_url({"scope": "polity", "polity": p["name"], "v": PERMALINK_V})
+    return d
+
+
 def _workbench_ctx() -> dict:
     """Cache-bust stamps for the African Regions tab's static geojson artifacts."""
     return {
@@ -44,7 +63,7 @@ def _workbench_ctx() -> dict:
 def index(request: Request):
     host = request.headers.get("host", "")
     if "edops" in host:
-        return _render(request, "edops.html")
+        return _render(request, "edops.html", examples=_dashboard_examples())
     if "workbench" in host:
         return _render(request, "workbench.html", **_workbench_ctx())
     return _render(request, "index.html")
@@ -80,7 +99,7 @@ def sandbox_explorer(request: Request):
 
 @router.get("/edops")
 def edops(request: Request):
-    return _render(request, "edops.html")
+    return _render(request, "edops.html", examples=_dashboard_examples())
 
 @router.get("/polities")
 def polities(request: Request):
