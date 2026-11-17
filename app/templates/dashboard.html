@@ -220,6 +220,7 @@
                   <input type="number" id="v3-to-year" class="form-control form-control-sm"
                          style="width:80px;" placeholder="to" min="-10000" max="2025" title="Years CE; negative = BCE">
                 </div>
+                <div id="v3-t-span-warn" class="small mt-1 d-none"><span class="ph-inline"></span></div>
               </div>
 
            <!-- Get signature -->
@@ -780,6 +781,7 @@
 <script src="/static/js/pm_basemap.js?v={{ static_v('js/pm_basemap.js') }}"></script>
 <script src="/static/js/edops_profile.js?v={{ static_v('js/edops_profile.js') }}"></script>
 <script src="/static/js/edops_permalink.js?v={{ static_v('js/edops_permalink.js') }}"></script>
+<script src="/static/js/edops_span_gate.js?v={{ static_v('js/edops_span_gate.js') }}"></script>
 <script>
 (() => {
   // ── Shared doc modal ──────────────────────────────────────────────────────
@@ -921,6 +923,7 @@
     _basinLayerLevel = null;  // force loadBasinLayer to reload at new level
     const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
     if (onPol ? _polityName : currentLat !== null) _resetRightColumn({ keepPlace: true });  // results belong to the old level
+    if (!onPol) updateSpanWarning();
     if (!onPol) {
       const scope = document.getElementById('v3-scope-select').value;
       if (scope && currentLat != null) _drawScopePreview(scope);  // redraw geometry at new level
@@ -1059,8 +1062,24 @@
   function updateBandT() {
     const tChecked = document.getElementById('v3-band-T').checked;
     document.getElementById('v3-t-year-row').classList.toggle('d-none', !tChecked);
+    updateSpanWarning();
     updateSigButton();
   }
+  // Span gate: a warning under the year inputs when the span has more HYDE steps than the scope's limit (never blocks).
+  function updateSpanWarning() {
+    const box = document.getElementById('v3-t-span-warn');
+    const hit = document.getElementById('v3-band-T').checked
+      ? EdopsSpanGate.check(document.getElementById('v3-scope-select').value,
+          parseInt(document.getElementById('v3-from-year').value, 10), parseInt(document.getElementById('v3-to-year').value, 10))
+      : null;
+    box.classList.toggle('d-none', !hit);
+    box.firstElementChild.textContent = hit ? hit.message : '';
+  }
+  ['v3-from-year', 'v3-to-year'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('change', updateSpanWarning);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') updateSpanWarning(); });
+  });
   document.querySelectorAll('.v3-band-chk').forEach(cb => {
     cb.addEventListener('change', updateBandT);
   });
@@ -1120,6 +1139,7 @@
 
   document.getElementById('v3-scope-select').addEventListener('change', function () {
     applyScope(this.value);
+    updateSpanWarning();
     updateSigButton();
     // Changing scope invalidates whatever signature/Analysis/Seasonality/Context/
     // Similarity content is showing -- it was computed for the OLD scope's basin(s), not the
@@ -2519,6 +2539,7 @@
     document.getElementById('v3-t-year-row').classList.add('d-none');
     document.getElementById('v3-from-year').value = '';
     document.getElementById('v3-to-year').value   = '';
+    updateSpanWarning();
     document.getElementById('v3-example-select').selectedIndex = 0;
   }
 
