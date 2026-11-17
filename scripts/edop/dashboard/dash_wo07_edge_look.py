@@ -3,7 +3,8 @@
 Local server only (default http://localhost:8000). For each case it opens the Dashboard on the Signature tab by link,
 times the load until Band T is drawn, records the HYDE table's columns and width against the pane, the DOM size and any
 page errors, and screenshots the Band T accordion. Writes output/edop/dashboard/wo07_edge/wo07_edge_look.csv and the
-screenshots beside it. Usage: python dash_wo07_edge_look.py [base_url]
+screenshots beside it. Polities have no typed span on the Dashboard (the Band T year inputs are hidden; the span is the slice's own dates), so
+polity cases open real slices by link. Usage: python dash_wo07_edge_look.py [base_url] [settlement|polity]
 """
 import csv
 import sys
@@ -14,6 +15,7 @@ from urllib.parse import quote
 from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
+ONLY = sys.argv[2] if len(sys.argv) > 2 else "all"
 OUT = Path(__file__).resolve().parents[3] / "output" / "edop" / "dashboard" / "wo07_edge"
 
 LVIV = dict(lat=49.8397, lon=24.0297, name="Lviv")
@@ -23,15 +25,18 @@ CASES = (
     [("Lviv single", "single_basin", LVIV, s) for s in [(0, 1100), (0, 1200), (1940, 1960), (1900, 2000)]]
     + [("Santa Fe single", "single_basin", SANTA_FE, s) for s in [(0, 1100), (0, 1200), (1900, 2000)]]
     + [("Lviv ring", "basin_ring", LVIV, s) for s in [(0, 1100), (0, 1200), (1900, 2000)]]
-    + [("Kingdom of Croatia", "polity", "Kingdom of Croatia", s) for s in [(1000, 1710), (1000, 1720), (1900, 2000)]]
-    + [("Northern Song", "polity", "Northern Song", s) for s in [(1000, 1710), (1000, 1720), (1000, 1799), (1900, 2000)]]
+    + [("Northern Song", "polity", ("Northern Song", 1000), (None, None)),
+       ("USSR 1953-1968", "polity", ("Union of Soviet Socialist Republics", 1960), (None, None)),
+       ("China 2000-2023", "polity", ("People's Republic of China", 2010), (None, None)),
+       ("Brazil 1987-2023", "polity", ("Republic of Brazil", 2000), (None, None)),
+       ("Argentina 1936-2023", "polity", ("Argentine Republic", 1990), (None, None))]
 )
 
 
 def url(scope, place, span):
     f, t = span
-    if scope == "polity":
-        return f"{BASE}/dashboard?scope=polity&polity={quote(place)}&year=1000&bands=ABCDET&from_year={f}&to_year={t}&view=signature&v=1"
+    if scope == "polity":      # the nearest slice to the year; its own dates are the span
+        return f"{BASE}/dashboard?scope=polity&polity={quote(place[0])}&year={place[1]}&view=signature&v=1"
     return (f"{BASE}/dashboard?scope={scope}&lat={place['lat']}&lon={place['lon']}&name={quote(place['name'])}"
             f"&bands=ABCDET&from_year={f}&to_year={t}&view=signature&v=1")
 
@@ -39,7 +44,7 @@ def url(scope, place, span):
 DONE = "document.getElementById('v3-acc-T') !== null && document.getElementById('v3-tab-sig-spin').classList.contains('d-none')"
 INFO = """() => {
   const pane = document.getElementById('v3-sig-content');
-  const tbl = [...pane.querySelectorAll('table')].find(x => x.innerText.includes('Cropland'));
+  const tbl = [...document.getElementById('v3-acc-T').querySelectorAll('table')].find(x => x.innerText.includes('Cropland'));
   return { nodes: pane.getElementsByTagName('*').length, hydeCols: tbl ? tbl.rows[0].cells.length - 1 : 0,
            hydeWidthPx: tbl ? Math.round(tbl.scrollWidth) : 0, paneWidthPx: Math.round(pane.clientWidth),
            warned: !document.getElementById('v3-t-span-warn').classList.contains('d-none') };
@@ -52,6 +57,8 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         for label, scope, place, span in CASES:
+            if ONLY != "all" and (scope == "polity") != (ONLY == "polity"):
+                continue
             page = browser.new_page(viewport={"width": 1400, "height": 1000})
             errors = []
             page.on("pageerror", lambda e: errors.append(str(e)))
@@ -59,6 +66,8 @@ def main():
             page.goto(url(scope, place, span), wait_until="load")
             try:
                 page.wait_for_function(DONE, timeout=300000)
+                if scope == "polity":
+                    span = tuple(page.evaluate("[parseInt(document.getElementById('v3-polity-from-year').value), parseInt(document.getElementById('v3-polity-to-year').value)]"))
                 secs = round(time.perf_counter() - t0, 1)
                 info = page.evaluate(INFO)
                 steps = page.evaluate(f"EdopsSpanGate.stepsIn({span[0]}, {span[1]})")
@@ -74,7 +83,7 @@ def main():
             page.close()
         browser.close()
     keys = sorted({k for r in rows for k in r}, key=lambda k: list(rows[0]).index(k) if k in rows[0] else 99)
-    with open(OUT / "wo07_edge_look.csv", "w", newline="") as f:
+    with open(OUT / ("wo07_edge_look.csv" if ONLY == "all" else f"wo07_edge_look_{ONLY}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
         w.writerows(rows)

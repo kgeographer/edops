@@ -28,5 +28,21 @@
              message: `This span has ${steps} HYDE steps; ${why} past ${lim.steps}. Try a shorter span.` };
   }
 
-  window.EdopsSpanGate = { check, stepsIn, steps: () => STEPS.slice(), limits: () => JSON.parse(JSON.stringify(LIMITS)) };
+  // Band T time for an area, after the one-row-per-cell HYDE query: cells x (a cost per cell + a cost per step). Measured: about 2.1
+  // microseconds a cell and step; per cell 13 (Northern Song) to 34 (China, a complex outline), 35 used. HYDE cells are about 73 km2
+  // (Northern Song's ratio). A span with no step uses the nearest (one).
+  const KM2_PER_CELL = 73, CEILING_S = 5, CELL_US = 35, STEP_US = 2.1;
+  function estimateSeconds(areaKm2, from, to) {
+    const cells = areaKm2 / KM2_PER_CELL;
+    return cells * (CELL_US + STEP_US * Math.max(1, stepsIn(from, to))) * 1e-6;
+  }
+  function areaCheck(areaKm2, from, to) {
+    if (!Number.isFinite(areaKm2) || !Number.isFinite(from) || !Number.isFinite(to)) return null;
+    const seconds = estimateSeconds(areaKm2, from, to);
+    if (seconds <= CEILING_S) return null;
+    const when = seconds < 90 ? `${Math.round(seconds)} s` : `${Math.round(seconds / 60)} min`;
+    return { seconds, message: `Band T for this slice would take about ${when}. Untick T to continue without it.` };
+  }
+
+  window.EdopsSpanGate = { check, stepsIn, estimateSeconds, areaCheck, ceiling: () => CEILING_S, steps: () => STEPS.slice(), limits: () => JSON.parse(JSON.stringify(LIMITS)) };
 })();

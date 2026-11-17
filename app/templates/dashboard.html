@@ -348,6 +348,7 @@
               <button class="btn btn-success btn-sm w-100" id="v3-polity-sig-btn" disabled>
                 Get signature
               </button>
+              <div id="v3-polity-halt" class="small mt-1 d-none"><span class="ph-inline"></span></div>
 
             </div><!-- /v3-pane-polities -->
 
@@ -970,7 +971,8 @@
         const polityName   = document.getElementById('v3-polity-input').value.trim();
         const resolverYear = document.getElementById('v3-resolver-year').value;
         if (!polityName || !resolverYear) return;
-        const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('');
+        const halted = _polityHalt();      // the map needs only the basin ids; a halted slice's Band T is left out
+        const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).filter(v => !(halted && v === 'T')).join('');
         const params = new URLSearchParams({ scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true', src: 'ui_aux' });
         if (bands.includes('T')) {
           const fy = document.getElementById('v3-polity-from-year').value;
@@ -3711,11 +3713,21 @@
              level: parseInt(document.getElementById('v3-polity-level').value || '6', 10),
              bands: [...document.querySelectorAll('.v3-polity-band-chk:checked')].map(cb => cb.value).join('') };
   }
+  // A slice whose Band T would take over the ceiling is not run while T is ticked (the other bands still can be).
+  function _polityHalt() {
+    const s = _politySlices[_polityCurrentIdx];
+    if (!s || !document.getElementById('v3-polity-band-T').checked) return null;
+    return EdopsSpanGate.areaCheck(s.area_km2, s.fromyear, s.toyear);
+  }
   function updatePolityButton() {
     const ready = _polityName && _polityCurrentIdx >= 0;
     const same  = _lastRun && _lastRun.kind === 'polity' && _sameRun(_polityControls(), _lastRun);
     const btn = document.getElementById('v3-polity-sig-btn');
-    btn.disabled = !ready || _sigRunning || !!same;
+    const halt = ready ? _polityHalt() : null;
+    btn.disabled = !ready || _sigRunning || !!same || !!halt;
+    const note = document.getElementById('v3-polity-halt');
+    note.classList.toggle('d-none', !halt);
+    note.firstElementChild.textContent = halt ? halt.message : '';
     btn.textContent = btn.disabled ? 'Get signature' : _sigLabel(_polityName ? `p:${_polityName}` : null);
   }
   document.querySelectorAll('.v3-polity-band-chk').forEach(cb => cb.addEventListener('change', updatePolityButton));
@@ -4127,6 +4139,7 @@
 
   // Polity Get Signature
   async function _runPolitySignature() {
+    if (_polityHalt()) return;
     const polityName   = document.getElementById('v3-polity-input').value.trim();
     const resolverYear = document.getElementById('v3-resolver-year').value;
     if (!polityName || !resolverYear) return;
