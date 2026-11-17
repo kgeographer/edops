@@ -1,6 +1,6 @@
 # dash WO-05 results: GEDA in Band T, sources line, long-span measurements
 
-2026-11-16. Spec `dash_wo05_GEDA_long-span-caution.md` (Fable). Branch `dashboard`. Commits: item 5 `0d7c221`, item 1 `0ad2aed`, a Get signature change outside the WO's list `875ee10`, item 2 `a979f5f`; item 3 measurements and this record in the commit after. Nothing is deployed or on `main`. **Item 4 (out-of-date results) was not started. Item 3 is measurement only: the caution was not built, by Karl's decision (see below).**
+2026-11-16. Spec `dash_wo05_GEDA_long-span-caution.md` (Fable). Branch `dashboard`. Commits: item 5 `0d7c221`, item 1 `0ad2aed`, a Get signature change outside the WO's list `875ee10`, item 2 `a979f5f`; item 3 measurements and this record in the commit after. Nothing is deployed or on `main`. **Item 4 (out-of-date results) was not built as specified; on 2026-11-17 it was settled as a simpler rule (see Item 4). Item 3 is measurement only: the caution was not built, by Karl's decision (see below).**
 
 ## Item 5: polity example dropdown
 
@@ -45,13 +45,17 @@ Santa Fe (no GEDA) is 15 to 30% smaller and takes 1.2 to 2.2 s. A polity's raw p
 - **HYDE's table** is a separate display problem: HYDE steps are annual from 1950, so the table has one column per year there: 56 columns (3,242 px in an 827 px pane) for 1900–2000, 82 columns at 1,000 years. The width depends on how much of the span is after 1950, so a limit on span length would not catch it.
 - A caution threshold was proposed at 400 years (a polity passes 5 s and starts climbing); not built.
 
-## Item 4: out-of-date results: not started
+## Item 4: out-of-date results: settled 2026-11-17 as a rule, built differently
 
 Spec: keep results visible and dim them when the controls differ from the last run, with a line naming what they are for; scope and radius changes no longer clear results; Context and Similarity wait for the button. Karl expects a methodical state chase (settlement to ring, ring-member clicks, polity slices; one handler for a control change and one for the control-window click), time-consuming, and will decide when to start it. Read first: WO-04 results ("Needs attention" 1 and 2), `_settlementDirty`, `_resetRightColumn`, `_drawScopePreview`.
 
+**Settled 2026-11-17 (Karl): stale results are never in play.** The spec's keep-and-dim design was dropped. The rule: any change to the place, scope, radius or level disables the six result tabs and returns to the Map; the new result appears only after Get signature. Found in the handlers: scope change (`v3-scope-select`) and radius change (`_applyRadius`) already called `_resetRightColumn({keepPlace:true})`; **level change did not** (on Settlements it redrew the basins, re-derived the member ids and refetched Context and Similarity if visible, leaving Signature, Analysis and Seasonality open; on Polities the Signature tab stayed open). Built: `_onLevelChange` now calls `_resetRightColumn({keepPlace:true})` when a place or polity is loaded (commit `add8899`). The map choropleth repaint (`_silentResig`) stays, since it belongs to the Map. Changing the level back does not restore the old results, and the button stays enabled. Bands and timespan are left as they are, **an open question for the UX review**: the button activates and the tabs stay open, so old results stay viewable until the button is pressed (Karl, 2026-11-17: unsure it is right, not clear which rule is better, so deliberately not decided now). The polity slice step and the polity bands were not traced. Context and Similarity no longer follow the level control, because they are inactive until the next run.
+
+**Button label (commit `3d424c5`).** The button reads "Get new signature" when it is enabled and results for the same place or polity were fetched earlier; otherwise "Get signature" (disabled, first run, a failed first run, a different place). A key for the place or polity of the last recorded run drives it, because a reset clears `_lastRun`.
+
 ## Tests
 
-`tests/dashboard/test_geda_block.py` 9, `test_sources_line.py` 7, `test_get_signature_ui.py` 11, `test_handoff_ui.py` 28 with `test_permalink_ui.py` 21 (49 together); the whole dashboard folder at the end of the day: **97 passed** (about 4.5 minutes). The full suite was not run (it is for the merge gate).
+`tests/dashboard/test_geda_block.py` 9, `test_sources_line.py` 7, `test_get_signature_ui.py` 11, `test_handoff_ui.py` 28 with `test_permalink_ui.py` 21 (49 together); the whole dashboard folder at the end of the day: **97 passed** (about 4.5 minutes). On 2026-11-17, after the level reset and the button label: `test_get_signature_ui.py` 18, dashboard folder **104 passed** (about 4.7 minutes). The full suite was not run (it is for the merge gate).
 
 ## Needs attention going forward
 
@@ -60,8 +64,8 @@ Spec: keep results visible and dim them when the controls differ from the last r
 3. **HYDE's table** is one column per step: wide with annual steps after 1950.
 4. **Observed versus reconstructed:** two shadings and a legend are in; users will not know the difference and deserve to; wording is placeholder and to be written in a UI pass.
 5. **The `sources` block does not say a span was clipped;** the page derives it from the rows' first and last year (GEDA only).
-6. **Item 4** (above).
+6. **Item 4** is settled for place, scope, radius and level (above). **For the UX review:** bands and timespan changes leave stale results viewable beside an enabled button; decide whether they should disable the tabs too. Still to trace: other controls on the Polities side (slice step, bands) against the rule.
 7. **Wording** of the GEDA block and the sources line is placeholder (yellow); the "SD (z-score)" units text repeats itself in the GEDA description.
 8. **The Band T headline value** (weighted mean for LMR and GEDA) is still an open decision.
-9. **Carried from WO-03 and WO-04:** the profile store; Context and Similarity follow the level control at once (item 4 would change it); prose still saying v0.4; the profile text describes the sample point.
+9. **Carried from WO-03 and WO-04:** the profile store; (Context and Similarity following the level control is gone since 2026-11-17: the level change resets the result tabs); prose still saying v0.4; the profile text describes the sample point.
 10. **Polity default Band T span** can end before GEDA starts, so a polity opened by default may show GEDA as not applied for years.

@@ -14,7 +14,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
 - **Active phase — Regionality:** `docs/edop/_v1/regionality/` (files prefixed `reg_`; scripts, notebooks and tests under `regionality/` subfolders). **Start with `reg_post-wo05-cc.md` (status after WO-05) and `reg_wo06_summary.md` / `reg_wo06_summary02.md`**; per-WO records are `reg_wo0{4,5,6}_results.md` and `_summary.md`, each ending in a "Needs attention" list.
-- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-05 done (WO-05 item 4 open); branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo05_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-05 done; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo05_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -95,8 +95,8 @@ profiles should hold ingredients with the paragraph assembled per place; a secon
 an in-process bulk build, unverified; items 3 and 4 open); **WO-02** permalink estimate; **WO-03** splash, Dashboard clone,
 URL handoff, permalink button; **WO-04** map-first arrival, the Get signature rule, `/api/profile` with the point, one
 version setting; **WO-05** GEDA block and a sources line in Band T, Get signature shows the Signature tab, span
-measurements (no caution built: a time-series design comes first), polity example dropdown stays usable (item 4,
-out-of-date results, not started).
+measurements (no caution built: a time-series design comes first), polity example dropdown stays usable, and out-of-date results settled 2026-11-17 as a
+rule (item 4): any change of place, scope, radius or level disables the result tabs; the button reads "Get new signature".
 
 What exists: a new splash (`app/templates/edops.html`, at `/edops`, and at `/` when the host contains "edops") with two
 example dropdowns and three tiles; the Dashboard (`dashboard.html` at `/dashboard`, `noindex`, keeps the Sandbox's element
@@ -108,7 +108,7 @@ dropdowns; Tristan da Cunha and San Francisco are not examples); `app/static/js/
 `EDOPS_VERSION_LABEL` (default "v1.0 alpha", `app/settings.py`) feeds the splash and every page header. The shared header
 partial has its own pills for the Dashboard and Using pages. Behaviour: every way of choosing a place (example, WHG lookup,
 polity search) lands on the Map tab zoomed to the basin, the query runs by itself and the other tabs fill; Get signature is
-enabled only when the controls differ from the last successful run; a link `/dashboard?lat=…&lon=…&name=…` (parameters in the
+enabled only when the controls differ from the last successful run (it reads "Get new signature" once results exist for the place), and a change of scope, radius or level disables the six result tabs until it is pressed; a link `/dashboard?lat=…&lon=…&name=…` (parameters in the
 codec's header) opens a place and a tab, and the Copy link button builds one from the last run; arrivals log as
 `src=link`; polities have no Profile tab. Band T on the Signature tab (WO-05): a line "Available for this query: …" with
 a sentence for each exception (low coverage, HYDE's nearest step, not applied and why), and a GEDA block after LMR (own
@@ -116,8 +116,7 @@ histogram and slider, observed years 1990 to 2020 shaded, caveats from the paylo
 Band T histogram and as a marker on the line chart; pressing Get signature shows the Signature tab (automatic runs stay on
 the map). Wording of the GEDA block and the sources line is placeholder.
 
-Open: Context and Similarity follow the level control at once while the Signature tab waits for the button; scope and radius
-changes clear the results (WO-05 item 4 would keep and dim them, after a state chase); **time series:** Band T cost and
+Open: **time series:** Band T cost and
 display grow with span (about 3.5 KB per year; a polity takes 5.5 s at 400 years, 66 s at 1,000; HYDE's table has one column
 per year after 1950), so a time-series UX design (Karl, Opus, then CC; possibly a "Time series" feature, perhaps API-only) comes
 before any span limit; the profile store (where the 16,000 Level 06 profiles live: a database table recommended); the About
@@ -145,7 +144,7 @@ flips under sweeps, so most fall back to stating the number alone; HYDE grazing 
 source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus). `wo02_comprehension_check.md`
 (10 questions and key) is for testing Opus only if it struggles.
 
-**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-05); WO-05 item 4; the time-series design; the profile store design; the Using EDOPS page and typed lookup on the splash (all out of scope so far); Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
+**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-05); the time-series design; tracing the Polities controls (slice step, bands) against the reset rule; in the UX review, whether bands and timespan changes should disable the result tabs (they do not now); the profile store design; the Using EDOPS page and typed lookup on the splash (all out of scope so far); Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
 source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
 LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
 Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Regional datasets are under
@@ -505,7 +504,7 @@ python -m pytest tests/ -m engine              # one area; markers are set by pa
 python -m pytest tests/ -m "not ui"            # everything except the Playwright browser tests
 ```
 
-Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-14: 768 passed, 21 skipped; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the dashboard folder (97 tests) passed on 2026-11-16 and takes about 4.5 minutes.
+Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-14: 768 passed, 21 skipped; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the dashboard folder (104 tests) passed on 2026-11-17 and takes about 4.7 minutes.
 
 **Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
 - A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.
