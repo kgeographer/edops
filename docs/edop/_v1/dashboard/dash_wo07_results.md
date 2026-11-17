@@ -86,5 +86,5 @@ The spec's provisos (no engine, API or payload change) held while WO-07 ran; the
 4. **A polity link ignores `from_year` and `to_year`;** the Copy link for a polity does not carry a span either (WO-03 codec header says it does).
 5. **The warning wording** is placeholder (yellow); the buffer limit (9) is untested beyond the arithmetic.
 6. **Timings are local and noisy** (cold first load; two loads of one slice differed by 3x); server timings remain to be taken.
-7. **The USSR page run timed out at 5 minutes** on the old query and no completed time exists for it; Canada was not run on either query.
+7. **The polity page times in the edge-look table were taken on the old query** and not re-measured after the reshape (only the HYDE function was timed on the new one: 7 to 10 s for the large slices). **The USSR page run timed out at 5 minutes** on the old query and no completed time exists for it; Canada was not run on either query.
 8. **Not built here:** a link to a Time series tab. The estimate and the area-based gate are not yet used for buffers (the settlements buffer limit is still 9 steps).
