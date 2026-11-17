@@ -917,6 +917,7 @@
   function _onLevelChange() {
     _basinLayerLevel = null;  // force loadBasinLayer to reload at new level
     const onPol = document.getElementById('v3-tab-polities-btn').classList.contains('active');
+    if (onPol ? _polityName : currentLat !== null) _resetRightColumn({ keepPlace: true });  // results belong to the old level
     if (!onPol) {
       const scope = document.getElementById('v3-scope-select').value;
       if (scope && currentLat != null) _drawScopePreview(scope);  // redraw geometry at new level

@@ -73,7 +73,7 @@ def test_the_polity_button_follows_the_same_rule(dashboard_server, page):
     page.select_option("#v3-polity-level", "8")
     assert not _disabled(page, "v3-polity-sig-btn")
     page.select_option("#v3-polity-level", "6")
-    assert _disabled(page, "v3-polity-sig-btn")
+    assert not _disabled(page, "v3-polity-sig-btn")                           # the old results went with the level change
     page.click("#v3-btn-next")                                                # a later slice
     assert not _disabled(page, "v3-polity-sig-btn")
     _run_and_wait(page, "#v3-polity-sig-btn")
@@ -96,7 +96,7 @@ def test_pressing_get_signature_from_the_map_shows_the_signature_tab(dashboard_s
 def test_pressing_get_signature_from_another_tab_shows_the_signature_tab(dashboard_server, page):
     _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
     page.click("#v3-tab-profile-btn")
-    page.select_option("#v3-level", "8")
+    page.uncheck("#v3-band-C")
     page.click("#v3-sig-btn")
     page.wait_for_selector("#v3-tab-sig-btn.active", timeout=10000)
     page.wait_for_function(SETTLED, timeout=60000)
@@ -121,3 +121,44 @@ def test_a_polity_press_after_a_slice_step_shows_the_signature_tab(dashboard_ser
     page.wait_for_selector("#v3-tab-sig-btn.active", timeout=10000)
     page.wait_for_selector("#v3-tab-sig-spin.d-none", state="attached", timeout=90000)
     assert not _active(page, "map")
+
+
+def _tab_disabled(page, tab):
+    return page.evaluate(f"document.getElementById('v3-tab-{tab}-btn').classList.contains('disabled')")
+
+
+RESULT_TABS = ("profile", "sig", "analysis", "seasonality", "context", "similarity")
+
+
+def test_a_level_change_disables_the_result_tabs_and_shows_the_map(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    page.click("#v3-tab-sig-btn")
+    assert not any(_tab_disabled(page, t) for t in RESULT_TABS)
+    page.select_option("#v3-level", "8")
+    assert all(_tab_disabled(page, t) for t in RESULT_TABS)
+    assert _active(page, "map")
+    assert not _disabled(page, "v3-sig-btn")
+
+
+def test_changing_the_level_back_does_not_bring_the_old_results_back(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    page.select_option("#v3-level", "8")
+    page.select_option("#v3-level", "6")
+    assert all(_tab_disabled(page, t) for t in RESULT_TABS)
+    assert not _disabled(page, "v3-sig-btn")
+
+
+def test_a_polity_level_change_disables_the_signature_tab(dashboard_server, page):
+    _arrive(page, dashboard_server, SONG, "v3-tab-map-btn")
+    assert not _tab_disabled(page, "sig")
+    page.select_option("#v3-polity-level", "8")
+    assert _tab_disabled(page, "sig")
+    assert _active(page, "map")
+    assert not _disabled(page, "v3-polity-sig-btn")
+
+
+def test_changing_bands_leaves_the_result_tabs_alone(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    page.uncheck("#v3-band-C")
+    assert not any(_tab_disabled(page, t) for t in RESULT_TABS)
+
