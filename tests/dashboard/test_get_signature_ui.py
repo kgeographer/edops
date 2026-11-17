@@ -162,3 +162,30 @@ def test_changing_bands_leaves_the_result_tabs_alone(dashboard_server, page):
     page.uncheck("#v3-band-C")
     assert not any(_tab_disabled(page, t) for t in RESULT_TABS)
 
+
+def _label(page, id_):
+    return page.inner_text(f"#{id_}").strip()
+
+
+def test_the_button_reads_get_new_signature_once_a_signature_has_been_fetched(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    assert _label(page, "v3-sig-btn") == "Get signature"                      # disabled: nothing to apply yet
+    page.select_option("#v3-level", "8")
+    assert _label(page, "v3-sig-btn") == "Get new signature"
+    _run_and_wait(page, "#v3-sig-btn")
+    page.uncheck("#v3-band-C")
+    assert _label(page, "v3-sig-btn") == "Get new signature"
+
+
+def test_the_label_stays_plain_after_a_failed_first_run(dashboard_server, page):
+    page.route("**/api/areas*", lambda route: route.abort())
+    page.goto(f"{dashboard_server}{TBILISI}", wait_until="load")
+    page.wait_for_function("!document.getElementById('v3-handoff-alert').classList.contains('d-none')", timeout=30000)
+    assert not _disabled(page, "v3-sig-btn")
+    assert _label(page, "v3-sig-btn") == "Get signature"
+
+
+def test_the_polity_button_reads_get_new_signature_after_a_run(dashboard_server, page):
+    _arrive(page, dashboard_server, SONG, "v3-tab-map-btn")
+    page.select_option("#v3-polity-level", "8")
+    assert _label(page, "v3-polity-sig-btn") == "Get new signature"

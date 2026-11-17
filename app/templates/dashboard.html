@@ -825,6 +825,9 @@
   let _arrivalSrc = null;   // 'link' while a URL handoff runs, so those queries log as arrivals
   let _lastRun = null;      // parameters of the last successful run, for the permalink button
   let _sigRunning = false;  // a run is in progress
+  let _runPlaceKey = null;  // the place or polity of the last recorded run; the button reads "Get new signature" for it
+  const _placeKey = (r) => r.kind === 'polity' ? `p:${r.polity}` : `s:${r.lat},${r.lon}`;
+  const _sigLabel = (key) => (_runPlaceKey && _runPlaceKey === key) ? 'Get new signature' : 'Get signature';
   let _pressSeq = 0;        // counts presses of Get signature; a map preview that began before a press must not pull the reader back to the map
   function _sigTabBusy(on) {   // spinner on the Signature tab while a run is in progress; the buttons follow
     _sigRunning = on;
@@ -1151,7 +1154,9 @@
   function updateSigButton() {
     const hasPoint = currentLat !== null && currentLon !== null;
     const scope    = document.getElementById('v3-scope-select').value;
-    document.getElementById('v3-sig-btn').disabled = !(hasPoint && scope) || _sigRunning || !_settlementDirty();
+    const btn = document.getElementById('v3-sig-btn');
+    btn.disabled = !(hasPoint && scope) || _sigRunning || !_settlementDirty();
+    btn.textContent = btn.disabled ? 'Get signature' : _sigLabel(hasPoint ? `s:${currentLat},${currentLon}` : null);
   }
 
   // ── Map tab / fitBounds helpers ───────────────────────────────────────────
@@ -2460,7 +2465,7 @@
     _centerPointSig = null;
     _previewRingMemberId = null;
     _committedRingMemberId = null;
-    if (!keepPlace) _currentPlaceName = '';
+    if (!keepPlace) { _currentPlaceName = ''; _runPlaceKey = null; }
     _ctxQueryLat    = null;
     _ctxQueryLon    = null;
     _ctxQueryLevel  = null;
@@ -3003,6 +3008,7 @@
   }
   function _recordRun(snapshot) {
     _lastRun = snapshot;
+    _runPlaceKey = _placeKey(snapshot);
     document.getElementById('v3-permalink-row').style.display = 'flex';
   }
 
@@ -3687,7 +3693,9 @@
   function updatePolityButton() {
     const ready = _polityName && _polityCurrentIdx >= 0;
     const same  = _lastRun && _lastRun.kind === 'polity' && _sameRun(_polityControls(), _lastRun);
-    document.getElementById('v3-polity-sig-btn').disabled = !ready || _sigRunning || !!same;
+    const btn = document.getElementById('v3-polity-sig-btn');
+    btn.disabled = !ready || _sigRunning || !!same;
+    btn.textContent = btn.disabled ? 'Get signature' : _sigLabel(_polityName ? `p:${_polityName}` : null);
   }
   document.querySelectorAll('.v3-polity-band-chk').forEach(cb => cb.addEventListener('change', updatePolityButton));
 
