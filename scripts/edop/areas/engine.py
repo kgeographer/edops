@@ -941,7 +941,7 @@ def assemble_payload(rows, scope, shortfall, bands,
 _HYDE_1950_EPOCH_YEAR = 1950   # cadence-artifact epoch; triggers hyde_caveat
 
 
-def _agg_hyde_b7(df, var_col, buf_area_m2):
+def _agg_hyde_b7(df, var_col, buf_area_m2, histogram=True):
     """Fractional-overlap-weighted sum + per-cell distribution for one HYDE variable.
 
     HYDE's four land-use variables (cropland/grazing/pasture/rangeland) are stored
@@ -986,7 +986,7 @@ def _agg_hyde_b7(df, var_col, buf_area_m2):
         'w_eff':    round(float(frac.sum()), 2),
         'coverage': float(valid['overlap_m2'].sum()) / buf_area_m2,
         'status':   'ok',
-        'histogram': _weighted_histogram(v, frac, unit_type='hyde_cell'),
+        'histogram': _weighted_histogram(v, frac, unit_type='hyde_cell') if histogram else None,
     }
 
 
@@ -1013,6 +1013,7 @@ class _BandTQuery:
     conn: object
     permitted: object = None     # set of source ids the request may consult; None = all
     geom: object = None          # (parameterized SQL expression, parameters) for the geometry, for source_registry.check
+    hyde_distribution: bool = True   # False: HYDE rows carry no histogram (bins, weights); p10, p90 and the rest stay
 
 
 class _SourceResult(NamedTuple):
@@ -1029,7 +1030,7 @@ class _BandTResult(NamedTuple):
     notes: dict
 
 
-def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted=None):
+def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted=None, hyde_distribution=True):
     if geom_wkt is not None:
         buf_geom_sql = f"ST_GeomFromText('{geom_wkt}', 4326)"
         buf_geog_sql = f"({buf_geom_sql})::geography"
@@ -1044,7 +1045,7 @@ def _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resol
     buf_area_m2 = float(
         conn.execute(f"SELECT ST_Area({buf_geog_sql})").fetchone()[0]
     )
-    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn, permitted, geom)
+    return _BandTQuery(buf_geom_sql, buf_geog_sql, buf_area_m2, from_year, to_year, resolver_year, conn, permitted, geom, hyde_distribution)
 
 
 def _band_t_evolv2k(q):
@@ -1218,7 +1219,7 @@ def _band_t_hyde(q):
             caveat.append('hyde_nearest_year')
         for var, units in [('cropland', 'km²'), ('grazing', 'km²'),
                            ('pasture',  'km²'), ('rangeland', 'km²')]:
-            agg = _agg_hyde_b7(base.assign(**{var: values[var][:, k]}), var, q.buf_area_m2)
+            agg = _agg_hyde_b7(base.assign(**{var: values[var][:, k]}), var, q.buf_area_m2, histogram=q.hyde_distribution)
             hist_h = agg['histogram']
             if hist_h is not None:
                 hist_h.update({
@@ -1305,7 +1306,7 @@ def _band_t_geda(q):
 
 
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
-                     geom_wkt=None, resolver_year=None, permitted=None):
+                     geom_wkt=None, resolver_year=None, permitted=None, hyde_distribution=True):
     """
     Band T aggregator: HYDE (grid_areal_distribution) + LMR (grid_areal_collapsed) +
     eVolv2k (global_forcing) for a query area over a year span.
@@ -1332,13 +1333,14 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     geom_wkt    : str or None — WKT polygon to use instead of a circular buffer;
                   when provided, lat/lon/radius_km are not used for geometry
     permitted   : set of source ids to consult (e.g. {'hyde_3_5', 'evolv2k_v4'}); None = all
+    hyde_distribution : bool — False leaves the histogram (bins, weights) out of HYDE rows; the other numbers are unchanged
 
     Returns
     -------
     _BandTResult(rows, decisions, notes): rows are make_row dicts to pass to assemble_payload;
     decisions are the registry's check() results; notes is {source id: text} for the `sources` block
     """
-    q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted)
+    q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted, hyde_distribution)
 
     results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q), _band_t_geda(q)]
     return _BandTResult(
@@ -2440,6 +2442,7 @@ def _areal_signature_from_basin_set(
     include_detail=False,
     run_modality=True,
     resolver_year=None,
+    hyde_distribution=True,
 ):
     """
     Shared aggregation pipeline for any resolver that produces a weighted basin set.
@@ -2507,7 +2510,7 @@ def _areal_signature_from_basin_set(
 
     t_result = aggregate_band_t(
         lat, lon, radius_km, from_year, to_year, conn,
-        geom_wkt=geom_wkt, resolver_year=resolver_year,
+        geom_wkt=geom_wkt, resolver_year=resolver_year, hyde_distribution=hyde_distribution,
     ) if run_t else None
 
     all_rows = basin_rows + (t_result.rows if run_t else [])
@@ -2545,6 +2548,7 @@ def areal_signature(
     from_year=None,
     to_year=None,
     include_detail=False,
+    hyde_distribution=True,
 ):
     """
     Full areal signature for a buffer scope.
@@ -2602,6 +2606,7 @@ def areal_signature(
         from_year=from_year,
         to_year=to_year,
         include_detail=include_detail,
+        hyde_distribution=hyde_distribution,
     )
 
 
@@ -2649,6 +2654,7 @@ def single_basin_signature(
     from_year=None,
     to_year=None,
     include_detail=False,
+    hyde_distribution=True,
 ):
     """
     Areal signature for the single containing basin at a point.
@@ -2705,6 +2711,7 @@ def single_basin_signature(
         from_year=from_year,
         to_year=to_year,
         include_detail=include_detail,
+        hyde_distribution=hyde_distribution,
     )
 
 
@@ -2816,6 +2823,7 @@ def basin_ring_signature(
     from_year=None,
     to_year=None,
     include_detail=False,
+    hyde_distribution=True,
 ):
     """
     Areal signature for a basin-ring neighbourhood: centre + first-order adjacents.
@@ -2854,6 +2862,7 @@ def basin_ring_signature(
         from_year=from_year,
         to_year=to_year,
         include_detail=include_detail,
+        hyde_distribution=hyde_distribution,
     )
 
     ring_members = []
@@ -2867,6 +2876,7 @@ def basin_ring_signature(
             from_year=from_year,
             to_year=to_year,
             include_detail=include_detail,
+            hyde_distribution=hyde_distribution,
         )
         ring_members.append({
             'hybas_id':         int(nb['hybas_id']),
@@ -2902,6 +2912,7 @@ def areal_signature_polygon(
     resolver_year=None,
     polity_id=None,
     scope_type='polity',
+    hyde_distribution=True,
 ):
     """
     Full areal signature for a polygon geometry.
@@ -2973,6 +2984,7 @@ def areal_signature_polygon(
         include_detail=include_detail,
         run_modality=False,
         resolver_year=resolver_year,
+        hyde_distribution=hyde_distribution,
     )
     payload['modality_post_pass'] = 'skipped — not calibrated for polygon scale'
     return payload

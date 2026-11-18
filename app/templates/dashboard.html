@@ -2922,7 +2922,7 @@
     const bands = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
     const params = new URLSearchParams({
       scope: 'single_basin', lat: member.neighbor_lat, lon: member.neighbor_lon,
-      level: lv, bands, detail: 'true',
+      level: lv, bands, detail: 'true', skip_hyde_distribution: 'true',
     });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
@@ -2981,7 +2981,7 @@
   function buildSingleBasinUrl() {
     if (currentLat == null || currentLon == null) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ scope: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true', src: 'ui_aux' });
+    const params = new URLSearchParams({ scope: 'single_basin', lat: currentLat, lon: currentLon, level: _activeLevel(), bands, detail: 'true', skip_hyde_distribution: 'true', src: 'ui_aux' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -2999,7 +2999,7 @@
     const radius_km = parseFloat(document.getElementById('v3-radius').value);
     if (currentLat == null || currentLon == null || isNaN(radius_km)) return null;
     const bands  = [...document.querySelectorAll('.v3-band-chk:checked')].map(cb => cb.value).join('');
-    const params = new URLSearchParams({ scope: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true', src: 'ui_aux' });
+    const params = new URLSearchParams({ scope: 'buffer', lat: currentLat, lon: currentLon, level: _activeLevel(), radius_km, bands, detail: 'true', skip_hyde_distribution: 'true', src: 'ui_aux' });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-from-year').value;
       const ty = document.getElementById('v3-to-year').value;
@@ -4169,7 +4169,7 @@
     const bands = [...document.querySelectorAll('.v3-polity-band-chk:checked')]
       .map(cb => cb.value).join('');
     const params = new URLSearchParams({
-      scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true',
+      scope: 'polity', polity: polityName, year: resolverYear, level: lv, bands, detail: 'true', skip_hyde_distribution: 'true',
     });
     if (bands.includes('T')) {
       const fy = document.getElementById('v3-polity-from-year').value;

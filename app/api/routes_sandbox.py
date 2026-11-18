@@ -1363,6 +1363,10 @@ def areas(
     from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
     to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
+    skip_hyde_distribution: bool = Query(False, description=(
+        "Leave the histogram (bins, weights) out of HYDE's rows when Band T is computed; p10, p90 and the other numbers stay. "
+        "The Dashboard sends it: it never draws them, and they are about a quarter of a large slice's time."
+    )),
     members_only: bool = Query(False, description=(
         "scope=polity only: return just member_ids and resolver, with no signature. The Dashboard's slice steps use it "
         "to repaint the map."
@@ -1456,6 +1460,7 @@ def areas(
                 from_year=band_t_from,
                 to_year=band_t_to,
                 include_detail=detail,
+                hyde_distribution=not skip_hyde_distribution,
             )
 
         elif scope == "single_basin":
@@ -1467,6 +1472,7 @@ def areas(
                 from_year=band_t_from,
                 to_year=band_t_to,
                 include_detail=detail,
+                hyde_distribution=not skip_hyde_distribution,
             )
 
         elif scope == "basin_ring":
@@ -1478,6 +1484,7 @@ def areas(
                 from_year=band_t_from,
                 to_year=band_t_to,
                 include_detail=detail,
+                hyde_distribution=not skip_hyde_distribution,
             )
 
         else:  # polity
@@ -1520,6 +1527,7 @@ def areas(
                 from_year=band_t_from,
                 to_year=band_t_to,
                 include_detail=detail,
+                hyde_distribution=not skip_hyde_distribution,
                 resolver_year=year,
                 polity_id=polity_id,
             )
