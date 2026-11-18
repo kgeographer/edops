@@ -10,6 +10,7 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/static/css/profiles.css?v={{ static_v('css/profiles.css') }}">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v={{ static_v('css/dashboard.css') }}">
   {% include "_ga.html" %}
   {% include "_icons.html" %}
   <style>
@@ -28,7 +29,7 @@
     .use-frame { width: 100%; border: 0; display: block; min-height: 600px; }
   </style>
 </head>
-<body>
+<body class="edops-v1">
 
 {% set page_title = "Using EDOPS" %}
 {% set active_page = "using" %}

@@ -1,6 +1,9 @@
 {% extends "base_cedop.html" %}
 {% set active_page = "edops" %}   {# selects _guide_edops.html in the shared Documentation modal #}
 
+{% block head_extra %}<link rel="stylesheet" href="/static/css/dashboard.css?v={{ static_v('css/dashboard.css') }}">{% endblock %}
+{% block body_class %}edops-v1{% endblock %}
+
 {% block header %}
 {% if is_alpha() %}{% include "_alpha_banner.html" %}{% endif %}
 <header>
