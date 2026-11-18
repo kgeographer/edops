@@ -8,7 +8,7 @@ from app.site_mode import V04_PAGES, is_v04_page
 
 pytestmark = pytest.mark.dashboard
 
-NEW_PAGES = ["/edops", "/dashboard", "/using", "/explorer", "/profiles"]
+NEW_PAGES = ["/edops", "/dashboard", "/using", "/explorer"]
 OLD_PAGES = list(V04_PAGES) + ["/sandbox/explorer", "/sandbox/lookup3"]
 LIVE = "https://edops.computingplace.org"
 
@@ -50,13 +50,12 @@ def test_no_new_page_links_to_a_0_4_page(alpha):
             assert not is_v04_page(m.group(1)), f"{path} links to {m.group(1)}"
 
 
-def test_the_dashboard_pills_serve_the_explorer_and_the_profiles_page(alpha):
-    for path in ("/explorer", "/profiles", "/using", "/dashboard"):
+def test_the_dashboard_pills_serve_the_explorer_and_using_pages(alpha):
+    for path in ("/explorer", "/using", "/dashboard"):
         html = alpha.get(path).text
         assert 'href="/using"' in html and 'href="/dashboard"' in html and 'href="/explorer"' in html
         assert 'href="/sandbox"' not in html and 'href="/workbench"' not in html
-        if path != "/profiles":                       # the sample profiles page has no documentation link
-            assert 'Documentation (<span class="v04-tag">v0.4</span>)' in html
+        assert 'Documentation (<span class="v04-tag">v0.4</span>)' in html
 
 
 def test_robots_txt_disallows_everything(alpha):

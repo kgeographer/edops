@@ -19,6 +19,13 @@ ROME     = {"lat": 41.8967,     "lon": 12.4822}       # Mediterranean
 KAIFENG  = {"lat": 34.7972,     "lon": 114.3075}      # Yellow River lowland
 
 
+@pytest.fixture(autouse=True)
+def normal_site_mode(monkeypatch):
+    """Tests run in the normal site mode whatever .env says; the ones that need the v1 alpha switch it on themselves."""
+    from app.settings import settings
+    monkeypatch.setattr(settings, "EDOPS_SITE_MODE", "")
+
+
 @pytest.fixture(scope="session")
 def db_available():
     """Return True if the DB is reachable, False otherwise."""

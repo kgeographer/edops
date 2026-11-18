@@ -83,9 +83,25 @@ def favicon():
 def dashboard(request: Request):
     return _render(request, "dashboard.html", examples=_dashboard_examples())
 
+def _profile_places() -> list:
+    return json.loads((STATIC_DIR / "profiles" / "index.json").read_text())
+
+
 @router.get("/using")
 def using(request: Request):
-    return _render(request, "using.html")
+    return _render(request, "using.html", places=_profile_places())
+
+
+# The Workbench's Societies and African Regions tabs, shown inside the Using EDOPS tabs: the Workbench page without its
+# header and tab bar, with one tab selected. Nothing else about it changes.
+@router.get("/using/societies")
+def using_societies(request: Request):
+    return _render(request, "workbench.html", embed="soc", **_workbench_ctx())
+
+
+@router.get("/using/africa")
+def using_africa(request: Request):
+    return _render(request, "workbench.html", embed="afr", **_workbench_ctx())
 
 @router.get("/about")
 def about(request: Request):
@@ -123,9 +139,10 @@ def polities(request: Request):
 
 @router.get("/profiles")
 def profiles(request: Request):
-    """Sample environmental profiles for review (WO-10); stored records in static/profiles, not linked from the other pages."""
-    places = json.loads((STATIC_DIR / "profiles" / "index.json").read_text())
-    return _render(request, "profiles.html", places=places)
+    """The sample profiles now live in the Using EDOPS "WHG" tab; this keeps old links working (place and view carry over)."""
+    from fastapi.responses import RedirectResponse
+    params = {"tab": "whg", **{k: v for k, v in request.query_params.items() if k in ("place", "view")}}
+    return RedirectResponse(url="/using?" + urlencode(params), status_code=307)
 
 @router.get("/workbench")
 def workbench(request: Request):
