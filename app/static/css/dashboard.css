@@ -2,7 +2,8 @@
    Using EDOPS and Data Explorer (their <body> has class "edops-v1"; the Sandbox and Workbench do not). */
 
 /* Page background: one variable. Try #f3f6f1 (pale green-grey); #fff gives back the plain white page. */
-:root { --edops-page-bg: #f3f6f1; --edops-panel-bg: #fff; }
+/*:root { --edops-page-bg: #f3f6f1; --edops-panel-bg: #fff; }*/
+:root { --edops-page-bg: #fff; --edops-panel-bg: #fff; }
 body.edops-v1 { background: var(--edops-page-bg); }
 /* Panes, cards and dialogs stay on white (maps and charts sit inside them). */
 body.edops-v1 .tab-content, body.edops-v1 .card, body.edops-v1 .modal-content { background: var(--edops-panel-bg); }

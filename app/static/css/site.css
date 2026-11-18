@@ -13,7 +13,9 @@ header, main {
 header {
   /*padding-block: 1rem;*/
   position: relative;
-  /*background: aliceblue;*/
+  /*background: #fff3cd;*/
+  /*background: azure;*/
+  border-bottom: 1px solid #e0c36a;
 }
 
 /* Fixed page-title-length-independent position for the 3-page nav pills. */
