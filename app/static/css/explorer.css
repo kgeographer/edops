@@ -134,7 +134,7 @@ body { font-size: 1rem; }
 .ex-var-tag.preview-tag { color: #c87000; }
 
 /* ── Compare pane ── */
-#ex-pane-compare { display: flex; flex-direction: column; }
+#ex-pane-compare { flex-direction: column; }   /* shown by .tab-pane.show.active; an ID rule setting display here kept it laid out while hidden */
 #ex-compare-controls { font-size: 0.85rem; background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 #ex-compare-controls .btn { font-size: 0.75rem; padding: 0.18rem 0.5rem; }
 #ex-scatter-wrap { flex: 1; position: relative; min-height: 350px; }

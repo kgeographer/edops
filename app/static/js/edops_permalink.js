@@ -7,7 +7,7 @@
 (function () {
   const VERSION = 1;
   const BANDS = 'ABCDET';
-  const VIEWS = ['profile', 'map', 'signature', 'analysis', 'seasonality', 'context', 'similarity', 'atlas'];
+  const VIEWS = ['profile', 'map', 'signature', 'analysis', 'seasonality', 'context', 'similarity'];
   const SCOPES = ['single_basin', 'basin_ring', 'buffer', 'polity'];
   const KEYS = ['v', 'lat', 'lon', 'name', 'scope', 'level', 'bands', 'from_year', 'to_year', 'radius_km', 'member', 'polity', 'year', 'view'];
   const YEAR_MIN = -10000, YEAR_MAX = 2025;

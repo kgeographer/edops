@@ -84,6 +84,19 @@
         <a href="#" data-bs-toggle="modal" data-bs-target="#data-sources-modal">Data sources</a>.
       </div>
 
+      <!-- Atlas mode: replaces the variable selector above while the Atlas tab is active (edops_atlas.js) -->
+      <div id="ex-left-atlas" class="d-none">
+        <div class="card">
+          <div class="card-body p-2">
+            <h5 class="mb-1">Atlas — global climate classes</h5>
+            <p class="text-muted small mb-2">A worldwide view, independent of any resolved place. Every
+              basin is coloured by a discrete climate class computed from its monthly rainfall and
+              temperature curves.</p>
+            <div id="ex-atlas-info" class="small"></div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /left col -->
 
     <!-- ===================== RIGHT COLUMN: map + diagnostics + compare ===================== -->
@@ -99,6 +112,10 @@
         </li>
         <li class="nav-item">
           <button class="nav-link" id="ex-tab-compare" data-bs-toggle="tab" data-bs-target="#ex-pane-compare" type="button">Compare</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" id="ex-tab-atlas" data-bs-toggle="tab" data-bs-target="#ex-pane-atlas" type="button"
+                  title="Global climate-class distributions">Atlas</button>
         </li>
       </ul>
 
@@ -284,6 +301,30 @@
           </div>
         </div><!-- /compare pane -->
 
+        <!-- ── Atlas pane: global climate-class distributions (moved from the Dashboard); see edops_atlas.js ── -->
+        <div class="tab-pane fade" id="ex-pane-atlas">
+          <div class="d-flex align-items-center justify-content-between px-2 py-2 flex-wrap gap-2">
+            <h5 class="mb-0" id="ex-atlas-title">Global climate classes</h5>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="text-muted small fw-semibold">View:</span>
+              <select id="ex-atlas-view" class="form-select form-select-sm" style="width:auto;">
+                <option value="mod" selected>Modality — all classes</option>
+                <option value="pha">Phase — all classes</option>
+                <option value="twin">Two wet seasons</option>
+                <option value="med">One wet season, cool-season rain</option>
+              </select>
+              <select id="ex-atlas-level" class="form-select form-select-sm" style="width:auto;">
+                <option value="6" selected>L6</option>
+                <option value="8">L8</option>
+              </select>
+              <i class="bi bi-question-circle edops-help" data-help-text="Levels refer to scale of basin size. L6 and L8 basins average roughly 8,232 km² and 708 km² respectively."></i>
+            </div>
+          </div>
+          <div id="ex-atlas-legend" class="d-flex align-items-center gap-3 px-2 pb-2 flex-wrap" style="font-size:0.78rem;"></div>
+          <div id="ex-atlas-map" style="height:520px; border-radius:6px; margin: 0 .5rem;"></div>
+          <p class="text-muted px-2 pt-2 mb-0" style="font-size:0.85rem;">A global view — no place is queried. Colors are declared climate classes.</p>
+        </div><!-- /atlas pane -->
+
       </div><!-- /tab-content -->
 
     </div><!-- /right col -->
@@ -293,6 +334,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin=""></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js" crossorigin=""></script>
+<script src="/static/js/pm_basemap.js?v={{ static_v('js/pm_basemap.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
@@ -2263,5 +2305,6 @@
 
 })();
 </script>
+<script src="/static/js/edops_atlas.js?v={{ static_v('js/edops_atlas.js') }}"></script>
 </body>
 </html>

@@ -27,12 +27,12 @@ def _open_link(page, base, url, tab):
 
 def test_the_button_is_hidden_until_a_run_and_after_a_reset(dashboard_server, page):
     page.goto(f"{dashboard_server}/dashboard", wait_until="load")
-    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "none"
+    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-btn')).display") == "none"
     _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
-    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "flex"
+    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-btn')).display") != "none"
     assert "lat=41.6938" in page.url
     page.click("#v3-reset-btn")
-    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "none"
+    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-btn')).display") == "none"
     assert page.url == f"{dashboard_server}/dashboard"   # the old link is gone from the address bar
 
 
@@ -47,7 +47,7 @@ def test_reset_also_clears_a_polity_link_and_its_message(dashboard_server, page)
 def test_a_failed_link_gives_no_button(dashboard_server, page):
     page.goto(f"{dashboard_server}/dashboard?scope=polity&polity=No%20Such%20Polity%20Xyz&v=1", wait_until="load")
     page.wait_for_function("!document.getElementById('v3-handoff-alert').classList.contains('d-none')", timeout=30000)
-    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-row')).display") == "none"
+    assert page.evaluate("getComputedStyle(document.getElementById('v3-permalink-btn')).display") == "none"
 
 
 def test_single_basin_round_trip_keeps_the_tab_and_the_result(dashboard_server, page):
@@ -101,3 +101,25 @@ def test_a_polity_slice_round_trips(dashboard_server, page):
     other = _open_link(page, dashboard_server, url, "v3-tab-sig-btn")
     assert other.input_value("#v3-resolver-year") == "1000"
     assert other.inner_text("#v3-sig-content") == page.inner_text("#v3-sig-content")
+
+
+def test_the_button_sits_in_the_left_column_before_reset_and_reads_permalink(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    btn, reset = page.locator("#v3-permalink-btn").bounding_box(), page.locator("#v3-reset-btn").bounding_box()
+    left = page.locator("#left-col").bounding_box()
+    assert left["x"] <= btn["x"] and btn["x"] + btn["width"] <= reset["x"] + 1 and abs(btn["y"] - reset["y"]) < 20
+    assert page.inner_text("#v3-permalink-label") == "Permalink"
+    assert page.locator("#v3-permalink-btn i.bi-copy").count() == 1 and page.locator("#v3-permalink-btn i.bi-link-45deg").count() == 0
+    assert not page.is_visible("#v3-permalink-url")                         # the link box appears only after a click
+    page.click("#v3-permalink-btn")
+    assert page.is_visible("#v3-permalink-url")
+
+
+def test_a_second_click_puts_the_link_box_away(dashboard_server, page):
+    _arrive(page, dashboard_server, TBILISI, "v3-tab-map-btn")
+    page.click("#v3-permalink-btn")
+    assert page.is_visible("#v3-permalink-url")
+    page.click("#v3-permalink-btn")
+    assert not page.is_visible("#v3-permalink-url")
+    page.click("#v3-permalink-btn")                                         # and a third brings it back
+    assert page.is_visible("#v3-permalink-url") and page.input_value("#v3-permalink-url").startswith("http")

@@ -1,13 +1,13 @@
-"""Time series stub (WO-09 item 3): a tab in the Dashboard after the signature tabs, before Atlas, with "coming soon" and an outline."""
+"""Time series stub (WO-09 item 3): a tab in the Dashboard after the signature tabs, with "coming soon" and an outline."""
 import pytest
 
 pytestmark = pytest.mark.dashboard
 
 ORDER = ["v3-tab-map-btn", "v3-tab-profile-btn", "v3-tab-sig-btn", "v3-tab-analysis-btn", "v3-tab-seasonality-btn",
-         "v3-tab-context-btn", "v3-tab-similarity-btn", "v3-tab-timeseries-btn", "v3-tab-atlas-btn"]
+         "v3-tab-context-btn", "v3-tab-similarity-btn", "v3-tab-timeseries-btn"]
 
 
-def test_the_tab_follows_similarity_and_precedes_atlas(dashboard_server, page):
+def test_the_tab_follows_similarity_and_is_last(dashboard_server, page):
     page.goto(dashboard_server + "/dashboard", wait_until="load")
     ids = page.evaluate("[...document.querySelectorAll('button.nav-link[id^=\"v3-tab-\"]')].map(b => b.id)")
     assert [i for i in ids if i in ORDER] == ORDER
