@@ -9,20 +9,21 @@ TABS = ["Overview", "Societies", "African Regions", "Pueblo", "WHG"]
 
 def test_the_five_tabs_with_the_overview_first_and_active(dashboard_server, page):
     page.goto(dashboard_server + "/using", wait_until="load")
-    assert page.locator("#useTabs .nav-link").all_inner_texts() == TABS
+    assert page.locator("#useTabs .use-name").all_inner_texts() == TABS
     assert "active" in page.get_attribute("#tab-overview", "class")
     assert page.is_visible("#pane-overview")
 
 
-def test_each_tile_opens_its_tab(dashboard_server, page):
+def test_the_tiles_stay_in_a_left_column_and_each_opens_its_tab(dashboard_server, page):
     page.goto(dashboard_server + "/using", wait_until="load")
-    tiles = page.locator(".use-tile")
-    assert tiles.count() == 4
+    assert page.locator("#useTabs .use-tile").count() == 5
+    nav, content = page.locator("#useTabs").bounding_box(), page.locator("#pane-overview").bounding_box()
+    assert nav["x"] + nav["width"] <= content["x"]                       # the tiles are left of the content
     for name in ("societies", "africa", "pueblo", "whg"):
-        page.click(f".use-tile[data-tab='{name}']")
+        page.click(f"#tab-{name}")
         page.wait_for_selector(f"#pane-{name}.active")
-        page.click("#tab-overview")
-        page.wait_for_selector("#pane-overview.active")
+        assert page.locator("#useTabs").is_visible()                    # and they stay while the content changes
+        assert page.locator(f"#tab-{name}.active").count() == 1
 
 
 @pytest.mark.parametrize("name", ["overview", "societies", "africa", "pueblo", "whg"])

@@ -15,11 +15,16 @@
   <style>
     /* Placeholder wording for Karl to write: search this file for class "ph-inline". */
     .ph-inline { background: #fff3cd; }
-    .use-tile { display: block; height: 100%; padding: 1rem 1.1rem; border: 1px solid #ced4da; border-radius: .5rem; background: #fff;
-                color: inherit; text-decoration: none; cursor: pointer; text-align: left; width: 100%; }
-    .use-tile:hover, .use-tile:focus-visible { border-color: #0d6efd; box-shadow: 0 0 0 .15rem rgba(13,110,253,.18); }
-    .use-tile h3 { font-size: 1.1rem; margin: 0 0 .35rem; }
-    .use-tile p { margin: 0; font-size: .9rem; color: #444; }
+    /* the left column of tiles stays; the tab content is on the right. Column width: --use-nav-w (try 2/10 = 14rem, 3/9 = 20rem). */
+    .use-layout { display: grid; grid-template-columns: var(--use-nav-w, 14rem) minmax(0, 1fr); gap: 1.25rem; align-items: start; margin-top: .75rem; }
+    #useTabs { display: flex; flex-direction: column; gap: .5rem; border: 0; }
+    .use-tile { display: block; width: 100%; padding: .55rem .7rem; border: 1px solid #ced4da; border-radius: .4rem; background: #fff;
+                color: inherit; text-align: left; cursor: pointer; line-height: 1.25; }
+    .use-tile:hover, .use-tile:focus-visible { border-color: #0d6efd; }
+    .use-tile.active { border-color: #0d6efd; background: #e7f0ff; box-shadow: inset 3px 0 0 #0d6efd; }
+    .use-tile .use-name { display: block; font-weight: 600; font-size: .95rem; }
+    .use-tile .use-q { display: block; margin-top: .15rem; font-size: .75rem; color: #555; }
+    @media (max-width: 767.98px) { .use-layout { grid-template-columns: 1fr; } }
     .use-frame { width: 100%; border: 0; display: block; min-height: 600px; }
   </style>
 </head>
@@ -31,26 +36,24 @@
 {% include "_edops_modals.html" %}
 
 <main class="container-fluid pb-4" style="max-width: 1400px;">
-  <ul class="nav nav-tabs mt-2" id="useTabs" role="tablist">
-    <li class="nav-item" role="presentation"><button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button" role="tab" aria-controls="pane-overview" aria-selected="true">Overview</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-societies" data-bs-toggle="tab" data-bs-target="#pane-societies" type="button" role="tab" aria-controls="pane-societies" aria-selected="false">Societies</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-africa" data-bs-toggle="tab" data-bs-target="#pane-africa" type="button" role="tab" aria-controls="pane-africa" aria-selected="false">African Regions</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-pueblo" data-bs-toggle="tab" data-bs-target="#pane-pueblo" type="button" role="tab" aria-controls="pane-pueblo" aria-selected="false">Pueblo</button></li>
-    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-whg" data-bs-toggle="tab" data-bs-target="#pane-whg" type="button" role="tab" aria-controls="pane-whg" aria-selected="false">WHG</button></li>
-  </ul>
+  <div class="use-layout">
+  <nav aria-label="Examples">
+    <div class="nav" id="useTabs" role="tablist" aria-orientation="vertical">
+      <button class="use-tile active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button" role="tab" aria-controls="pane-overview" aria-selected="true"><span class="use-name">Overview</span></button>
+      <button class="use-tile" id="tab-societies" data-bs-toggle="tab" data-bs-target="#pane-societies" type="button" role="tab" aria-controls="pane-societies" aria-selected="false"><span class="use-name">Societies</span><span class="use-q"><span class="ph-inline">Do environments line up with how societies live and what they believe?</span></span></button>
+      <button class="use-tile" id="tab-africa" data-bs-toggle="tab" data-bs-target="#pane-africa" type="button" role="tab" aria-controls="pane-africa" aria-selected="false"><span class="use-name">African Regions</span><span class="use-q"><span class="ph-inline">How do Africa's pre-colonial regions differ in environment?</span></span></button>
+      <button class="use-tile" id="tab-pueblo" data-bs-toggle="tab" data-bs-target="#pane-pueblo" type="button" role="tab" aria-controls="pane-pueblo" aria-selected="false"><span class="use-name">Pueblo</span><span class="use-q"><span class="ph-inline">Does the environment help explain the Chaco to Rio Grande movement?</span></span></button>
+      <button class="use-tile" id="tab-whg" data-bs-toggle="tab" data-bs-target="#pane-whg" type="button" role="tab" aria-controls="pane-whg" aria-selected="false"><span class="use-name">WHG</span><span class="use-q"><span class="ph-inline">What can be said, by rule, about a place's environment?</span></span></button>
+    </div>
+  </nav>
 
-  <div class="tab-content pt-3">
+  <div class="tab-content">
 
     <div class="tab-pane fade show active" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview">
       <div style="max-width: 900px;">
         <h2 class="mb-3" style="font-family: Georgia, 'Times New Roman', serif;">Using EDOPS</h2>
         <p><span class="ph-inline">EDOPS describes the environment of a place, past and present, from global datasets. These worked examples show it supporting reasoning about history. The same data is also available as raw numbers for computational work, and as a source for other tools.</span></p>
-      </div>
-      <div class="row g-3 mt-1" id="use-tiles">
-        <div class="col-12 col-md-6 col-xl-3"><button type="button" class="use-tile" data-tab="societies"><h3>Societies</h3><p><span class="ph-inline">Do the environments of 1,291 societies line up with how they live and what they believe?</span></p></button></div>
-        <div class="col-12 col-md-6 col-xl-3"><button type="button" class="use-tile" data-tab="africa"><h3>African Regions</h3><p><span class="ph-inline">How do the environments of Africa's pre-colonial regions differ from one another?</span></p></button></div>
-        <div class="col-12 col-md-6 col-xl-3"><button type="button" class="use-tile" data-tab="pueblo"><h3>Pueblo</h3><p><span class="ph-inline">Is the Chaco to Rio Grande movement explained in part by the environmental evidence?</span></p></button></div>
-        <div class="col-12 col-md-6 col-xl-3"><button type="button" class="use-tile" data-tab="whg"><h3>WHG</h3><p><span class="ph-inline">What can be said, by rule, about the environment of a place in the World Historical Gazetteer?</span></p></button></div>
+        <p class="mb-0"><span class="ph-inline">Choose an example on the left.</span></p>
       </div>
     </div>
 
@@ -78,6 +81,7 @@
       {% include "_profiles_panel.html" %}
     </div>
 
+  </div>
   </div>
 </main>
 
@@ -112,7 +116,6 @@
     history.replaceState(null, '', '?' + q);
     loadFrame(name);
   }));
-  document.querySelectorAll('.use-tile').forEach(t => t.addEventListener('click', () => { show(t.dataset.tab); window.scrollTo(0, 0); }));
 
   const want = new URLSearchParams(location.search).get('tab');
   if (NAMES.includes(want) && want !== 'overview') show(want);
