@@ -124,7 +124,7 @@ over 5 s disables Get signature ("Untick T to continue"). A server time limit (2
 HYDE in the engine and answers 504. Polity slice steps ask `/api/areas` with `members_only=true`, and the Dashboard sends
 `skip_hyde_distribution=true` (both off by default for every other caller). Detail: `dash_wo07_summary.md`, `dash_wo08_summary.md`.
 
-**v1 alpha mode (WO-09):** `EDOPS_SITE_MODE=v1alpha` (`app/site_mode.py`, per request, set on the alpha service only): the 0.4 pages answer 404 with a pointer to the live 0.4 site, every response is noindex (plus `/robots.txt`), a banner on the new pages, no Google tag, no query-log writes. Tests run in normal mode whatever `.env` says. The Dashboard has a Time series stub tab; the Atlas is now a Data Explorer tab (`edops_atlas.js`). Deploy prerequisites are in `dash_wo09_results.md`; the alpha's name is not yet chosen.
+**v1 alpha mode (WO-09):** `EDOPS_SITE_MODE=v1alpha` (`app/site_mode.py`, per request, set on the alpha service only): the 0.4 pages answer 404 with a pointer to the live 0.4 site, every response is noindex (plus `/robots.txt`), a banner on the new pages, no Google tag, and query-log rows marked `site = 'v1alpha'` (a nullable column added to `public.query_log`; 0.4 leaves it null). Tests run in normal mode whatever `.env` says. The Dashboard has a Time series stub tab; the Atlas is now a Data Explorer tab (`edops_atlas.js`). Deploy prerequisites are in `dash_wo09_results.md`; the alpha's name is not yet chosen.
 
 Open: **time series:** a time-series UX design (Karl, Opus, then CC; possibly a "Time series" feature, perhaps API-only; the
 Dashboard has a stub tab for it); the biggest polity slices (Canada-sized)

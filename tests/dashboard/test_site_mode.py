@@ -76,10 +76,18 @@ def test_without_the_setting_nothing_changes(v04):
     assert "v04-tag" not in r.text
 
 
-def _log_count():
+def _logged(place_name):
+    """The `site` of the query_log row written for this place_name (None if the column is null); raises if there is no row."""
+    import time
     from app.db.connection import db_connect
-    with db_connect() as conn:
-        return conn.execute("SELECT count(*) FROM public.query_log").fetchone()[0]
+    for _ in range(20):                                # the write runs in a thread
+        with db_connect() as conn:
+            rows = conn.execute("SELECT site FROM public.query_log WHERE place_name = %s ORDER BY id DESC", (place_name,)).fetchall()
+        if rows:
+            assert len(rows) == 1
+            return rows[0][0]
+        time.sleep(0.25)
+    raise AssertionError(f"no query_log row for {place_name!r}")
 
 
 @pytest.mark.parametrize("path", NEW_PAGES)
@@ -91,22 +99,22 @@ def test_the_analytics_tag_is_still_there_without_the_setting(v04):
     assert "googletagmanager" in v04.get("/dashboard").text
 
 
-def test_the_alpha_writes_nothing_to_the_query_log(alpha):
-    import time
-    before = _log_count()
-    r = alpha.get("/api/areas", params=dict(scope="single_basin", lat=49.8397, lon=24.0297, level=6, bands="A", src="ui"))
-    assert r.status_code == 200
-    time.sleep(1)                                   # the write, if there were one, runs in a thread
-    assert _log_count() == before
+def _request(client, place_name):
+    return client.get("/api/areas", params=dict(scope="single_basin", lat=49.8397, lon=24.0297, level=6, bands="A", src="ui", place_name=place_name))
 
 
-def test_without_the_setting_the_query_log_still_records(v04):
-    import time
-    before = _log_count()
-    r = v04.get("/api/areas", params=dict(scope="single_basin", lat=49.8397, lon=24.0297, level=6, bands="A", src="ui", place_name="site-mode test"))
-    assert r.status_code == 200
-    time.sleep(1)
-    assert _log_count() == before + 1
+def test_the_alpha_writes_a_query_log_row_marked_v1alpha(alpha):
+    import uuid
+    name = f"site-mode alpha {uuid.uuid4().hex[:8]}"
+    assert _request(alpha, name).status_code == 200
+    assert _logged(name) == "v1alpha"
+
+
+def test_normal_mode_writes_a_row_with_site_null(v04):
+    import uuid
+    name = f"site-mode normal {uuid.uuid4().hex[:8]}"
+    assert _request(v04, name).status_code == 200
+    assert _logged(name) is None
 
 
 def test_the_documentation_modal_title_carries_the_v0_4_tag_in_the_alpha(alpha):

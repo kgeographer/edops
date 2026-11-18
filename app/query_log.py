@@ -3,7 +3,8 @@
 src='ui' = user-initiated GUI request (carries place_name); 'workbench' = Workbench lookup;
 'link' = the GUI run for a Dashboard link or example (an arrival); 'api' = no src tag (external callers,
 coordinates only). src='ui_aux' requests are the GUI's
-parallel/silent duplicates and are not logged. Nothing is logged in the v1 alpha site mode (the log tracks v0.4). Fail-soft: a logging problem never affects a response.
+parallel/silent duplicates and are not logged. `site` is null for the v0.4 service and 'v1alpha' for rows written by the
+v1 alpha site mode (EDOPS_SITE_MODE=v1alpha), so the two can be told apart. Fail-soft: a logging problem never affects a response.
 """
 import asyncio
 import logging
@@ -35,10 +36,11 @@ CREATE TABLE IF NOT EXISTS public.query_log (
     user_agent  text
 )
 """
+_ADD_SITE = "ALTER TABLE public.query_log ADD COLUMN IF NOT EXISTS site text"   # additive; 0.4's writes leave it null
 _INSERT = """
 INSERT INTO public.query_log
-    (endpoint, src, scope, place_name, polity, year, lat, lon, radius_km, level, bands, user_agent)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    (endpoint, src, scope, place_name, polity, year, lat, lon, radius_km, level, bands, user_agent, site)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
 
@@ -47,6 +49,7 @@ def ensure_table() -> None:
         conn = db_connect()
         try:
             conn.execute(_DDL)
+            conn.execute(_ADD_SITE)
             conn.commit()
         finally:
             conn.close()
@@ -77,7 +80,7 @@ def install(app: FastAPI) -> None:
     @app.middleware("http")
     async def _log_queries(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path in LOGGED_PATHS and response.status_code == 200 and not site_mode.is_alpha():   # the v1 alpha does not log
+        if request.url.path in LOGGED_PATHS and response.status_code == 200:
             q = request.query_params
             src = q.get("src", "api")
             if src != "ui_aux":
@@ -87,6 +90,7 @@ def install(app: FastAPI) -> None:
                     _num(q, "year", int), _num(q, "lat", float), _num(q, "lon", float),
                     _num(q, "radius_km", float), _num(q, "level", int), q.get("bands"),
                     (request.headers.get("user-agent") or "")[:200] or None,
+                    "v1alpha" if site_mode.is_alpha() else None,
                 )
                 asyncio.get_running_loop().run_in_executor(None, _write, row)
         return response

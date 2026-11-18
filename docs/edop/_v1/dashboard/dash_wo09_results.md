@@ -22,7 +22,7 @@ Found by reading the rendered pages and by a click-through; the click-through te
 ## Isolation
 
 - Analytics: `_ga.html` renders nothing in the alpha (every page includes it).
-- Query log: the logging middleware skips the write in the alpha (a test counts rows before and after a request with the setting on, and the same request with it off adds one).
+- Query log: first built so the alpha wrote nothing; changed the same day (Opus, Karl) to record the alpha's requests with `site = 'v1alpha'`, so the reviewers' use can be seen. `public.query_log` gets a nullable `site` column (additive; `ensure_table()` adds it at start-up and `MAINTAIN_DEPLOY.md` section H lists it as a step before the alpha starts). Tests: the alpha writes a row with `site = 'v1alpha'`, normal mode writes one with `site` null.
 - The test suite runs in normal mode whatever `.env` says (an autouse fixture in `tests/conftest.py`); tests that need the alpha switch it on. This was needed after the alpha setting in a developer's `.env` made unrelated tests fail.
 
 ## Using EDOPS
@@ -43,7 +43,7 @@ A tab with "Coming soon", the planned outline (variables and a span, aligned cha
 
 ## Deployment prerequisites (not part of this WO's build)
 
-From `MAINTAIN_DEPLOY.md` and CLAUDE.md, for the alpha service: a new hostname (A record, nginx block, certbot; name to confirm), a new port (8002 to 8004 are taken), a new service, tree (`/var/www/edops-v1a`, tracking `v1`) and venv; the alpha service's environment needs `EDOPS_SITE_MODE=v1alpha` (and `EDOPS_LIVE_V04_URL` if different); `temporal.geda_climate` must be loaded in the server database first; the gitignored assets (PMTiles, `explorer/`, `hyde_tiles/`, `basinatlas_pages/`) are rsynced. The alpha shares the live `cedop` database, so it must not write to `public.query_log` (done) and uses only additive objects.
+From `MAINTAIN_DEPLOY.md` and CLAUDE.md, for the alpha service: a new hostname (A record, nginx block, certbot; name to confirm), a new port (8002 to 8004 are taken), a new service, tree (`/var/www/edops-v1a`, tracking `v1`) and venv; the alpha service's environment needs `EDOPS_SITE_MODE=v1alpha` (and `EDOPS_LIVE_V04_URL` if different); `temporal.geda_climate` must be loaded in the server database first; the gitignored assets (PMTiles, `explorer/`, `hyde_tiles/`, `basinatlas_pages/`) are rsynced. The alpha shares the live `cedop` database: its query-log rows carry `site = 'v1alpha'`, and it uses only additive objects.
 
 ## Needs attention
 
