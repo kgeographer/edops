@@ -2960,7 +2960,7 @@
       _refreshContextIfActive();
       _refreshSimilarityIfActive();
     } catch (err) {
-      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+      pane.innerHTML = _errorHtml(err);
     }
   }
 
@@ -3170,7 +3170,7 @@
 
     } catch (err) {
       console.error('[v3] signature error:', err);
-      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+      pane.innerHTML = _errorHtml(err);
     } finally {
       _sigTabBusy(false);
     }
@@ -4152,6 +4152,14 @@
   });
 
   // Polity Get Signature
+  // An error message for a pane; the server's time-limit message is placeholder wording (yellow)
+  function _errorHtml(err) {
+    const m = String(err.message);
+    return m.startsWith('Band T stopped at the server')
+      ? `<p class="mt-3 ms-2"><span class="ph-inline">${escapeHtml(m)}</span></p>`
+      : `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(m)}</p>`;
+  }
+
   async function _runPolitySignature() {
     if (_polityHalt()) return;
     const polityName   = document.getElementById('v3-polity-input').value.trim();
@@ -4191,7 +4199,7 @@
       _repaintChoropleth();
 
     } catch (err) {
-      pane.innerHTML = `<p class="text-danger mt-3 ms-2">Error: ${escapeHtml(err.message)}</p>`;
+      pane.innerHTML = _errorHtml(err);
     } finally {
       _sigTabBusy(false);
     }

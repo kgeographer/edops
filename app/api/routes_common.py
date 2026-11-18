@@ -28,7 +28,7 @@ from app.db.connection import db_connect
 from app.settings import settings
 from scripts.edop.areas import source_registry
 from scripts.edop.areas.engine import (
-    areal_signature, areal_signature_polygon, band_t_geda_for_point, CAVEAT_TEXTS, NoBasinsError,
+    areal_signature, areal_signature_polygon, band_t_geda_for_point, CAVEAT_TEXTS, NoBasinsError, BandTTimeLimit,
 )
 from scripts.edop.areas.source_registry import Decision
 
@@ -350,6 +350,8 @@ def signature(
             )
         except NoBasinsError as e:
             raise HTTPException(status_code=404, detail=str(e))
+        except BandTTimeLimit as e:
+            raise HTTPException(status_code=504, detail=e.message)
         finally:
             conn.close()
 
@@ -400,6 +402,8 @@ def signature(
             )
         except NoBasinsError as e:
             raise HTTPException(status_code=404, detail=str(e))
+        except BandTTimeLimit as e:
+            raise HTTPException(status_code=504, detail=e.message)
         finally:
             conn.close()
 

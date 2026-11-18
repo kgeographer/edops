@@ -23,6 +23,8 @@ Dispatch (WO3):
 """
 
 import math
+import os
+import time
 import warnings
 from dataclasses import dataclass
 from typing import NamedTuple, Optional
@@ -30,7 +32,7 @@ import geopandas as gpd
 from scripts.edop.areas import source_registry
 import numpy as np
 import pandas as pd
-from psycopg import sql
+from psycopg import errors as pg_errors, sql
 
 # psycopg3 connections work fine with pd.read_sql; suppress the SQLAlchemy nag
 warnings.filterwarnings(
@@ -47,6 +49,21 @@ _LOW_RES_BASIN_THRESHOLD = 3    # n_units below which basin histogram is flagged
 
 class NoBasinsError(LookupError):
     """A query resolved to no basins (BasinATLAS has no coverage there); routes return 404."""
+
+
+# Time limit on the HYDE part of Band T (the only slow source: cells x steps). The page's own gate keeps its estimate under 5 s;
+# this is the guarantee behind it, for the Dashboard and the public API alike. Seconds; set EDOPS_BAND_T_TIME_LIMIT_S to change.
+BAND_T_TIME_LIMIT_S = float(os.environ.get('EDOPS_BAND_T_TIME_LIMIT_S', '20'))
+
+
+class BandTTimeLimit(RuntimeError):
+    """Band T's HYDE query or reduction ran past BAND_T_TIME_LIMIT_S and was stopped; routes return 504 with message."""
+
+    def __init__(self, limit_s):
+        self.limit_s = limit_s
+        self.message = (f"Band T stopped at the server's time limit ({limit_s:g} s). "
+                        "Untick T, or choose a smaller area or a shorter span.")
+        super().__init__(self.message)
 
 
 def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
@@ -1167,23 +1184,34 @@ def _band_t_hyde(q):
     WHERE overlap_m2 > 0
     """
     area_parts, ovl_parts, val_parts = [], [], {v: [] for v in hyde_vars}
-    with q.conn.cursor() as cur:                       # fetched in chunks: a large polity is tens of thousands of cells x steps
-        cur.execute(hyde_sql)
-        while True:
-            chunk = cur.fetchmany(5000)
-            if not chunk:
-                break
-            area_c, ovl_c, *arrs = zip(*chunk)
-            area_parts.append(np.array(area_c, dtype=float))
-            ovl_parts.append(np.array(ovl_c, dtype=float))
-            for var, arr in zip(hyde_vars, arrs):
-                val_parts[var].append(np.array([a if a is not None else [None] * n_steps for a in arr], dtype=float))
+    limit_s  = BAND_T_TIME_LIMIT_S
+    deadline = time.monotonic() + limit_s
+    q.conn.execute("SELECT set_config('statement_timeout', %s, false)", (str(int(limit_s * 1000)),))
+    try:
+        with q.conn.cursor() as cur:                   # fetched in chunks: a large polity is tens of thousands of cells x steps
+            cur.execute(hyde_sql)
+            while True:
+                chunk = cur.fetchmany(5000)
+                if not chunk:
+                    break
+                if time.monotonic() > deadline:
+                    raise BandTTimeLimit(limit_s)
+                area_c, ovl_c, *arrs = zip(*chunk)
+                area_parts.append(np.array(area_c, dtype=float))
+                ovl_parts.append(np.array(ovl_c, dtype=float))
+                for var, arr in zip(hyde_vars, arrs):
+                    val_parts[var].append(np.array([a if a is not None else [None] * n_steps for a in arr], dtype=float))
+    except pg_errors.QueryCanceled:
+        raise BandTTimeLimit(limit_s) from None
+    q.conn.execute("SELECT set_config('statement_timeout', '0', false)")
     if not area_parts:
         return _SourceResult(rows, decision)
     base = pd.DataFrame({'area_km2': np.concatenate(area_parts), 'overlap_m2': np.concatenate(ovl_parts)})
     values = {v: np.vstack(val_parts[v]) for v in hyde_vars}
 
     for k, (_, year_ce) in enumerate(steps):
+        if time.monotonic() > deadline:
+            raise BandTTimeLimit(limit_s)
         yr     = int(year_ce)
         caveat = ['hyde_caveat'] if yr == _HYDE_1950_EPOCH_YEAR else []
         if is_nearest:
