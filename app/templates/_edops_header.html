@@ -6,18 +6,19 @@
        page_title   -- e.g. "EDOPS Sandbox v0.4"
        active_page  -- one of 'sandbox' | 'explorer' | 'workbench', for the active nav-pill state
      Karl, 2026-08-03: "workable frame that can be tweaked later, progress not perfection." -->
+{% if is_alpha() %}{% include "_alpha_banner.html" %}{% endif %}
 <header class="mb-2">
   <div class="d-flex align-items-center justify-content-between border-bottom flex-wrap gap-2">
     <div class="d-flex align-items-center">
       <a href="/edops"><img src="/static/images/edops_header_400.jpg" alt="EDOPS" style="height:60px;" class="me-2"></a>
       <h4 class="mb-0">{{ page_title }}</h4>
     </div>
-    <div class="edops-page-pills-wrap">{% if active_page in ('dashboard', 'using') %}{# Dashboard and Using EDOPS pages: their own pills #}
+    <div class="edops-page-pills-wrap">{% if active_page in ('dashboard', 'using', 'explorer', 'profiles') %}{# the new site's pills: Dashboard, Using EDOPS, Data Explorer, sample profiles #}
       <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
         <li class="nav-item"><a class="nav-link" href="/edops">Home</a></li>
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'dashboard' else '' }}" href="/dashboard">Dashboard</a></li>
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'using' else '' }}" href="/using">Using EDOPS</a></li>
-        <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
+        <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'explorer' else '' }}" href="/explorer">Data Explorer</a></li>
       </ul>{% else %}
       <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
         <li class="nav-item"><a class="nav-link{{ ' active' if active_page == 'sandbox' else '' }}" href="/sandbox">Sandbox</a></li>
@@ -27,7 +28,7 @@
       </ul>{% endif %}
     </div>
     <div class="d-flex align-items-center gap-3">
-      <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">Documentation</a>
+      <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">{% if is_alpha() %}Documentation (v0.4){% else %}Documentation{% endif %}</a>
       <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#api-guide-modal">API</a>
       <span class="badge rounded-pill bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">{{ version_label }}</span>
     </div>

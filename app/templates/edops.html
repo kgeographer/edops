@@ -2,6 +2,7 @@
 {% set active_page = "edops" %}   {# selects _guide_edops.html in the shared Documentation modal #}
 
 {% block header %}
+{% if is_alpha() %}{% include "_alpha_banner.html" %}{% endif %}
 <header>
   <div class="container d-flex align-items-center justify-content-between" style="max-width: 960px;">
     <a href="/edops" class="d-flex align-items-center text-decoration-none text-dark">
@@ -9,7 +10,7 @@
     </a>
     <span class="d-flex align-items-center gap-2">
       <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#about-project-modal">About EDOPS</a> |
-      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">Documentation</a>
+      <a href="#" class="fs-6 fw-normal text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">{% if is_alpha() %}Documentation (v0.4){% else %}Documentation{% endif %}</a>
       <span class="badge rounded-pill bg-secondary fw-normal fs-6 ms-4">{{ version_label }}</span>
     </span>
   </div>

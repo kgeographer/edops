@@ -14,6 +14,7 @@
 </head>
 <body>
 
+{% if is_alpha() %}{% include "_alpha_banner.html" %}{% endif %}
 <header class="mb-2">
   <div class="d-flex align-items-center justify-content-between py-2 border-bottom flex-wrap gap-2">
     <div class="d-flex align-items-center">
@@ -22,8 +23,9 @@
     </div>
     <div class="edops-page-pills-wrap">
       <ul class="nav nav-pills nav-pills-sm edops-page-pills mb-0">
-        <li class="nav-item"><a class="nav-link" href="/sandbox">Sandbox</a></li>
-        <li class="nav-item"><a class="nav-link" href="/workbench">Workbench</a></li>
+        <li class="nav-item"><a class="nav-link" href="/edops">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/using">Using EDOPS</a></li>
         <li class="nav-item"><a class="nav-link" href="/explorer">Data Explorer</a></li>
       </ul>
     </div>

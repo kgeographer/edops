@@ -19,7 +19,7 @@ from app.db.seasonality import load_similarity_index
 from app.db.context import load_context_index
 from app.db.climate_classes import load_class_index
 from app.db.societies_scan import load_societies_scan_substrate
-from app import query_log
+from app import query_log, site_mode
 
 
 @asynccontextmanager
@@ -106,6 +106,7 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 query_log.install(app)
+site_mode.install(app)
 
 app.include_router(api_sandbox_router)
 app.include_router(api_common_router)

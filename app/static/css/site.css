@@ -257,3 +257,7 @@ pre {
 body .text-muted {
   color: inherit !important;
 }
+
+/* v1 alpha banner (above the page header; see app/site_mode.py) */
+.alpha-banner { background: #fff3cd; border-bottom: 1px solid #e0c36a; color: #4d3b00; font-size: 0.8rem; padding: 3px 16px; text-align: center; }
+.alpha-banner a { color: inherit; text-decoration: underline; }

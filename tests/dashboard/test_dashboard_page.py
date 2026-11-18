@@ -48,7 +48,12 @@ def test_using_page_renders_with_the_same_navigation():
     assert "Using EDOPS" in html and 'href="/dashboard"' in html and 'href="/sandbox"' not in html
 
 
-def test_other_pages_keep_their_navigation():
-    for path in ("/sandbox", "/explorer", "/workbench"):
+def test_sandbox_and_workbench_keep_their_navigation():
+    for path in ("/sandbox", "/workbench"):
         html = _get(path)
         assert 'href="/sandbox"' in html and 'href="/workbench"' in html and 'href="/using"' not in html
+
+
+def test_the_explorer_has_the_dashboard_navigation():
+    html = _get("/explorer")
+    assert 'href="/dashboard"' in html and 'href="/using"' in html and 'href="/sandbox"' not in html and 'href="/workbench"' not in html

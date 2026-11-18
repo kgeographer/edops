@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
+from app import site_mode
 from app.settings import settings
 
 router = APIRouter(include_in_schema=False)
@@ -28,6 +29,9 @@ def _static_mtime(relpath: str) -> int:
 templates.env.globals["static_v"] = _static_mtime
 templates.env.globals["mapbox_token"] = settings.MAPBOX_TOKEN or ""
 templates.env.globals["version_label"] = settings.EDOPS_VERSION_LABEL
+templates.env.globals["is_alpha"] = site_mode.is_alpha        # the v1 alpha site mode, read when a page renders
+templates.env.globals["live_v04_url"] = lambda: settings.EDOPS_LIVE_V04_URL
+templates.env.globals["alpha_date"] = lambda: settings.EDOPS_ALPHA_DATE
 
 
 def _render(request: Request, name: str, **context):
@@ -64,7 +68,7 @@ def _workbench_ctx() -> dict:
 @router.get("/")
 def index(request: Request):
     host = request.headers.get("host", "")
-    if "edops" in host:
+    if "edops" in host or site_mode.is_alpha():
         return _render(request, "edops.html", examples=_dashboard_examples())
     if "workbench" in host:
         return _render(request, "workbench.html", **_workbench_ctx())
