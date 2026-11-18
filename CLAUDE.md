@@ -14,7 +14,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
 - **Active phase — Regionality:** `docs/edop/_v1/regionality/` (files prefixed `reg_`; scripts, notebooks and tests under `regionality/` subfolders). **Start with `reg_post-wo05-cc.md` (status after WO-05) and `reg_wo06_summary.md` / `reg_wo06_summary02.md`**; per-WO records are `reg_wo0{4,5,6}_results.md` and `_summary.md`, each ending in a "Needs attention" list.
-- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-08 done; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo08_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-09 done; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo09_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -61,7 +61,7 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
-| **Dashboard**               | **build under way** (design with Fable from 2026-11-14; WO-01 to WO-08 done 2026-11-14 to 18 on `dashboard`, cut from `v1`; the old `dashboard` branch was retired, its work is in `main`) | new splash (`/edops`), the Dashboard (`/dashboard`, cloned from the Sandbox: map-first, Profile tab, permalinks) and a `/using` placeholder; reuses the Sandbox/Workbench backend |
+| **Dashboard**               | **build under way** (design with Fable from 2026-11-14; WO-01 to WO-09 done 2026-11-14 to 18 on `dashboard`, cut from `v1`; the old `dashboard` branch was retired, its work is in `main`) | new splash (`/edops`), the Dashboard (`/dashboard`, cloned from the Sandbox: map-first, Profile tab, permalinks) and a `/using` placeholder; reuses the Sandbox/Workbench backend |
 | **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (done on the Dashboard in WO-05; the Sandbox still ignores it), pre-v1 docs check |
 
 ---
@@ -99,17 +99,17 @@ measurements (no caution built: a time-series design comes first), polity exampl
 rule (item 4): any change of place, scope, radius or level disables the result tabs; the button reads "Get new signature";
 **WO-06** time series, preliminary questions (measurement only; the design note `time-series_design note.md`); **WO-07** span
 gates and a look at the edge, with the HYDE query reshaped; **WO-08** HYDE as a line chart, a server time limit on Band T,
-lighter polity slice steps, an option to skip HYDE histograms.
+lighter polity slice steps, an option to skip HYDE histograms; **WO-09** v1 alpha preparation (below).
 
 What exists: a new splash (`app/templates/edops.html`, at `/edops`, and at `/` when the host contains "edops") with two
 example dropdowns and three tiles; the Dashboard (`dashboard.html` at `/dashboard`, `noindex`, keeps the Sandbox's element
-ids); a placeholder `/using` page; `app/web/dashboard_examples.json` (9 settlements and 8 polities, one list feeding both
+ids); the Using EDOPS page (`/using`: Overview, Societies, African Regions, Pueblo, WHG; the first two show `workbench.html` in embed mode at `/using/societies` and `/using/africa`; WHG holds the sample profiles, `/profiles` redirects there); `app/web/dashboard_examples.json` (9 settlements and 8 polities, one list feeding both
 dropdowns; Tristan da Cunha and San Francisco are not examples); `app/static/js/edops_permalink.js` (URL codec, version
 `v=1`), `edops_profile.js` (profile rendering) and `app/static/css/dashboard.css`; the internal route
 `/api/profile?level=6&hybas_id=…[&lat=&lon=]` (`app/api/routes_dashboard.py`; it reads the ten sample records in
 `app/static/profiles/` now, a database table later, and returns a sample record only for the place it describes);
 `EDOPS_VERSION_LABEL` (default "v1.0 alpha", `app/settings.py`) feeds the splash and every page header. The shared header
-partial has its own pills for the Dashboard and Using pages. Behaviour: every way of choosing a place (example, WHG lookup,
+partial has the pills for Dashboard, Using EDOPS and Data Explorer (Sandbox and Workbench keep their own). Behaviour: every way of choosing a place (example, WHG lookup,
 polity search) lands on the Map tab zoomed to the basin, the query runs by itself and the other tabs fill; Get signature is
 enabled only when the controls differ from the last successful run (it reads "Get new signature" once results exist for the place), and a change of scope, radius or level disables the six result tabs until it is pressed; a link `/dashboard?lat=…&lon=…&name=…` (parameters in the
 codec's header) opens a place and a tab, and the Copy link button builds one from the last run; arrivals log as
@@ -124,8 +124,10 @@ over 5 s disables Get signature ("Untick T to continue"). A server time limit (2
 HYDE in the engine and answers 504. Polity slice steps ask `/api/areas` with `members_only=true`, and the Dashboard sends
 `skip_hyde_distribution=true` (both off by default for every other caller). Detail: `dash_wo07_summary.md`, `dash_wo08_summary.md`.
 
+**v1 alpha mode (WO-09):** `EDOPS_SITE_MODE=v1alpha` (`app/site_mode.py`, per request, set on the alpha service only): the 0.4 pages answer 404 with a pointer to the live 0.4 site, every response is noindex (plus `/robots.txt`), a banner on the new pages, no Google tag, no query-log writes. Tests run in normal mode whatever `.env` says. The Dashboard has a Time series stub tab; the Atlas is now a Data Explorer tab (`edops_atlas.js`). Deploy prerequisites are in `dash_wo09_results.md`; the alpha's name is not yet chosen.
+
 Open: **time series:** a time-series UX design (Karl, Opus, then CC; possibly a "Time series" feature, perhaps API-only; the
-Time series tab would also take Atlas's place in the tab bar, Atlas moving to the Explorer); the biggest polity slices (Canada-sized)
+Dashboard has a stub tab for it); the biggest polity slices (Canada-sized)
 are still over the 5 s ceiling (only the 20 s limit stops them; `dash_wo08_results.md`); the profile store (where the 16,000 Level 06 profiles live: a database table recommended); the About
 modal and the Computing Place tile still say v0.4.
 
@@ -151,7 +153,7 @@ flips under sweeps, so most fall back to stating the number alone; HYDE grazing 
 source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus). `wo02_comprehension_check.md`
 (10 questions and key) is for testing Opus only if it struggles.
 
-**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-08); the time-series design; tracing the Polities controls (slice step, bands) against the reset rule; in the UX review, whether bands and timespan changes should disable the result tabs (they do not now); the profile store design; the Using EDOPS page and typed lookup on the splash (all out of scope so far); Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
+**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-08); the time-series design; tracing the Polities controls (slice step, bands) against the reset rule; in the UX review, whether bands and timespan changes should disable the result tabs (they do not now); the profile store design; typed lookup on the splash and the Using tile essays (out of scope so far); the v1 alpha deploy (name, service, GEDA table on the server; `dash_wo09_results.md`) and merging `dashboard` back into `v1`; Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
 source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
 LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
 Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Regional datasets are under
@@ -549,7 +551,7 @@ site/ holds mkdocs generated/published markup
 | `documentation/edops_schema_area.json`          | `/api/signature?scope=area` schema, real bbox example — an entirely different shape (`variables`, not `signature_bands`) |
 | `documentation/EDOPS_source_registry.yaml`      | Source registry: one entry per data source (what the code selects, and what describes it: citation, licence); read by `scripts/edop/areas/source_registry.py`; the only copy |
 | `docs/edop/_v1/regionality/`                    | Regionality WO specs, results and summaries (`reg_` prefix); `reg_post-wo05-cc.md` is the status note after WO-05 |
-| `docs/edop/_v1/dashboard/`                      | Dashboard brief, WO specs, results and summaries (`dash_` prefix); `pre-design_notes_cc.md` is the brief, `dash_wo08_summary.md` the latest work order |
+| `docs/edop/_v1/dashboard/`                      | Dashboard brief, WO specs, results and summaries (`dash_` prefix); `pre-design_notes_cc.md` is the brief, `dash_wo09_summary.md` the latest work order |
 
 ---
 
