@@ -56,7 +56,7 @@ def test_the_dashboard_pills_serve_the_explorer_and_the_profiles_page(alpha):
         assert 'href="/using"' in html and 'href="/dashboard"' in html and 'href="/explorer"' in html
         assert 'href="/sandbox"' not in html and 'href="/workbench"' not in html
         if path != "/profiles":                       # the sample profiles page has no documentation link
-            assert "Documentation (v0.4)" in html
+            assert 'Documentation (<span class="v04-tag">v0.4</span>)' in html
 
 
 def test_robots_txt_disallows_everything(alpha):
@@ -74,7 +74,7 @@ def test_without_the_setting_nothing_changes(v04):
     assert v04.get("/robots.txt").status_code == 404
     r = v04.get("/dashboard")
     assert "work in progress" not in r.text and "x-robots-tag" not in r.headers
-    assert "Documentation (v0.4)" not in r.text
+    assert "v04-tag" not in r.text
 
 
 def _log_count():
@@ -108,3 +108,12 @@ def test_without_the_setting_the_query_log_still_records(v04):
     assert r.status_code == 200
     time.sleep(1)
     assert _log_count() == before + 1
+
+
+def test_the_documentation_modal_title_carries_the_v0_4_tag_in_the_alpha(alpha):
+    title = 'Environmental Dimensions of Place Service (EDOPS) <span class="v04-tag">v0.4</span></h4>'
+    assert title in alpha.get("/explorer").text
+
+
+def test_the_documentation_modal_title_is_unchanged_without_the_setting(v04):
+    assert "v04-tag" not in v04.get("/explorer").text

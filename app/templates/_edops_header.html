@@ -28,7 +28,7 @@
       </ul>{% endif %}
     </div>
     <div class="d-flex align-items-center gap-3">
-      <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">{% if is_alpha() %}Documentation (v0.4){% else %}Documentation{% endif %}</a>
+      <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#documentation-modal">{% if is_alpha() %}Documentation (<span class="v04-tag">v0.4</span>){% else %}Documentation{% endif %}</a>
       <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#api-guide-modal">API</a>
       <span class="badge rounded-pill bg-secondary-subtle text-dark fw-normal" style="font-size:0.85rem;">{{ version_label }}</span>
     </div>
