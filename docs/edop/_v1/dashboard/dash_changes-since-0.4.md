@@ -12,4 +12,4 @@
 - Band T states which sources answered and why any did not; every API response carries a `sources` block, and a source registry (one YAML file) holds citations and licences
 - HYDE land use drawn as a line chart instead of a table
 - HYDE queries 7 to 10 times faster; stepping through a polity's slices repaints the map in about 30 ms (was 2 to 15 s)
-- limits on slow queries: a polity slice estimated over 5 s disables Get signature and says why, a buffer warns above 9
+- limits on slow queries: a polity slice estimated over 5 s disables Get signature and says why, a buffer warns above 9 HYDE steps, and the server stops Band T's HYDE query at 20 s with a plain message
