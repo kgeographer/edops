@@ -1,3 +1,4 @@
+{% if not is_alpha() %}{# the v1 alpha sends nothing to analytics #}
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K56B8BCD9"></script>
 <script>
@@ -6,3 +7,4 @@
   gtag('js', new Date());
   gtag('config', 'G-5K56B8BCD9');
 </script>
+{% endif %}
