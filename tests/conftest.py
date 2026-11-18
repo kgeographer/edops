@@ -91,7 +91,7 @@ def _area(rel):
         return "regionality"
     if rel.startswith("dashboard/"):
         return "dashboard"
-    if rel == "test_live_server.py":
+    if rel in ("test_live_server.py", "test_live_alpha.py"):
         return "live"
     if rel.startswith("test_whg_") or rel == "test_profiles_page.py":
         return "whg"
