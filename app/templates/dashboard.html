@@ -538,6 +538,10 @@
           <button class="nav-link disabled" id="v3-tab-similarity-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-similarity" type="button" role="tab">Similarity</button>
         </li>
+        <li class="nav-item" role="presentation" id="v3-tab-timeseries-li">
+          <button class="nav-link" id="v3-tab-timeseries-btn" data-bs-toggle="tab"
+                  data-bs-target="#v3-pane-timeseries" type="button" role="tab">Time series</button>
+        </li>
         <li class="nav-item ms-auto" role="presentation">
           <button class="nav-link" id="v3-tab-atlas-btn" data-bs-toggle="tab"
                   data-bs-target="#v3-pane-atlas" type="button" role="tab"
@@ -740,6 +744,24 @@
             <div id="v3-cj-legend" class="d-flex align-items-center gap-2 px-1 pb-1" style="font-size:0.85rem;"></div>
             <div id="v3-cj-map" style="height:420px; border-radius:6px;"></div>
             <p id="v3-cj-container" class="text-muted px-1 pt-2 mb-0" style="font-size:0.78rem;"></p>
+          </div>
+        </div>
+
+        <!-- Time series pane: a stub until the tool is designed. -->
+        <div class="tab-pane fade" id="v3-pane-timeseries" role="tabpanel">
+          <div class="px-2 py-3" style="max-width: 760px;">
+            <h5 class="mb-2">Time series</h5>
+            <p class="mb-2"><strong>Coming soon.</strong> This tool is not built yet.</p>
+            <div class="ph-inline" style="padding: .4rem .6rem;">
+              <p class="mb-1">Planned:</p>
+              <ul class="mb-2">
+                <li>choose the variables and a span of years;</li>
+                <li>charts of the variables, aligned on one time axis;</li>
+                <li>download of the raw numbers;</li>
+                <li>comparison of two places.</li>
+              </ul>
+              <p class="mb-0">A long Band T span, which is slow to compute and hard to read as a table, will point here.</p>
+            </div>
           </div>
         </div>
 
