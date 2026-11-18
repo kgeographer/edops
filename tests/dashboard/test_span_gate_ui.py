@@ -1,4 +1,4 @@
-"""Span gate (WO-07 items 1 and 2, Settlements side): a warning under the Band T year inputs above a scope's HYDE step limit."""
+"""Span gate (WO-07 items 1 and 2, Settlements side): a warning under the Band T year inputs above a buffer's HYDE step limit (single basin and ring have none)."""
 from .test_handoff_ui import _arrive
 
 TBILISI_T = "/dashboard?lat=41.6938&lon=44.8015&name=Tbilisi&bands=ABCDET&from_year=1150&to_year=1250&v=1"
@@ -23,23 +23,13 @@ def test_the_step_table_is_the_database_table(dashboard_server, page):
     assert page.evaluate("EdopsSpanGate.steps()") == years
 
 
-def test_a_single_basin_span_over_twelve_steps_warns_and_twelve_does_not(dashboard_server, page):
+def test_a_single_basin_or_ring_has_no_step_limit(dashboard_server, page):
+    """HYDE is drawn as lines, so width no longer limits a basin or a ring."""
     _arrive(page, dashboard_server, TBILISI_T, "v3-tab-map-btn")
+    _set_span(page, 1900, 2000)                                # 56 steps
     assert not _warned(page)
-    _set_span(page, 0, 1100)                                   # 0, 100 ... 1100: 12 steps
-    assert not _warned(page)
-    _set_span(page, 0, 1200)                                   # 13
-    assert _warned(page)
-    assert "13 HYDE steps" in page.inner_text(WARN) and "too wide" in page.inner_text(WARN)
-
-
-def test_the_ring_has_the_same_limit(dashboard_server, page):
-    _arrive(page, dashboard_server, TBILISI_T, "v3-tab-map-btn")
     page.select_option("#v3-scope-select", "ring")
-    _set_span(page, 0, 1100)
     assert not _warned(page)
-    _set_span(page, 0, 1200)
-    assert _warned(page)
 
 
 def test_a_buffer_has_the_polity_limit_of_nine(dashboard_server, page):
@@ -64,6 +54,7 @@ def test_a_scope_change_rechecks_the_same_span(dashboard_server, page):
 
 def test_the_warning_does_not_block_getting_the_signature(dashboard_server, page):
     _arrive(page, dashboard_server, TBILISI_T, "v3-tab-map-btn")
+    page.select_option("#v3-scope-select", "buffer")
     _set_span(page, 0, 1200)
     assert _warned(page)
     assert not page.evaluate("document.getElementById('v3-sig-btn').disabled")
@@ -71,6 +62,7 @@ def test_the_warning_does_not_block_getting_the_signature(dashboard_server, page
 
 def test_no_warning_without_band_t_or_with_a_reversed_span(dashboard_server, page):
     _arrive(page, dashboard_server, TBILISI_T, "v3-tab-map-btn")
+    page.select_option("#v3-scope-select", "buffer")
     _set_span(page, 0, 1200)
     assert _warned(page)
     _set_span(page, 1200, 0)
@@ -84,6 +76,7 @@ def test_no_warning_without_band_t_or_with_a_reversed_span(dashboard_server, pag
 
 def test_the_cost_follows_the_years_asked_for(dashboard_server, page):
     _arrive(page, dashboard_server, TBILISI_T, "v3-tab-map-btn")
+    page.select_option("#v3-scope-select", "buffer")
     _set_span(page, 1000, 1400)                                # 400 years, 5 steps
     assert not _warned(page)
     _set_span(page, 1700, 2100)                                # 400 years, but decadal then annual steps

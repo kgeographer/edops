@@ -3270,9 +3270,10 @@
 
   // ── Band T ────────────────────────────────────────────────────────────────
   const LMR_VARS    = ['lmr_pdsi','lmr_air','lmr_prate'];
-  const HYDE_VARS   = ['hyde_cropland','hyde_grazing','hyde_pasture','hyde_rangeland'];
   const LMR_LABELS  = { lmr_pdsi:'PDSI (drought index)', lmr_air:'Temperature anomaly', lmr_prate:'Precipitation' };
   const HYDE_LABELS = { hyde_cropland:'Cropland', hyde_grazing:'Grazing', hyde_pasture:'Pasture', hyde_rangeland:'Rangeland' };
+  const HYDE_SHOWN  = ['hyde_cropland','hyde_pasture','hyde_rangeland'];   // grazing is pasture plus rangeland; in the payload, not drawn
+  const HYDE_COLORS = { hyde_cropland:'#006d2c', hyde_pasture:'#7b3294', hyde_rangeland:'#d95f0e' };
   const VSSI_THRESHOLD = 5;
   const tStamp = r => `${r.year} CE${r.caveat?.includes('geda_observed') ? ' · observed' : ''}`;
 
@@ -3378,6 +3379,31 @@
     return h + `</div>`;
   }
 
+  // HYDE land use as one line chart: a dot at each step year (steps are uneven: centennial, decadal, annual from 1951), km2 on a shared axis.
+  function renderHydeChart(byVar, vars) {
+    const W = 340, H = 118, mL = 40, mR = 8, mT = 6, mB = 18, iw = W - mL - mR, ih = H - mT - mB;
+    const pts = v => byVar[v].map(r => [r.epoch_year ?? r.year, r.representative_raw]).filter(p => p[1] != null).sort((a, b) => a[0] - b[0]);
+    const years = byVar[vars[0]].map(r => r.epoch_year ?? r.year);
+    const x0 = Math.min(...years), x1 = Math.max(...years);
+    const yMax = Math.max(1, ...vars.flatMap(v => pts(v).map(p => p[1]))) * 1.05;
+    const xS = x => mL + (x1 === x0 ? iw / 2 : (x - x0) / (x1 - x0) * iw), yS = y => mT + ih - (y / yMax) * ih;
+    const dotR = iw / Math.max(1, years.length - 1) >= 6 ? 3.4 : 2;
+    const km2 = n => Math.round(n).toLocaleString('en-US');
+    let svg = `<svg width="${W}" height="${H}" style="display:block;" id="v3-t-hyde-chart">`;
+    for (let i = 0; i <= 3; i++) {
+      const y = yMax * i / 3;
+      svg += `<line x1="${mL}" x2="${W - mR}" y1="${yS(y).toFixed(1)}" y2="${yS(y).toFixed(1)}" stroke="#e6e6e6"/><text x="${mL - 4}" y="${(yS(y) + 3).toFixed(1)}" font-size="9" fill="#000" text-anchor="end">${km2(y)}</text>`;
+    }
+    svg += `<text x="${mL}" y="${H - 4}" font-size="9" fill="#000">${x0}</text><text x="${W - mR}" y="${H - 4}" font-size="9" fill="#000" text-anchor="end">${x1}</text>`;
+    for (const v of vars) {
+      const p = pts(v);
+      svg += `<polyline points="${p.map(q => xS(q[0]).toFixed(1) + ',' + yS(q[1]).toFixed(1)).join(' ')}" fill="none" stroke="${HYDE_COLORS[v]}" stroke-width="2.2" stroke-linejoin="round"/>`;
+      for (const q of p) svg += `<circle cx="${xS(q[0]).toFixed(1)}" cy="${yS(q[1]).toFixed(1)}" r="${dotR}" fill="${HYDE_COLORS[v]}"><title>${HYDE_LABELS[v]} ${q[0]} CE: ${km2(q[1])} km²</title></circle>`;
+    }
+    const legend = vars.map(v => `<span style="color:${HYDE_COLORS[v]};margin-right:10px;">&#9679; ${HYDE_LABELS[v]}</span>`).join('');
+    return `<div class="mb-2"><div style="font-size:0.72rem;">${legend}<span>km²; a dot is a HYDE step</span></div>${svg}</svg></div>`;
+  }
+
   function renderTBand(rows, caveats = {}, sources = null) {
     const byVar = {};
     for (const r of rows) (byVar[r.variable] = byVar[r.variable] || []).push(r);
@@ -3414,26 +3440,22 @@
 
     if (byVar['geda_scpdsi']) html += renderGedaBlock(byVar['geda_scpdsi'], caveats, LMR_VARS.some(v => byVar[v]));
 
-    const hydePresent = HYDE_VARS.filter(v => byVar[v]);
+    const hydePresent = HYDE_SHOWN.filter(v => byVar[v]);
     if (hydePresent.length) {
-      const epochRows    = byVar[hydePresent[0]];
-      const hasNearest   = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
-      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:4px;margin-bottom:4px;">HYDE land use</div>
-        <table class="table table-sm mb-1" style="font-size:0.78rem;">
-          <thead><tr><th></th>`;
-      for (const r of epochRows) {
-        const near = r.caveat?.includes('hyde_nearest_year');
-        html += `<th>${near ? '~' : ''}${r.epoch_year ?? r.year} CE</th>`;
-      }
-      html += `</tr></thead><tbody>`;
-      for (const v of hydePresent) {
-        html += `<tr><td>${HYDE_LABELS[v] || v}</td>`;
-        for (const r of byVar[v]) {
-          html += `<td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}${r.units ? ` <span>${escapeHtml(r.units)}</span>` : ''}</td>`;
+      const epochRows  = byVar[hydePresent[0]];
+      const hasNearest = epochRows.some(r => r.caveat?.includes('hyde_nearest_year'));
+      html += `<div style="font-size:0.9rem;font-weight:600;color:#993333;margin-top:4px;margin-bottom:4px;">HYDE land use</div>`;
+      if (epochRows.length > 1) {
+        html += renderHydeChart(byVar, hydePresent);
+      } else {
+        const r0 = epochRows[0];
+        html += `<table class="table table-sm mb-1" style="font-size:0.78rem;"><thead><tr><th></th><th>${hasNearest ? '~' : ''}${r0.epoch_year ?? r0.year} CE</th></tr></thead><tbody>`;
+        for (const v of hydePresent) {
+          const r = byVar[v][0];
+          html += `<tr><td>${HYDE_LABELS[v] || v}</td><td>${r.representative_raw != null ? fmtNum(r.representative_raw) : '—'}${r.units ? ` <span>${escapeHtml(r.units)}</span>` : ''}</td></tr>`;
         }
-        html += `</tr>`;
+        html += `</tbody></table>`;
       }
-      html += `</tbody></table>`;
       if (hasNearest)
         html += `<p class="mb-2" style="font-size:0.7rem;">~ nearest available HYDE epoch; no step falls within this span.</p>`;
     }
