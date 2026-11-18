@@ -52,4 +52,4 @@ From `MAINTAIN_DEPLOY.md` and CLAUDE.md, for the alpha service: a new hostname (
 3. The splash's About EDOPS modal and the Computing Place tile still say v0.4.
 4. `workbench.html` stays as the source for two Using tabs (above).
 5. How the 0.4 preview was kept eyes-only is not recorded in `MAINTAIN_DEPLOY.md`; the alpha relies on an undistributed address, noindex and robots.
-6. The full suite was run at the end of this WO; its result is in the log of 18 Nov.
+6. The full suite at the end of this WO: 957 passed, 21 skipped (the expected skips), 0 errors, 9 min 27 s. A first run had 92 errors in `tests/surface/test_sandbox.py`: the normal-mode fixture was function-scoped, so module-scoped clients were built in the alpha mode set in `.env`; it is session-scoped now.

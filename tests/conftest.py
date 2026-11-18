@@ -19,11 +19,14 @@ ROME     = {"lat": 41.8967,     "lon": 12.4822}       # Mediterranean
 KAIFENG  = {"lat": 34.7972,     "lon": 114.3075}      # Yellow River lowland
 
 
-@pytest.fixture(autouse=True)
-def normal_site_mode(monkeypatch):
-    """Tests run in the normal site mode whatever .env says; the ones that need the v1 alpha switch it on themselves."""
+@pytest.fixture(autouse=True, scope="session")
+def normal_site_mode():
+    """Tests run in the normal site mode whatever .env says (session scope: module and session fixtures build their clients
+    first); the ones that need the v1 alpha switch it on themselves with monkeypatch."""
     from app.settings import settings
-    monkeypatch.setattr(settings, "EDOPS_SITE_MODE", "")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(settings, "EDOPS_SITE_MODE", "")
+        yield
 
 
 @pytest.fixture(scope="session")
