@@ -1363,6 +1363,10 @@ def areas(
     from_year: Optional[int] = Query(None, description="Band T span start, year CE. Required when T is in bands."),
     to_year: Optional[int] = Query(None, description="Band T span end, year CE. Required when T is in bands."),
     detail: bool = Query(False, description="If true, include per-variable histogram objects in the response."),
+    members_only: bool = Query(False, description=(
+        "scope=polity only: return just member_ids and resolver, with no signature. The Dashboard's slice steps use it "
+        "to repaint the map."
+    )),
     place_links: Optional[str] = Query(None, description=(
         "Comma-separated gazetteer identifiers (e.g. \"wd:Q220,gn:3169070\") to echo into "
         "the response's place_links. Not validated or re-resolved. Only applied for "
@@ -1508,7 +1512,7 @@ def areas(
                 rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[0][4]
             )
 
-            payload = areal_signature_polygon(
+            payload = {} if members_only else areal_signature_polygon(
                 geom_wkt,
                 conn,
                 level=level,
@@ -1535,7 +1539,7 @@ def areas(
                 "toyear":    int(toyear),
                 "year":      year,
             }
-            if "T" in requested and band_t_from is not None:
+            if "T" in requested and band_t_from is not None and not members_only:
                 payload["band_t_span"] = {"from_year": band_t_from, "to_year": band_t_to}
 
         # A single resolved point (single_basin/basin_ring) is the only case with one
