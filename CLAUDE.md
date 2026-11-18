@@ -14,7 +14,7 @@ Session-by-session detail lives in `logs/session_log_YYYYMMDD.md`. Git commit no
 - `docs/design/deferred_items_register.md` — cross-phase parked items
 - `docs/{cdop|edop}/{phase}/wo{nn}_findings.md` — per-WO findings
 - **Active phase — Regionality:** `docs/edop/_v1/regionality/` (files prefixed `reg_`; scripts, notebooks and tests under `regionality/` subfolders). **Start with `reg_post-wo05-cc.md` (status after WO-05) and `reg_wo06_summary.md` / `reg_wo06_summary02.md`**; per-WO records are `reg_wo0{4,5,6}_results.md` and `_summary.md`, each ending in a "Needs attention" list.
-- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-07 done; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo07_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
+- **Active phase — Dashboard (design begun 2026-11-14, build since 2026-11-15; WO-01 to WO-08 done; branch `dashboard`, cut from `v1`):** `docs/edop/_v1/dashboard/` — **read `pre-design_notes_cc.md` there first** (the brief for the design sessions with Fable; Karl's voice), then `dash_wo08_summary.md` (the latest work order; each `dash_wo0N_*` has a spec, a `_summary.md` and a `_results.md` ending in a needs-attention list; Fable drafts the specs; no tracker yet); sibling `dashboard/` dirs under `docs/design/`, `notebooks/edop/`, `output/edop/`, `scripts/edop/`, `tests/` — **design material and WO-02 results: start with `docs/design/dashboard/wo02_summary.md`**
 
 **Logging convention (all phases).** The detailed, technical record of a work order lives in its
 `wo{nn}_findings.md`. Trackers and session logs carry **top-level summary + a pointer to the findings
@@ -61,7 +61,7 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **v0.4 deploy**             | **LIVE 2026-09-08**; frozen `v0.4.2` 2026-10-29 (`v0.4.1` 2026-10-25); v0.3 retired | blue-green cutover to `edops-v4.service` :8004; `logs/session_log_2026090{7,8}.md`, `logs/session_log_20260830_deploy.md`, `MAINTAIN_DEPLOY.md` |
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
-| **Dashboard**               | **build under way** (design with Fable from 2026-11-14; WO-01 to WO-07 done 2026-11-14 to 17 on `dashboard`, cut from `v1`; the old `dashboard` branch was retired, its work is in `main`) | new splash (`/edops`), the Dashboard (`/dashboard`, cloned from the Sandbox: map-first, Profile tab, permalinks) and a `/using` placeholder; reuses the Sandbox/Workbench backend |
+| **Dashboard**               | **build under way** (design with Fable from 2026-11-14; WO-01 to WO-08 done 2026-11-14 to 18 on `dashboard`, cut from `v1`; the old `dashboard` branch was retired, its work is in `main`) | new splash (`/edops`), the Dashboard (`/dashboard`, cloned from the Sandbox: map-first, Profile tab, permalinks) and a `/using` placeholder; reuses the Sandbox/Workbench backend |
 | **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (done on the Dashboard in WO-05; the Sandbox still ignores it), pre-v1 docs check |
 
 ---
@@ -97,9 +97,9 @@ URL handoff, permalink button; **WO-04** map-first arrival, the Get signature ru
 version setting; **WO-05** GEDA block and a sources line in Band T, Get signature shows the Signature tab, span
 measurements (no caution built: a time-series design comes first), polity example dropdown stays usable, and out-of-date results settled 2026-11-17 as a
 rule (item 4): any change of place, scope, radius or level disables the result tabs; the button reads "Get new signature";
-**WO-06** time series, preliminary questions (measurement only: a polity's Band T cost is HYDE cells x steps; the design note
-`time-series_design note.md`); **WO-07** span gate and a look at the edge (a warning on the Settlements year inputs; a
-time-based gate on polity slices; the HYDE query reshaped; below).
+**WO-06** time series, preliminary questions (measurement only; the design note `time-series_design note.md`); **WO-07** span
+gates and a look at the edge, with the HYDE query reshaped; **WO-08** HYDE as a line chart, a server time limit on Band T,
+lighter polity slice steps, an option to skip HYDE histograms.
 
 What exists: a new splash (`app/templates/edops.html`, at `/edops`, and at `/` when the host contains "edops") with two
 example dropdowns and three tiles; the Dashboard (`dashboard.html` at `/dashboard`, `noindex`, keeps the Sandbox's element
@@ -117,21 +117,16 @@ codec's header) opens a place and a tab, and the Copy link button builds one fro
 a sentence for each exception (low coverage, HYDE's nearest step, not applied and why), and a GEDA block after LMR (own
 histogram and slider, observed years 1990 to 2020 shaded, caveats from the payload); the slider year shows under each
 Band T histogram and as a marker on the line chart; pressing Get signature shows the Signature tab (automatic runs stay on
-the map). Wording of the GEDA block and the sources line is placeholder. **Span gates (WO-07, `edops_span_gate.js`):**
-HYDE's 128 steps are centennial to 1700, decadal to 1950 and annual from 1951, and Band T cost follows the steps (and the area),
-not the years. Settlements: an inline placeholder warning under the Band T year inputs above 12 HYDE steps (single basin,
-ring) or 9 (buffer); a stopgap, because the step limit is about the HYDE table's width and the table is to be replaced by line
-graphs. Polities: the Band T year inputs are hidden, so a polity's span is its slice's own dates (a polity link ignores
-`from_year`/`to_year`); a slice whose estimated Band T time (cells = `area_km2` / 73, times 35 microseconds plus 2.1 per
-step) is over 5 s disables Get signature with the reason ("Untick T to continue without it"; unticking re-enables it), and
-its background map request leaves Band T out. Every manual slice step sends a full `/api/areas` request for the map's
-member ids. The estimate cannot promise the ceiling (cost also follows the polygon's outline: Argentina took 3x
-Northern Song's time on the old query).
+the map). Wording of the GEDA block and the sources line is placeholder. **Band T limits (WO-07, WO-08):** HYDE is one line chart (cropland, pasture, rangeland; grazing is in the payload,
+not drawn). A buffer's span warns above 9 HYDE steps (`edops_span_gate.js`); single basin and ring have no step limit. A
+polity's span is its slice's own dates (a polity link ignores `from_year`/`to_year`); a slice whose estimated Band T time is
+over 5 s disables Get signature ("Untick T to continue"). A server time limit (20 s, `EDOPS_BAND_T_TIME_LIMIT_S`) stops
+HYDE in the engine and answers 504. Polity slice steps ask `/api/areas` with `members_only=true`, and the Dashboard sends
+`skip_hyde_distribution=true` (both off by default for every other caller). Detail: `dash_wo07_summary.md`, `dash_wo08_summary.md`.
 
 Open: **time series:** a time-series UX design (Karl, Opus, then CC; possibly a "Time series" feature, perhaps API-only; the
-Time series tab would also take Atlas's place in the tab bar, Atlas moving to the Explorer); the biggest polity slices (Canada-sized,
-about 26 s estimated) are still over the 5 s ceiling after the reshape (a server time limit would be the guarantee; Python
-builds a histogram per step and variable); HYDE drawn as lines in place of the table; the profile store (where the 16,000 Level 06 profiles live: a database table recommended); the About
+Time series tab would also take Atlas's place in the tab bar, Atlas moving to the Explorer); the biggest polity slices (Canada-sized)
+are still over the 5 s ceiling (only the 20 s limit stops them; `dash_wo08_results.md`); the profile store (where the 16,000 Level 06 profiles live: a database table recommended); the About
 modal and the Computing Place tile still say v0.4.
 
 **Design material (tracked since 2026-10-31):** `docs/design/dashboard/` (text only; the PDF, the generated
@@ -156,7 +151,7 @@ flips under sweeps, so most fall back to stating the number alone; HYDE grazing 
 source; LMR spreads are comparable to the anomalies (Karl to discuss with Opus). `wo02_comprehension_check.md`
 (10 questions and key) is for testing Opus only if it struggles.
 
-**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-07); the HYDE display redesign (lines); the time-series design; tracing the Polities controls (slice step, bands) against the reset rule; in the UX review, whether bands and timespan changes should disable the result tabs (they do not now); the profile store design; the Using EDOPS page and typed lookup on the splash (all out of scope so far); Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
+**Next (dashboard):** Karl's browser check and tweaks of the Dashboard (WO-03 to WO-08); the time-series design; tracing the Polities controls (slice step, bands) against the reset rule; in the UX review, whether bands and timespan changes should disable the result tabs (they do not now); the profile store design; the Using EDOPS page and typed lookup on the splash (all out of scope so far); Opus review of WO-02; the crosswalk work order (Karl is writing "meaning summaries" from the data
 source docs); tier 2 statements (Context and Similarity); a selection experiment and a small user test; possibly an
 LLM prose layer fed by the rule statements (API, BYOK for v1; caveats must reach the prose, chosen by the rules).
 Cheat sheet corrections found by WO-02 are queued in `wo02_results.md`, not yet made. A preliminary spec for a WHG-tuned basin-ring "environmental profile" (per-basin distributions, no aggregates; rules derive the relations) is in `docs/design/dashboard/whg_ring_profile_spec_prelim.md`, to be revisited before work starts. Regional datasets are under
@@ -247,7 +242,8 @@ Band T is one function per source (`_band_t_hyde`, `_band_t_lmr`, `_band_t_evolv
 `aggregate_band_t`), each asking the source registry (`documentation/EDOPS_source_registry.yaml`, read by
 `scripts/edop/areas/source_registry.py`) whether it applies; `check()` judges years, footprint and coverage rule. `_band_t_hyde`
 fetches one row per cell with each variable's array sliced to the span's steps (the overlap computed once) and reduces per step in numpy
-(reshaped 2026-11-17; before that, a row per cell and step: 63 s for Northern Song over 1,000 years, now 7 s).
+(reshaped 2026-11-17: 63 s to 7 s for Northern Song over 1,000 years). A 20 s time limit (`BAND_T_TIME_LIMIT_S`) stops it with
+`BandTTimeLimit`; `hyde_distribution=False` leaves out its histograms.
 `band_t_geda_for_point` serves public `scope=basin`; that route's LMR and HYDE still run on the older code in
 `app/db/{temporal,hyde}.py` (nearest cell, centroid rule), so the two paths differ in method (see `reg_wo06_results.md`).
 
@@ -518,7 +514,7 @@ python -m pytest tests/ -m engine              # one area; markers are set by pa
 python -m pytest tests/ -m "not ui"            # everything except the Playwright browser tests
 ```
 
-Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-14: 768 passed, 21 skipped; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the dashboard folder (118 tests) passed on 2026-11-17 and takes about 5.3 minutes.
+Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-14: 768 passed, 21 skipped; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the dashboard folder (135 tests) passed on 2026-11-18, with the engine, regionality and areas tests: 516 in 7.5 minutes.
 
 **Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
 - A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.
@@ -553,7 +549,7 @@ site/ holds mkdocs generated/published markup
 | `documentation/edops_schema_area.json`          | `/api/signature?scope=area` schema, real bbox example — an entirely different shape (`variables`, not `signature_bands`) |
 | `documentation/EDOPS_source_registry.yaml`      | Source registry: one entry per data source (what the code selects, and what describes it: citation, licence); read by `scripts/edop/areas/source_registry.py`; the only copy |
 | `docs/edop/_v1/regionality/`                    | Regionality WO specs, results and summaries (`reg_` prefix); `reg_post-wo05-cc.md` is the status note after WO-05 |
-| `docs/edop/_v1/dashboard/`                      | Dashboard brief, WO specs, results and summaries (`dash_` prefix); `pre-design_notes_cc.md` is the brief, `dash_wo07_summary.md` the latest work order |
+| `docs/edop/_v1/dashboard/`                      | Dashboard brief, WO specs, results and summaries (`dash_` prefix); `pre-design_notes_cc.md` is the brief, `dash_wo08_summary.md` the latest work order |
 
 ---
 
