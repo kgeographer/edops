@@ -25,9 +25,9 @@ Persistence is itself a claim. Where the example relies on it, it says so and gi
 
 ## Coverage rule for Band T
 
-- LMR from 700 CE, everywhere. The 700 CE floor follows statements by the LMR authors on proxy coverage. *To confirm: exact source and wording, so the example can cite the authors directly.*
+- LMR has a limiter in map display of 700CE due to a stated quality seam, but the signature returns all (from 0 CE). For worked examples it may be useful to allow pre-700 with appropriate caveat language.
 - Regional atlases from wherever each begins, within its footprint.
-- Before 700 CE: the modern signature, plus HYDE land use where served.
+- Before 700 CE: the modern signature, plus HYDE land use and GEDA drought data where served.
 
 ## Example 1: Ukraine
 

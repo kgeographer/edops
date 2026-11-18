@@ -1,3 +1,3 @@
 # Dashboard
 
-Dashboard phase: work orders, findings, tracker.
+Dashboard phase: work orders, findings/results, summaries.

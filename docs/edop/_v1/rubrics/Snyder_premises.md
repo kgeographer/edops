@@ -1,6 +1,6 @@
 # Snyder, "What is Ukraine?": environmental premises
 
-Draft of 2026-11-11, from the lecture transcript (YouTube auto-captions, 1:44:07). Times are where each point is made. Raw material for worked example 1; see *worked_examples_predesign.md*.
+Draft of 2026-11-11, from the lecture transcript (YouTube auto-captions, 1:44:07). Times are where each point is made. Raw material for worked example 1; see *worked-examples-predesign.md*.
 
 ## The lecture's own persistence claim
 
