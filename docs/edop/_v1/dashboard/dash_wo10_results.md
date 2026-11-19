@@ -34,12 +34,12 @@ Measured on the 6,205 WHG populated places that fall in no Level 6 basin (`gaz.w
 | Case | After |
 | --- | --- |
 | Point inside a basin | unchanged |
-| Point outside every basin, within 5 km of one (WHG places Bulukumba, Arsuz, Pevensey Castle; the six made-up offshore points; Fiji across the antimeridian) | 200. The point is moved just inside the nearest basin; the response has `point_moved` (`hybas_id`, `distance_m`, `max_m`, `from`, `to`). Same on the public basin route, `/api/areas` single basin and basin ring, `/api/basin/ring`, and Context and conjunction |
+| Point outside every basin, within 5 km of one (WHG places Bulukumba, Arsuz, Pevensey Castle; the six made-up offshore points; Fiji across the antimeridian) | 200. The point is moved just inside the nearest basin; the response has `point_moved` (`hybas_id`, `distance_m`, `max_m`, `from`, `to`). Same on the public basin route, `/api/areas` single basin and basin ring, `/api/basin/ring`, `/api/basin-preview` (the map's outline) and Context and conjunction |
 | No basin within 5 km (open water, Tristan da Cunha, Antarctica, the poles, swapped coordinates that land at sea) | 404, one wording on every route: "No basin within 5 km of this point; the nearest is N km away. It may be open water, or outside BasinATLAS coverage (Antarctica, some islands)." Body also has `reason` (`no_basin_nearby`) and `nearest_basin_km` |
 | Buffer or area with no basin | 404, `reason` `no_basin_in_buffer` or `no_basin_in_area` |
 | Latitude or longitude out of range, or not a number | 422, `detail` a sentence naming the parameter, e.g. "lat: Input should be less than or equal to 90 (got '91.0')"; the framework's list is kept in `errors` |
 | Missing parameter | unchanged (already named it) |
-| Dashboard | the Signature tab shows a placeholder-styled line when `point_moved` is present ("This point lies outside the basin data, so the signature is for the nearest basin, N m away"); errors show the new sentences |
+| Dashboard | the map draws the nearest basin and zooms to it, with a note in its top-left corner ("This point lies outside the basin data; showing the nearest basin, N km away"); with no basin within 5 km the map keeps its view and the note says "No basin covers this place:" and the server's sentence; the Signature tab shows its own line when `point_moved` is present; errors show the new sentences. All placeholder wording (yellow). `/api/basin-preview` gained `point_moved` and `no_basin` |
 
 Where: `snap_to_basin`, `resolve_point` and `SNAP_M` in `scripts/edop/areas/engine.py`; `NoBasinsError` carries `reason`; two handlers in `app/main.py`; `wo08_units.snap_point` delegates to the engine. The moved point is nudged inside by the nearest point of the basin shrunk by 3, 30 or 300 m (the earlier line-to-interior nudge left the basin on concave coasts).
 
@@ -51,12 +51,12 @@ Where: `snap_to_basin`, `resolve_point` and `SNAP_M` in `scripts/edop/areas/engi
 
 ## Tests
 
-`tests/dashboard/test_edge_cases.py` (14): inside not moved; three real WHG places moved at both levels; public basin and ring routes; the 404 body; bad coordinates; the profile snap equals the engine's. Two older tests changed with the contract: `tests/test_areas.py` (the new 404 wording and `reason`) and `tests/dashboard/test_page_background.py` (it still expected the pale background Karl had reverted; it now follows the CSS variable). Targeted run of the affected suites (public API, areas, band T, WHG, regionality, dashboard, engine, surface): 683 passed; the two changed files and the new one re-run: 172 passed. No full suite (merge gate only).
+`tests/dashboard/test_edge_cases.py` (15): inside not moved; three real WHG places moved at both levels; public basin and ring routes; the map's basin preview; the 404 body; bad coordinates; the profile snap equals the engine's. Two older tests changed with the contract: `tests/test_areas.py` (the new 404 wording and `reason`) and `tests/dashboard/test_page_background.py` (it still expected the pale background Karl had reverted; it now follows the CSS variable). Targeted run of the affected suites (public API, areas, band T, WHG, regionality, dashboard, engine, surface): 683 passed; the two changed files and the new one re-run: 172 passed. No full suite (merge gate only).
 
 ## Needs attention
 
 1. Swapped latitude and longitude cannot be detected; a swapped point that lands on land is simply a different place.
 2. The antimeridian: the snap's index prefilter does not wrap at 180, so a basin whose nearest part is across the line may be missed (Fiji's worked because the basin itself spans the line).
 3. Context and conjunction use the snapped basin but measure from the original point.
-4. Wording of the Dashboard line is placeholder.
-5. Not checked in a browser (Karl's gate: Alexandria, an offshore point, Tristan da Cunha, a bad coordinate).
+4. Wording of the Dashboard notes is placeholder; the no-basin note repeats "No basin" (its own lead-in plus the server's sentence).
+5. Karl's gate (Alexandria, Arsuz as the offshore point, Tristan da Cunha, a bad coordinate) passed 19 Nov: the API half run by CC, the Dashboard half by Karl.

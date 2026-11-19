@@ -35,6 +35,16 @@ def test_the_public_basin_and_ring_routes_move_it_too(path, extra):
     assert r.status_code == 200 and r.json()["point_moved"]["distance_m"] > 0
 
 
+def test_the_maps_basin_preview_snaps_and_says_why_when_it_cannot():
+    _, lat, lon = SNAPS[1]
+    moved = _get("/api/basin-preview", lat=lat, lon=lon, level=6).json()
+    assert moved["containing_basin"] and moved["point_moved"]["distance_m"] > 0 and moved["no_basin"] is None
+    none = _get("/api/basin-preview", lat=SEA["lat"], lon=SEA["lon"], level=6).json()
+    assert none["containing_basin"] is None and "5 km" in none["no_basin"]
+    inside = _get("/api/basin-preview", level=6, **INSIDE).json()
+    assert inside["containing_basin"] and inside["point_moved"] is None and inside["no_basin"] is None
+
+
 def test_no_basin_within_5_km_is_a_plain_404():
     r = _get("/api/signature", scope="basin", level=8, **SEA)
     b = r.json()

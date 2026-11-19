@@ -989,8 +989,14 @@ def similar(id_no: int, limit: int = 5):
 def basin_preview(lat: float, lon: float, level: int = 8):
     """Return hydro-context layers for a point: containing basin, adjacent basins, main river lines."""
     basin_table = "basin06" if level == 6 else "basin08"
+    q_lat, q_lon = lat, lon
     try:
         conn = db_connect()
+        moved, no_basin = None, None
+        try:
+            lat, lon, moved = resolve_point(lat, lon, level, conn)
+        except NoBasinsError as e:
+            no_basin = str(e)
         with conn.cursor() as cur:
             pt_geog = f"ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geography"
 
@@ -1048,7 +1054,9 @@ def basin_preview(lat: float, lon: float, level: int = 8):
             }
 
         return {
-            "point": {"lat": lat, "lon": lon},
+            "point": {"lat": q_lat, "lon": q_lon},
+            "point_moved": moved,
+            "no_basin": no_basin,
             "containing_basin": containing,
             "adjacent_basins": adjacent,
             "rivers": rivers
