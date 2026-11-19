@@ -6,6 +6,8 @@ unreachable, so the suite can run safely in environments without a live DB.
 """
 
 import os
+import time
+import threading
 import pytest
 from dotenv import load_dotenv
 
@@ -105,3 +107,32 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         rel = os.path.relpath(str(item.fspath), root).replace(os.sep, "/")
         item.add_marker(getattr(pytest.mark, _area(rel)))
+
+
+# ---------------------------------------------------------------------------
+# The app on a background uvicorn thread for the Dashboard's and LBDA's browser tests (port 8766, so it does not collide with
+# the dev server on 8000 or the surface tests' 8765). Playwright's `page` comes from pytest-playwright.
+# ---------------------------------------------------------------------------
+_HOST, _PORT = "127.0.0.1", 8766
+
+
+@pytest.fixture(scope="session")
+def dashboard_server():
+    import httpx
+    import uvicorn
+    from app.main import app
+    server = uvicorn.Server(uvicorn.Config(app, host=_HOST, port=_PORT, log_level="error"))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    base = f"http://{_HOST}:{_PORT}"
+    for _ in range(150):   # startup loads the in-memory indices, about 8 s cold
+        try:
+            httpx.get(f"{base}/api/health", timeout=1.0)
+            break
+        except Exception:
+            time.sleep(0.2)
+    else:
+        raise RuntimeError(f"test server at {base} did not become ready")
+    yield base
+    server.should_exit = True
+    thread.join(timeout=5)

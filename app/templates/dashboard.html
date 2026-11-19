@@ -3133,14 +3133,16 @@
   const HYDE_SHOWN  = ['hyde_cropland','hyde_pasture','hyde_rangeland'];   // grazing is pasture plus rangeland; in the payload, not drawn
   const HYDE_COLORS = { hyde_cropland:'#006d2c', hyde_pasture:'#7b3294', hyde_rangeland:'#d95f0e' };
   const VSSI_THRESHOLD = 5;
-  const tStamp = r => `${r.year} CE${r.caveat?.includes('geda_observed') ? ' · observed' : ''}`;
+  const MIN_CELLS_FOR_BAND = 5;   // placeholder: the spread band is drawn only above this many cells (the time-series design sets it from the data)
+  const isObserved = r => r.caveat?.includes('geda_observed') || r.caveat?.includes('lbda_instrumental');
+  const tStamp = r => `${r.year} CE${r.caveat?.includes('geda_observed') ? ' · observed' : r.caveat?.includes('lbda_instrumental') ? ' · instrumental' : ''}`;
 
-  function renderTimeMarginal(rows) {
+  function renderTimeMarginal(rows, { band = true } = {}) {
     if (!rows || rows.length < 2) return '';
-    const obsFrom = rows.findIndex(r => r.caveat?.includes('geda_observed'));
+    const obsFrom = rows.findIndex(isObserved);
     const W = 170, CH = 56, LH = 14;
-    const p10s  = rows.map(r => r.detail?.distribution?.p10 ?? r.representative_raw);
-    const p90s  = rows.map(r => r.detail?.distribution?.p90 ?? r.representative_raw);
+    const p10s  = rows.map(r => band ? (r.detail?.distribution?.p10 ?? r.representative_raw) : r.representative_raw);
+    const p90s  = rows.map(r => band ? (r.detail?.distribution?.p90 ?? r.representative_raw) : r.representative_raw);
     const means = rows.map(r => r.representative_raw);
     const yMin = Math.min(...p10s), yMax = Math.max(...p90s);
     const yPad = Math.max((yMax - yMin) * 0.08, 0.05);
@@ -3160,7 +3162,7 @@
       <rect width="${W}" height="${CH}" fill="#f8f9fa" rx="2"/>
       ${obsFrom >= 0 ? `<rect x="${xS(obsFrom).toFixed(1)}" y="0" width="${(W - xS(obsFrom)).toFixed(1)}" height="${CH}" fill="#e0a800" opacity="0.22"/>` : ''}
       ${zeroLine}
-      <polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>
+      ${band ? `<polygon points="${topPts} ${botPts}" fill="#5b8dc4" opacity="0.22"/>` : ''}
       <polyline points="${meanPts}" fill="none" stroke="#2c5f8a" stroke-width="1.3" stroke-linejoin="round"/>
       <line class="v3-t-mk" x1="${xS(mid).toFixed(1)}" x2="${xS(mid).toFixed(1)}" y1="0" y2="${CH}" stroke="#b02a37" stroke-width="1"/>
       <text x="1" y="9" font-size="9" fill="#000">${yMax.toFixed(2)}</text>
@@ -3171,7 +3173,7 @@
   }
 
   // Which Band T sources answered this query: one line, then a sentence for each exception. Wording is placeholder.
-  const T_SOURCES = [['hyde_3_5', 'HYDE land use'], ['lmr_v2_1', 'LMR climate'], ['evolv2k_v4', 'eVolv2k volcanic events'], ['geda', 'GEDA drought']];
+  const T_SOURCES = [['hyde_3_5', 'HYDE land use'], ['lmr_v2_1', 'LMR climate'], ['evolv2k_v4', 'eVolv2k volcanic events'], ['geda', 'GEDA drought'], ['lbda_v3', 'LBDA drought']];
   const T_REASONS = {
     outside_footprint:    'this place is outside its footprint',
     outside_span:         'its years do not overlap this span',
@@ -3237,6 +3239,49 @@
     return h + `</div>`;
   }
 
+  // LBDA (contiguous US): its own block, built like GEDA's. Cells with data grow through time, so a year's cell count and
+  // coverage can differ along the series. Wording is placeholder (class ph-inline).
+  function renderLbdaBlock(vRows, caveats, withLmr) {
+    const v = 'lbda_pmdi', first = vRows[0], last = vRows[vRows.length - 1];
+    const midRow = vRows[Math.floor(vRows.length / 2)];
+    const dist0  = first.detail?.distribution || {};
+    const asked  = dist0.band_t_from != null ? `${dist0.band_t_from}–${dist0.band_t_to}` : null;
+    const clipped = asked && (first.year !== dist0.band_t_from || last.year !== dist0.band_t_to);
+    const anyInstr = vRows.some(r => r.caveat?.includes('lbda_instrumental'));
+    const lowRows = vRows.filter(r => r.status === 'low_coverage');
+    const nCells = Math.max(...vRows.map(r => r.n_units));
+    const band = vRows.every(r => r.n_units >= MIN_CELLS_FOR_BAND);
+    const lowRes = vRows.some(r => r.detail?.distribution?.low_resolution);
+    const note = t => `<div style="font-size:0.7rem;margin-top:3px;">${t}</div>`;
+    let h = `<div class="mb-3 pb-3" id="v3-t-lbda" style="border-bottom:1px solid #dee2e6;">
+      <div style="font-size:0.9rem;font-weight:600;color:#993333;margin-bottom:2px;">
+        Living Blended Drought Atlas &mdash; ${nCells} cells &middot; ${first.year}–${last.year} CE</div>
+      <div style="font-size:0.78rem;color:#000;margin-bottom:4px;"><span class="ph-inline">Summer (June–August) drought, as the Palmer Modified Drought Index (PMDI, ${escapeHtml(first.units || 'dimensionless')}). Not standardized: the numbers are in the index's own units, not standard scores, so they cannot be compared with GEDA's. Positive is wetter, negative drier.</span></div>
+      <div class="d-flex align-items-start" style="gap:24px;">
+        <div style="flex:none;">
+          <div id="v3-t-hs-${v}">${renderHistogram(midRow.detail?.distribution || {}, null, null, tStamp(midRow))}</div>
+          <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.7rem;">
+            <span>Year</span>
+            <input type="range" id="v3-t-sl-${v}" min="${first.year}" max="${last.year}" step="1" value="${midRow.year}" style="width:110px;height:14px;">
+            <span id="v3-t-yr-${v}" style="color:#000;min-width:34px;">${midRow.year}</span>
+          </div>
+        </div>
+        <div style="flex:none;">${renderTimeMarginal(vRows, { band })}</div>
+      </div>
+      <div style="font-size:0.7rem;margin-top:4px;"><span class="ph-inline">Line: mean of the cells.${band ? ' Blue band: the middle 80% of cells (p10–p90).' : ''}${anyInstr ? ' <span style="background:#f7e4a8;padding:0 3px;">Shaded: instrumental years (1900 on), not reconstructed.</span>' : ''}</span></div>`;
+    if (caveats.lbda_caveat) h += note(escapeHtml(caveats.lbda_caveat));
+    if (anyInstr && caveats.lbda_instrumental) h += note(escapeHtml(caveats.lbda_instrumental));
+    if (clipped) h += note(`<span class="ph-inline">LBDA covers ${first.year}–${last.year} of the ${asked} requested.</span>`);
+    if (lowRows.length) {
+      const pcts = lowRows.map(r => r.coverage * 100);
+      h += note(`<span class="ph-inline">In ${lowRows[0].year}–${lowRows[lowRows.length - 1].year} LBDA's cells cover only ${Math.min(...pcts).toFixed(0)}–${Math.max(...pcts).toFixed(0)}% of this area; read those values with care.</span>`);
+    }
+    if (!band) h += note(`<span class="ph-inline">Few cells fall in this area, so no band is drawn.</span>`);
+    if (lowRes) h += note(`<span class="ph-inline">Few cells fall in this area, so the histogram is coarse.</span>`);
+    if (withLmr) h += note(`<span class="ph-inline">LBDA and LMR are independent reconstructions; where they differ, neither is wrong, and they are not one answer to be reconciled.</span>`);
+    return h + `</div>`;
+  }
+
   // HYDE land use as one line chart: a dot at each step year (steps are uneven: centennial, decadal, annual from 1951), km2 on a shared axis.
   function renderHydeChart(byVar, vars) {
     const W = 340, H = 118, mL = 40, mR = 8, mT = 6, mB = 18, iw = W - mL - mR, ih = H - mT - mB;
@@ -3297,6 +3342,7 @@
     }
 
     if (byVar['geda_scpdsi']) html += renderGedaBlock(byVar['geda_scpdsi'], caveats, LMR_VARS.some(v => byVar[v]));
+    if (byVar['lbda_pmdi']) html += renderLbdaBlock(byVar['lbda_pmdi'], caveats, LMR_VARS.some(v => byVar[v]));
 
     const hydePresent = HYDE_SHOWN.filter(v => byVar[v]);
     if (hydePresent.length) {

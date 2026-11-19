@@ -26,15 +26,19 @@ def _text(page, base, url):
     return page.inner_text("#v3-t-sources")
 
 
+ORIGINAL_LABELS = ["HYDE land use", "LMR climate", "eVolv2k volcanic events", "GEDA drought"]   # sources added since are not under test here
+
+
 def test_every_source_applies(dashboard_server, page):
     t = _text(page, dashboard_server, LVIV)
-    assert "Available for this query: HYDE land use, LMR climate, eVolv2k volcanic events, GEDA drought." in t
-    assert "Not applied" not in t
+    assert "Available for this query: HYDE land use, LMR climate, eVolv2k volcanic events, GEDA drought" in t   # sources added later may follow
+    assert not any(f"Not applied: {label}" in t for label in ORIGINAL_LABELS)
 
 
 def test_geda_outside_its_footprint(dashboard_server, page):
     t = _text(page, dashboard_server, SANTA_FE)
-    assert "Available for this query: HYDE land use, LMR climate, eVolv2k volcanic events." in t
+    assert "Available for this query: HYDE land use, LMR climate, eVolv2k volcanic events" in t
+    assert "GEDA drought" not in t.split("Not applied")[0]
     assert "Not applied: GEDA drought, because this place is outside its footprint." in t
 
 
