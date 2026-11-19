@@ -73,11 +73,12 @@ Reorganized for Opus on 20 Nov (the earlier numbering is in brackets). Nothing i
 
 ### A. Decisions (Karl, with Opus's view)
 
+(The untracked whgmodal reply draft listed here earlier was committed on 20 Nov; it belongs to the WHG modal work and stays in `docs/edop/_v1/whgmodal/` until that endpoint is built.)
+
 1. **Wording** [1]. The block's text, the two caveat texts (`lbda_caveat`, `lbda_instrumental`) and the notes are placeholder (yellow in the Dashboard). The caveats carry: not standardized and not comparable with GEDA; the pre-1900 smoothness; modest skill and no per-cell skill; the 1900 blend; thinner coverage early.
 2. **Thresholds** [2, 10]. The spread band needs at least 5 cells in every year (`MIN_CELLS_FOR_BAND`, a placeholder; the design note says the threshold is to be set from the data). The coverage rule is GEDA's, copied: below 0.1 no value, 0.1 to 0.5 flagged `low_coverage`, from 0.5 `ok`. Consequence: a basin with early gaps is not flagged. At Santa Fe in year 150 a Level 6 basin has 77% coverage and a Level 8 basin 64%, so no note, although a quarter to a third of the area has no data before 210 CE; a 25 km or 50 km buffer there (36%, 43%) is flagged. The work order's gate case (Santa Fe 150 to 300) shows its note only with a buffer.
 3. **The public basin route** [7]. It does not serve LBDA (the work order said report only). Serving it is about the size of item 2: a helper, a block builder, the decision in the `sources` block, schema and API-guide documentation, tests. Open choices: the public `from_year` and `to_year` are documented as 0 to 2000 while LBDA runs to 2025; a full span returns up to 2,026 series items (about 100 KB); the block shape is a public API commitment.
 4. **The sources line** [6]. "Not applied: ... outside its footprint" now appears for GEDA or LBDA on almost every query. Karl: leave it to the UI review.
-5. **An untracked file** [11]: `docs/edop/_v1/whgmodal/whgmodal_reply-to-stephen_draft.md`, not from this work. Commit or leave?
 
 ### B. CC can do these (each small; none started)
 
