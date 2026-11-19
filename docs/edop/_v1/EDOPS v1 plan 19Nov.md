@@ -28,10 +28,11 @@ Working time: 19–21 November; 1–6 December; 29 December to early February. T
 ## Work plan
 
 **Must**
-- Edge cases WHG will hit: coastal points that return 404, open water, no basin, bad coordinates. Check status first.
+- ~~Edge cases WHG will hit: coastal points that return 404, open water, no basin, bad coordinates.~~ **Done 19 Nov (dash WO-10):** points within 5 km of a basin snap to it with `point_moved`; one 404 with a reason otherwise; 422s name the parameter. Public API changes listed in `dash_wo10_results.md` for the release notes.
 - `/whgmodal` endpoint, once Pitt agrees the content. Includes how a multi-attestation WHG record is served (one point, a centroid, or a set of basins).
 - Profile store for all Level 06 basins, built after the endpoint shape is agreed (facts per basin, assembled on request: `profile-store-design-fable.md`).
 - LBDA ingested through the registry, for the Pueblo example. Can start before Nepal.
+- Public API in v1 serves every registered source (GEDA, LBDA) on all scopes, including `scope=basin`. What LBDA needs there: reg WO-07 item 6.
 - Worked example: Pueblo, Chaco to the Rio Grande (`rubrics/Pueblo_notes.md`).
 - LLM paragraph from the profile's facts; restore the demo button.
 - Documentation for v1 (replacing the 0.4 docs where they describe the Sandbox), the endpoint, and handover.
@@ -53,9 +54,9 @@ Working time: 19–21 November; 1–6 December; 29 December to early February. T
 
 | Period | Work |
 | --- | --- |
-| 19–21 Nov | This plan; edge-case check and, if needed, a work order; start LBDA |
+| 19–21 Nov | This plan; edge cases (done, WO-10); start LBDA |
 | 22–30 Nov | Away (Nepal) |
-| 1–6 Dec | Pitt feedback; edge cases; LBDA; endpoint shape if agreed |
+| 1–6 Dec | Pitt feedback; LBDA; endpoint shape if agreed |
 | 7–28 Dec | Travel; Pitt review period |
 | 29 Dec – mid Jan | Harvest; endpoint and profile store; LLM paragraph |
 | January | Pueblo example; Ukraine if it holds; Time series tab; docs; Level 08 store if time allows |
