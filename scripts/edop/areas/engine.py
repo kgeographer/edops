@@ -840,6 +840,19 @@ CAVEAT_TEXTS = {
         "Observed, not reconstructed: from 1990 the GEDA values come from CRU TS 4.06 climate data, "
         "not from tree-ring reconstruction."
     ),
+    # placeholder wording (reg WO-07), for Karl's review
+    'lbda_caveat': (
+        "Living Blended Drought Atlas v3, summer (June–August) Palmer Modified Drought Index (PMDI), not standardized, "
+        "so its numbers cannot be compared with GEDA's. Before 1900 the values are reconstructed from tree rings; "
+        "the reconstructed values of nearby cells can be very similar, so the spread across cells says little about how "
+        "the climate varied from place to place. Reconstruction skill is modest and uneven (Cook et al. 2010, Fig. 6), "
+        "and the data carry no per-cell measure of it. Coverage is thinner in earlier centuries: the cells with data "
+        "grow from 722 in year 0 to the whole contiguous US by 1473."
+    ),
+    'lbda_instrumental': (
+        "Instrumental, not reconstructed: from 1900 the LBDA values come from NOAA's NClimGrid temperature and "
+        "precipitation data, not from tree rings, and behave differently from year to year than the reconstruction."
+    ),
 }
 
 def make_row(

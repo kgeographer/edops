@@ -201,6 +201,48 @@ sources:
       legacy_notes: []
       notes: "Served in Band T on the engine path (regionality WO-05); the public basin path does not read it."
 
+  - id: lbda_v3
+    selects:
+      kind: gridded_time_series
+      status: stored                               # loaded (temporal.lbda_climate) but no Band T block reads it yet; becomes `served` when the engine block exists (reg WO-07 items 3 and 5)
+      table: temporal.lbda_climate                 # 3,277 cells; 2,026 values each (real[], NULL before a cell's first_year)
+      footprint:
+        type: cells
+        test: temporal.lbda_climate.cell_geom      # gate = the query geometry intersects these cells; no stored shape
+        cells: 3277
+        varies_by_year: true                       # the cells with data grow from 722 (year 0) to 3,277 (1473); read when the per-year coverage code is built
+      time:
+        step: annual
+        years_covered: [0, 2025]                   # read from the file by the loader; NCEI extends it every year
+        year_to_array_position: "year + 1"
+        step_rule: "every year in the span, clipped to years_covered"
+      spatial:
+        method: cell_overlap_weighted
+        cell: {size_deg: 0.5, geometry_column: temporal.lbda_climate.cell_geom}
+        lon_convention: "-180..180"
+      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1, per_year: true}   # GEDA's starting values; per_year: coverage counts only the cells that have a value in that year (code to follow)
+      years_recommended: null
+      year_flags:
+        - {years: [1900, 2025], flag: instrumental, caveat: lbda_instrumental, note: "instrumental PMDI (NClimGrid), not reconstructed; 0-1899 is reconstructed"}
+      caveats:
+        - {key: lbda_caveat, when: "every LBDA row"}
+        - {key: lbda_instrumental, when: "year in 1900-2025 (the instrumental year flag)"}
+      variables:
+        - {payload: lbda_pmdi, catalog: lbda_pmdi, column: pmdi, units: "PMDI (dimensionless)"}
+      columns: {pmdi: "JJA Palmer Modified Drought Index, not standardized (SD about 2.3, range -26 to 19 over the file)"}
+    describes:
+      name: Living Blended Drought Atlas, version 3 (contiguous US, June-August PMDI)
+      version: "3 (NOAA NCEI study 22454; file last modified 2026-02-25; extended each year)"
+      grain: "0.5 degrees"
+      citation: "Cook et al. 2010, Journal of Quaternary Science 25(1): 48-61; data by Gille, Morrill, Wahl, Vose and Cook, NOAA NCEI"
+      doi: 10.1002/jqs.1303
+      dataset_doi: 10.25921/7xm8-jn36
+      licence: "NOAA NCEI use constraints: cite the publication, the online resource, the DOIs and the date accessed"
+      licence_url: https://www.ncei.noaa.gov/access/paleo-search/study/22454
+      licence_note: "No licence other than the citation request is stated on the study page or in the readme."
+      legacy_notes: []
+      notes: "Contiguous US only. Reconstruction 0-1899 CE, instrumental 1900 onward. Characterization: data/lbda_v3/LBDA-v3_characterization.md."
+
   - id: cliopatria
     selects:
       kind: polygon_set

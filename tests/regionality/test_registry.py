@@ -12,7 +12,7 @@ YAML_PATH = ROOT / 'documentation' / 'EDOPS_source_registry.yaml'
 CATALOG_PATH = ROOT / 'documentation' / 'EDOPS_variable_catalog_v0.4.tsv'
 
 # Every source the signature reads or credits (CLAUDE.md database section, engine and public routes).
-EXPECTED_IDS = {'lmr_v2_1', 'hyde_3_5', 'evolv2k_v4', 'geda', 'cliopatria', 'basinatlas_v1', 'edops_derived',
+EXPECTED_IDS = {'lmr_v2_1', 'hyde_3_5', 'evolv2k_v4', 'geda', 'lbda_v3', 'cliopatria', 'basinatlas_v1', 'edops_derived',
                 'opentopodata_mapzen', 'open_meteo_elevation'}
 # Catalog keys that more than one entry claims: the derived variable and the two services that can supply it.
 SHARED_KEYS = {'elevation_point'}

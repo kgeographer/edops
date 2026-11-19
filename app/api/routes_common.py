@@ -94,6 +94,7 @@ def _data_sources_block(level: int) -> Dict[str, str]:
         "volcanic": "eVolv2k v4 (Sigl & Toohey 2024)",
         "land_use_temporal": "HYDE 3.5 (Klein Goldewijk et al. 2017); 10000 BCE–2023 CE; ~10 km resolution",
         "temporal_drought": "GEDA (Cook et al. 2024); 1000–2020 CE; 0.5° grid; Eurasia",
+        "temporal_drought_conus": "LBDA v3 (Cook et al. 2010; NOAA NCEI); 0–2025 CE; 0.5° grid; contiguous US",
     }
 
 
