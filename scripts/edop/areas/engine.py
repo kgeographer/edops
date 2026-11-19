@@ -281,7 +281,7 @@ def _weighted_histogram(values, raw_weights, unit_type, n_bins=_N_HIST_BINS):
     values      : array-like float — per-unit scores (basin) or native values (cells)
     raw_weights : array-like float — fractional coverage (cells: overlap/area;
                   basins: area-weight). Normalized internally.
-    unit_type   : 'basin' | 'hyde_cell' | 'lmr_cell'
+    unit_type   : 'basin' | 'hyde_cell' | 'lmr_cell' | 'geda_cell' | 'lbda_cell'
     n_bins      : fixed count; keeps payload bounded regardless of unit count
 
     Temporal stamp fields (resolver_year, band_t_from, band_t_to) are added by
@@ -1325,6 +1325,66 @@ def _band_t_geda(q):
     return _SourceResult(rows, decision, note)
 
 
+def _band_t_lbda(q):
+    """LBDA rows: one summer PMDI row per year in the span (0-2025), shaped like the GEDA rows.
+
+    Coverage is judged year by year (the cells with data grow through time): the registry clips the span to the years in
+    which the cells that have a value cover enough of the area, and gives each year's coverage. A year's histogram and mean
+    use only the cells that have a value that year."""
+    rows = []
+    decision = source_registry.check('lbda_v3', span=(q.from_year, q.to_year), geometry=q.geom,
+                                     permitted=q.permitted, conn=q.conn)
+    if not decision.applied:
+        return _SourceResult(rows, decision)
+
+    g_from, g_to = decision.span
+    first_year = source_registry.years_covered('lbda_v3')[0]
+    units = source_registry.entry('lbda_v3')['selects']['variables'][0]['units']
+    ok_from = source_registry.entry('lbda_v3')['selects']['coverage_rule']['ok_from']
+    geom_sql, geom_params = q.geom
+    cells = q.conn.execute(sql.SQL("""
+        WITH g AS (SELECT {geom} AS geom)
+        SELECT c.pmdi[(%s)::int:(%s)::int],
+               ST_Area(ST_Intersection(c.cell_geom, g.geom)::geography) AS overlap_m2,
+               c.area_km2 * 1e6 AS cell_m2
+        FROM temporal.lbda_climate c, g
+        WHERE ST_Intersects(c.cell_geom, g.geom)
+        ORDER BY overlap_m2 DESC""").format(geom=sql.SQL(geom_sql)),
+        (*geom_params, g_from - first_year + 1, g_to - first_year + 1)).fetchall()
+
+    overlap = np.array([c[1] for c in cells], dtype=float)
+    keep    = overlap > 0                                     # cells that only touch the geometry carry no weight
+    matrix  = np.array([c[0] for c, k in zip(cells, keep) if k], dtype=float)      # cells x years; NaN before a cell's first year
+    frac    = overlap[keep] / np.array([c[2] for c in cells], dtype=float)[keep]   # share of each cell inside the geometry
+
+    for i, year in enumerate(range(g_from, g_to + 1)):
+        has  = np.isfinite(matrix[:, i])                      # only the cells that have a value this year
+        col, fr = matrix[has, i], frac[has]
+        cov  = decision.coverage_by_year[year]
+        hist = _weighted_histogram(col, fr, unit_type='lbda_cell')
+        if hist is not None:
+            hist.update({
+                'resolver_year': q.resolver_year,
+                'band_t_from':   q.from_year,
+                'band_t_to':     q.to_year,
+            })
+        rows.append(make_row(
+            variable='lbda_pmdi', band='T',
+            method='grid_areal_distribution',
+            unit_type='lbda_cell', n_units=len(col),
+            representative_score=None,
+            representative_raw=float(np.dot(col, fr / fr.sum())),
+            coverage=cov, status='low_coverage' if cov < ok_from else 'ok',
+            caveat=['lbda_caveat'] + source_registry.year_caveats('lbda_v3', year),
+            year=year, epoch_year=None, units=units,
+            detail={'distribution': hist, 'w_eff': round(float(fr.sum()), 2)},
+        ))
+    low = [r for r in rows if r['status'] == 'low_coverage']
+    note = (f"partly covered in {low[0]['year']}-{low[-1]['year']} "
+            f"({min(r['coverage'] for r in low):.0%} to {max(r['coverage'] for r in low):.0%} of the area)") if low else None
+    return _SourceResult(rows, decision, note)
+
+
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
                      geom_wkt=None, resolver_year=None, permitted=None, hyde_distribution=True):
     """
@@ -1362,7 +1422,7 @@ def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,
     """
     q = _band_t_query(lat, lon, radius_km, from_year, to_year, conn, geom_wkt, resolver_year, permitted, hyde_distribution)
 
-    results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q), _band_t_geda(q)]
+    results = [_band_t_hyde(q), _band_t_lmr(q), _band_t_evolv2k(q), _band_t_geda(q), _band_t_lbda(q)]
     return _BandTResult(
         rows=[r for res in results for r in res.rows],
         decisions=[res.decision for res in results],

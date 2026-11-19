@@ -15,11 +15,10 @@ pytestmark = pytest.mark.lbda
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_entry_is_stored_not_served_until_the_band_t_block_exists():
+def test_entry_is_served_from_the_loaded_table():
     e = sr.entry('lbda_v3')
-    assert e['selects']['status'] == 'stored' and e['selects']['table'] == 'temporal.lbda_climate'
-    d = sr.check('lbda_v3', span=(1000, 1100))
-    assert (d.applied, d.reason) == (False, 'not_served')
+    assert e['selects']['status'] == 'served' and e['selects']['table'] == 'temporal.lbda_climate'
+    assert e['selects']['footprint']['first_year_column'] == 'first_year' and e['selects']['coverage_rule']['per_year'] is True
 
 
 def test_years_covered_match_the_loaded_table():

@@ -1,8 +1,8 @@
 """Regression baseline for signature payloads (regionality WO-03, Part A).
 
 REQUESTS is the fixed set. capture() writes each response as a gzipped JSON reference file under baseline_reference/;
-compare() checks a new response against its reference: added fields are allowed, a changed or removed field is a
-difference. Numbers match within a small tolerance (Band T sums vary in the last digits between identical calls).
+compare() checks a new response against its reference: added fields (and sources added to the `sources` lists, matched by id) are
+allowed, a changed or removed field is a difference. Numbers match within a small tolerance (Band T sums vary in the last digits between identical calls).
 Reference files are re-captured only at a stage boundary, with Karl's approval (scripts/edop/regionality/capture_baseline.py).
 """
 import gzip
@@ -86,6 +86,14 @@ def _is_num(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 
+def _source_ids(lst):
+    """The ids in a list of source entries (the `sources` block's used and not_applied lists), or None if it is not one."""
+    if not lst or not all(isinstance(e, dict) and 'id' in e for e in lst):
+        return None
+    ids = [e['id'] for e in lst]
+    return ids if len(set(ids)) == len(ids) else None
+
+
 def _row_keys(lst):
     """Keys that identify rows in a list of signature rows, or None if the list is not such a list."""
     if not lst or not all(isinstance(r, dict) and 'variable' in r for r in lst):
@@ -124,6 +132,13 @@ def compare(ref, new, path=''):
             for k, r in zip(rk, ref):
                 label = f'{path}[{"/".join(str(x) for x in k)}]'
                 out += compare(r, by_key[k], label) if k in by_key else [(label, 'removed', 'row', None)]
+            return out
+        ri, ni = _source_ids(ref), _source_ids(new)
+        if ni is not None and (ri is not None or not ref):   # source entries: match by id, extra (new) sources allowed
+            by_id = dict(zip(ni, new))
+            out = []
+            for k, r in zip(ri or [], ref):
+                out += compare(r, by_id[k], f'{path}[{k}]') if k in by_id else [(f'{path}[{k}]', 'removed', 'source', None)]
             return out
         if len(ref) != len(new):
             return [(path, 'changed', f'list of {len(ref)}', f'list of {len(new)}')]

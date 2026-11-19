@@ -6,6 +6,7 @@ import pytest
 
 from app.db.connection import db_connect
 from scripts.edop.areas.engine import aggregate_band_t
+from tests.regionality.sources import original, later_variables
 
 KYIV, EDGE, SPARSE = 2060448220, 1060044120, 1060264990   # L6 basins: fully inside GEDA, coverage 0.498, coverage 0.067
 
@@ -59,8 +60,8 @@ def test_geda_rows_come_last_so_existing_row_order_is_unchanged(conn):
     res = band_t(conn, KYIV, 1350, 1350)
     variables = [r['variable'] for r in res.rows]
     first_geda = variables.index('geda_scpdsi')
-    assert all(v == 'geda_scpdsi' for v in variables[first_geda:])
-    assert [d.source_id for d in res.decisions] == ['hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda']
+    assert all(v == 'geda_scpdsi' or v in later_variables() for v in variables[first_geda:])     # only later sources' rows may follow
+    assert [d.source_id for d in original(res.decisions)] == ['hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda']
 
 
 def test_a_place_outside_the_footprint_gets_no_rows_and_a_reason(conn):

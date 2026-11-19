@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.regionality import baseline as bl
+from tests.regionality.sources import original
 
 
 @pytest.fixture(scope="module")
@@ -16,16 +17,16 @@ def _block(client, name):
 
 
 def _used(b):
-    return [e['id'] for e in b['used']]
+    return [e['id'] for e in original(b['used'])]
 
 
 def _not_applied(b):
-    return [(e['id'], e['reason']) for e in b['not_applied']]
+    return [(e['id'], e['reason']) for e in original(b['not_applied'])]
 
 
 def test_basin_request_without_band_t_uses_only_basinatlas(client):
     b = _block(client, 'timbuktu_single_basin_L6')
-    assert _used(b) == ['basinatlas_v1'] and b['not_applied'] == []
+    assert _used(b) == ['basinatlas_v1'] and original(b['not_applied']) == []
 
 
 def test_polity_request_also_names_cliopatria(client):
@@ -36,7 +37,7 @@ def test_band_t_in_range_uses_all_three_temporal_sources(client):
     b = _block(client, 'timbuktu_bandT_1300_1400')
     assert _used(b) == ['basinatlas_v1', 'hyde_3_5', 'lmr_v2_1', 'evolv2k_v4']
     assert _not_applied(b) == [('geda', 'outside_footprint')]        # Timbuktu is outside GEDA's cells
-    assert all('note' not in e for e in b['used'])
+    assert all('note' not in e for e in original(b['used']))
 
 
 def test_hyde_nearest_step_is_used_with_a_note(client):

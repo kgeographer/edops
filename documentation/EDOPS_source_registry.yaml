@@ -204,13 +204,13 @@ sources:
   - id: lbda_v3
     selects:
       kind: gridded_time_series
-      status: stored                               # loaded (temporal.lbda_climate) but no Band T block reads it yet; becomes `served` when the engine block exists (reg WO-07 items 3 and 5)
+      status: served                               # Band T, engine path (reg WO-07 item 3); temporal.lbda_climate is loaded to a server database like the other static datasets
       table: temporal.lbda_climate                 # 3,277 cells; 2,026 values each (real[], NULL before a cell's first_year)
       footprint:
         type: cells
         test: temporal.lbda_climate.cell_geom      # gate = the query geometry intersects these cells; no stored shape
         cells: 3277
-        varies_by_year: true                       # the cells with data grow from 722 (year 0) to 3,277 (1473); read when the per-year coverage code is built
+        first_year_column: first_year              # each cell has data from this year (array index year + 1); the cells with data grow from 722 (year 0) to 3,277 (1473)
       time:
         step: annual
         years_covered: [0, 2025]                   # read from the file by the loader; NCEI extends it every year
@@ -220,7 +220,7 @@ sources:
         method: cell_overlap_weighted
         cell: {size_deg: 0.5, geometry_column: temporal.lbda_climate.cell_geom}
         lon_convention: "-180..180"
-      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1, per_year: true}   # GEDA's starting values; per_year: coverage counts only the cells that have a value in that year (code to follow)
+      coverage_rule: {ok_from: 0.5, low_coverage_from: 0.1, per_year: true}   # GEDA's starting values; per_year: coverage in a year counts only the cells that have a value that year, and the span is clipped to the years that meet low_coverage_from
       years_recommended: null
       year_flags:
         - {years: [1900, 2025], flag: instrumental, caveat: lbda_instrumental, note: "instrumental PMDI (NClimGrid), not reconstructed; 0-1899 is reconstructed"}

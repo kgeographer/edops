@@ -6,6 +6,7 @@ from app.db.connection import db_connect
 from scripts.edop.areas.engine import aggregate_band_t
 from scripts.edop.areas import source_registry
 from tests.regionality import baseline as bl
+from tests.regionality.sources import original
 
 EDGE, SPARSE = 1060044120, 1060264990        # L6 basins: coverage 0.498 and 0.067 (see test_source_registry_footprint)
 
@@ -31,18 +32,18 @@ def signature(client, point, from_year=1300, to_year=1400):
 
 
 def ids(entries):
-    return [e['id'] for e in entries]
+    return [e['id'] for e in original(entries)]
 
 
 def not_applied(block):
-    return [(e['id'], e['reason']) for e in block['not_applied']]
+    return [(e['id'], e['reason']) for e in original(block['not_applied'])]
 
 
 def test_a_place_inside_the_footprint_lists_geda_as_used_with_its_credits(client):
     p = signature(client, bl.KYIV)
     assert ids(p['sources']['used']) == ['basinatlas_v1', 'hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda']
-    assert p['sources']['not_applied'] == []
-    geda = p['sources']['used'][-1]
+    assert original(p['sources']['not_applied']) == []
+    geda = next(e for e in p['sources']['used'] if e['id'] == 'geda')
     assert geda['name'] == 'Great Eurasian Drought Atlas'
     assert geda['citation'] == 'Cook et al. 2024, Journal of Climate' and geda['licence'] == 'CC BY 4.0'
     assert geda['version'].startswith('Zenodo deposit') and 'note' not in geda
@@ -72,7 +73,7 @@ def test_without_band_t_geda_is_in_neither_list(client):
     r = client.get('/api/areas', params=dict(scope='single_basin', level=6, bands='ABCDE', **bl.KYIV))
     assert r.status_code == 200
     block = r.json()['sources']
-    assert 'geda' not in ids(block['used']) and block['not_applied'] == []
+    assert 'geda' not in ids(block['used']) and original(block['not_applied']) == []
 
 
 def test_a_source_not_permitted_is_in_neither_list():
@@ -80,7 +81,7 @@ def test_a_source_not_permitted_is_in_neither_list():
         r = aggregate_band_t(bl.KYIV['lat'], bl.KYIV['lon'], 100, 1300, 1400, conn,
                              permitted={'hyde_3_5', 'lmr_v2_1', 'evolv2k_v4'})
     block = source_registry.sources_block(r.decisions, used=['basinatlas_v1'], notes=r.notes)
-    assert 'geda' not in ids(block['used']) and block['not_applied'] == []
+    assert 'geda' not in ids(block['used']) and original(block['not_applied']) == []
     assert not any(row['variable'] == 'geda_scpdsi' for row in r.rows)
 
 

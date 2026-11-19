@@ -8,6 +8,7 @@ import pytest
 from app.db.connection import db_connect
 from scripts.edop.areas.engine import aggregate_band_t
 from tests.regionality import baseline as bl
+from tests.regionality.sources import original
 
 ALL = {'hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda'}
 
@@ -48,7 +49,7 @@ def test_only_hyde_permitted(conn):
 
 def test_result_carries_a_decision_per_source_and_the_hyde_note(conn):
     r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 1236, 1240, conn)   # no HYDE step inside the span
-    assert [d.source_id for d in r.decisions] == ['hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda']
+    assert [d.source_id for d in original(r.decisions)] == ['hyde_3_5', 'lmr_v2_1', 'evolv2k_v4', 'geda']
     assert all(d.applied for d in r.decisions[:3])
     assert (r.decisions[3].applied, r.decisions[3].reason) == (False, 'outside_footprint')    # Timbuktu is outside GEDA's cells
     assert r.notes == {'hyde_3_5': 'nearest step: 1200'}
@@ -56,7 +57,7 @@ def test_result_carries_a_decision_per_source_and_the_hyde_note(conn):
 
 def test_decisions_name_the_sources_that_were_not_applied(conn):
     r = aggregate_band_t(bl.TIMBUKTU['lat'], bl.TIMBUKTU['lon'], 100, 2010, 2020, conn)
-    assert [(d.source_id, d.reason) for d in r.decisions if not d.applied] == [
+    assert [(d.source_id, d.reason) for d in original(r.decisions) if not d.applied] == [
         ('lmr_v2_1', 'outside_span'), ('evolv2k_v4', 'outside_span'), ('geda', 'outside_footprint')]
     assert r.notes == {}
 
