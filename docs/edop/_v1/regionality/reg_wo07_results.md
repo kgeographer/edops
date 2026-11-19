@@ -69,14 +69,27 @@ Numbers would match `/api/areas`, as for GEDA; the LMR and HYDE difference betwe
 
 ## Needs attention
 
-1. **Placeholder wording** (yellow): the block's text, the two caveat texts, the notes.
-2. **The spread band's threshold** (5 cells) and **the coverage thresholds** (0.5 and 0.1, copied from GEDA) are starting values.
-3. **Before 1900 the reconstructed cells agree closely** (0.98 pairwise in the Four Corners box), so a histogram across cells there says little about spatial variation. Not addressed; the same measurement for GEDA has not been made.
-4. **No per-cell skill** in the file; the paper's Fig. 6 is the only place (read by eye).
-5. **The 1900 blend** cannot be tested from this file (no overlap years).
-6. **The sources line** now lists "outside its footprint" for GEDA or LBDA on almost every query (Karl: leave to the UI review).
-7. **The public basin route** does not serve LBDA (item 6).
-8. **Docs not yet updated:** `docsite/data-sources.md` and the generated Codebook (the catalog row is `planned`).
-9. **The regression baseline** has no reference containing LBDA rows; a deliberate re-capture (with Karl's approval) would guard them.
-10. **A basin with early gaps is not flagged.** `low_coverage` appears only below 0.5 coverage (GEDA's threshold, copied), so at Santa Fe a single basin (0.77 at Level 6, 0.64 at Level 8 in year 150) shows no "partly covered" note although a quarter to a third of it has no data before 210 CE; a 25 km or 50 km buffer there (0.36, 0.43) does. The work order's gate case (Santa Fe 150 to 300) therefore shows the note with a buffer, not with the default basin. The threshold is Karl's to set.
-11. **Untracked in the tree, not from this work:** `docs/edop/_v1/whgmodal/whgmodal_reply-to-stephen_draft.md`.
+Reorganized for Opus on 20 Nov (the earlier numbering is in brackets). Nothing in A, B or C has been started; the branch `lbda` stays unmerged until these are settled.
+
+### A. Decisions (Karl, with Opus's view)
+
+1. **Wording** [1]. The block's text, the two caveat texts (`lbda_caveat`, `lbda_instrumental`) and the notes are placeholder (yellow in the Dashboard). The caveats carry: not standardized and not comparable with GEDA; the pre-1900 smoothness; modest skill and no per-cell skill; the 1900 blend; thinner coverage early.
+2. **Thresholds** [2, 10]. The spread band needs at least 5 cells in every year (`MIN_CELLS_FOR_BAND`, a placeholder; the design note says the threshold is to be set from the data). The coverage rule is GEDA's, copied: below 0.1 no value, 0.1 to 0.5 flagged `low_coverage`, from 0.5 `ok`. Consequence: a basin with early gaps is not flagged. At Santa Fe in year 150 a Level 6 basin has 77% coverage and a Level 8 basin 64%, so no note, although a quarter to a third of the area has no data before 210 CE; a 25 km or 50 km buffer there (36%, 43%) is flagged. The work order's gate case (Santa Fe 150 to 300) shows its note only with a buffer.
+3. **The public basin route** [7]. It does not serve LBDA (the work order said report only). Serving it is about the size of item 2: a helper, a block builder, the decision in the `sources` block, schema and API-guide documentation, tests. Open choices: the public `from_year` and `to_year` are documented as 0 to 2000 while LBDA runs to 2025; a full span returns up to 2,026 series items (about 100 KB); the block shape is a public API commitment.
+4. **The sources line** [6]. "Not applied: ... outside its footprint" now appears for GEDA or LBDA on almost every query. Karl: leave it to the UI review.
+5. **An untracked file** [11]: `docs/edop/_v1/whgmodal/whgmodal_reply-to-stephen_draft.md`, not from this work. Commit or leave?
+
+### B. CC can do these (each small; none started)
+
+6. **Flag early gaps by how coverage changes over time** [10]. Note the years whose coverage is more than a few points below the later years' (for example "150 to 209: 77 to 95% of the area, against 100% from 210"), in the engine's `sources` note and the Dashboard block, leaving the 0.5 `low_coverage` status as it is. This would flag the Santa Fe basin without changing the thresholds. About an hour: one engine note, one Dashboard note, two tests.
+7. **Data for the band threshold** [2]. The number of LBDA cells under each Level 6 and Level 8 basin across the contiguous US (what share has fewer than 5, 10, 20), so the threshold is set from the data, not from example places. A short query and a table.
+8. **Is the pre-1900 smoothness general?** [3]. Pairwise correlation between cells against distance, before and after 1900, in several LBDA regions (West, Plains, East); and the same for GEDA over Lviv- and Kyiv-sized areas. Says whether the Band T histogram across cells needs different presentation for reconstructed years, and whether it is LBDA's method or a property of drought atlases. About an hour; a table.
+9. **An indirect test of the 1900 blend** [5]. Correlate LBDA's Four Corners series with LMR's PDSI (an independent reconstruction) in 1800 to 1899 against 1900 to 1999 and later: a stable relationship suggests no seam; a break at 1900 would be a flag. Indicative only. A short script.
+10. **Documentation** [8]. A LBDA section in `docsite/data-sources.md` modelled on GEDA's, and regenerating the Codebook (the catalog row is `planned`, and becomes `implemented` when a release serves LBDA). Small.
+11. **Baseline cases** [9]. The regression baseline has no reference with LBDA rows. Add two or three US cases (for example Chaco, Santa Fe as a buffer, Cahokia clipped) as additions; existing references are not re-captured. Needs a check that the capture script can add cases without rewriting the others.
+
+### C. Can only be recorded (nothing to fix from here)
+
+12. **No per-cell skill in the file** [4]. The 2010 paper's Fig. 6 is the only place (read by eye). Authors' or NCEI calibration and verification grids may exist; CC cannot load the NCEI page, so Karl would have to look. The caveat says so in words.
+13. **The 1900 blend cannot be separated from climate** [5]. Version 3 has no overlap years; B9 gives indirect evidence only.
+14. **Why neighbouring cells agree before 1900** [3]. The cause (shared tree-ring chronologies) is CC's reading and is not stated in the 2010 paper; the method paper (Cook et al. 1999) or the authors would confirm it.
