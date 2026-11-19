@@ -87,6 +87,8 @@ def _area(rel):
         return "sandbox"
     if rel.startswith("cdop/"):
         return "cdop"
+    if rel.startswith("lbda/"):
+        return "lbda"                             # reg WO-07, run alone with -m lbda
     if rel.startswith("regionality/"):
         return "regionality"
     if rel.startswith("dashboard/"):
