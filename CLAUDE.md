@@ -62,14 +62,14 @@ Research framing: `documentation/EDOP_summary_v04.md`
 | **African Regions tab**     | **complete** 2026-09-06; **live 2026-09-08** | Workbench tab (own MapLibre map; Lovejoy pre-colonial African subregions, variable painting, D-PLACE societies, areal signature + distinctiveness readout); `docs/edop/workbench/workplan_africa.md` (full record) |
 | 4 — Correspondence testing  | pilot feature in workbench.html | D-PLACE / Seshat / Cliopatria |
 | **Dashboard**               | **build under way** (design with Fable from 2026-11-14; WO-01 to WO-10 done 2026-11-14 to 19 on `dashboard`, cut from `v1`; the old `dashboard` branch was retired, its work is in `main`) | new splash (`/edops`), the Dashboard (`/dashboard`, cloned from the Sandbox: map-first, Profile tab, permalinks) and a `/using` placeholder; reuses the Sandbox/Workbench backend |
-| **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`) | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (done on the Dashboard in WO-05; the Sandbox still ignores it), pre-v1 docs check |
+| **Regionality** (regional / non-global temporal data) | **interim stop 2026-11-14** (done on `regionality`, `registry`, `geda`; now inside `v1`); **WO-07 LBDA** built 2026-11-19 to 20 on branch `lbda` | source registry (YAML) consulted by the engine; GEDA (Great Eurasian Drought Atlas) served in Band T on the engine path and on all three scopes of `/api/signature`; WO-01 to WO-06; remaining: catalog completeness, unifying the public basin path's Band T, showing GEDA (done on the Dashboard in WO-05; the Sandbox still ignores it), pre-v1 docs check |
 
 ---
 
 ## Current work
 
 **Regionality (interim stop 2026-11-14).** Done on `regionality`, `registry` and `geda`, now inside `v1`. Goal: serve datasets without global coverage through a
-source registry. **Done:** `documentation/EDOPS_source_registry.yaml` (nine sources; the YAML is the only copy) read by
+source registry. **Done:** `documentation/EDOPS_source_registry.yaml` (ten sources with LBDA, WO-07; the YAML is the only copy) read by
 `scripts/edop/areas/source_registry.py`, whose `check()` judges a source's years, footprint (GEDA's cells) and coverage
 rule for a request; `aggregate_band_t` split into one function per source (HYDE, LMR, eVolv2k, GEDA); every response carries
 a top-level `sources` block (`used` / `not_applied` with reasons) and `meta.data_sources` lists all sources; GEDA
@@ -197,7 +197,7 @@ cut from `v1`) and are merged back into `v1` when accepted ("merge `X` back into
   moved); the server then pulls as usual. Not done, discussed as optional hardening: GitHub branch protection on `main`, and
   deploying from a tag or a `release` branch so an accidental pull cannot ship unfinished work.
 - Commit, merge and push are separate asks. Tags: `v0.3`, `v0.4` (cutover marker), `v0.4.1` and `v0.4.2` (releases).
-- Branches as of 2026-11-18: `main` (v0.4.2 and later `main` commits; untouched by v1 work), `v1` (trunk; holds the whole Dashboard phase since 2026-11-18, and is what the v1 alpha runs), `dashboard` (active phase, level with `v1`, on origin), `regionality`, `registry`, `geda` (history; all on origin) and
+- Branches as of 2026-11-20: `main` (v0.4.2 and later `main` commits; untouched by v1 work), `v1` (trunk; holds the whole Dashboard phase since 2026-11-18, and is what the v1 alpha runs), `dashboard` (active phase, level with `v1`, on origin), `lbda` (reg WO-07, cut from `v1` at the Dashboard phase's tip; local, not pushed; merges back into `v1`), `regionality`, `registry`, `geda` (history; all on origin) and
   the `claude/…` remote seed-docs branch. Retired (everything real in them is in `main`): the earlier `dashboard`, `mapfix`, `mapfix2`,
   `042`, the `whg-profile` branches. Older cleanup list: `logs/branch_cleanup_20261025.txt`.
 
@@ -462,9 +462,10 @@ there from `/docs` on 2026-08-04 to free that route for MkDocs).
 - `temporal.hyde_cells`: 2,215,829 HYDE grid cells (~5 arc-min; the data is HYDE 3.5, labelled 3.4 in older docs); PostGIS polygon `geom`, `area_km2`, and four variable columns (`cropland`, `grazing`, `pasture`, `rangeland`) each stored as `real[]` arrays indexed by `step_idx`
 - `temporal.hyde_times`: 128 rows mapping `step_idx` → `year_ce` (−10000 to 2025); join to get year-specific HYDE values
 - `temporal.hyde_basin0{6,8}_steps`: precomputed per-basin HYDE fractions by `step_idx` (`hybas_id`, `step_idx`, `{cropland,grazing,pasture,rangeland}_frac`; L6 ~2.1M rows, L8 ~24.3M / 2.3 GB). Built in notebooks (wo18/wo22), **not** a script. The **only** backing for the HYDE basin choropleth (`/api/hyde/values`) — `hyde_cells`/`hyde_times` are the point-lookup path. (Missed in the v0.4 migration; loaded to prod 2026-09-09.) `_weights` sibling tables are notebook build artifacts, no app consumer.
-- `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (1–2001 CE, 0-indexed)
+- `temporal.lmr_climate`: 16,380 LMR v2.1 grid points at 2°×2°; PostGIS point `geom`; `pdsi`, `air`, `prate` stored as `real[]` arrays of length 2001 (years 0 to 2000 CE; year Y is at array position Y + 1)
 - `temporal.evolv2k_v4`: eVolv2k v4 volcanic forcing rows by `year_ad`; columns `vssi_tg`, `so4_grl`, `so4_ant`, `lat`, `location`
 - `temporal.geda_climate`: 28,970 GEDA cells (0.5°, Eurasia; loader `scripts/edop/regionality/load_geda.py`): `scpdsi` as `real[]` of 1,021 June–August scPDSI z-scores (1000–2020 CE; array position = year − 999), `geom` (cell centre), `cell_geom` (cell box, the footprint test), `area_km2`. **Local database only until the v1 deploy; it must be loaded to the server before code that serves GEDA runs there.** (`public.source_registry`, also local, is unused: the YAML is the registry.)
+- `temporal.lbda_climate`: 3,277 LBDA v3 cells (0.5°, contiguous US; loader `scripts/edop/regionality/load_lbda.py`): `pmdi` as `real[]` of 2,026 June–August PMDI values (years 0–2025 CE; position year + 1; NULL before the cell's `first_year`; cells with data grow from 722 in year 0 to all by 1473), `first_year`, `geom`, `cell_geom`, `area_km2`. **Local database only until it is loaded to the server (`pg_dump -Fc -t temporal.lbda_climate`, `pg_restore`); it must be there before code that serves LBDA runs.**
 - Temperature fields (`tmp_dc_*`): stored as °C × 10 — always divide by 10 for display
 - PostGIS geometries: pass as WKT via `ST_GeomFromText()`, not EWKB hex (psycopg3 endian issue)
 - BasinATLAS NoData sentinel: `−9999` — mask before any analysis
@@ -516,7 +517,7 @@ python -m pytest tests/ -m engine              # one area; markers are set by pa
 python -m pytest tests/ -m "not ui"            # everything except the Playwright browser tests
 ```
 
-Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-18: 957 passed, 21 skipped in about 9.5 minutes; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the Dashboard's tests are in `tests/dashboard/`.
+Area markers: `engine`, `ui` (Playwright), `sandbox`, `cdop`, `regionality` (incl. the signature regression baseline), `dashboard`, `lbda` (`tests/lbda`, run alone with `pytest -m lbda`), `whg`, `live`, `api` (the remaining `tests/test_*.py`). Full suite only at a merge gate (last run 2026-11-18: 957 passed, 21 skipped in about 9.5 minutes; the 21 skips are expected). The signature regression baseline (`tests/regionality/baseline.py`, `baseline_reference/`) allows added fields and fails on changed or removed ones; re-capture only at a stage boundary with Karl's approval (`scripts/edop/regionality/capture_baseline.py --force`). Tests need the local database, including `temporal.geda_climate`. The Dashboard's browser tests (`tests/dashboard/test_*_ui.py`, marked `ui`) start the app on port 8766 and add rows to the local `public.query_log`; the Dashboard's tests are in `tests/dashboard/`.
 
 **Zero-tolerance rule: no FAILs, no unexplained warnings, ever.**
 - A failing test is either fixed immediately or deleted with an explanation of why it no longer applies.
