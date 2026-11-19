@@ -3422,6 +3422,7 @@
         <h5 class="mb-0">${headingHtml}</h5>
         <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/">How to read this <i class="bi bi-question-circle edops-help" data-help-modal="#doc-modal" data-doc-title="Reading a signature" data-doc-src="/docs/sandbox/reading-a-signature/"></i></a>
       </div>
+      ${payload.point_moved ? `<p class="small mb-2"><span class="ph-inline">This point lies outside the basin data, so the signature is for the nearest basin, ${payload.point_moved.distance_m < 1000 ? payload.point_moved.distance_m + ' m' : (payload.point_moved.distance_m / 1000).toFixed(1) + ' km'} away.</span></p>` : ''}
       <div class="accordion accordion-flush" id="v3-sig-accordion">`;
     for (const band of BAND_ORDER) {
       const rows = byBand[band];

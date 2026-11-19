@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.api.routes_sandbox import router as api_sandbox_router
 from app.api.routes_common import router as api_common_router
@@ -20,6 +22,7 @@ from app.db.context import load_context_index
 from app.db.climate_classes import load_class_index
 from app.db.societies_scan import load_societies_scan_substrate
 from app import query_log, site_mode
+from scripts.edop.areas.engine import NoBasinsError
 
 
 @asynccontextmanager
@@ -107,6 +110,24 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 
 query_log.install(app)
 site_mode.install(app)
+
+
+@app.exception_handler(NoBasinsError)
+async def _no_basin(request, exc):
+    """404 for every route: `detail` (a sentence) plus `reason` and, for a point, `nearest_basin_km`."""
+    body = {"detail": str(exc), "reason": exc.reason}
+    if exc.nearest_basin_km is not None:
+        body["nearest_basin_km"] = exc.nearest_basin_km
+    return JSONResponse(status_code=404, content=body)
+
+
+@app.exception_handler(RequestValidationError)
+async def _bad_input(request, exc):
+    """422 with `detail` a plain sentence naming each parameter; the framework's list is kept in `errors`."""
+    errs = exc.errors()
+    text = "; ".join(f"{e['loc'][-1]}: {e['msg']}" + (f" (got {e['input']!r})" if isinstance(e.get('input'), (int, float, str)) else "")
+                     for e in errs)
+    return JSONResponse(status_code=422, content={"detail": text, "errors": jsonable_encoder(errs)})
 
 app.include_router(api_sandbox_router)
 app.include_router(api_common_router)

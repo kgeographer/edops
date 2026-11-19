@@ -48,7 +48,14 @@ _LOW_RES_BASIN_THRESHOLD = 3    # n_units below which basin histogram is flagged
 
 
 class NoBasinsError(LookupError):
-    """A query resolved to no basins (BasinATLAS has no coverage there); routes return 404."""
+    """A query resolved to no basins (BasinATLAS has no coverage there); routes return 404 with `reason`
+    ('no_basin_nearby' for a point, 'no_basin_in_buffer' / 'no_basin_in_area' for a buffer or polygon)
+    and, for a point, `nearest_basin_km`."""
+
+    def __init__(self, message, reason='no_basin', nearest_basin_km=None):
+        super().__init__(message)
+        self.reason = reason
+        self.nearest_basin_km = nearest_basin_km
 
 
 # Time limit on the HYDE part of Band T (the only slow source: cells x steps). The page's own gate keeps its estimate under 5 s;
@@ -114,7 +121,7 @@ def resolve_buffer(lat, lon, radius_km, level, conn, epsilon=0.001):
 
     df = pd.read_sql(sql, conn)
     if df.empty:
-        raise NoBasinsError('No basins fall within this buffer')
+        raise NoBasinsError('No basins fall within this buffer', reason='no_basin_in_buffer')
     df['hybas_id'] = df['hybas_id'].astype('int64')
     return df
 
@@ -2612,6 +2619,56 @@ def areal_signature(
 
 # ── WO14: single-basin resolver + entry point ─────────────────────────────────
 
+# ---- A point just outside every basin is moved to the nearest one (WO-10) ------------------------------------------
+SNAP_M = 5000.0   # a point inside no basin but this close to one is moved to it (Karl, 19 Nov: 94% of populated places within 50 km)
+SNAP_NUDGES_M = (3.0, 30.0, 300.0)   # how far inside the edge (metres) the moved point is put, so that ST_Contains holds
+
+_SNAP_SQL = """
+WITH p AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326) AS g),
+n AS (SELECT b.hybas_id, b.geom, p.g, ST_Distance(b.geom::geography, p.g::geography) AS d
+      FROM {table} b, p WHERE b.geom && ST_Expand(p.g, %(deg)s) AND ST_DWithin(b.geom::geography, p.g::geography, %(m)s)
+      ORDER BY b.geom <-> p.g LIMIT 1),
+c AS (SELECT hybas_id, geom, d, ST_ClosestPoint(ST_Buffer(geom, -%(nudge_deg)s), g) AS q FROM n)
+SELECT hybas_id, d, ST_Y(q), ST_X(q), q IS NOT NULL AND ST_Contains(geom, q) FROM c"""
+
+
+def snap_to_basin(conn, lat, lon, level, max_m=None):
+    """(hybas_id, metres moved, lat, lon of a point just inside that basin) for a point that lies in no basin but within
+    max_m (SNAP_M) of one; None otherwise (nothing is near, or the point is on an edge: distance 0)."""
+    table = _LEVEL_TABLE[level]
+    m = SNAP_M if max_m is None else max_m
+    deg = m / (111320.0 * max(math.cos(math.radians(lat)), 0.05))   # box in degrees so the spatial index is used; the exact test follows
+    for nudge in SNAP_NUDGES_M:
+        r = conn.execute(_SNAP_SQL.format(table=table), dict(lat=lat, lon=lon, m=m, deg=deg, nudge_deg=nudge / 111320.0)).fetchone()
+        if r is None or r[1] == 0:
+            return None
+        if r[4]:
+            return int(r[0]), float(r[1]), float(r[2]), float(r[3])
+    return None
+
+
+def resolve_point(lat, lon, level, conn):
+    """(lat, lon, moved) for a query point. Inside a basin: the point itself, moved None. Within SNAP_M of one: the
+    snapped point and a `point_moved` dict (hybas_id, distance_m, from, to, max_m). Otherwise NoBasinsError
+    (reason 'no_basin_nearby', nearest_basin_km set)."""
+    table = _LEVEL_TABLE[level]
+    pt = f"ST_SetSRID(ST_MakePoint({float(lon)}, {float(lat)}), 4326)"
+    if conn.execute(f"SELECT 1 FROM {table} WHERE ST_Contains(geom, {pt}) LIMIT 1").fetchone():
+        return lat, lon, None
+    snap = snap_to_basin(conn, lat, lon, level)
+    if snap:
+        hid, d, slat, slon = snap
+        return slat, slon, {'hybas_id': hid, 'distance_m': round(d), 'max_m': int(SNAP_M),
+                            'from': {'lat': lat, 'lon': lon}, 'to': {'lat': slat, 'lon': slon}}
+    km = conn.execute(f"SELECT ST_Distance(geom::geography, {pt}::geography) / 1000.0 FROM {table} "
+                      f"ORDER BY geom <-> {pt} LIMIT 1").fetchone()
+    km = None if km is None else float(km[0])
+    near = f' the nearest is {km:,.0f} km away.' if km is not None else ''
+    raise NoBasinsError(f"No basin within {SNAP_M / 1000:g} km of this point;{near} It may be open water, "
+                        "or outside BasinATLAS coverage (Antarctica, some islands).",
+                        reason='no_basin_nearby', nearest_basin_km=None if km is None else round(km, 1))
+
+
 def resolve_single_basin(lat, lon, level, conn):
     """
     Single-basin resolver: point → {hybas_id: 1.0}.
@@ -2955,7 +3012,7 @@ def areal_signature_polygon(
     else:
         basin_set = resolve_polygon(geom_wkt, level_str, conn)
     if basin_set.empty:
-        raise NoBasinsError('No basins intersect this area')
+        raise NoBasinsError('No basins intersect this area', reason='no_basin_in_area')
     shortfall = max(0.0, round(1.0 - float(basin_set['weight'].sum()), 6))
 
     bif = basin_set['basin_in_polity_fraction']

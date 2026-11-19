@@ -411,7 +411,8 @@ class TestNoBasinCoverage:
     def test_point_scopes_404(self, buf_client, scope):
         r = buf_client.get(f"/api/areas?scope={scope}&{self._HNL}&bands=A")
         assert r.status_code == 404
-        assert r.json()["detail"] == "No basin covers the given point location"
+        assert r.json()["detail"].startswith("No basin within 5 km of this point")
+        assert r.json()["reason"] == "no_basin_nearby"
 
     def test_buffer_404(self, buf_client):
         r = buf_client.get(f"/api/areas?scope=buffer&{self._HNL}&radius_km=50&bands=A")

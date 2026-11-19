@@ -28,7 +28,7 @@ from app.db.connection import db_connect
 from app.settings import settings
 from scripts.edop.areas import source_registry
 from scripts.edop.areas.engine import (
-    areal_signature, areal_signature_polygon, band_t_geda_for_point, CAVEAT_TEXTS, NoBasinsError, BandTTimeLimit,
+    areal_signature, areal_signature_polygon, band_t_geda_for_point, CAVEAT_TEXTS, NoBasinsError, BandTTimeLimit, resolve_point,
 )
 from scripts.edop.areas.source_registry import Decision
 
@@ -348,8 +348,6 @@ def signature(
                 from_year=band_t_from, to_year=band_t_to,
                 include_detail=detail,
             )
-        except NoBasinsError as e:
-            raise HTTPException(status_code=404, detail=str(e))
         except BandTTimeLimit as e:
             raise HTTPException(status_code=504, detail=e.message)
         finally:
@@ -400,8 +398,6 @@ def signature(
                 include_detail=detail,
                 scope_type="area",
             )
-        except NoBasinsError as e:
-            raise HTTPException(status_code=404, detail=str(e))
         except BandTTimeLimit as e:
             raise HTTPException(status_code=504, detail=e.message)
         finally:
@@ -435,9 +431,16 @@ def signature(
     if missing:
         raise HTTPException(status_code=422, detail=f"scope=basin requires: {', '.join(missing)}")
 
+    conn = db_connect()
+    try:
+        lat, lon, moved = resolve_point(lat, lon, level, conn)
+    finally:
+        conn.close()
     sig = get_signature(lat=lat, lon=lon, level=level, flat=flat)
     if sig is None:
-        raise HTTPException(status_code=404, detail="No basin covers this point")
+        raise NoBasinsError("No basin covers this point", reason="no_basin_nearby")
+    if moved:
+        sig["point_moved"] = moved
 
     # Filter signature_bands to requested bands
     if sig.get("signature_bands"):

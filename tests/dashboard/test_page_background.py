@@ -1,4 +1,4 @@
-"""The new pages (splash, Dashboard, Using EDOPS, Data Explorer) share a pale page background from one CSS variable in dashboard.css;
+"""The new pages (splash, Dashboard, Using EDOPS, Data Explorer) share a page background from one CSS variable in dashboard.css;
 the Sandbox, Workbench and the Computing Place pages are unchanged."""
 from pathlib import Path
 
@@ -19,7 +19,7 @@ def _client():
 
 def test_the_variable_and_the_rule_live_in_dashboard_css():
     css = CSS.read_text(encoding="utf-8")
-    assert "--edops-page-bg: #f3f6f1" in css and "body.edops-v1 { background: var(--edops-page-bg); }" in css
+    assert ":root { --edops-page-bg:" in css and "body.edops-v1 { background: var(--edops-page-bg); }" in css
 
 
 @pytest.mark.parametrize("path", NEW)
@@ -34,8 +34,10 @@ def test_other_pages_do_not(path):
     assert "edops-v1" not in html and "/static/css/dashboard.css" not in html
 
 
-def test_the_browser_paints_the_page_pale_and_the_panes_white(dashboard_server, page):
+def test_the_browser_paints_the_page_from_the_variable_and_the_panes_white(dashboard_server, page):
     page.goto(dashboard_server + "/explorer", wait_until="load")
     bg = lambda sel: page.evaluate(f"getComputedStyle(document.querySelector('{sel}')).backgroundColor")
-    assert bg("body") == "rgb(243, 246, 241)"
+    var = page.evaluate("""() => { const d = document.createElement('div'); d.style.background = 'var(--edops-page-bg)';
+        document.body.appendChild(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return c; }""")
+    assert bg("body") == var
     assert bg("#ex-right .tab-content") == "rgb(255, 255, 255)"

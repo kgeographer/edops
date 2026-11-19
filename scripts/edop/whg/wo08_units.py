@@ -158,33 +158,14 @@ def join_and(items):
     return items[0] if len(items) == 1 else ', '.join(items[:-1]) + ' and ' + items[-1]
 
 
-# ---- S8.3: the snap (profile scripts only; the engine and the public API still answer no_basin) ---------------------
-SNAP_M = 1000.0   # a point this close to a basin and inside none is moved to it (WO-03 D10)
-SNAP_NUDGES_M = (3.0, 30.0, 300.0)   # how far inside the edge the moved point is put, so that ST_Contains holds
-
-SNAP_SQL = """
-WITH p AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326) AS g),
-n AS (SELECT b.hybas_id, b.geom, p.g, ST_Distance(b.geom::geography, p.g::geography) AS d
-      FROM public.basin06 b, p WHERE ST_DWithin(b.geom::geography, p.g::geography, %(m)s)
-      ORDER BY b.geom <-> p.g LIMIT 1),
-c AS (SELECT hybas_id, geom, d, ST_ClosestPoint(geom, g) AS e, ST_PointOnSurface(geom) AS i FROM n)
-SELECT hybas_id, d,
-       ST_Y(ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0)))),
-       ST_X(ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0)))),
-       ST_Contains(geom, ST_LineInterpolatePoint(ST_MakeLine(e, i), LEAST(1.0, %(nudge)s / NULLIF(ST_Length(ST_MakeLine(e, i)::geography), 0))))
-FROM c"""
+# ---- S8.3: the snap (the same snap as the engine's, SNAP_M; WO-10 raised it from 1 km to 5 km) ---------------------
+from scripts.edop.areas.engine import SNAP_M, snap_to_basin
 
 
 def snap_point(conn, lat, lon):
     """(hybas_id, metres moved, lat, lon of a point just inside that basin) for a point that lies in no basin but within
     SNAP_M of one; None otherwise (the point is inside a basin, or nothing is near: no_basin stays no_basin)."""
-    for nudge in SNAP_NUDGES_M:
-        r = conn.execute(SNAP_SQL, dict(lat=lat, lon=lon, m=SNAP_M, nudge=nudge)).fetchone()
-        if r is None or r[1] == 0:
-            return None
-        if r[4]:
-            return int(r[0]), float(r[1]), float(r[2]), float(r[3])
-    return None
+    return snap_to_basin(conn, lat, lon, 6)
 
 
 # ---- S7.3: the coastline (gaz.ne_coastline_10m, Natural Earth 1:10m; loaded by wo08_load_coastline.py) ----

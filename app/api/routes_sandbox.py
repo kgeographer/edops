@@ -27,7 +27,7 @@ from app.db.seasonality import (
 from app.db.context import get_context, get_context_population
 from app.db import climate_classes as cc
 from app.settings import settings
-from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring, NoBasinsError, BandTTimeLimit
+from scripts.edop.areas.engine import areal_signature, areal_signature_polygon, single_basin_signature, basin_ring_signature, resolve_basin_ring, resolve_point, NoBasinsError, BandTTimeLimit
 from app.api.routes_common import _HYDE_SAFE_VARS, _whg_suggest, _whg_entity, _whg_reconcile, _extract_lonlat
 
 from pathlib import Path
@@ -122,7 +122,8 @@ def _whg_search_candidates(query: str, limit: int = 10) -> List[Dict]:
 # -----------------------
 
 def _resolve_basin(conn, lat: float, lon: float, level: int = 6) -> int:
-    """Return the hybas_id at the given level containing (lat, lon); raises 404 if none found."""
+    """Return the hybas_id at the given level containing (lat, lon), or the nearest within SNAP_M; raises NoBasinsError (404) if none."""
+    lat, lon, moved = resolve_point(lat, lon, level, conn)
     table = "basin06" if level == 6 else "basin08"
     with conn.cursor() as cur:
         cur.execute(
@@ -133,7 +134,7 @@ def _resolve_basin(conn, lat: float, lon: float, level: int = 6) -> int:
         )
         row = cur.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="No basin found at this location")
+        raise NoBasinsError("No basin found at this location", reason="no_basin_nearby")
     return int(row[0])
 
 
@@ -1134,6 +1135,7 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
     basin_table = "basin06" if level == 6 else "basin08"
     try:
         conn = db_connect()
+        lat, lon, moved = resolve_point(lat, lon, level, conn)
         center_df, ring_gdf = resolve_basin_ring(lat, lon, level, conn)
         center_id = int(center_df["hybas_id"].iloc[0])
 
@@ -1169,11 +1171,9 @@ def basin_ring_geom(lat: float, lon: float, level: int = 6):
             for _, r in ring_gdf.iterrows()
         ]
 
-        return {"center": center_feature, "ring": ring_members}
-    except HTTPException:
+        return {"center": center_feature, "ring": ring_members, **({"point_moved": moved} if moved else {})}
+    except (HTTPException, NoBasinsError):
         raise
-    except NoBasinsError as e:
-        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1450,6 +1450,9 @@ def areas(
 
     try:
         conn = db_connect()
+        moved = None
+        if scope in ("single_basin", "basin_ring"):
+            lat, lon, moved = resolve_point(lat, lon, level, conn)
 
         if scope == "buffer":
             payload = areal_signature(
@@ -1554,13 +1557,13 @@ def areas(
         # place's gazetteer provenance to carry forward -- echoed, not re-validated. See
         # docs/edop/lod/. Deliberately not buffer/polity: polity's identity shape (a set
         # of hybas_ids, not one) is a separate, not-yet-resolved question.
+        if moved:
+            payload["point_moved"] = moved
         if place_links and scope in ("single_basin", "basin_ring"):
             payload["place_links"] = [s.strip() for s in place_links.split(",") if s.strip()]
 
-    except HTTPException:
+    except (HTTPException, NoBasinsError):
         raise
-    except NoBasinsError as e:
-        raise HTTPException(status_code=404, detail=str(e))
     except BandTTimeLimit as e:
         raise HTTPException(status_code=504, detail=e.message)
     except Exception as e:
