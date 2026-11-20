@@ -5,6 +5,7 @@ pytestmark = pytest.mark.lbda
 
 CHACO = "/dashboard?lat=36.06&lon=-107.96&name=Chaco%20Canyon&bands=T&from_year=1100&to_year=1200&view=signature&v=1"
 CHACO_1900 = "/dashboard?lat=36.06&lon=-107.96&name=Chaco%20Canyon&bands=T&from_year=1850&to_year=1950&view=signature&v=1"
+SANTA_FE = "/dashboard?lat=35.687&lon=-105.9378&name=Santa%20Fe&bands=T&from_year=150&to_year=300&view=signature&v=1"
 CAHOKIA = "/dashboard?lat=38.65&lon=-90.06&name=Cahokia&bands=T&from_year=300&to_year=1000&view=signature&v=1"
 LVIV = "/dashboard?lat=49.8397&lon=24.0297&name=Lviv&bands=T&from_year=1300&to_year=1400&view=signature&v=1"
 
@@ -61,3 +62,10 @@ def test_a_place_outside_the_footprint_has_no_lbda_block_and_the_sources_line_sa
     page.wait_for_function("document.querySelector('#v3-t-sources') !== null", timeout=5000)
     assert page.locator("#v3-t-lbda").count() == 0 and page.locator("#v3-t-geda").count() == 1
     assert "Not applied: LBDA drought, because this place is outside its footprint" in page.inner_text("#v3-t-sources")
+
+
+def test_a_basin_with_early_gaps_names_the_years_in_the_block(dashboard_server, page):
+    _open(page, dashboard_server, SANTA_FE)                # the Level 6 basin: 77% of it has data before 210
+    assert "early years cover less of the area: 150-209 at 77%, against 100% from 210 on" in page.inner_text("#v3-t-lbda")
+    _open(page, dashboard_server, CHACO)
+    assert "early years cover less" not in page.inner_text("#v3-t-lbda")

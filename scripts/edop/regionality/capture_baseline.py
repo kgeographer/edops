@@ -36,6 +36,16 @@ for n in names:
     print(f'{n}: {bl.ref_path(n).stat().st_size / 1e3:.0f} kB')
 
 head = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-manifest = {'captured': str(datetime.date.today()), 'git_head': head,
-            'requests': {n: {'route': r, 'params': p} for n, (r, p) in bl.REQUESTS.items()}}
-(bl.REF_DIR / 'MANIFEST.json').write_text(json.dumps(manifest, indent=1) + '\n')
+today = str(datetime.date.today())
+manifest_path = bl.REF_DIR / 'MANIFEST.json'
+old = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+captured_now = [n for n in names if bl.ref_path(n).exists() and (a.force or n not in old.get('requests', {}))]
+if a.force and not a.names:
+    manifest = {'captured': today, 'git_head': head}                  # a full re-capture restarts the record
+else:
+    manifest = {'captured': old.get('captured', today), 'git_head': old.get('git_head', head), 'added': dict(old.get('added', {}))}
+    for n in captured_now:                                            # the original references keep their date and head
+        if n not in old.get('requests', {}) or a.force:
+            manifest['added'][n] = {'captured': today, 'git_head': head}
+manifest['requests'] = {n: {'route': r, 'params': p} for n, (r, p) in bl.REQUESTS.items()}
+manifest_path.write_text(json.dumps(manifest, indent=1) + '\n')

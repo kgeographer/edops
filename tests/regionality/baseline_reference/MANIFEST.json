@@ -1,6 +1,20 @@
 {
  "captured": "2026-11-14",
  "git_head": "fbf8de1",
+ "added": {
+  "chaco_canyon_lbda_bandT_1100_1110": {
+   "captured": "2026-11-20",
+   "git_head": "194eea2"
+  },
+  "santa_fe_buffer25_lbda_bandT_200_220": {
+   "captured": "2026-11-20",
+   "git_head": "194eea2"
+  },
+  "cahokia_lbda_bandT_900_930": {
+   "captured": "2026-11-20",
+   "git_head": "194eea2"
+  }
+ },
  "requests": {
   "timbuktu_single_basin_L6": {
    "route": "areas",
@@ -222,6 +236,46 @@
     "to_year": 1240,
     "lat": 16.8167,
     "lon": -2.9833
+   }
+  },
+  "chaco_canyon_lbda_bandT_1100_1110": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 36.06,
+    "lon": -107.96,
+    "from_year": 1100,
+    "to_year": 1110,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "santa_fe_buffer25_lbda_bandT_200_220": {
+   "route": "areas",
+   "params": {
+    "scope": "buffer",
+    "radius_km": 25,
+    "lat": 35.687,
+    "lon": -105.9378,
+    "from_year": 200,
+    "to_year": 220,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
+   }
+  },
+  "cahokia_lbda_bandT_900_930": {
+   "route": "areas",
+   "params": {
+    "scope": "single_basin",
+    "lat": 38.65,
+    "lon": -90.06,
+    "from_year": 900,
+    "to_year": 930,
+    "level": 6,
+    "bands": "T",
+    "detail": "true"
    }
   }
  }

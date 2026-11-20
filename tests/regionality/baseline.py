@@ -19,6 +19,8 @@ TBILISI = dict(lat=41.7151, lon=44.8271)
 BRUGES = dict(lat=51.2093, lon=3.2247)       # the flat-city fixture of the terrain lens (CITYKIN WO1a)
 KYIV = dict(lat=50.4547, lon=30.5238)        # L6 basin 2060448220
 CHACO = dict(lat=36.06, lon=-107.96)         # Chaco Canyon, outside the GEDA footprint (L6 basin 7060618200)
+SANTA_FE = dict(lat=35.687, lon=-105.9378)  # LBDA's cells east of 106 W start at 210
+CAHOKIA = dict(lat=38.65, lon=-90.06)        # LBDA's cells here start at 920
 GEDA_EDGE = dict(lat=28.8214, lon=20.0173)   # a point in L6 basin 1060044120: GEDA covers 0.498 of it (low coverage)
 _AE = dict(level=6, bands='ABCDE', detail='true')
 _T = dict(level=6, bands='T', detail='true')
@@ -46,6 +48,11 @@ REQUESTS = {
     # outside it with a span that has no HYDE step
     'tbilisi_public_bandT_1150_1250': ('signature', dict(scope='basin', level=6, bands='ABCET', from_year=1150, to_year=1250, **TBILISI)),
     'timbuktu_public_bandT_1236_1240': ('signature', dict(scope='basin', level=6, bands='ABCET', from_year=1236, to_year=1240, **TIMBUKTU)),
+    # added 2026-11-20 (reg WO-08): LBDA (contiguous US): full coverage, a buffer that gains cells at 210 (early years partly covered),
+    # and a span clipped to the cells' first year (920)
+    'chaco_canyon_lbda_bandT_1100_1110': ('areas', dict(scope='single_basin', **CHACO, from_year=1100, to_year=1110, **_T)),
+    'santa_fe_buffer25_lbda_bandT_200_220': ('areas', dict(scope='buffer', radius_km=25, **SANTA_FE, from_year=200, to_year=220, **_T)),
+    'cahokia_lbda_bandT_900_930': ('areas', dict(scope='single_basin', **CAHOKIA, from_year=900, to_year=930, **_T)),
 }
 
 # Paths (dot-joined, list indexes dropped) that legitimately vary between identical calls.

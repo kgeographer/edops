@@ -43,7 +43,7 @@ def test_catalog_row():
     with open(ROOT / 'documentation' / 'EDOPS_variable_catalog_v0.4.tsv', encoding='utf-8') as f:
         rows = {r['schema_key']: r for r in csv.DictReader(f, delimiter='\t')}
     r = rows['lbda_pmdi']
-    assert (r['band'], r['source'], r['api_key_s'], r['status']) == ('T', 'LBDA', 'lbda_pmdi', 'planned') and 'PMDI' in r['units']
+    assert (r['band'], r['source'], r['api_key_s'], r['status']) == ('T', 'LBDA', 'lbda_pmdi', 'implemented') and 'PMDI' in r['units']
 
 
 @pytest.mark.parametrize('schema', ['edops_schema_basin.json', 'edops_schema_area.json'])

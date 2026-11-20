@@ -369,7 +369,7 @@ Computed via next_down DAG traversal
 
 ### Band T — Temporal
 
-Period-specific climate enrichment from LMR v2.1, volcanic event annotation from eVolv2k v4, and land-use history from HYDE 3.4. Requires from_year and to_year. 15 variables in the catalog (14 implemented, 1 planned).
+Period-specific climate enrichment from LMR v2.1, volcanic event annotation from eVolv2k v4, and land-use history from HYDE 3.4. Requires from_year and to_year. 16 variables in the catalog (15 implemented, 1 planned).
 
 #### Land Use Temporal
 
@@ -395,6 +395,9 @@ Annual series {year, prate_anom_mm_day} + mean; converted from kg/m²/s; anomaly
 
 **Sea-level pressure (LMR v2.1)** (`lmr_slp`) — planned · LMR v2.1 · hPa · point value<br>
 Not currently stored in temporal.lmr_climate
+
+**Summer drought index, PMDI (LBDA)** (`lbda_pmdi`) — implemented · LBDA · PMDI (dimensionless)<br>
+Annual series 0–2025 CE (read from the file; NCEI extends it every year). June–August Palmer Modified Drought Index (PMDI), not standardized (SD about 2.3, range −26 to 19 over the file), contiguous US only, 0.5° cells. Cells with data grow from 722 (year 0) to 3,277 (1473). 0–1899 reconstructed from tree rings (Cook et al. 2010); 1900 onward instrumental (NClimGrid). Not comparable with geda_scpdsi by number. Returned in Band T on the engine path (the Dashboard, /api/areas, and the buffer and area scopes of /api/signature); not yet on scope=basin.
 
 **Summer drought index, scPDSI (GEDA)** (`geda_scpdsi`) — implemented · GEDA · SD (z-score)<br>
 Annual series 1000–2020 CE. June–August scPDSI as z-scores per 0.5° cell (mean 0, SD 1 over the cell's 1000–2020 record). 1000–1989 reconstructed from tree rings; 1990–2020 observed (CRU TS 4.06). Eurasian cells only. Area rows summarise the distribution of cell scores.

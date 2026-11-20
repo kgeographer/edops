@@ -1325,6 +1325,34 @@ def _band_t_geda(q):
     return _SourceResult(rows, decision, note)
 
 
+# A year's coverage is "clearly below" the later years' when it is more than this many points under the span's final year: one cell
+# entering can add only a point or two of the area, which is not worth a note, and five points is a difference a reader sees.
+LBDA_CLEARLY_BELOW = 0.05
+
+
+def _pct(lo, hi):
+    a, b = f'{lo:.0%}', f'{hi:.0%}'
+    return a if a == b else f'{a[:-1]}-{b}'
+
+
+def _lbda_coverage_note(rows):
+    """The `sources` note for LBDA: the early years whose coverage is clearly below the later years' ("early years cover less of
+    the area: 150-209 at 77-95%, against 100% from 210 on"), else, when coverage is low throughout, how much of the area it covers.
+    None when coverage is the same (within LBDA_CLEARLY_BELOW) all along and not low."""
+    if not rows:
+        return None
+    final = rows[-1]['coverage']                      # coverage never falls with the year, so the final year is the highest
+    thin = [r for r in rows if r['coverage'] < final - LBDA_CLEARLY_BELOW]
+    if thin:
+        a, b = thin[0]['year'], thin[-1]['year']
+        return (f"early years cover less of the area: {a}-{b} at {_pct(min(r['coverage'] for r in thin), max(r['coverage'] for r in thin))}, "
+                f"against {final:.0%} from {b + 1} on")
+    low = [r for r in rows if r['status'] == 'low_coverage']
+    if low:
+        return f"covers {_pct(min(r['coverage'] for r in low), max(r['coverage'] for r in low))} of the area"
+    return None
+
+
 def _band_t_lbda(q):
     """LBDA rows: one summer PMDI row per year in the span (0-2025), shaped like the GEDA rows.
 
@@ -1379,10 +1407,7 @@ def _band_t_lbda(q):
             year=year, epoch_year=None, units=units,
             detail={'distribution': hist, 'w_eff': round(float(fr.sum()), 2)},
         ))
-    low = [r for r in rows if r['status'] == 'low_coverage']
-    note = (f"partly covered in {low[0]['year']}-{low[-1]['year']} "
-            f"({min(r['coverage'] for r in low):.0%} to {max(r['coverage'] for r in low):.0%} of the area)") if low else None
-    return _SourceResult(rows, decision, note)
+    return _SourceResult(rows, decision, _lbda_coverage_note(rows))
 
 
 def aggregate_band_t(lat, lon, radius_km, from_year, to_year, conn,

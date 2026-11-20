@@ -3241,14 +3241,13 @@
 
   // LBDA (contiguous US): its own block, built like GEDA's. Cells with data grow through time, so a year's cell count and
   // coverage can differ along the series. Wording is placeholder (class ph-inline).
-  function renderLbdaBlock(vRows, caveats, withLmr) {
+  function renderLbdaBlock(vRows, caveats, withLmr, coverageNote) {
     const v = 'lbda_pmdi', first = vRows[0], last = vRows[vRows.length - 1];
     const midRow = vRows[Math.floor(vRows.length / 2)];
     const dist0  = first.detail?.distribution || {};
     const asked  = dist0.band_t_from != null ? `${dist0.band_t_from}–${dist0.band_t_to}` : null;
     const clipped = asked && (first.year !== dist0.band_t_from || last.year !== dist0.band_t_to);
     const anyInstr = vRows.some(r => r.caveat?.includes('lbda_instrumental'));
-    const lowRows = vRows.filter(r => r.status === 'low_coverage');
     const nCells = Math.max(...vRows.map(r => r.n_units));
     const band = vRows.every(r => r.n_units >= MIN_CELLS_FOR_BAND);
     const lowRes = vRows.some(r => r.detail?.distribution?.low_resolution);
@@ -3272,10 +3271,7 @@
     if (caveats.lbda_caveat) h += note(escapeHtml(caveats.lbda_caveat));
     if (anyInstr && caveats.lbda_instrumental) h += note(escapeHtml(caveats.lbda_instrumental));
     if (clipped) h += note(`<span class="ph-inline">LBDA covers ${first.year}–${last.year} of the ${asked} requested.</span>`);
-    if (lowRows.length) {
-      const pcts = lowRows.map(r => r.coverage * 100);
-      h += note(`<span class="ph-inline">In ${lowRows[0].year}–${lowRows[lowRows.length - 1].year} LBDA's cells cover only ${Math.min(...pcts).toFixed(0)}–${Math.max(...pcts).toFixed(0)}% of this area; read those values with care.</span>`);
-    }
+    if (coverageNote) h += note(`<span class="ph-inline">LBDA: ${escapeHtml(coverageNote)}; read those years with care.</span>`);   // the engine's note: the sources block
     if (!band) h += note(`<span class="ph-inline">Few cells fall in this area, so no band is drawn.</span>`);
     if (lowRes) h += note(`<span class="ph-inline">Few cells fall in this area, so the histogram is coarse.</span>`);
     if (withLmr) h += note(`<span class="ph-inline">LBDA and LMR are independent reconstructions; where they differ, neither is wrong, and they are not one answer to be reconciled.</span>`);
@@ -3342,7 +3338,7 @@
     }
 
     if (byVar['geda_scpdsi']) html += renderGedaBlock(byVar['geda_scpdsi'], caveats, LMR_VARS.some(v => byVar[v]));
-    if (byVar['lbda_pmdi']) html += renderLbdaBlock(byVar['lbda_pmdi'], caveats, LMR_VARS.some(v => byVar[v]));
+    if (byVar['lbda_pmdi']) html += renderLbdaBlock(byVar['lbda_pmdi'], caveats, LMR_VARS.some(v => byVar[v]), (sources?.used || []).find(e => e.id === 'lbda_v3')?.note);
 
     const hydePresent = HYDE_SHOWN.filter(v => byVar[v]);
     if (hydePresent.length) {

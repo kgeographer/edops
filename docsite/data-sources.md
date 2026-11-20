@@ -132,6 +132,49 @@ observed.
 
 Licence: CC BY 4.0. The deposit on Zenodo is by the authors, Edward R. Cook and Benjamin I. Cook.
 
+### Living Blended Drought Atlas (LBDA)
+
+[Dataset](https://doi.org/10.25921/7xm8-jn36) ·
+[Article](https://doi.org/10.1002/jqs.1303)
+
+*Status: returned in Band T by the Dashboard's signature and by the buffer and area scopes of `/api/signature`. Not yet returned by `scope=basin`.*
+
+Gridded summer (June–August) drought, the Palmer Modified Drought Index (PMDI), on a 0.5° grid for the
+contiguous United States, version 3, years 0 to 2025 CE (Cook et al. 2010; extended and distributed by
+NOAA NCEI, which adds a year each year). It is Band T beside LMR, as a separate product, and covers
+North America where GEDA covers Eurasia; the two never overlap.
+
+**What to know.** The years 0–1899 are reconstructed from tree rings; 1900 onward are instrumental
+values (calculated from NOAA's NClimGrid temperature and precipitation), not reconstruction. Values are
+**not standardized**: they are in the index's own units, not standard scores, so a PMDI value is not
+comparable with a GEDA value and the two should not be put on one scale. The data are summer only, not
+annual.
+
+Reliability varies by place and time. Reconstruction skill is modest and uneven (the article shows it
+as maps; the data carry no per-cell measure of it). Before 1900 the reconstructed values of nearby cells
+can be very similar, so the spread of cell values within a small area says little about how the climate
+varied from place to place. The grid is not complete in early years: the cells that have data grow from
+722 in year 0 (all west of about 106°W) to all 3,277 by 1473, so a place in the eastern United States has
+no values in the first centuries. Only cells with values are stored; outside them nothing is returned,
+which is different from a value of zero.
+
+**How it is returned.** For each year of the span that LBDA covers (0–2025 CE), the signature gives the
+area-weighted mean of the PMDI values of the cells under the query area and their distribution (10th and
+90th percentiles and a histogram), with the number of cells and the share of the query area they cover.
+Coverage is judged year by year, counting only the cells that have a value in that year: years in which
+the cells cover under a tenth of the area return nothing, so a span that starts before the data is
+clipped to the years that qualify, and the response's `sources` block says which years were asked for
+and which were returned; from a tenth to a half, values are returned with the status `low_coverage`; and
+when the early years of a span cover clearly less of the area than the later years, the `sources` entry
+says so (for example, "early years cover less of the area: 150-209 at 77%, against 100% from 210 on").
+A place outside the contiguous United States returns nothing and is listed as not applied
+(`outside_footprint`); a span entirely after 2025 is `outside_span`. Rows for 1900 onward carry a caveat
+marking them as instrumental.
+
+Licence: NOAA NCEI asks that users cite the publication, the online resource, the dataset and
+publication DOIs and the date accessed; the study page and readme state no other licence. The data are by
+Gille, Morrill, Wahl, Vose and Cook.
+
 ### eVolv2k v4
 
 [Dataset and citation](https://doi.org/10.1594/PANGAEA.971968)
